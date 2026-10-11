@@ -50,5 +50,9 @@
 - ✅ MIT: rgthree-comfy, Crystools, WAS (ltdrdata fork), H3-FaceRefine, PromptBuilder. Apache-2.0: DyPE, Nvidia RTX nodes. GPL-3.0: KJNodes, VHS, Easy-Use, mxToolkit, RMBG, CropAndStitch, Impact Pack. Unlicense: Image Studio.
 - Веса: SAM3 — SAM License (Meta), 10Eros Max / Singularity ref2va — Civitai, не проверены.
 
-## 5. Проверить на поде (WS-01 шаг 6)
-`POST /prompt` обоих API без `node_errors`; 1 прогон на Sitting-8; что `ComfyMathExpression` понимает `a > b`; что ui открываются во фронтенде 1.53.6; имена файлов LoRA лица (`stacy_h3_face_v1` в кадрах vs `stacy_h3_face_v1_000001800` в видео).
+## 5. Проверка (12.10.2026, comfy.next-genium.com: RTX 5090 32 GB, ComfyUI 0.34, фронтенд 1.53.6)
+- Статика против `/object_info`: все классы нод и все файлы моделей на сервере есть.
+- `POST /prompt`: оба API-графа приняты, `node_errors` пусто.
+- **frame_h3@1**, Sitting-8: плита `cl_pl_stool.jpg`, лист `cl_stacy_sheet_body.jpg`, поза `cl_pose_sit8.jpg` (outfit не подан → узел удалён по `if_missing: drop_node`), промпт — исходный SFW-промпт кадра v1 (`<Picture 3>` → `<Picture 4>`), рука ref2va pruned int8 + ref2v turbo 8step 1.0 + stacy_h3_A_stills 1.5, `pass1_steps` 8. **Успех, 130 с.** Цепочка лицо Z → лицо H3 отработала (`ComfyMathExpression "a > b"` работает). Замечание: фон за окном пересушен/«потрескан» уже в `OUT raw` — дефолты 2-го прохода (40/8) подобраны под 10Eros; для руки ref2va+turbo подобрать в WS-07.
+- **video_h3_loop@1**, Sitting-8: keyframe `stacy_kf_Sitting-8.png`, эталон `cl_stacy_face_ref.png`, seed 777, 8 с, петля. **Успех, 334 с.** 192 кадра генерации → 188 кадров FullHD 1920×1080; трекер `largest_face` (InsightFace не грузился), лицо 103–124 px на всех 226 кадрах, AUTO: face_denoise 0.34, color_lock 0.21 (дрейф 1.6 dE), seam_crossfade 4. По кадрам 0/40/80/120/160/187: камера статична, цвет/свет стабильны, движение по промпту, последний кадр совпадает с ключевым.
+- Выходы: `output/claude_stacy/ws01/` на сервере. Не проверено: открытие `*.ui.json` в редакторе (тяжёлая страница) — открыть вручную.

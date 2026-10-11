@@ -1,0 +1,6 @@
+{"model": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+ "plate": "cl_pl_stool.jpg", "sheet": "cl_stacy_sheet_body.jpg", "pose": "cl_pose_sit8.jpg",
+ "prompt": "<SFW-промпт кадра Sitting-8 v1: метаданные cl_r_sit8_v1.png на comfy.next-genium.com, <Picture 3> заменить на <Picture 4>>",
+ "seed": 945975134008118, "pass1_steps": 8,
+ "loras": [{"name": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors", "w": 1.0},
+           {"name": "stacy_h3_A_stills_000001750.safetensors", "w": 1.5}]}
