@@ -1,0 +1,9 @@
+# секреты и состояние — никогда в репо
+.env
+secrets/
+*.token
+farm.db*
+__pycache__/
+*.pyc
+/data/
+/outputs/

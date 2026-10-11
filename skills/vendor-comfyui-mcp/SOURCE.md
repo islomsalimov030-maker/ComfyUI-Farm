@@ -1,0 +1,1 @@
+Источник: github.com/artokun/comfyui-mcp @ 6ad6fc0 (v0.52.205), MIT. Скилы скопированы без изменений. Упоминания MCP-инструментов (enqueue_workflow, panel_*) работают только если стоит сам comfyui-mcp; без него используй прямой HTTP API ComfyUI.
