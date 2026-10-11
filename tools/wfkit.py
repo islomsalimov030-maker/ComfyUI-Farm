@@ -387,3 +387,103 @@ def check_ui(root):
                     if x not in ids:
                         errs.append(f"{gr.get('name','top')}: #{n['id']} выход {o['name']} висячий link {x}")
     return errs
+
+
+# ----------------------------------------------------------------------------------------------- UI -> API (петли)
+def to_api2(root):
+    """Как to_api, но выходы экземпляров сабграфов разрешаются лениво. Поддерживает петли через экземпляр
+    (выход сабграфа → узел/цепочку bypass на верхнем уровне → вход того же экземпляра), как у превью модели
+    в Stacy_H3_compact и у RefMod в manual_*@1. Узлы с mode 4 пропускаются насквозь (первый вход того же типа)."""
+    subs = {s["id"]: s for s in root.get("definitions", {}).get("subgraphs", [])}
+    api, done = {}, set()
+
+    class Ctx:
+        def __init__(self, graph, prefix, parent=None, inst=None):
+            self.g, self.prefix, self.parent, self.inst = graph, prefix, parent, inst
+            self.nodes = {n["id"]: n for n in graph["nodes"]}
+            self.links = {_norm(l)["id"]: _norm(l) for l in graph.get("links", [])}
+            self.kids, self.memo, self.busy = {}, {}, set()
+
+        def child(self, n):
+            if n["id"] not in self.kids:
+                self.kids[n["id"]] = Ctx(subs[n["type"]], f"{self.prefix}{n['id']}:", self, n)
+            return self.kids[n["id"]]
+
+        def in_src(self, k):              # вход сабграфа № k (у экземпляра в родителе)
+            if k in self.memo:
+                return self.memo[k]
+            if k in self.busy:
+                return None
+            self.busy.add(k)
+            si = self.g["inputs"][k]
+            inp = next((i for i in self.inst.get("inputs", []) if i["name"] == si["name"]), None)
+            named = self.inst.get("widgets_values_named") or {}
+            r = None
+            if inp is not None and inp.get("link") is not None:
+                r = self.parent.resolve(inp["link"])
+            elif si["name"] in named:
+                r = ("val", named[si["name"]])
+            self.busy.discard(k)
+            self.memo[k] = r
+            return r
+
+        def out(self, slot):              # выход сабграфа № slot
+            for lid in self.g["outputs"][slot].get("linkIds", []):
+                r = self.resolve(lid)
+                if r is not None:
+                    return r
+            return None
+
+        def resolve(self, lid):
+            if lid is None or lid not in self.links:
+                return None
+            l = self.links[lid]
+            o, slot = l["origin_id"], l["origin_slot"]
+            if o == -10:
+                return self.in_src(slot)
+            n = self.nodes.get(o)
+            if n is None or n.get("mode") == 2:
+                return None
+            if n["type"] == "Reroute":
+                return self.resolve(n["inputs"][0].get("link"))
+            if n.get("mode") == 4:
+                otype = n["outputs"][slot]["type"]
+                for i in n.get("inputs", []):
+                    if i.get("link") is not None and (i["type"] == otype or "*" in (i["type"], otype)):
+                        return self.resolve(i["link"])
+                return None
+            if n["type"] in subs:
+                return self.child(n).out(slot)
+            return ("ref", [f"{self.prefix}{o}", slot])
+
+        def emit(self):
+            for n in self.g["nodes"]:
+                if n["type"] in UI_ONLY or n["type"] == "Reroute" or n.get("mode") in (2, 4):
+                    continue
+                if n["type"] in subs:
+                    c = self.child(n)
+                    if c.prefix not in done:
+                        done.add(c.prefix)
+                        c.emit()
+                    continue
+                inputs, linked = {}, set()
+                for i in n.get("inputs", []):
+                    if i.get("link") is None:
+                        continue
+                    linked.add(i["name"])
+                    r = self.resolve(i["link"])
+                    if r is not None:
+                        inputs[i["name"]] = r[1]
+                named = n.get("widgets_values_named")
+                named = named if isinstance(named, dict) else {}
+                for k, v in named.items():
+                    if k in linked or k in SKIP_WIDGETS or str(k).startswith("$$"):
+                        continue
+                    if isinstance(v, str) and v in CONTROL_VALUES and k in ("fixed", "control_after_generate"):
+                        continue
+                    inputs[k] = v
+                api[f"{self.prefix}{n['id']}"] = {"class_type": n["type"], "inputs": inputs,
+                                                  "_meta": {"title": n.get("title") or n["type"]}}
+
+    Ctx(root, "").emit()
+    return api
