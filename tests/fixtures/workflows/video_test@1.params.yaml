@@ -1,0 +1,11 @@
+workflow: video_test@1
+inputs:
+  keyframe:   {title: "IN keyframe", input: image, type: image, required: true}
+  prompt:     {title: "IN prompt", input: value, type: string, required: true}
+  seed:       {title: "PANEL", input: seed, type: int}
+  duration_s: {title: "PANEL", input: duration_sec, type: float, range: [5, 10]}
+knobs:
+  shift: {title: "PANEL", input: shift_video, type: float, range: [10, 14], default: 12}
+outputs:
+  video_fullhd: {title: "OUT video", kind: video}
+  last_frame:   {title: "OUT last_frame", kind: image}

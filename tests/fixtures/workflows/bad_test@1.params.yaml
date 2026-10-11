@@ -1,0 +1,6 @@
+workflow: bad_test@1
+inputs:
+  prompt: {title: "IN prompt", input: value, type: string}
+  seed:   {title: "PANEL", input: seed, type: int}
+outputs:
+  frame: {title: "OUT frame", kind: image}

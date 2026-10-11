@@ -1,0 +1,13 @@
+workflow: frame_test@1
+inputs:
+  face_ref: {title: "IN face_ref", input: image, type: image}
+  prompt:   {title: "IN prompt", input: value, type: string, required: true}
+  seed:     {title: "PANEL", input: seed, type: int}
+  model:    {title: "MODEL", input: unet_name, type: string}
+  steps:    {title: "PANEL", input: steps, type: int, range: [1, 50]}
+  sampler:  {title: "PANEL", input: sampler_name, type: string}
+  scheduler: {title: "PANEL", input: scheduler, type: string}
+knobs:
+  cfg: {title: "PANEL", input: cfg, type: float, range: [1.0, 3.0], default: 1.0}
+outputs:
+  frame: {title: "OUT frame", kind: image}

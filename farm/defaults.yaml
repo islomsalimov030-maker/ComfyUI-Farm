@@ -1,0 +1,30 @@
+# Настройки оркестратора по умолчанию. Перекрываются файлом $FARM_HOME/farm.yaml (тот же формат).
+comfy:
+  url: http://127.0.0.1:8188
+  ws_url: null              # null → ws://<host>/ws
+  connect_timeout_s: 5
+  request_timeout_s: 60
+  poll_s: 2.0               # опрос /history, если WS молчит или недоступен
+  max_in_flight: 4          # потолок заданий в очереди ComfyUI от фермы
+  startup_wait_s: 600       # сколько ждать поднятия ComfyUI после импорта пакета
+vram:
+  max_used_frac: 0.85       # VRAM-гейт: выше — пауза и POST /free
+  wait_s: 120
+  poll_s: 3.0
+  free_on_model_switch: true
+timeouts:                   # таймаут одного задания, сек; после — /interrupt
+  frame: 600
+  video: 1800
+retries:                    # по умолчанию, если профиль не задал
+  frame: 3
+  video: 3
+  timeout_max: 1            # ретраев после таймаута — не больше одного (практика eastondev)
+bandit:
+  cold_start_n: 3           # пока у всех рук < n попыток в категории — выдаём поровну
+worker:
+  idle_sleep_s: 5
+  batch_size: 8
+  autostart: true           # фоновый поток стартует при импорте; работу начинает только после «start»
+qa:
+  routing_default: routing_default.yaml   # в пакете farm/
+  routing_override: qa/routing.yaml       # если есть (владельцы WS-05/06)

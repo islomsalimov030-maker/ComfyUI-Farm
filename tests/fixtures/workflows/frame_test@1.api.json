@@ -1,0 +1,7 @@
+{
+  "1": {"class_type": "LoadImage", "inputs": {"image": "placeholder.png"}, "_meta": {"title": "IN face_ref"}},
+  "2": {"class_type": "PrimitiveStringMultiline", "inputs": {"value": ""}, "_meta": {"title": "IN prompt"}},
+  "4": {"class_type": "UNETLoader", "inputs": {"unet_name": "default.safetensors", "weight_dtype": "default"}, "_meta": {"title": "MODEL"}},
+  "3": {"class_type": "KSampler", "inputs": {"seed": 0, "steps": 8, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0, "model": ["4", 0], "positive": ["2", 0]}, "_meta": {"title": "PANEL"}},
+  "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": "farm/frame", "images": ["3", 0]}, "_meta": {"title": "OUT frame"}}
+}

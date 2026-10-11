@@ -1,0 +1,7 @@
+{
+  "1": {"class_type": "LoadImage", "inputs": {"image": "placeholder.png"}, "_meta": {"title": "IN keyframe"}},
+  "2": {"class_type": "PrimitiveStringMultiline", "inputs": {"value": ""}, "_meta": {"title": "IN prompt"}},
+  "3": {"class_type": "FarmPanel", "inputs": {"seed": 0, "duration_sec": 6.0, "shift_video": 12.0, "image": ["1", 0], "prompt": ["2", 0]}, "_meta": {"title": "PANEL"}},
+  "8": {"class_type": "SaveVideo", "inputs": {"video": ["3", 0]}, "_meta": {"title": "OUT video"}},
+  "9": {"class_type": "SaveImage", "inputs": {"images": ["3", 1]}, "_meta": {"title": "OUT last_frame"}}
+}

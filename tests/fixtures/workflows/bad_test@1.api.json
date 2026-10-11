@@ -1,0 +1,5 @@
+{
+  "2": {"class_type": "PrimitiveStringMultiline", "inputs": {"value": ""}, "_meta": {"title": "IN prompt"}},
+  "3": {"class_type": "BadNode", "inputs": {"seed": 0}, "_meta": {"title": "PANEL"}},
+  "9": {"class_type": "SaveImage", "inputs": {"images": ["3", 0]}, "_meta": {"title": "OUT frame"}}
+}

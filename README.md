@@ -37,4 +37,7 @@ briefs/ WS-01 … WS-10
 skills/ h3-prompt-writer · comfyui-workflow-json · stacy-farm-ops · vendor-comfyui-mcp/ (8 скилов, MIT)
 agents/ workflow-auditor · qa-engineer · pod-operator · license-checker   (Claude Code на поде)
 install/install_claude_kit_on_pod.sh
+__init__.py, pyproject.toml, requirements.txt   пакет нод ComfyUI (ставится через Manager по git-URL)
+farm/   ядро оркестратора (WS-02) — установка и управление: farm/README.md
+tests/  pytest без GPU (мок ComfyUI)
 ```

@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | WS-00 | 🟢 идёт | Kit v1: CONTRACTS v0.1, WORKSTREAMS, брифы, скилы, RESEARCH (11.10) | создать Project и репо, запустить волну 1 | — |
 | WS-01 | 🟡 офлайн готов, ждёт пода | Аудит обоих воркфлоу (`docs/audit/`), движки `frame_h3@1` и `video_h3_loop@1` (api.json + params.yaml + ui.json), сборщики `tools/build_*.py`, `tools/wfkit.py` (UI→API), `tools/wf_params.py` (check/apply), лицензии `tools/licenses.yaml`. Удалено и почему — `docs/audit/WS-01_findings.md` | dry-run `POST /prompt` обоих + 1 прогон на Sitting-8; проверить `a > b` в ComfyMathExpression и загрузку ui во фронтенде | под (туннель 8188 закрыт 11.10) |
-| WS-02 | ⚪ не начат | — | скелет пакета, схема БД, мок ComfyUI | репо `ComfyUI-Farm` |
+| WS-02 | 🟢 готово (мок) | Пакет `ng-farm`: `__init__.py` (нода Farm Control + фоновый воркер + `/farm/status`), `farm/` db·states·queue·worker·comfy_client·storage·bandit·plugins; привязка params.yaml совместима с WS-01 (тест против `tools/wf_params.py` на `frame_h3@1`/`video_h3_loop@1`); CONTRACTS v0.3; pytest без GPU зелёный (3 шота по кругу, ретраи ≤3, post_fix, рестарт без потерь, idem_key без дублей, таймаут/OOM/node_errors/VRAM-гейт). `farm/README.md` | WS-10: поставить на под, прогнать на живом ComfyUI (версия пода должна принимать `prompt_id` в `/prompt`) | — |
 | WS-03 | ⚪ не начат | — | шаблон Sheets | — |
 | WS-04 | ⚪ не начат | — | шаблоны + линтер (без LLM) | — |
 | WS-05 | ⚪ не начат | — | face_id (AuraFace vs buffalo_l) на 26 кадрах v2 | доступ к `C:\stacy-lora` |
@@ -28,6 +28,7 @@
 - 2026-10-11 · WS-01: в видео `identity_track` (InsightFace) выключен; steps/shift и 8 «потерянных» ручек вынесены KNOB-узлами с прежними значениями; char_lora по умолчанию 1.0 (в исходнике 0).
 - 2026-10-11 · Сходство лица для прода: кандидат AuraFace-v1 (Apache-2.0); buffalo_l только на тестах.
 - 2026-10-11 · Для одиночного кадра в проде — Fizgig-H3-Still (MIT) или H3 Image Studio (Unlicense); MM-1Frame и SatoDive (без лицензии) — только тесты.
+- 2026-10-11 · WS-02: CONTRACTS v0.3 — колонки v0.3 + таблица `events`; `prompt_id` = UUID из `idem_key`; главный выход стадии + `aux`; интерфейсы соседей: `qa/registry.run_stage`, `prompts/builder.build(..., ctx)`, `library.get_library().resolve_inputs`, `sheets.on_shot_update/upload_final`, `post/<name>.fix`. Ферма после установки на паузе, «start» переживает рестарт.
 
 ## Блокеры и вопросы к пользователю
 1. ⚠ **Лицензия H3 и ЕС:** под в EU-RO-1 (ЕС) — по тексту лицензии ЕС исключён. При покупке лицензии уточнить датацентр, рынки и обучение на outputs (см. RESEARCH §1).

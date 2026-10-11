@@ -1,0 +1,27 @@
+# Маршрут «код отказа → ручка» по умолчанию (CONTRACTS §8).
+# Владельцы QA (WS-05/06) перекрывают его файлом farm/qa/routing.yaml (ключи сливаются).
+# action: retry | post_fix | needs_human
+# knobs:  seed | prompt | <имя ручки из params.yaml knobs> | lora_w | face_pass | plate_slot | anchor
+# Порядок ключей = приоритет: при нескольких отказах берётся первый найденный в этом списке.
+version: 1
+routes:
+  TECH:        {action: retry, knobs: [seed]}
+  PROMPT_LINT: {action: needs_human}
+  AGE:         {action: retry, knobs: [prompt, seed]}
+  FACE_ID:     {action: retry, knobs: [face_pass, lora_w, seed]}
+  IDENTITY_DIP: {action: retry, knobs: [seed]}
+  SCALE:       {action: retry, knobs: [plate_slot, anchor, seed]}
+  ANATOMY:     {action: retry, knobs: [seed]}
+  HANDS:       {action: retry, knobs: [prompt, seed]}
+  CHECKLIST:   {action: retry, knobs: [prompt, seed]}
+  COMPOSITION: {action: retry, knobs: [prompt, seed]}
+  SHARP:       {action: retry, knobs: [seed]}
+  SEAM:        {action: post_fix, fixer: post.loop}
+  CUT:         {action: post_fix, fixer: post.loop}
+  COLOR_DRIFT: {action: post_fix, fixer: post.color}
+  FREEZE:      {action: retry, knobs: [prompt, seed]}
+  SLOWMO:      {action: retry, knobs: [prompt, steps]}
+  CAMERA_MOVE: {action: retry, knobs: [prompt, seed]}
+  LIGHT_DRIFT: {action: retry, knobs: [prompt, seed]}
+  FLICKER:     {action: retry, knobs: [seed]}
+default: {action: retry, knobs: [seed]}

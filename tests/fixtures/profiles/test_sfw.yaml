@@ -1,0 +1,17 @@
+name: test_sfw
+content_scope: sfw
+llm: {prompt_model: none, judge_model: none, keep_alive: 0}
+frame:
+  workflow: frame_test@1
+  arms:
+    - {id: arm_a, model: model_a.safetensors, loras: [], sampler: {steps: 8, sampler: euler, scheduler: simple}}
+    - {id: arm_b, model: model_b.safetensors, loras: [], sampler: {steps: 10, sampler: euler, scheduler: simple}}
+  seeds_per_try: 2
+  prompt_template: frame_ref_v1
+video:
+  workflow: video_test@1
+  arms:
+    - {id: v_base, model: h3_base.safetensors, loras: [], sampler: {}}
+  seeds_per_try: 1
+  prompt_template: video_loop_ref_v1
+retries: {frame: 3, video: 3}

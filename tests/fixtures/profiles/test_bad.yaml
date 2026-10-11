@@ -1,0 +1,4 @@
+name: test_bad
+content_scope: sfw
+frame: {workflow: bad_test@1, arms: [{id: a, model: m}], seeds_per_try: 1}
+video: {workflow: video_test@1, arms: [{id: v, model: h3}], seeds_per_try: 1}
