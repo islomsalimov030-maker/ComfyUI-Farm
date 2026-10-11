@@ -45,6 +45,8 @@ SCHEMA: dict[str, list[tuple[str, str]]] = {
         ("video_asset_id", "TEXT"),              # выбранный кандидат-видео
         ("review_comment", "TEXT"),              # комментарий человека для следующей попытки
         ("last_error", "TEXT"),
+        # --- v0.4 (WS-03) ---
+        ("extra_json", "TEXT"),                  # доп. поля строки таблицы (ракурс, амплитуда, эмоция, связи…)
     ],
     "attempts": [
         ("attempt_id", "TEXT PRIMARY KEY"),
@@ -146,7 +148,7 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_reviews_open ON reviews(consumed)",
 ]
 
-JSON_COLS = {"objects_json", "depends_on_json", "params_json", "fail_codes_json",
+JSON_COLS = {"objects_json", "extra_json", "depends_on_json", "params_json", "fail_codes_json",
              "evidence_json", "loras_json", "sampler_json"}
 
 

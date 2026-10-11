@@ -1,6 +1,6 @@
-# CONTRACTS v0.3 — договорённости между потоками
+# CONTRACTS v0.4 — договорённости между потоками
 
-> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2.
+> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10).
 
 Этот файл позволяет потокам работать независимо. Каждый поток реализует свою часть **строго по контракту** и может подменять соседей заглушками. Изменение контракта = версия +1 и строка в `STATUS.md → Решения`. Язык кода — Python 3.12, без тяжёлых фреймворков.
 
@@ -44,6 +44,11 @@ ComfyUI-Farm/
 - `checks`: `asset_id, created_at` (проверки привязаны к ассету: у post_fix-версии свои).
 - `arms`: `stage`. `arm_id = <profile>/<stage>/<id из профиля>`. `arm_stats` — UNIQUE(arm_id, category); категория = `lying|sitting|standing|other : <location>`.
 - новая таблица `events(event_id, ts, shot_id, from_state, to_state, reason)` — журнал переходов.
+
+**v0.4 — добавлено (WS-03):**
+- `shots.extra_json` — поля строки таблицы, которых нет в колонках: `{name, batch, framing_ru, focus_ru, amplitude_ru, base_ru, emotion_ru, mood, start_from, end_with, row_hash}`. Читает сборщик промптов (WS-04).
+- `shots.priority`: в БД больше = раньше; в таблице 1 = срочно (`priority_db = 4 − приоритет таблицы`).
+- `end_from` ставит синхронизация таблицы: шот с «Начать с кадра шота = X» попадает в БД только после того, как X в `approved`. `end_from` = `last_frame` того же прогона, что принятое видео X; синхронизация ставит этому ассету `approved=1`, потому что воркер помечает только ревьюируемый ассет.
 
 ## 4. Машина состояний шота
 `pending → ready (зависимости approved) → frame_gen → frame_qa → [frame_retry ≤3] → frame_review* → video_gen → video_qa → [video_retry ≤3 | post_fix] → video_review* → approved | needs_human | rejected`
@@ -120,7 +125,16 @@ CheckResult(name, value: float, passed: bool, severity: "hard|soft|info", fail_c
 Читает `assets` в состоянии `*_review` и пишет в `reviews`. (v0.3: кандидаты = `assets.candidate=1 AND approved IS NULL` — шот к этому моменту может уже уйти дальше; плюс шоты в `needs_human`. Статус очереди — `GET /farm/status` на 8188 или `Worker.status()`.) Кнопки: ✅ Принять, 🔁 Переделать, ✍️ Переделать с комментарием, ▶️ Запустить пакет (фильтр по листу/приоритету), 📊 Статус очереди. Пуш только для готовых кандидатов, с вердиктами проверок одной строкой. Никаких входящих портов (long polling).
 
 ## 10. Таблица (WS-03)
-Листы и колонки — `STACY_FARM_PLAN.md §3`. ID — латиница/цифры/дефис. Оркестратор пишет только в колонки `Статус`, `Ссылки`, `Оценки`, `Обновлено`. (v0.3: через `farm/sheets.py: on_shot_update(shot: dict, links: list[str], scores: dict)`; выгрузка финала — `upload_final(asset_path, shot) -> url|None`, sha256 сверяет оркестратор до вызова. Справочники для воркфлоу — `farm/library.py: get_library()` с методом `resolve_inputs(shot, stage) -> {имя входа params.yaml: значение|путь}`.) Справочники (`Персонажи`, `Локации`, `Наряды`, `Объекты`) ссылаются на файлы в `refs/` (путь) или RefMod-файл. Карточка плиты:
+Листы и колонки — **`farm/sheet_schema.yaml`** (v0.4; единый источник для кода и шаблона `tools/sheet_template.gs`). Колонки ищутся по заголовку, порядок не важен. ID шота — латиница/цифры/дефис (`[A-Za-z0-9-]`, в БД верхний регистр); ID справочников — `[a-z0-9_-]`, плита — `локация/зона`. Оркестратор пишет только в колонки `Статус`, `Ссылки`, `Оценки`, `Обновлено` (на листе — защита-предупреждение). (v0.3: через `farm/sheets.py: on_shot_update(shot: dict, links: list[str], scores: dict)`; выгрузка финала — `upload_final(asset_path, shot) -> url|None`, sha256 сверяет оркестратор до вызова. Справочники для воркфлоу — `farm/library.py: get_library()` с методом `resolve_inputs(shot, stage) -> {имя входа params.yaml: значение|путь}`.) Справочники (`Персонажи`, `Локации`, `Наряды`, `Объекты`) ссылаются на файлы в `refs/` (путь) или RefMod-файл.
+
+**v0.4:**
+- Строки берутся только с галочкой «В работу»; ошибки заполнения — в `Статус` текстом `❌ <колонка>: <что исправить>`. Синхронизация: `sheets.sync(db)` или `python -m farm.sheets sync` (кто и как часто зовёт — WS-10; предложение: при «start» и раз в 5 минут в простое воркера). Правки строки применяются к шоту, если он не генерируется (`pending|ready|*_review|needs_human|rejected`); тип, связи и профиль после старта не меняются.
+- Связи: «Начать с кадра шота X» → `end_from` (см. §3); «Закончить кадром шота X» → `extra_json.end_with`, `depends_on += X`, на стадии видео `resolve_inputs` даёт `end_frame` = путь кадра X (`shots.frame_asset_id`), `end_frame_on=true`, `loop=false`. «Зависит от» → `depends_on_json`.
+- `resolve_inputs`: кадр → `plate`, `sheet`, `outfit`, `pose`; видео → `face_ref`, `loop`, `motion_ref`, `end_frame`/`end_frame_on`; плюс `character_refmod`, `plate_refmod`, `outfit_refmod` (если файлы есть; для будущих движков). Файлы по соглашению: `refs/<characters|locations|outfits|objects>/<ID>/<face|sheet|plate|flatlay|image>.(png|jpg|jpeg|webp)`, `refmod.safetensors`, `card.yaml`. Ссылки Google Drive в ячейках скачиваются при синхронизации в `cache/refs/`.
+- Справочник для сборщика: `Library.character(id)`, `.outfit(id)`, `.object(id)` (`desc_en`, `height_cm`, …), `.plate_card(id)` — карточка ниже.
+- Колонки карточки на листе «Локации»: «Якоря» — по строке `имя высота_см x0 y0 x1 y1`, «Слоты» — `id поза x y [рост_px]` (поза: стоя|сидя|лежа). Координаты — доли кадра 0..1 (больше 1 → пиксели, `units: px`). Файл `refs/locations/<локация>/<зона>/card.yaml` перекрывает колонки. Разметка — `tools/plate_marker.html`.
+
+Карточка плиты:
 ```yaml
 plate_id: stretch_hall/plate_03
 camera_height_cm: 120

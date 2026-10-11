@@ -1,0 +1,175 @@
+# Схема Google Sheet «Ферма — сцены» (WS-03, CONTRACTS §10 v0.4).
+# Единый источник: читает farm/sheets.py (валидатор, синхронизация) и tools/build_sheet_template.py
+# (генерирует Apps Script tools/sheet_template.gs). Колонки находятся по заголовку, не по позиции:
+# порядок можно менять, лишние колонки игнорируются. Ключ (key) — имя поля в коде.
+version: 1
+title: "Ферма — сцены"
+
+limits:
+  duration_s: [5, 10]        # движок видео (PANEL duration_sec)
+  duration_step: 0.25
+  priority: [1, 3]           # 1 — самый срочный
+  priority_default: 2
+  text_max: 1200             # длиннее — предупреждение (промпт раздуется)
+  shot_id_re: '^[A-Za-z0-9-]{1,40}$'
+  lib_id_re: '^[a-z0-9_-]{1,40}$'          # персонажи, наряды, объекты, профили
+  plate_id_re: '^[a-z0-9_-]{1,40}/[a-z0-9_-]{1,40}$'   # плита = <локация>/<зона>
+
+# значения выпадающих списков: подпись в таблице → значение в коде
+lists:
+  kind: {видео: video, кадр: frame}
+  yesno: {да: true, нет: false}
+  mood: [neutral, happy, frowny, shy, playful, sad, surprised]   # строгой проверки нет — можно дописать свой
+
+scenes:
+  sheet: Сцены
+  frozen_cols: 2
+  columns:
+    - {key: id, header: ID, width: 80, required: true,
+       note: "Уникальный ID шота: латиница, цифры, дефис. Пример: STD-01, SIT-08. Не менять после запуска."}
+    - {key: name, header: Название, width: 110,
+       note: "Короткое имя для людей, любое (Стоя-1, «вход в скрещенные руки»)."}
+    - {key: ready, header: В работу, width: 70, type: checkbox,
+       note: "Галочка = строка заполнена, ферма её проверит и возьмёт. Без галочки — черновик, ферма не трогает."}
+    - {key: batch, header: Пакет, width: 110,
+       note: "Имя пакета для запуска из бота (например stacy_sfw_v1). Можно пусто."}
+    - {key: priority, header: Приоритет, width: 75, type: list, values: ["1", "2", "3"],
+       note: "1 — срочно, 2 — обычно (по умолчанию), 3 — когда будет время."}
+    - {key: profile, header: Профиль, width: 95, required: true, type: ref, ref: profiles,
+       note: "Режим фермы: модель, LoRA, пороги. Список — лист «Профили»."}
+    - {key: kind, header: Тип, width: 65, required: true, type: list, list: kind,
+       note: "видео — кадр + зацикленное видео; кадр — только картинка."}
+    - {key: character, header: Персонаж, width: 95, required: true, type: ref, ref: characters,
+       note: "ID с листа «Персонажи»."}
+    - {key: plate, header: Локация / плита, width: 150, required: true, type: ref, ref: plates,
+       note: "ID плиты с листа «Локации» вида локация/зона, например apartment/sofa."}
+    - {key: outfit, header: Наряд, width: 110, type: ref, ref: outfits,
+       note: "ID с листа «Наряды». Пусто можно, но без рефа одежды хуже держатся фон и лицо."}
+    - {key: objects, header: Объекты, width: 140, type: refs, ref: objects,
+       note: "ID с листа «Объекты» через запятую: stool, yoga_mat. Важные для масштаба предметы — сюда."}
+    - {key: framing, header: Ракурс и кадр, width: 200,
+       note: "Что в кадре и откуда смотрит камера: «фронтально, тело до колен, пола не видно». Камера всегда статична."}
+    - {key: pose, header: Поза (стартовая), width: 260, required: true, type: text,
+       note: "Поза в первом кадре, по-русски, свободным текстом. Для петли это и база, в которую она возвращается."}
+    - {key: action, header: Действие (для видео), width: 280, type: text,
+       note: "Что происходит в видео, по порядку: движение → пауза → возврат. Обязательно для типа «видео»."}
+    - {key: focus, header: Что двигается, width: 150,
+       note: "Части тела в движении: «кисти и предплечья», «корпус, перенос веса»."}
+    - {key: amplitude, header: Амплитуда и ограничения, width: 230,
+       note: "Что неподвижно и насколько большое движение: «стопы не отрываются», «живее, не слоу-мо»."}
+    - {key: base, header: Возврат в базу, width: 200,
+       note: "Поза, в которую возвращается петля, если отличается от стартовой. Иначе пусто."}
+    - {key: emotion, header: Эмоция на лице, width: 160,
+       note: "Эмоция по-русски; держится и в начале, и в конце петли."}
+    - {key: mood, header: Тег настроения, width: 95, type: list, list: mood, strict: false,
+       note: "Тег для игры (neutral, happy, frowny…). Можно вписать свой."}
+    - {key: loop, header: Петля, width: 60, type: list, list: yesno,
+       note: "да — первый кадр = последний. Для видео обязательно. Нет — если задан «Закончить кадром шота»."}
+    - {key: duration, header: Длительность, с, width: 85, type: number,
+       note: "Для видео: от 5 до 10 секунд, шаг 0,25."}
+    - {key: start_from, header: Начать с кадра шота, width: 110, type: shot,
+       note: "ID шота: видео начнётся с последнего кадра его принятого видео (продолжение). Свой кадр не генерируется."}
+    - {key: end_with, header: Закончить кадром шота, width: 110, type: shot,
+       note: "ID шота: видео закончится ключевым кадром того шота (вход в позу). Петля = нет."}
+    - {key: depends, header: Зависит от, width: 100, type: shots,
+       note: "ID шотов через запятую, которые должны быть приняты раньше. Связи из двух колонок слева учтутся сами."}
+    - {key: pose_ref, header: Фото-реф позы, width: 140, type: link,
+       note: "Ссылка на картинку в Google Drive (доступ для сервисного аккаунта) или путь в refs/. Необязательно."}
+    - {key: motion_ref, header: Видео-реф движения, width: 140, type: link,
+       note: "Ссылка на видео (Drive) или путь в refs/. Пока используется редко. Необязательно."}
+    - {key: note, header: Примечание, width: 220,
+       note: "Для людей. В промпт не идёт."}
+    # ---- пишет только ферма (защищено) ----
+    - {key: status, header: Статус, width: 230, orchestrator: true,
+       note: "Пишет ферма: ошибки заполнения, этап, итог. Руками не править."}
+    - {key: links, header: Ссылки, width: 200, orchestrator: true, note: "Пишет ферма: кандидаты и финалы."}
+    - {key: scores, header: Оценки, width: 160, orchestrator: true, note: "Пишет ферма: итоги проверок."}
+    - {key: updated, header: Обновлено, width: 120, orchestrator: true, note: "Пишет ферма: время обновления."}
+
+# Справочники. file — колонка с файлом: пусто → файл по соглашению в refs/<dir>/<ID>/<default>.
+# В ячейке можно указать: имя файла (ищется в refs/<dir>/<ID>/), путь от FARM_HOME (refs/...),
+# абсолютный путь или ссылку Google Drive (скачивается при синхронизации в cache/refs/).
+libraries:
+  characters:
+    sheet: Персонажи
+    dir: characters
+    columns:
+      - {key: id, header: ID, width: 90, required: true, note: "латиница в нижнем регистре: stacy"}
+      - {key: name, header: Имя, width: 110}
+      - {key: lora_trigger, header: Триггер LoRA, width: 110}
+      - {key: lora, header: LoRA (файл), width: 220, note: "Имя файла в /workspace/models/loras. Рука профиля важнее — это справка для сборщика промптов."}
+      - {key: lora_w, header: Сила LoRA, width: 75, type: number}
+      - {key: face, header: Эталон лица, width: 160, file: true, default: "face.*", note: "Пусто → refs/characters/<ID>/face.png|jpg|webp"}
+      - {key: sheet, header: Лист персонажа, width: 160, file: true, default: "sheet.*", note: "<Picture 2> кадра. Пусто → refs/characters/<ID>/sheet.*"}
+      - {key: refmod, header: RefMod, width: 160, file: true, default: "refmod.safetensors"}
+      - {key: height_cm, header: Рост, см, width: 70, type: number, note: "Для проверки масштаба."}
+      - {key: desc_en, header: Описание (EN), width: 260, note: "Внешность коротко по-английски, для промпта."}
+      - {key: note, header: Примечание, width: 200}
+  plates:
+    sheet: Локации
+    dir: locations
+    columns:
+      - {key: id, header: ID плиты, width: 160, required: true, note: "локация/зона: apartment/sofa"}
+      - {key: zone_ru, header: Зона, width: 180, note: "По-русски: «розовый бархатный диван»."}
+      - {key: plate, header: Плита (файл), width: 160, file: true, default: "plate.*", note: "<Picture 1>. Пусто → refs/locations/<локация>/<зона>/plate.*"}
+      - {key: refmod, header: RefMod, width: 140, file: true, default: "refmod.safetensors"}
+      - {key: card, header: Карточка (YAML), width: 140, file: true, default: "card.yaml", note: "Необязательно: если файл есть, его поля важнее колонок справа."}
+      - {key: camera_height_cm, header: Высота камеры, см, width: 90, type: number}
+      - {key: horizon_y, header: Горизонт (доля), width: 85, type: number, note: "Линия горизонта: доля высоты кадра сверху, 0–1."}
+      - {key: anchors, header: Якоря, width: 260, type: anchors,
+         note: "Предметы известной высоты, по строке на предмет: имя высота_см x0 y0 x1 y1 (рамка в долях 0–1 от кадра). Пример: barre 105 0.10 0.41 0.92 0.45. Разметка — tools/plate_marker.html."}
+      - {key: slots, header: Слоты, width: 220, type: slots,
+         note: "Где может быть персонаж, по строке: id поза x y [рост_px]. Поза: стоя|сидя|лежа. Пример: A стоя 0.55 0.88 610"}
+      - {key: light_dir, header: Свет, откуда, width: 85, type: list, values: [left, right, front, back, top]}
+      - {key: light_temp, header: Свет, тон, width: 80, type: list, values: [warm, neutral, cool]}
+      - {key: ambience_en, header: Звук фона (EN), width: 160}
+      - {key: desc_en, header: Описание (EN), width: 240}
+      - {key: note, header: Примечание, width: 200}
+  outfits:
+    sheet: Наряды
+    dir: outfits
+    columns:
+      - {key: id, header: ID, width: 120, required: true}
+      - {key: name, header: Название, width: 160}
+      - {key: flatlay, header: Раскладка (файл), width: 160, file: true, default: "flatlay.*", note: "<Picture 3>: одежда без человека."}
+      - {key: refmod, header: RefMod, width: 140, file: true, default: "refmod.safetensors"}
+      - {key: desc_en, header: Описание (EN), width: 260}
+      - {key: note, header: Примечание, width: 200}
+  objects:
+    sheet: Объекты
+    dir: objects
+    columns:
+      - {key: id, header: ID, width: 110, required: true}
+      - {key: name, header: Название, width: 160}
+      - {key: image, header: Картинка, width: 150, file: true, default: "image.*"}
+      - {key: refmod, header: RefMod, width: 140, file: true, default: "refmod.safetensors"}
+      - {key: height_cm, header: Высота, см, width: 75, type: number, note: "Для масштаба: высота сиденья, перекладины…"}
+      - {key: desc_en, header: Описание (EN), width: 240}
+      - {key: note, header: Примечание, width: 200}
+  profiles:
+    sheet: Профили
+    columns:
+      - {key: id, header: ID, width: 110, required: true, note: "Имя файла profiles/<ID>.yaml"}
+      - {key: desc, header: Описание, width: 300}
+      - {key: scope, header: Тип контента, width: 100}
+      - {key: active, header: Активен, width: 70, type: checkbox}
+
+# Статус шота в таблице (пишет ферма)
+statuses:
+  draft: ""
+  invalid: "❌ "
+  waiting: "⏳ ждёт "
+  pending: "в очереди"
+  ready: "готов к запуску"
+  frame_gen: "кадр: генерация"
+  frame_qa: "кадр: проверка"
+  frame_retry: "кадр: повтор"
+  frame_review: "кадр: на ревью"
+  video_gen: "видео: генерация"
+  video_qa: "видео: проверка"
+  video_retry: "видео: повтор"
+  post_fix: "видео: доработка"
+  video_review: "видео: на ревью"
+  approved: "✅ готово"
+  needs_human: "⚠ нужен человек"
+  rejected: "⛔ отклонён"

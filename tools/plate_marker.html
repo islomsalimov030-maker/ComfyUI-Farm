@@ -1,0 +1,293 @@
+<title>Разметка плиты</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Раскладка: слева холст плиты с рамками, справа панель — поля карточки и готовые строки для таблицы. */
+:root {
+  --bg: #f3f4f1; --panel: #ffffff; --fg: #1d2420; --muted: #66706a; --line: #d6dad5;
+  --accent: #d99a00; --accent-ink: #1d1a10; --anchor: #0f8f7a; --slot: #c2347a; --horizon: #3a6fd8;
+  --font-ui: "Golos Text", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151916; --panel: #1e2420; --fg: #e6ebe7; --muted: #95a199; --line: #333b36;
+  --accent: #f0b429; --accent-ink: #1d1a10; --anchor: #3cc7ad; --slot: #ec6aa8; --horizon: #7aa2f2; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151916; --panel: #1e2420; --fg: #e6ebe7; --muted: #95a199; --line: #333b36;
+  --accent: #f0b429; --accent-ink: #1d1a10; --anchor: #3cc7ad; --slot: #ec6aa8; --horizon: #7aa2f2; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font-ui); padding-inline: 16px; padding-block: 18px 32px }
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 18px }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px }
+h1 { font-size: 1.45rem; margin: 0; text-wrap: balance; letter-spacing: -.01em }
+header p { margin: 0; color: var(--muted); max-width: 70ch }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr) } }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0 }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.seg button { border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--fg); padding: 7px 12px; font: 500 14px var(--font-ui); cursor: pointer }
+.seg button:last-child { border-right: 0 }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink) }
+.btn { border: 1px solid var(--line); background: transparent; color: var(--fg); padding: 7px 12px; border-radius: 8px; font: 500 14px var(--font-ui); cursor: pointer }
+.btn:hover, .seg button:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent) }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.hint { color: var(--muted); font-size: 13px }
+.canvas-box { position: relative; min-width: 0; border-radius: 6px; overflow: hidden; background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 16px 16px }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; touch-action: none }
+.drop { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 22%, transparent); font-weight: 700; pointer-events: none }
+aside { display: grid; gap: 14px; min-width: 0 }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; min-width: 0 }
+.card h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; font-weight: 700 }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+label { display: grid; gap: 3px; font-size: 13px; color: var(--muted) }
+input, select, textarea { font: 14px var(--font-data); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; width: 100% }
+textarea { resize: vertical; min-height: 70px; white-space: pre; overflow-x: auto }
+.items { display: grid; gap: 6px; max-height: 260px; overflow: auto }
+.item { display: grid; grid-template-columns: 12px minmax(0, 1fr) 72px 30px; gap: 6px; align-items: center }
+.item.slot { grid-template-columns: 12px 46px 86px minmax(0, 1fr) 30px }
+.dot { width: 10px; height: 10px; border-radius: 2px }
+.item .x { border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; line-height: 1 }
+.item .x:hover { color: var(--slot) }
+.out-head { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.out-head span { font-size: 13px; color: var(--muted) }
+.copy { font: 600 12px var(--font-ui); border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 3px 9px; cursor: pointer }
+.empty { color: var(--muted); font-size: 13px }
+.tag { display: inline-block; font: 600 11px var(--font-ui); letter-spacing: .06em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); padding: 2px 7px; border-radius: 4px }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Разметка плиты</h1>
+    <p>Загрузите фон зоны, обведите предметы известной высоты и отметьте, где стоит или сидит персонаж. Готовые строки скопируйте в лист «Локации». Картинка не покидает ваш компьютер.</p>
+  </header>
+
+  <div class="main">
+    <section class="stage" aria-label="Плита">
+      <div class="tools">
+        <div class="seg" role="group" aria-label="Режим">
+          <button id="m-anchor" aria-pressed="true" data-mode="anchor">▭ Якорь</button>
+          <button id="m-slot" aria-pressed="false" data-mode="slot">✚ Слот</button>
+          <button id="m-horizon" aria-pressed="false" data-mode="horizon">― Горизонт</button>
+        </div>
+        <button class="btn" id="load">Загрузить плиту…</button>
+        <input type="file" id="file" accept="image/*" hidden>
+        <span id="sample-tag" class="tag">пример</span>
+      </div>
+      <div class="hint" id="hint">Якорь: потяните рамку вокруг предмета (сиденье, перекладина, стол). Потом впишите имя и высоту верха в сантиметрах.</div>
+      <div class="canvas-box" id="box">
+        <canvas id="cv" width="1344" height="768" aria-label="Плита с разметкой"></canvas>
+        <div class="drop" id="drop" hidden>Отпустите картинку</div>
+      </div>
+      <div class="hint">Координаты — доли кадра от 0 до 1 (x слева направо, y сверху вниз), поэтому разрешение плиты не важно. <span class="num" id="dims"></span></div>
+    </section>
+
+    <aside>
+      <div class="card">
+        <h2>Карточка</h2>
+        <div class="row">
+          <label for="pid">ID плиты<input id="pid" value="stretch_studio/stool" spellcheck="false"></label>
+          <label for="cam">Высота камеры, см<input id="cam" type="number" step="1" value="120"></label>
+        </div>
+        <div class="row">
+          <label for="hor">Горизонт (доля)<input id="hor" type="number" step="0.001" min="0" max="1" value="0.46"></label>
+          <label for="light">Свет, откуда<select id="light"><option>left</option><option>right</option><option>front</option><option>back</option><option>top</option></select></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Якоря</h2>
+        <div class="items" id="anchors"></div>
+      </div>
+
+      <div class="card">
+        <h2>Слоты</h2>
+        <div class="items" id="slots"></div>
+      </div>
+
+      <div class="card">
+        <h2>В таблицу</h2>
+        <div class="out-head"><span>Колонка «Якоря»</span><button class="copy" data-copy="out-anchors">Копировать</button></div>
+        <textarea id="out-anchors" readonly rows="3"></textarea>
+        <div class="out-head"><span>Колонка «Слоты»</span><button class="copy" data-copy="out-slots">Копировать</button></div>
+        <textarea id="out-slots" readonly rows="2"></textarea>
+        <div class="out-head"><span>card.yaml (если удобнее файлом)</span><button class="copy" data-copy="out-yaml">Копировать</button></div>
+        <textarea id="out-yaml" readonly rows="8"></textarea>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let img = null, mode = 'anchor', drag = null, pendingSlot = null;
+  // пример: табуретка у стены (данные помечены как пример, пока не загружена своя плита)
+  let anchors = [{name: 'stool_seat', cm: 75, b: [0.52, 0.55, 0.66, 0.6]}, {name: 'barre', cm: 105, b: [0.08, 0.38, 0.45, 0.42]}];
+  let slots = [{id: 'A', pose: 'сидя', x: 0.59, y: 0.84, h: null}];
+  const r3 = v => Math.round(v * 1000) / 1000;
+  const clamp = v => Math.min(1, Math.max(0, v));
+
+  function drawSample() {
+    const W = cv.width, H = cv.height;
+    ctx.fillStyle = '#dcd6cc'; ctx.fillRect(0, 0, W, H * 0.66);
+    ctx.fillStyle = '#b89a78'; ctx.fillRect(0, H * 0.66, W, H);
+    ctx.fillStyle = '#9b7a55'; ctx.fillRect(W * 0.08, H * 0.38, W * 0.37, H * 0.04);
+    ctx.fillRect(W * 0.1, H * 0.42, W * 0.012, H * 0.3); ctx.fillRect(W * 0.43, H * 0.42, W * 0.012, H * 0.3);
+    ctx.fillStyle = '#6b4f33'; ctx.fillRect(W * 0.52, H * 0.55, W * 0.14, H * 0.05);
+    [0.53, 0.645].forEach(x => ctx.fillRect(W * x, H * 0.6, W * 0.012, H * 0.27));
+    ctx.fillRect(W * 0.53, H * 0.76, W * 0.125, H * 0.012);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    if (img) ctx.drawImage(img, 0, 0, cv.width, cv.height); else drawSample();
+    const W = cv.width, H = cv.height, lw = Math.max(2, W / 500), fs = Math.max(14, W / 70);
+    ctx.font = `600 ${fs}px "JetBrains Mono", monospace`;
+    const hor = parseFloat($('hor').value);
+    if (!isNaN(hor)) {
+      ctx.setLineDash([lw * 6, lw * 4]); ctx.strokeStyle = css('--horizon'); ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(0, hor * H); ctx.lineTo(W, hor * H); ctx.stroke(); ctx.setLineDash([]);
+      label('горизонт', 8, hor * H - 6, css('--horizon'));
+    }
+    anchors.forEach(a => {
+      const [x0, y0, x1, y1] = a.b;
+      ctx.strokeStyle = css('--anchor'); ctx.lineWidth = lw; ctx.strokeRect(x0 * W, y0 * H, (x1 - x0) * W, (y1 - y0) * H);
+      label(`${a.name || '?'} ${a.cm ?? '?'} см`, x0 * W, y0 * H - 6, css('--anchor'));
+    });
+    if (drag && mode === 'anchor') {
+      ctx.strokeStyle = css('--accent'); ctx.setLineDash([lw * 3, lw * 3]);
+      ctx.strokeRect(drag.x0 * W, drag.y0 * H, (drag.x1 - drag.x0) * W, (drag.y1 - drag.y0) * H); ctx.setLineDash([]);
+    }
+    slots.forEach(s => {
+      const x = s.x * W, y = s.y * H, c = css('--slot');
+      ctx.strokeStyle = c; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.lineTo(x + 14, y); ctx.moveTo(x, y - 14); ctx.lineTo(x, y + 14); ctx.stroke();
+      if (s.h) { ctx.setLineDash([lw * 2, lw * 3]); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s.h * H / natH()); ctx.stroke(); ctx.setLineDash([]); }
+      label(`${s.id} ${s.pose}`, x + 10, y - 10, c);
+    });
+    function label(t, x, y, c) {
+      const w = ctx.measureText(t).width + 10;
+      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y - fs, w, fs + 6);
+      ctx.fillStyle = c; ctx.fillText(t, x + 5, y);
+    }
+  }
+  const natH = () => img ? img.naturalHeight : cv.height;
+  function pos(e) {
+    const r = cv.getBoundingClientRect();
+    return {x: clamp((e.clientX - r.left) / r.width), y: clamp((e.clientY - r.top) / r.height)};
+  }
+  cv.addEventListener('pointerdown', e => {
+    const p = pos(e); cv.setPointerCapture(e.pointerId);
+    if (mode === 'anchor') drag = {x0: p.x, y0: p.y, x1: p.x, y1: p.y};
+    else if (mode === 'horizon') { $('hor').value = r3(p.y); render(); }
+    else if (mode === 'slot') {
+      if (pendingSlot) { pendingSlot.h = Math.round((pendingSlot.y - p.y) * natH()); if (pendingSlot.h <= 0) pendingSlot.h = null; pendingSlot = null; setHint(); }
+      else {
+        const id = String.fromCharCode(65 + slots.length % 26);
+        pendingSlot = {id, pose: 'стоя', x: r3(p.x), y: r3(p.y), h: null}; slots.push(pendingSlot);
+        $('hint').textContent = 'Слот поставлен у стоп. Кликните на макушке, чтобы задать ожидаемый рост в пикселях, или выберите другой режим.';
+      }
+      render();
+    }
+  });
+  cv.addEventListener('pointermove', e => { if (drag) { const p = pos(e); drag.x1 = p.x; drag.y1 = p.y; draw(); } });
+  cv.addEventListener('pointerup', () => {
+    if (!drag) return;
+    const b = [Math.min(drag.x0, drag.x1), Math.min(drag.y0, drag.y1), Math.max(drag.x0, drag.x1), Math.max(drag.y0, drag.y1)].map(r3);
+    drag = null;
+    if (b[2] - b[0] > 0.005 && b[3] - b[1] > 0.005) { anchors.push({name: '', cm: null, b}); render(); focusLast(); } else draw();
+  });
+  function focusLast() { const ins = document.querySelectorAll('#anchors .nm'); if (ins.length) ins[ins.length - 1].focus(); }
+
+  function render() {
+    const A = $('anchors'); A.innerHTML = '';
+    if (!anchors.length) A.innerHTML = '<div class="empty">Пока нет. Потяните рамку на плите.</div>';
+    anchors.forEach((a, i) => {
+      const d = document.createElement('div'); d.className = 'item';
+      d.innerHTML = `<span class="dot" style="background:var(--anchor)"></span>
+        <input class="nm" id="an-${i}" aria-label="Имя предмета" placeholder="имя (stool_seat)" value="${a.name}" spellcheck="false">
+        <input id="ac-${i}" aria-label="Высота верха, см" type="number" placeholder="см" value="${a.cm ?? ''}">
+        <button class="x" aria-label="Удалить якорь">×</button>`;
+      d.children[1].oninput = e => { a.name = e.target.value.trim().replace(/\s+/g, '_'); out(); draw(); };
+      d.children[2].oninput = e => { a.cm = e.target.value === '' ? null : Number(e.target.value); out(); draw(); };
+      d.children[3].onclick = () => { anchors.splice(i, 1); render(); };
+      A.appendChild(d);
+    });
+    const S = $('slots'); S.innerHTML = '';
+    if (!slots.length) S.innerHTML = '<div class="empty">Пока нет. Режим «Слот», клик у стоп персонажа.</div>';
+    slots.forEach((s, i) => {
+      const d = document.createElement('div'); d.className = 'item slot';
+      d.innerHTML = `<span class="dot" style="background:var(--slot)"></span>
+        <input id="si-${i}" aria-label="ID слота" value="${s.id}">
+        <select id="sp-${i}" aria-label="Поза"><option>стоя</option><option>сидя</option><option>лежа</option></select>
+        <input id="sh-${i}" aria-label="Рост в пикселях" type="number" placeholder="рост, px" value="${s.h ?? ''}">
+        <button class="x" aria-label="Удалить слот">×</button>`;
+      d.children[2].value = s.pose;
+      d.children[1].oninput = e => { s.id = e.target.value.trim(); out(); draw(); };
+      d.children[2].onchange = e => { s.pose = e.target.value; out(); draw(); };
+      d.children[3].oninput = e => { s.h = e.target.value === '' ? null : Math.round(Number(e.target.value)); out(); draw(); };
+      d.children[4].onclick = () => { slots.splice(i, 1); render(); };
+      S.appendChild(d);
+    });
+    out(); draw();
+  }
+  function out() {
+    const al = anchors.map(a => `${a.name || '?'} ${a.cm ?? '?'} ${a.b.join(' ')}`).join('\n');
+    const sl = slots.map(s => `${s.id} ${s.pose} ${s.x} ${s.y}${s.h ? ' ' + s.h : ''}`).join('\n');
+    $('out-anchors').value = al; $('out-slots').value = sl;
+    const P = {стоя: 'standing', сидя: 'sitting', лежа: 'lying'};
+    const y = [`plate_id: ${$('pid').value.trim()}`,
+      `camera_height_cm: ${$('cam').value || 'null'}`,
+      `horizon_y: ${$('hor').value || 'null'}`,
+      'anchors:', ...anchors.map(a => `  - {name: ${a.name || '?'}, top_cm: ${a.cm ?? 'null'}, bbox: [${a.b.join(', ')}]}`),
+      'slots:', ...slots.map(s => `  - {id: ${s.id}, pose: ${P[s.pose]}, feet_xy: [${s.x}, ${s.y}]${s.h ? ', expect_height_px: ' + s.h : ''}}`),
+      `light: {key_dir: ${$('light').value}, temp: null}`];
+    if (!anchors.length) y.splice(y.indexOf('anchors:'), 1, 'anchors: []');
+    if (!slots.length) y.splice(y.indexOf('slots:'), 1, 'slots: []');
+    $('out-yaml').value = y.join('\n');
+    $('dims').textContent = img ? `Плита ${img.naturalWidth}×${img.naturalHeight} px.` : '';
+  }
+  const HINTS = {
+    anchor: 'Якорь: потяните рамку вокруг предмета (сиденье, перекладина, стол). Потом впишите имя и высоту верха в сантиметрах.',
+    slot: 'Слот: кликните там, где стопы персонажа (для сидя — точка опоры на полу). Второй клик на макушке задаст рост в пикселях.',
+    horizon: 'Горизонт: кликните на уровне линии горизонта — обычно это высота глаз камеры.'};
+  function setHint() { $('hint').textContent = HINTS[mode]; }
+  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+    mode = b.dataset.mode; pendingSlot = null;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    setHint();
+  });
+  ['pid', 'cam', 'hor', 'light'].forEach(id => $(id).addEventListener('input', () => { out(); draw(); }));
+
+  function loadFile(f) {
+    if (!f || !f.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => {
+      img = im; cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      anchors = []; slots = []; $('sample-tag').hidden = true; render();
+    };
+    im.src = url;
+  }
+  $('load').onclick = () => $('file').click();
+  $('file').onchange = e => loadFile(e.target.files[0]);
+  const box = $('box');
+  box.addEventListener('dragover', e => { e.preventDefault(); $('drop').hidden = false; });
+  box.addEventListener('dragleave', () => { $('drop').hidden = true; });
+  box.addEventListener('drop', e => { e.preventDefault(); $('drop').hidden = true; loadFile(e.dataTransfer.files[0]); });
+  window.addEventListener('paste', e => { const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/')); if (it) loadFile(it.getAsFile()); });
+
+  document.querySelectorAll('.copy').forEach(b => b.onclick = () => {
+    const ta = $(b.dataset.copy);
+    const done = () => { b.textContent = 'Скопировано'; setTimeout(() => b.textContent = 'Копировать', 1400); };
+    try {
+      navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); b.textContent = 'Ctrl+C'; });
+    } catch (_) { ta.select(); b.textContent = 'Ctrl+C'; }
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', draw);
+  render();
+})();
+</script>
