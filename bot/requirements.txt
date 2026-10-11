@@ -1,0 +1,4 @@
+# Бот ставится отдельно от пакета нод (ComfyUI бот не нужен): pip install -r bot/requirements.txt
+aiogram>=3.13,<4      # MIT
+pyyaml>=6.0           # MIT
+httpx>=0.27           # BSD-3

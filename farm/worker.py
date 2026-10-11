@@ -126,7 +126,8 @@ class Worker:
         n = self.consume_reviews()
         n += self.promote_pending()
         batch = Q.select(self.db, self.control.allows, self._workflow_of,
-                         limit=self.cfg["worker"]["batch_size"], sticky=self._sticky)
+                         limit=self.cfg["worker"]["batch_size"], sticky=self._sticky,
+                         allow_new=self.control.allows_shot)
         for shot in batch:
             if self._stop.is_set():
                 raise Stop()
@@ -641,7 +642,7 @@ class Worker:
     def promote_pending(self) -> int:
         n = 0
         for shot in self.db.all("SELECT * FROM shots WHERE state=?", (S.PENDING,)):
-            if not self.control.allows(shot.get("profile") or ""):
+            if not self.control.allows_shot(shot):      # v0.5: профили + фильтр пакета
                 continue
             deps = shot.get("depends_on_json") or []
             if isinstance(deps, str):
@@ -711,7 +712,7 @@ class Worker:
             self.db.update("assets", "asset_id", asset["asset_id"], {"approved": 0})
             if att.get("arm_id") and asset.get("qa_passed") == 1:
                 self.bandit.correct(att["arm_id"], cat, -1)
-            if not is_current:
+            if not is_current and st != S.NEEDS_HUMAN:   # v0.5: из needs_human redo перезапускает стадию
                 log.info("redo на неактуальный ассет %s — только отметка", asset["asset_id"])
                 return
             target = S.FRAME_GEN if stage == "frame" else S.VIDEO_GEN
@@ -816,6 +817,7 @@ class Worker:
         running = self.db.one("SELECT COUNT(*) c FROM attempts WHERE status IN ('queued','running') "
                               "AND superseded=0")["c"]
         return {"running": self.control.running, "profiles": self.control.profiles,
+                "filter": self.control.filter,
                 "thread_alive": bool(self._thread and self._thread.is_alive()),
                 "states": counts, "attempts_in_flight": running, "last_error": self.last_error,
                 "plugins": self.plugins.describe()}

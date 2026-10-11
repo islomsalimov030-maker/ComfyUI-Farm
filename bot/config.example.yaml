@@ -1,0 +1,40 @@
+# Конфиг бота ревью (WS-08). Скопировать в $FARM_HOME/secrets/bot_<name>.yaml или рядом и запустить:
+#   python -m bot --config /workspace/farm/secrets/bot_main.yaml
+# Второй бот для другой команды = второй файл с другим name/токеном/профилями. Код не меняется.
+# В git этот файл кладётся только как пример: реальные токен и id — в secrets/.
+
+name: main                    # имя бота: своё состояние <farm_home>/state/bot_<name>.sqlite
+farm_home: null               # null → $FARM_HOME (по умолчанию /workspace/farm)
+db_path: null                 # null → <farm_home>/db/farm.sqlite
+state_path: null              # null → <farm_home>/state/bot_<name>.sqlite
+farm_url: http://127.0.0.1:8188   # ComfyUI с пакетом фермы: /farm/status, /farm/control
+
+# Токен: переменная окружения → .env → файл. Ни один из них не лежит в репо.
+token_env: FARM_BOT_TOKEN
+env_file: secrets/.env        # относительно farm_home; строка FARM_BOT_TOKEN=...
+token_file: null              # например secrets/telegram_main.token (одна строка)
+
+# Доступ. Можно прямо здесь, но лучше отдельным файлом в secrets/ (chmod 600).
+access_file: secrets/bot_access.yaml   # относительно farm_home; ключи те же, что в access ниже
+access:
+  reviewers: []               # user_id: ✅ 🔁 ✍️
+  operators: []               # user_id: ▶️ ⏸ (пусто → те же, что reviewers)
+  notify_chats: []            # куда слать карточки: user_id лички или id группы (-100…)
+
+profiles: ["*"]               # какие профили видит и запускает этот бот
+
+notify:
+  scan_s: 30                  # как часто смотреть БД на новых кандидатов
+  digest_min: 15              # обычные кандидаты — пачкой раз в N минут
+  max_cards_per_digest: 10    # остальное — «ещё K, /pending»
+  urgent: true                # «нужен человек» — сразу, вне дайджеста
+  urgent_debounce_s: 60       # но не чаще, чем раз в N секунд
+  max_send_tries: 5           # после стольких ошибок отправки — карточка текстом без превью
+  comment_ttl_min: 30         # сколько ждать текст после «✍️»
+
+preview:
+  photo_max_mb: 9.5           # лимит Telegram на фото — 10 МБ; больше → JPEG-превью
+  video_max_mb: 20            # больше → пережатие ffmpeg
+  video_max_side: 720         # сторона превью при пережатии
+  video_as_animation: true    # mp4 без звука как «гифка» — петля крутится сама
+  ffmpeg: ffmpeg

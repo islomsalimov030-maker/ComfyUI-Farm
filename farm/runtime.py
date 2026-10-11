@@ -34,10 +34,16 @@ def start_background() -> None:
         log.exception("ферма: воркер не запущен (ComfyUI продолжает работу)")
 
 
-def control(action: str, profiles: Optional[list[str]] = None) -> dict:
+_KEEP = object()
+
+
+def control(action: str, profiles: Optional[list[str]] = None, flt=_KEEP) -> dict:
+    """flt (v0.5): не передан — фильтр пакета не меняется; None/{} — снять; dict — заменить."""
     w = get_worker()
     if profiles:
         w.control.set_profiles(profiles)
+    if flt is not _KEEP:
+        w.control.set_filter(flt)
     if action == "start":
         w.control.set_running(True)
         w.start()
@@ -71,7 +77,8 @@ def register_routes() -> bool:
     async def _control(request):
         try:
             body = await request.json()
-            return web.json_response(control(body.get("action", "status"), body.get("profiles")))
+            flt = body["filter"] if "filter" in body else _KEEP
+            return web.json_response(control(body.get("action", "status"), body.get("profiles"), flt))
         except (ValueError, json.JSONDecodeError) as e:
             return web.json_response({"error": str(e)}, status=400)
 

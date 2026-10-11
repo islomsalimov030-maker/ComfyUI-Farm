@@ -9,13 +9,14 @@ import json
 import os
 import threading
 from pathlib import Path
+from typing import Optional
 
 
 class Control:
     def __init__(self, path: Path):
         self.path = Path(path)
         self._lock = threading.Lock()
-        self._state = {"running": False, "profiles": ["*"]}
+        self._state = {"running": False, "profiles": ["*"], "filter": None}
         if self.path.exists():
             try:
                 self._state.update(json.loads(self.path.read_text(encoding="utf-8")))
@@ -49,6 +50,35 @@ class Control:
     def allows(self, profile: str) -> bool:
         p = self.profiles
         return "*" in p or profile in p
+
+    # --- v0.5: фильтр пакета (бот ▶️): какие НОВЫЕ шоты запускать; начатые доделываются ---
+    @property
+    def filter(self) -> Optional[dict]:
+        return self._state.get("filter") or None
+
+    def set_filter(self, flt: Optional[dict]) -> None:
+        """flt = {min_priority: int, shot_ids: [..]}; None/{} — снять фильтр."""
+        clean = {}
+        if flt:
+            if flt.get("min_priority") is not None:
+                clean["min_priority"] = int(flt["min_priority"])
+            if flt.get("shot_ids"):
+                clean["shot_ids"] = [str(x) for x in flt["shot_ids"]]
+        with self._lock:
+            self._state["filter"] = clean or None
+            self._save()
+
+    def allows_shot(self, shot: dict) -> bool:
+        if not self.allows(shot.get("profile") or ""):
+            return False
+        f = self.filter
+        if not f:
+            return True
+        if f.get("shot_ids") and shot.get("shot_id") not in f["shot_ids"]:
+            return False
+        if f.get("min_priority") is not None and int(shot.get("priority") or 0) < f["min_priority"]:
+            return False
+        return True
 
     def snapshot(self) -> dict:
         with self._lock:

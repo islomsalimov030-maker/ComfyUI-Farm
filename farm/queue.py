@@ -34,10 +34,14 @@ def group_key(shot: dict, workflow_of: Callable[[dict, str], Optional[str]]) -> 
 
 
 def select(db: DB, allows: Callable[[str], bool], workflow_of: Callable[[dict, str], Optional[str]],
-           limit: int = 8, sticky: Optional[tuple] = None) -> list[dict]:
+           limit: int = 8, sticky: Optional[tuple] = None,
+           allow_new: Optional[Callable[[dict], bool]] = None) -> list[dict]:
+    """allow_new (v0.5) — фильтр пакета для ещё не начатых шотов (ready); начатые доделываются."""
     qs = ",".join("?" for _ in RUNNABLE)
     rows = db.all(f"SELECT * FROM shots WHERE state IN ({qs})", RUNNABLE)
     rows = [r for r in rows if allows(r.get("profile") or "")]
+    if allow_new is not None:
+        rows = [r for r in rows if r["state"] != S.READY or allow_new(r)]
     # кадр-шоты в frame_review ждут человека — не работа для воркера
     rows = [r for r in rows if not (r["state"] == S.FRAME_REVIEW and r.get("kind") != "video")]
     if not rows:
