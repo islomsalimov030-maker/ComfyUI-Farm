@@ -1,0 +1,25 @@
+# Лицензии пакетов нод: ключ = properties.cnr_id / aux_id из воркфлоу. Проверено по файлу LICENSE в репо 11.10.2026.
+# ⚠ = нет LICENSE (все права защищены), AGPL/NC или ограничения — сообщать пользователю.
+comfy-core: {license: "GPL-3.0 (ComfyUI)", repo: comfyanonymous/ComfyUI}
+subgraph: {license: "— (сабграф)"}
+comfyui-kjnodes: {license: GPL-3.0, repo: kijai/ComfyUI-KJNodes}
+kijai/ComfyUI-KJNodes: {license: GPL-3.0}
+comfyui-videohelpersuite: {license: GPL-3.0, repo: Kosinkadink/ComfyUI-VideoHelperSuite}
+comfyui_nvidia_rtx_nodes: {license: "Apache-2.0 (код; RTX VSR — проприетарная NVIDIA SDK под капотом)", repo: Comfy-Org/Nvidia_RTX_Nodes_ComfyUI}
+comfyui-h3-facerefine: {license: "MIT ⚠ identity_track=insightface тянет buffalo_l (NC)", repo: Carasibana/ComfyUI-H3-FaceRefine}
+islomsalimov030-maker/ComfyUI-StacyLoop: {license: "⚠ нет LICENSE (свой репо — добавить MIT); зависит от ultralytics (AGPL-3.0)"}
+islomsalimov030-maker/h3_img2img_latent: {license: "⚠ нет LICENSE (свой репо — добавить MIT)"}
+rgthree-comfy: {license: MIT, repo: rgthree/rgthree-comfy}
+comfyui-mxtoolkit: {license: GPL-3.0, repo: Smirnov75/ComfyUI-mxToolkit}
+comfyui-simple-prompt-batcher: {license: "⚠ нет LICENSE", repo: ai-joe-git/ComfyUI-Simple-Prompt-Batcher}
+minimax-h3-image-studio: {license: Unlicense, repo: astropuzzo/ComfyUI-MiniMax-H3-Image-Studio}
+fantastic-minimax-h3-prompt-builder: {license: MIT, repo: Adudeguyman/ComfyUI-Fantastic-MiniMaxH3-PromptBuilder}
+comfyui-easy-use: {license: GPL-3.0, repo: yolain/ComfyUI-Easy-Use}
+comfyui-rmbg: {license: "GPL-3.0 (код); SAM3 веса — SAM License Meta, проверить", repo: 1038lab/ComfyUI-RMBG}
+ComfyUI-DyPE: {license: Apache-2.0, repo: wildminder/ComfyUI-DyPE}
+comfyui-inpaint-cropandstitch: {license: GPL-3.0, repo: lquesada/ComfyUI-Inpaint-CropAndStitch}
+comfyui-impact-pack: {license: GPL-3.0, repo: ltdrdata/ComfyUI-Impact-Pack}
+comfyui-impact-subpack: {license: "⚠ AGPL-3.0 (+ ultralytics AGPL)", repo: ltdrdata/ComfyUI-Impact-Subpack}
+was-ns: {license: MIT, repo: ltdrdata/was-node-suite-comfyui}
+ComfyUI_Comfyroll_CustomNodes: {license: "⚠ нет LICENSE", repo: Suzie1/ComfyUI_Comfyroll_CustomNodes}
+ComfyUI-Crystools: {license: MIT, repo: crystian/ComfyUI-Crystools}

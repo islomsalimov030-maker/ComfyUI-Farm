@@ -1,0 +1,1343 @@
+{
+ "55": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "plate.png"
+  },
+  "_meta": {
+   "title": "IN plate · плита / исходник <Picture 1>"
+  }
+ },
+ "56": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "stacy_sheet.png"
+  },
+  "_meta": {
+   "title": "IN sheet · лист персонажа <Picture 2>"
+  }
+ },
+ "57": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "outfit.png"
+  },
+  "_meta": {
+   "title": "IN outfit · одежда <Picture 3> (необязательно)"
+  }
+ },
+ "58": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "pose.png"
+  },
+  "_meta": {
+   "title": "IN pose · поза <Picture 4> (необязательно)"
+  }
+ },
+ "59": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": ""
+  },
+  "_meta": {
+   "title": "IN prompt · промпт кадра (ref-edit)"
+  }
+ },
+ "60": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "Stacy_v1, brown eyes, sharp focus, detailed eyes"
+  },
+  "_meta": {
+   "title": "IN face_prompt_z · промпт лица Z-image (Stacy_v1)"
+  }
+ },
+ "61": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "close-up photo of the face of the woman St4cy_H3, natural skin texture, sharp eyes. Static camera. Lighting preserved unchanged. Colors and saturation unchanged."
+  },
+  "_meta": {
+   "title": "IN face_prompt_h3 · промпт лица H3 (St4cy_H3)"
+  }
+ },
+ "62": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "ARM model · модель H3"
+  }
+ },
+ "63": {
+  "class_type": "Power Lora Loader (rgthree)",
+  "inputs": {
+   "model": [
+    "62",
+    0
+   ],
+   "divider": {},
+   "PowerLoraLoaderHeaderWidget": {
+    "type": "PowerLoraLoaderHeaderWidget"
+   },
+   "lora_1": {
+    "on": false,
+    "lora": "stacy_h3_A_stills_000001750.safetensors",
+    "strength": 1,
+    "strengthTwo": null
+   },
+   "divider#1": {},
+   "➕ Add Lora": ""
+  },
+  "_meta": {
+   "title": "ARM loras · LoRA руки"
+  }
+ },
+ "65": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 42
+  },
+  "_meta": {
+   "title": "KNOB seed"
+  }
+ },
+ "66": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2.0
+  },
+  "_meta": {
+   "title": "KNOB megapixels"
+  }
+ },
+ "67": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1.0
+  },
+  "_meta": {
+   "title": "KNOB ref_identity"
+  }
+ },
+ "68": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 6
+  },
+  "_meta": {
+   "title": "KNOB pass1_steps"
+  }
+ },
+ "69": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 40
+  },
+  "_meta": {
+   "title": "KNOB pass2_total"
+  }
+ },
+ "70": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  },
+  "_meta": {
+   "title": "KNOB pass2_steps"
+  }
+ },
+ "71": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 12.0
+  },
+  "_meta": {
+   "title": "KNOB shift"
+  }
+ },
+ "72": {
+  "class_type": "ResolutionSelector",
+  "inputs": {
+   "megapixels": [
+    "66",
+    0
+   ],
+   "aspect_ratio": "16:9 (Widescreen)",
+   "multiple": 32
+  },
+  "_meta": {
+   "title": "разрешение (16:9)"
+  }
+ },
+ "73": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 953552952704593
+  },
+  "_meta": {
+   "title": "KNOB face_seed"
+  }
+ },
+ "74": {
+  "class_type": "PrimitiveBoolean",
+  "inputs": {
+   "value": true
+  },
+  "_meta": {
+   "title": "KNOB face_z"
+  }
+ },
+ "75": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.6
+  },
+  "_meta": {
+   "title": "KNOB face_z_denoise"
+  }
+ },
+ "76": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1.2
+  },
+  "_meta": {
+   "title": "KNOB face_z_lora"
+  }
+ },
+ "77": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 1328
+  },
+  "_meta": {
+   "title": "KNOB face_z_size"
+  }
+ },
+ "78": {
+  "class_type": "PrimitiveBoolean",
+  "inputs": {
+   "value": true
+  },
+  "_meta": {
+   "title": "KNOB face_h3"
+  }
+ },
+ "79": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.45
+  },
+  "_meta": {
+   "title": "KNOB face_h3_denoise"
+  }
+ },
+ "80": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1.0
+  },
+  "_meta": {
+   "title": "KNOB face_h3_lora"
+  }
+ },
+ "81": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.95
+  },
+  "_meta": {
+   "title": "KNOB face_h3_color"
+  }
+ },
+ "82": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 1024
+  },
+  "_meta": {
+   "title": "KNOB face_h3_max_crop"
+  }
+ },
+ "83": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 4.0
+  },
+  "_meta": {
+   "title": "KNOB face_h3_megapixels"
+  }
+ },
+ "84:1": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "gen · Qwen3-VL"
+  }
+ },
+ "84:2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "gen · H3 video VAE"
+  }
+ },
+ "84:3": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "63",
+    0
+   ],
+   "shift_video": [
+    "71",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "gen · shift"
+  }
+ },
+ "84:4": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "55",
+    0
+   ],
+   "megapixels": [
+    "66",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "gen · плита → мегапиксели"
+  }
+ },
+ "84:5": {
+  "class_type": "RegexReplace",
+  "inputs": {
+   "string": [
+    "59",
+    0
+   ],
+   "regex_pattern": "\\bimage\\s*([1-9])\\b",
+   "replace": "<Picture \\1>",
+   "case_insensitive": true,
+   "multiline": false,
+   "dotall": false,
+   "count": 0
+  },
+  "_meta": {
+   "title": "gen · Image N → <Picture N>"
+  }
+ },
+ "84:6": {
+  "class_type": "H3ReferenceEditPrepare",
+  "inputs": {
+   "clip": [
+    "84:1",
+    0
+   ],
+   "vae": [
+    "84:2",
+    0
+   ],
+   "source_image": [
+    "84:4",
+    0
+   ],
+   "reference_image_2": [
+    "56",
+    0
+   ],
+   "reference_image_3": [
+    "57",
+    0
+   ],
+   "reference_image_4": [
+    "58",
+    0
+   ],
+   "edit_instruction": [
+    "84:5",
+    0
+   ],
+   "width": [
+    "72",
+    0
+   ],
+   "height": [
+    "72",
+    1
+   ],
+   "source_fidelity": [
+    "67",
+    0
+   ],
+   "quality_profile": "recommended | 5 frames",
+   "source_fit": "contain_pad",
+   "reference_detail": "max_identity_2048",
+   "optimize_for_still": true
+  },
+  "_meta": {
+   "title": "gen · H3ReferenceEditPrepare"
+  }
+ },
+ "84:7": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "84:6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · пустой negative"
+  }
+ },
+ "84:8": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "69",
+    0
+   ],
+   "values.b": [
+    "70",
+    0
+   ],
+   "expression": "a - b"
+  },
+  "_meta": {
+   "title": "gen · старт 2-го прохода = total - steps"
+  }
+ },
+ "84:9": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "84:3",
+    0
+   ],
+   "positive": [
+    "84:6",
+    0
+   ],
+   "negative": [
+    "84:7",
+    0
+   ],
+   "latent_image": [
+    "84:6",
+    1
+   ],
+   "noise_seed": [
+    "65",
+    0
+   ],
+   "steps": [
+    "68",
+    0
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "start_at_step": 0,
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 1"
+  }
+ },
+ "84:10": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "84:3",
+    0
+   ],
+   "positive": [
+    "84:6",
+    0
+   ],
+   "negative": [
+    "84:7",
+    0
+   ],
+   "latent_image": [
+    "84:9",
+    0
+   ],
+   "noise_seed": [
+    "65",
+    0
+   ],
+   "steps": [
+    "69",
+    0
+   ],
+   "start_at_step": [
+    "84:8",
+    1
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 2"
+  }
+ },
+ "84:11": {
+  "class_type": "H3ImageDecode",
+  "inputs": {
+   "samples": [
+    "84:10",
+    0
+   ],
+   "vae": [
+    "84:2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · decode"
+  }
+ },
+ "84:12": {
+  "class_type": "H3ImageFrameSelector",
+  "inputs": {
+   "frames": [
+    "84:11",
+    0
+   ],
+   "recommended_index": [
+    "84:11",
+    3
+   ],
+   "strategy": "decode_recommended",
+   "manual_index": 0,
+   "skip_first_frames": 0,
+   "candidate_start": 0,
+   "candidate_end": 1,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false
+  },
+  "_meta": {
+   "title": "gen · выбор кадра"
+  }
+ },
+ "85:13": {
+  "class_type": "UltralyticsDetectorProvider",
+  "inputs": {
+   "model_name": "bbox/face_yolov8m.pt"
+  },
+  "_meta": {
+   "title": "faceZ · YOLO face"
+  }
+ },
+ "85:14": {
+  "class_type": "BboxDetectorCombined_v2",
+  "inputs": {
+   "bbox_detector": [
+    "85:13",
+    0
+   ],
+   "image": [
+    "84:12",
+    0
+   ],
+   "threshold": 0.25,
+   "dilation": 10
+  },
+  "_meta": {
+   "title": "faceZ · маска лица"
+  }
+ },
+ "85:15": {
+  "class_type": "easy isMaskEmpty",
+  "inputs": {
+   "mask": [
+    "85:14",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · лица нет?"
+  }
+ },
+ "85:16": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "85:28",
+    0
+   ],
+   "on_true": [
+    "84:12",
+    0
+   ],
+   "switch": [
+    "85:15",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · нет лица → без изменений"
+  }
+ },
+ "85:17": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "84:12",
+    0
+   ],
+   "on_true": [
+    "85:16",
+    0
+   ],
+   "switch": [
+    "74",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · проход включён?"
+  }
+ },
+ "85:18": {
+  "class_type": "InpaintCropImproved",
+  "inputs": {
+   "image": [
+    "84:12",
+    0
+   ],
+   "mask": [
+    "85:14",
+    0
+   ],
+   "output_target_width": [
+    "77",
+    0
+   ],
+   "output_target_height": [
+    "77",
+    0
+   ],
+   "downscale_algorithm": "lanczos",
+   "upscale_algorithm": "lanczos",
+   "preresize": false,
+   "preresize_mode": "ensure minimum and maximum resolution",
+   "preresize_min_width": 1024,
+   "preresize_min_height": 1024,
+   "preresize_max_width": 1024,
+   "preresize_max_height": 1024,
+   "mask_fill_holes": true,
+   "mask_expand_pixels": 0,
+   "mask_invert": false,
+   "mask_blend_pixels": 64,
+   "mask_hipass_filter": 0,
+   "extend_for_outpainting": false,
+   "extend_up_factor": 1,
+   "extend_down_factor": 1,
+   "extend_left_factor": 1,
+   "extend_right_factor": 1,
+   "context_from_mask_extend_factor": 1,
+   "output_resize_to_target_size": true,
+   "output_padding": "16",
+   "device_mode": "gpu (much faster)"
+  },
+  "_meta": {
+   "title": "faceZ · кроп лица"
+  }
+ },
+ "85:19": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "z_image_turbo_bf16.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "faceZ · Z-image turbo"
+  }
+ },
+ "85:20": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "85:19",
+    0
+   ],
+   "strength_model": [
+    "76",
+    0
+   ],
+   "lora_name": "Stacy_v1_z-image-base-prose_3500.safetensors"
+  },
+  "_meta": {
+   "title": "faceZ · LoRA Stacy_v1 (Z)"
+  }
+ },
+ "85:21": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "lumina2",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "faceZ · Qwen3-4B"
+  }
+ },
+ "85:22": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  },
+  "_meta": {
+   "title": "faceZ · VAE ae"
+  }
+ },
+ "85:23": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "85:21",
+    0
+   ],
+   "text": [
+    "60",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · промпт"
+  }
+ },
+ "85:24": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "85:18",
+    1
+   ],
+   "vae": [
+    "85:22",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · encode"
+  }
+ },
+ "85:25": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "85:20",
+    0
+   ],
+   "positive": [
+    "85:23",
+    0
+   ],
+   "negative": [
+    "85:23",
+    0
+   ],
+   "latent_image": [
+    "85:24",
+    0
+   ],
+   "seed": [
+    "73",
+    0
+   ],
+   "denoise": [
+    "75",
+    0
+   ],
+   "steps": 12,
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple"
+  },
+  "_meta": {
+   "title": "faceZ · sampler"
+  }
+ },
+ "85:26": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "85:25",
+    0
+   ],
+   "vae": [
+    "85:22",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · decode"
+  }
+ },
+ "85:27": {
+  "class_type": "ImageBlend",
+  "inputs": {
+   "image1": [
+    "85:18",
+    1
+   ],
+   "image2": [
+    "85:26",
+    0
+   ],
+   "blend_factor": 0.7,
+   "blend_mode": "normal"
+  },
+  "_meta": {
+   "title": "faceZ · смешать 70% нового"
+  }
+ },
+ "85:28": {
+  "class_type": "InpaintStitchImproved",
+  "inputs": {
+   "stitcher": [
+    "85:18",
+    0
+   ],
+   "inpainted_image": [
+    "85:27",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceZ · вклейка"
+  }
+ },
+ "86:29": {
+  "class_type": "SAM3Segment",
+  "inputs": {
+   "image": [
+    "85:17",
+    0
+   ],
+   "prompt": "face",
+   "output_mode": "Merged",
+   "confidence_threshold": 0.5,
+   "max_segments": 1,
+   "segment_pick": 0,
+   "mask_blur": 0,
+   "mask_offset": 0,
+   "device": "Auto",
+   "invert_output": false,
+   "unload_model": false,
+   "background": "Alpha",
+   "background_color": "#222222"
+  },
+  "_meta": {
+   "title": "faceH3 · SAM3 face"
+  }
+ },
+ "86:30": {
+  "class_type": "GrowMask",
+  "inputs": {
+   "mask": [
+    "86:29",
+    1
+   ],
+   "expand": 12,
+   "tapered_corners": true
+  },
+  "_meta": {
+   "title": "faceH3 · расширить маску"
+  }
+ },
+ "86:31": {
+  "class_type": "easy isMaskEmpty",
+  "inputs": {
+   "mask": [
+    "86:30",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · лица нет?"
+  }
+ },
+ "86:32": {
+  "class_type": "InpaintCropImproved",
+  "inputs": {
+   "image": [
+    "85:17",
+    0
+   ],
+   "mask": [
+    "86:30",
+    0
+   ],
+   "downscale_algorithm": "lanczos",
+   "upscale_algorithm": "lanczos",
+   "preresize": false,
+   "preresize_mode": "ensure minimum and maximum resolution",
+   "preresize_min_width": 1024,
+   "preresize_min_height": 1024,
+   "preresize_max_width": 1024,
+   "preresize_max_height": 1024,
+   "mask_fill_holes": true,
+   "mask_expand_pixels": 0,
+   "mask_invert": false,
+   "mask_blend_pixels": 40,
+   "mask_hipass_filter": 0,
+   "extend_for_outpainting": false,
+   "extend_up_factor": 1,
+   "extend_down_factor": 1,
+   "extend_left_factor": 1,
+   "extend_right_factor": 1,
+   "context_from_mask_extend_factor": 1.6,
+   "output_resize_to_target_size": false,
+   "output_target_width": 1024,
+   "output_target_height": 1024,
+   "output_padding": "16",
+   "device_mode": "gpu (much faster)"
+  },
+  "_meta": {
+   "title": "faceH3 · кроп лица (контекст 1.6)"
+  }
+ },
+ "86:33": {
+  "class_type": "GetImageSize",
+  "inputs": {
+   "image": [
+    "86:32",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · размер кропа"
+  }
+ },
+ "86:34": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "86:33",
+    0
+   ],
+   "values.b": [
+    "82",
+    0
+   ],
+   "expression": "a > b"
+  },
+  "_meta": {
+   "title": "faceH3 · кроп больше порога?"
+  }
+ },
+ "86:35": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "86:54",
+    0
+   ],
+   "on_true": [
+    "85:17",
+    0
+   ],
+   "switch": [
+    "86:34",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · крупное лицо → без изменений"
+  }
+ },
+ "86:36": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "86:35",
+    0
+   ],
+   "on_true": [
+    "85:17",
+    0
+   ],
+   "switch": [
+    "86:31",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · нет лица → без изменений"
+  }
+ },
+ "86:37": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "85:17",
+    0
+   ],
+   "on_true": [
+    "86:36",
+    0
+   ],
+   "switch": [
+    "78",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · проход включён?"
+  }
+ },
+ "86:38": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "faceH3 · H3 fl2va"
+  }
+ },
+ "86:39": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "86:38",
+    0
+   ],
+   "strength_model": [
+    "80",
+    0
+   ],
+   "lora_name": "stacy_h3_face_v1.safetensors"
+  },
+  "_meta": {
+   "title": "faceH3 · LoRA лица St4cy_H3"
+  }
+ },
+ "86:40": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "86:39",
+    0
+   ],
+   "shift_video": 12,
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "faceH3 · shift"
+  }
+ },
+ "86:41": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "faceH3 · Qwen3-VL"
+  }
+ },
+ "86:42": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "faceH3 · H3 video VAE"
+  }
+ },
+ "86:43": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "86:32",
+    1
+   ],
+   "megapixels": [
+    "83",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "faceH3 · кроп → мегапиксели"
+  }
+ },
+ "86:44": {
+  "class_type": "GetImageSize",
+  "inputs": {
+   "image": [
+    "86:43",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · размер для генерации"
+  }
+ },
+ "86:45": {
+  "class_type": "H3TextToImagePrepare",
+  "inputs": {
+   "clip": [
+    "86:41",
+    0
+   ],
+   "prompt": [
+    "61",
+    0
+   ],
+   "width": [
+    "86:44",
+    0
+   ],
+   "height": [
+    "86:44",
+    1
+   ],
+   "quality_profile": "recommended | 5 frames",
+   "optimize_for_still": true
+  },
+  "_meta": {
+   "title": "faceH3 · промпт → латент"
+  }
+ },
+ "86:46": {
+  "class_type": "H3LatentFromImage",
+  "inputs": {
+   "h3_latent": [
+    "86:45",
+    1
+   ],
+   "vae": [
+    "86:42",
+    0
+   ],
+   "image": [
+    "86:43",
+    0
+   ],
+   "model": [
+    "86:40",
+    0
+   ],
+   "denoise": [
+    "79",
+    0
+   ],
+   "steps": 10,
+   "scheduler": "simple"
+  },
+  "_meta": {
+   "title": "faceH3 · img2img латент"
+  }
+ },
+ "86:47": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "73",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · seed"
+  }
+ },
+ "86:48": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "86:40",
+    0
+   ],
+   "conditioning": [
+    "86:45",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · guider"
+  }
+ },
+ "86:49": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "faceH3 · euler"
+  }
+ },
+ "86:50": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "86:47",
+    0
+   ],
+   "guider": [
+    "86:48",
+    0
+   ],
+   "sampler": [
+    "86:49",
+    0
+   ],
+   "sigmas": [
+    "86:46",
+    1
+   ],
+   "latent_image": [
+    "86:46",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · sampler"
+  }
+ },
+ "86:51": {
+  "class_type": "H3ImageDecode",
+  "inputs": {
+   "samples": [
+    "86:50",
+    0
+   ],
+   "vae": [
+    "86:42",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · decode"
+  }
+ },
+ "86:52": {
+  "class_type": "H3ImageFrameSelector",
+  "inputs": {
+   "frames": [
+    "86:51",
+    0
+   ],
+   "recommended_index": [
+    "86:51",
+    3
+   ],
+   "strategy": "manual_index",
+   "manual_index": 2,
+   "skip_first_frames": 0,
+   "candidate_start": 0,
+   "candidate_end": 1,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false
+  },
+  "_meta": {
+   "title": "faceH3 · выбор кадра"
+  }
+ },
+ "86:53": {
+  "class_type": "ColorMatch",
+  "inputs": {
+   "image_ref": [
+    "86:43",
+    0
+   ],
+   "image_target": [
+    "86:52",
+    0
+   ],
+   "strength": [
+    "81",
+    0
+   ],
+   "method": "mkl",
+   "multithread": true
+  },
+  "_meta": {
+   "title": "faceH3 · цвет к исходному кропу"
+  }
+ },
+ "86:54": {
+  "class_type": "InpaintStitchImproved",
+  "inputs": {
+   "stitcher": [
+    "86:32",
+    0
+   ],
+   "inpainted_image": [
+    "86:53",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "faceH3 · вклейка"
+  }
+ },
+ "87": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "84:12",
+    0
+   ],
+   "filename_prefix": "farm/frame_raw"
+  },
+  "_meta": {
+   "title": "OUT raw · кадр до доработки лица"
+  }
+ },
+ "88": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "86:37",
+    0
+   ],
+   "filename_prefix": "farm/frame"
+  },
+  "_meta": {
+   "title": "OUT frame · итоговый кадр"
+  }
+ }
+}

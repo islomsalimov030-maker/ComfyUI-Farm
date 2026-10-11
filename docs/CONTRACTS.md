@@ -1,4 +1,4 @@
-# CONTRACTS v0.1 — договорённости между потоками
+# CONTRACTS v0.2 — договорённости между потоками
 
 Этот файл позволяет потокам работать независимо. Каждый поток реализует свою часть **строго по контракту** и может подменять соседей заглушками. Изменение контракта = версия +1 и строка в `STATUS.md → Решения`. Язык кода — Python 3.12, без тяжёлых фреймворков.
 
@@ -57,20 +57,29 @@ retries: {frame: 3, video: 3}
 ```
 
 ## 6. Карта параметров воркфлоу (`workflows/<name>@<ver>.params.yaml`) — делает WS-01
+v0.2: образцы — `workflows/frame_h3@1.params.yaml`, `workflows/video_h3_loop@1.params.yaml`; эталон применения — `tools/wf_params.py` (`check`, `apply`).
 ```yaml
 workflow: video_h3_loop@1
+api: video_h3_loop@1.api.json
 inputs:            # всё, что оркестратор подставляет; адресация ТОЛЬКО по title
-  keyframe:   {title: "IN keyframe", input: image, type: image}
-  face_ref:   {title: "IN face_ref", input: image, type: image}
-  prompt:     {title: "IN prompt", input: value, type: string}
+  keyframe:   {title: "IN keyframe · …", input: image, type: image}
+  end_frame:  {title: "IN end_frame · …", input: image, type: image, optional: true, if_missing: same_as_keyframe}
+  pose:       {title: "IN pose · …", input: image, type: image, optional: true, if_missing: drop_node}  # удалить узел и ссылки
+  prompt:     {title: "IN prompt · …", input: value, type: string}
   seed:       {title: "PANEL", input: seed, type: int}
-  duration_s: {title: "PANEL", input: duration_sec, type: float, range: [5, 10]}
+arm:               # рука бандита (CONTRACTS §5 arms)
+  model: {title: "ARM model · …", input: model_name, type: file, folder: diffusion_models}
+  loras: {title: "ARM loras · …", type: lora_stack}   # lora_<i>: {on, lora, strength}
 knobs:             # что может крутить ремонтная петля
-  shift: {title: "...", input: shift_video, type: float, range: [10, 14], default: 12}
+  shift: {title: "KNOB shift", input: value, type: float, range: [10, 14], default: 12}
+  color_lock: {title: "KNOB color_lock", input: value, type: float, range: [-1, 1], default: -1, auto: -1}
+fixed:             # оркестратор выставляет всегда
+  mode: {title: "PANEL", input: mode, value: true}
 outputs:
-  video_fullhd: {title: "OUT video", kind: video}
-  last_frame:   {title: "OUT last_frame", kind: image}
+  video_fullhd: {title: "OUT video · …", kind: video}
+  last_frame:   {title: "OUT last_frame · …", kind: image}
 ```
+Префиксы заголовков: `IN` вход, `OUT` выход, `PANEL` пульт StacyPanel, `KNOB` ручка (Primitive-узел, вход `value`), `ARM` рука. Заголовки с префиксом уникальны в API-графе.
 
 ## 7. Сборщик промптов (WS-04)
 `build(stage, shot: dict, lib: Library, profile) -> PromptResult{text, fields_json, lint: list[LintIssue], template_ver}`; `lint(text, stage, ctx) -> list[LintIssue{code, msg, severity}]`. LLM возвращает только JSON-поля; строку собирает шаблон. Ошибка `severity=error` → не отправлять на GPU.
