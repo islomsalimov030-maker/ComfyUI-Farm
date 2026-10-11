@@ -99,6 +99,27 @@ function setupFarmSheet() {
   return 'ok';
 }
 
+// Разделитель аргументов формул зависит от локали таблицы: «,» (en) или «;» (ru, de…). В шаблоне — «§».
+let SEP_ = null;
+function sep_(f) {
+  if (SEP_ === null) {
+    const loc = String(SpreadsheetApp.getActive().getSpreadsheetLocale() || 'en_US');
+    SEP_ = /^(en|ja|zh|ko|th|he|hi)(_|$)/.test(loc) ? ',' : ';';
+  }
+  return f.replace(/§/g, SEP_);
+}
+function formulaRule_(range, f, help) {
+  let last = null;
+  for (const s of [sep_(f), f.replace(/§/g, ','), f.replace(/§/g, ';')]) {
+    try {
+      range.setDataValidation(SpreadsheetApp.newDataValidation().requireFormulaSatisfied(s)
+          .setAllowInvalid(false).setHelpText(help).build());
+      return;
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+
 function colIndex_(cols, key) { for (let i = 0; i < cols.length; i++) if (cols[i].key === key) return i + 1; return 0; }
 function letter_(n) { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
 
@@ -154,9 +175,8 @@ function setupScenes_(ss, sh) {
   const libRange = lib => ss.getSheetByName(libs[lib].sheet).getRange('A2:A' + MAX_ROWS);
   const R = SpreadsheetApp.newDataValidation;
   const idCol = letter_(colIndex_(cols, 'id'));
-  rng('id').setDataValidation(R().requireFormulaSatisfied(
-      '=AND(REGEXMATCH(TO_TEXT(' + idCol + '2),"^[A-Za-z0-9-]{1,40}$"),COUNTIF($' + idCol + ':$' + idCol + ',' + idCol + '2)=1)')
-      .setAllowInvalid(false).setHelpText('ID: латиница, цифры, дефис, без повторов (STD-01)').build());
+  formulaRule_(rng('id'), '=AND(REGEXMATCH(TO_TEXT(' + idCol + '2)§"^[A-Za-z0-9-]{1,40}$")§COUNTIF($' + idCol + ':$' + idCol + '§' + idCol + '2)=1)',
+      'ID: латиница, цифры, дефис, без повторов (STD-01)');
   cols.forEach(c => {
     const r = rng(c.key);
     if (c.type === 'checkbox') r.insertCheckboxes();
@@ -184,7 +204,7 @@ function setupScenes_(ss, sh) {
   rules.push(CF().whenTextContains('генерация').setBackground('#d9ead3').setRanges([st]).build());
   // черновик (галочки нет) — серый ID
   const rd = letter_(colIndex_(cols, 'ready'));
-  rules.push(CF().whenFormulaSatisfied('=AND($' + idCol + '2<>"",$' + rd + '2=FALSE)').setFontColor('#9e9e9e')
+  rules.push(CF().whenFormulaSatisfied(sep_('=AND($' + idCol + '2<>""§$' + rd + '2=FALSE)')).setFontColor('#9e9e9e')
       .setRanges([rng('id'), rng('name')]).build());
   sh.setConditionalFormatRules(rules);
   // колонки фермы: защита-предупреждение
@@ -200,9 +220,8 @@ function setupLibraries_(ss) {
   Object.keys(libs).forEach(k => {
     const sh = ss.getSheetByName(libs[k].sheet), cols = libs[k].columns;
     const re = k === 'plates' ? '^[a-z0-9_-]{1,40}/[a-z0-9_-]{1,40}$' : '^[a-z0-9_-]{1,40}$';
-    sh.getRange(2, 1, MAX_ROWS - 1, 1).setDataValidation(R().requireFormulaSatisfied(
-        '=AND(REGEXMATCH(TO_TEXT(A2),"' + re + '"),COUNTIF($A:$A,A2)=1)').setAllowInvalid(false)
-        .setHelpText(k === 'plates' ? 'локация/зона латиницей: apartment/sofa' : 'латиница в нижнем регистре, цифры, _ и -').build());
+    formulaRule_(sh.getRange(2, 1, MAX_ROWS - 1, 1), '=AND(REGEXMATCH(TO_TEXT(A2)§"' + re + '")§COUNTIF($A:$A§A2)=1)',
+        k === 'plates' ? 'локация/зона латиницей: apartment/sofa' : 'латиница в нижнем регистре, цифры, _ и -');
     cols.forEach((c, i) => {
       const r = sh.getRange(2, i + 1, MAX_ROWS - 1, 1);
       if (c.type === 'checkbox') r.insertCheckboxes();
