@@ -6,7 +6,7 @@
 
 | ID | Статус | Сделано / артефакты | Следующий шаг | Блокеры |
 |---|---|---|---|---|
-| WS-00 | 🟢 идёт | Kit v1: CONTRACTS v0.1, WORKSTREAMS, брифы, скилы, RESEARCH (11.10) | создать Project и репо, запустить волну 1 | — |
+| WS-00 | 🟢 идёт | Kit v1 (11.10), репо, `LAUNCH.md`, бриф координатора `briefs/WS-00_coordinator.md` | открыть чат-координатор, первый проход по WS-01/02/03/08 | — |
 | WS-01 | 🟡 офлайн готов, ждёт пода | Аудит обоих воркфлоу (`docs/audit/`), движки `frame_h3@1` и `video_h3_loop@1` (api.json + params.yaml + ui.json), сборщики `tools/build_*.py`, `tools/wfkit.py` (UI→API), `tools/wf_params.py` (check/apply), лицензии `tools/licenses.yaml`. Удалено и почему — `docs/audit/WS-01_findings.md` | dry-run `POST /prompt` обоих + 1 прогон на Sitting-8; проверить `a > b` в ComfyMathExpression и загрузку ui во фронтенде | под (туннель 8188 закрыт 11.10) |
 | WS-02 | 🟢 готово (мок) | Пакет `ng-farm`: `__init__.py` (нода Farm Control + фоновый воркер + `/farm/status`), `farm/` db·states·queue·worker·comfy_client·storage·bandit·plugins; привязка params.yaml совместима с WS-01 (тест против `tools/wf_params.py` на `frame_h3@1`/`video_h3_loop@1`); CONTRACTS v0.3; pytest без GPU зелёный (3 шота по кругу, ретраи ≤3, post_fix, рестарт без потерь, idem_key без дублей, таймаут/OOM/node_errors/VRAM-гейт). `farm/README.md` | WS-10: поставить на под, прогнать на живом ComfyUI (версия пода должна принимать `prompt_id` в `/prompt`) | — |
 | WS-03 | 🟢 готово (ждёт SA) | Sheet «Ферма — сцены»: https://docs.google.com/spreadsheets/d/1qUiSiew8IVMy4vx1zAPHpN8wMVI9eW7OFhDSHkdzNRs/edit (аккаунт islomsalimov030@gmail.com; листы, списки, проверки, защита, статусы; 19 SFW-строк Стейси + справочники, сверено с источником по хешу, валидатор 19/19; 7 фото-рефов поз из Confluence → Drive «Ферма — рефы/poses», ссылки в «Фото-реф позы»). Код: `farm/sheets.py`, `farm/library.py`, `farm/sheet_schema.yaml`, `tools/sheet_template.gs` (+ `build_sheet_template.py`, учитывает локаль формул), `tools/plate_marker.html`, `tools/drive_token.py`, `docs/SHEETS_SETUP.md`; CONTRACTS v0.4; тесты 17 | пользователь: сервисный аккаунт + доступ к Sheet (SHEETS_SETUP шаги 1–5), токен Drive (шаг 6); открыть папку «Ферма — рефы» сервисному аккаунту (шаг 4.3); WS-10: `sheets.sync` при start и раз в 5 мин | — |
@@ -37,7 +37,7 @@
 ## Блокеры и вопросы к пользователю
 1. ⚠ **Лицензия H3 и ЕС:** под в EU-RO-1 (ЕС) — по тексту лицензии ЕС исключён. При покупке лицензии уточнить датацентр, рынки и обучение на outputs (см. RESEARCH §1).
 2. ~~GitHub не подключён~~ — подключён 11.10, репо ComfyUI-Farm (public).
-3. Создать пустой репозиторий `ComfyUI-Farm` (или разрешить создать через Chrome).
+3. ~~Создать репозиторий~~ — создан 11.10.
 4. Лицензии моделей с Civitai (DaSiWa, PinkCherry, 10Eros Max, Singularity ref2va) — ссылки на страницы, чтобы проверить.
 5. RES4LYF (ClownShark-сэмплеры) — некоммерческая оговорка; решить, нужен ли он вообще.
 6. Свои репо ComfyUI-StacyLoop и h3_img2img_latent без LICENSE — добавить MIT (иначе формально «все права защищены»).
