@@ -1,7 +1,7 @@
 {
  "id": "manual_video@1",
  "revision": 0,
- "last_node_id": 165,
+ "last_node_id": 160,
  "last_link_id": 636,
  "nodes": [
   {
@@ -33,8 +33,7 @@
      "pos": null,
      "slot_index": null,
      "links": [
-      545,
-      608
+      545
      ]
     },
     {
@@ -50,7 +49,7 @@
      "pos": null,
      "slot_index": null,
      "links": [
-      611
+      634
      ]
     }
    ],
@@ -335,7 +334,7 @@
      "removable": null,
      "type": "IMAGE",
      "pos": null,
-     "link": 636
+     "link": 556
     },
     {
      "color_off": null,
@@ -1742,6 +1741,21 @@
      "type": "CONDITIONING",
      "link": 607,
      "label": "кондиционирование ← RefMod"
+    },
+    {
+     "name": "bg_mask",
+     "type": "MASK",
+     "link": 634
+    },
+    {
+     "name": "bg_lock",
+     "type": "BOOLEAN",
+     "link": 635
+    },
+    {
+     "name": "bg_feather",
+     "type": "INT",
+     "link": 636
     }
    ],
    "outputs": [
@@ -1774,9 +1788,7 @@
      "pos": null,
      "slot_index": null,
      "links": [
-      627,
-      631,
-      634
+      556
      ]
     },
     {
@@ -2077,10 +2089,10 @@
     }
    },
    "widgets_values": [
-    "## Ручное видео · manual_video@1 (петля FullHD 24 fps)\n\nТот же движок, что у фермы (`video_h3_loop@1`), для ручной доработки отказов. Отличия от `video_h3_loop@1.ui`: **рука на виду**, **RefMod**, **фон по маске**.\n\n### Режимы (`mode` на PANEL)\n- **GENERATE** — клип из ключевого кадра + промпта. **FACE PASS of a ready video** — только лицо готового FullHD-видео (нода «ВИДЕО для face pass»).\n\n### На каждый клип\n1. **IN keyframe** = `<Picture 1>`; **IN face_ref** = `<Picture 2>`; **IN end_frame** = `<Picture 3>` (только `loop` ВЫКЛ + `end_frame` ВКЛ); **IN motion_ref** = `<Video 1>` (необязательно).\n2. **IN prompt** (ref-гайд H3, скил h3-prompt-writer), **IN face_prompt** (триггер `St4cy_H3`).\n3. **PANEL**: `seed`, `duration_sec`, `loop`, `face_pass`, `face_denoise`, `face_lora`, `face_lock_temporal`, `free_vram`. **`char_lora` больше не действует** — силу LoRA персонажа задаёт **ARM loras**.\n4. **KNOB …** — ручки движка (описание в Шпаргалке, значения по умолчанию = как у фермы).\n\n### Рука\n**ARM model** (Singularity ref2va по умолчанию) + **ARM loras** (Power Lora Loader: `stacy_h3_A_stills` 1.0; вторая строка — ref2v turbo 8-step, выкл). С turbo-LoRA ставь **KNOB steps** 8; без неё 8–20 (WS-07).\n\n### Фон по маске (группа 5, выкл по умолчанию)\nПротив дрейфа цвета, «кипения» и сдвига статичного фона. В **IN keyframe**: ПКМ → Open in MaskEditor → закрасить **зону движения** (персонаж + куда тянутся руки/ноги/волосы, с запасом) → Save. **KNOB bg_lock** ВКЛ. Вне маски каждый кадр итога = ключевой кадр, пропущенный тем же путём (1344x768 → RTX → 1920x1080), край растушёван внутрь на `bg_feather`. Тени и отражения вне маски замрут — включай их в маску. Маска пустая или bg_lock ВЫКЛ → видео как есть. Действует на итог FullHD (raw и последний кадр — без изменений).\n\n### RefMod (H3Mod)\nГруппа **RefMod** выключена: пакет ComfyUI-MiniMaxH3Mod (MIT) пока не установлен на сервере. Включить: поставить пакет, сделать мод (*Create H3 RefMod*, `models/refmods/`), выбрать в **RefMod · загрузка**, включить группу **RefMod вкл/выкл**. Применяется к кондиционированию ref2va перед якорями кадров.\n\n### Память\n- OOM на цвете / RTX → `free_vram` ВКЛ. Фон по маске держит в RAM 3 копии FullHD-клипа (~5 ГБ каждая на 8 с) — при нехватке RAM выключить.\n\n**Ноды:** ComfyUI-StacyLoop (свой, ⚠ нет LICENSE), ComfyUI-H3-FaceRefine (MIT), KJNodes (GPL-3), VideoHelperSuite (GPL-3), Nvidia RTX nodes (Apache-2.0), rgthree (MIT), ComfyUI-MiniMaxH3Mod (MIT, необязательно)."
+    "## Ручное видео · manual_video@1 (петля FullHD 24 fps)\n\nТот же движок, что у фермы (`video_h3_loop@1`), для ручной доработки отказов. Отличия от `video_h3_loop@1.ui`: **рука на виду**, **RefMod**, **фон по маске**.\n\n### Режимы (`mode` на PANEL)\n- **GENERATE** — клип из ключевого кадра + промпта. **FACE PASS of a ready video** — только лицо готового FullHD-видео (нода «ВИДЕО для face pass»).\n\n### На каждый клип\n1. **IN keyframe** = `<Picture 1>`; **IN face_ref** = `<Picture 2>`; **IN end_frame** = `<Picture 3>` (только `loop` ВЫКЛ + `end_frame` ВКЛ); **IN motion_ref** = `<Video 1>` (необязательно).\n2. **IN prompt** (ref-гайд H3, скил h3-prompt-writer), **IN face_prompt** (триггер `St4cy_H3`).\n3. **PANEL**: `seed`, `duration_sec`, `loop`, `face_pass`, `face_denoise`, `face_lora`, `face_lock_temporal`, `free_vram`. **`char_lora` больше не действует** — силу LoRA персонажа задаёт **ARM loras**.\n4. **KNOB …** — ручки движка (описание в Шпаргалке, значения по умолчанию = как у фермы).\n\n### Рука\n**ARM model** (Singularity ref2va по умолчанию) + **ARM loras** (Power Lora Loader: `stacy_h3_A_stills` 1.0; вторая строка — ref2v turbo 8-step, выкл). С turbo-LoRA ставь **KNOB steps** 8; без неё 8–20 (WS-07).\n\n### Фон по маске (группа 5, выкл по умолчанию)\nПротив дрейфа цвета, «кипения» и сдвига статичного фона. В **IN keyframe**: ПКМ → Open in MaskEditor → закрасить **зону движения** (персонаж + куда тянутся руки/ноги/волосы, с запасом) → Save. **KNOB bg_lock** ВКЛ. Внутри движка, сразу после шва петли (на 1344x768), вне маски каждый кадр = ключевой кадр, который движок взял якорем; край растушёван внутрь на `bg_feather` px. Дальше общий путь: анти-дрожь → RTX → FullHD → face pass, поэтому фон в итоге статичен и одной резкости с персонажем. Тени и отражения вне маски замрут — включай их в маску. Маска пустая или bg_lock ВЫКЛ → клип как есть. Действует и на raw, и на последний кадр.\n\n### RefMod (H3Mod)\nГруппа **RefMod** выключена: пакет ComfyUI-MiniMaxH3Mod (MIT) пока не установлен на сервере. Включить: поставить пакет, сделать мод (*Create H3 RefMod*, `models/refmods/`), выбрать в **RefMod · загрузка**, включить группу **RefMod вкл/выкл**. Применяется к кондиционированию ref2va перед якорями кадров.\n\n### Память\n- OOM на цвете / RTX → `free_vram` ВКЛ. Фон по маске добавляет в RAM ~5 ГБ (две копии клипа 1344x768 на 8 с).\n\n**Ноды:** ComfyUI-StacyLoop (свой, ⚠ нет LICENSE), ComfyUI-H3-FaceRefine (MIT), KJNodes (GPL-3), VideoHelperSuite (GPL-3), Nvidia RTX nodes (Apache-2.0), rgthree (MIT), ComfyUI-MiniMaxH3Mod (MIT, необязательно)."
    ],
    "widgets_values_named": {
-    "text": "## Ручное видео · manual_video@1 (петля FullHD 24 fps)\n\nТот же движок, что у фермы (`video_h3_loop@1`), для ручной доработки отказов. Отличия от `video_h3_loop@1.ui`: **рука на виду**, **RefMod**, **фон по маске**.\n\n### Режимы (`mode` на PANEL)\n- **GENERATE** — клип из ключевого кадра + промпта. **FACE PASS of a ready video** — только лицо готового FullHD-видео (нода «ВИДЕО для face pass»).\n\n### На каждый клип\n1. **IN keyframe** = `<Picture 1>`; **IN face_ref** = `<Picture 2>`; **IN end_frame** = `<Picture 3>` (только `loop` ВЫКЛ + `end_frame` ВКЛ); **IN motion_ref** = `<Video 1>` (необязательно).\n2. **IN prompt** (ref-гайд H3, скил h3-prompt-writer), **IN face_prompt** (триггер `St4cy_H3`).\n3. **PANEL**: `seed`, `duration_sec`, `loop`, `face_pass`, `face_denoise`, `face_lora`, `face_lock_temporal`, `free_vram`. **`char_lora` больше не действует** — силу LoRA персонажа задаёт **ARM loras**.\n4. **KNOB …** — ручки движка (описание в Шпаргалке, значения по умолчанию = как у фермы).\n\n### Рука\n**ARM model** (Singularity ref2va по умолчанию) + **ARM loras** (Power Lora Loader: `stacy_h3_A_stills` 1.0; вторая строка — ref2v turbo 8-step, выкл). С turbo-LoRA ставь **KNOB steps** 8; без неё 8–20 (WS-07).\n\n### Фон по маске (группа 5, выкл по умолчанию)\nПротив дрейфа цвета, «кипения» и сдвига статичного фона. В **IN keyframe**: ПКМ → Open in MaskEditor → закрасить **зону движения** (персонаж + куда тянутся руки/ноги/волосы, с запасом) → Save. **KNOB bg_lock** ВКЛ. Вне маски каждый кадр итога = ключевой кадр, пропущенный тем же путём (1344x768 → RTX → 1920x1080), край растушёван внутрь на `bg_feather`. Тени и отражения вне маски замрут — включай их в маску. Маска пустая или bg_lock ВЫКЛ → видео как есть. Действует на итог FullHD (raw и последний кадр — без изменений).\n\n### RefMod (H3Mod)\nГруппа **RefMod** выключена: пакет ComfyUI-MiniMaxH3Mod (MIT) пока не установлен на сервере. Включить: поставить пакет, сделать мод (*Create H3 RefMod*, `models/refmods/`), выбрать в **RefMod · загрузка**, включить группу **RefMod вкл/выкл**. Применяется к кондиционированию ref2va перед якорями кадров.\n\n### Память\n- OOM на цвете / RTX → `free_vram` ВКЛ. Фон по маске держит в RAM 3 копии FullHD-клипа (~5 ГБ каждая на 8 с) — при нехватке RAM выключить.\n\n**Ноды:** ComfyUI-StacyLoop (свой, ⚠ нет LICENSE), ComfyUI-H3-FaceRefine (MIT), KJNodes (GPL-3), VideoHelperSuite (GPL-3), Nvidia RTX nodes (Apache-2.0), rgthree (MIT), ComfyUI-MiniMaxH3Mod (MIT, необязательно)."
+    "text": "## Ручное видео · manual_video@1 (петля FullHD 24 fps)\n\nТот же движок, что у фермы (`video_h3_loop@1`), для ручной доработки отказов. Отличия от `video_h3_loop@1.ui`: **рука на виду**, **RefMod**, **фон по маске**.\n\n### Режимы (`mode` на PANEL)\n- **GENERATE** — клип из ключевого кадра + промпта. **FACE PASS of a ready video** — только лицо готового FullHD-видео (нода «ВИДЕО для face pass»).\n\n### На каждый клип\n1. **IN keyframe** = `<Picture 1>`; **IN face_ref** = `<Picture 2>`; **IN end_frame** = `<Picture 3>` (только `loop` ВЫКЛ + `end_frame` ВКЛ); **IN motion_ref** = `<Video 1>` (необязательно).\n2. **IN prompt** (ref-гайд H3, скил h3-prompt-writer), **IN face_prompt** (триггер `St4cy_H3`).\n3. **PANEL**: `seed`, `duration_sec`, `loop`, `face_pass`, `face_denoise`, `face_lora`, `face_lock_temporal`, `free_vram`. **`char_lora` больше не действует** — силу LoRA персонажа задаёт **ARM loras**.\n4. **KNOB …** — ручки движка (описание в Шпаргалке, значения по умолчанию = как у фермы).\n\n### Рука\n**ARM model** (Singularity ref2va по умолчанию) + **ARM loras** (Power Lora Loader: `stacy_h3_A_stills` 1.0; вторая строка — ref2v turbo 8-step, выкл). С turbo-LoRA ставь **KNOB steps** 8; без неё 8–20 (WS-07).\n\n### Фон по маске (группа 5, выкл по умолчанию)\nПротив дрейфа цвета, «кипения» и сдвига статичного фона. В **IN keyframe**: ПКМ → Open in MaskEditor → закрасить **зону движения** (персонаж + куда тянутся руки/ноги/волосы, с запасом) → Save. **KNOB bg_lock** ВКЛ. Внутри движка, сразу после шва петли (на 1344x768), вне маски каждый кадр = ключевой кадр, который движок взял якорем; край растушёван внутрь на `bg_feather` px. Дальше общий путь: анти-дрожь → RTX → FullHD → face pass, поэтому фон в итоге статичен и одной резкости с персонажем. Тени и отражения вне маски замрут — включай их в маску. Маска пустая или bg_lock ВЫКЛ → клип как есть. Действует и на raw, и на последний кадр.\n\n### RefMod (H3Mod)\nГруппа **RefMod** выключена: пакет ComfyUI-MiniMaxH3Mod (MIT) пока не установлен на сервере. Включить: поставить пакет, сделать мод (*Create H3 RefMod*, `models/refmods/`), выбрать в **RefMod · загрузка**, включить группу **RefMod вкл/выкл**. Применяется к кондиционированию ref2va перед якорями кадров.\n\n### Память\n- OOM на цвете / RTX → `free_vram` ВКЛ. Фон по маске добавляет в RAM ~5 ГБ (две копии клипа 1344x768 на 8 с).\n\n**Ноды:** ComfyUI-StacyLoop (свой, ⚠ нет LICENSE), ComfyUI-H3-FaceRefine (MIT), KJNodes (GPL-3), VideoHelperSuite (GPL-3), Nvidia RTX nodes (Apache-2.0), rgthree (MIT), ComfyUI-MiniMaxH3Mod (MIT, необязательно)."
    },
    "color": "#432",
    "bgcolor": "#653"
@@ -2110,10 +2122,10 @@
     }
    },
    "widgets_values": [
-    "## Симптом → крутилка\n\n| Симптом | Крутилка |\n|---|---|\n| Не те / вялые движения | промпт (ПРОМПТ-ГАЙД), потом другой `seed` |\n| Слоу-мо | промпт: короткие фазы + «natural real-time speed»; **KNOB steps** 12–20 (без turbo) |\n| Мало амплитуды, скованно | **KNOB shift** 10–11 |\n| Уходит от кадра / плывёт поза | **KNOB shift** 13–14 |\n| Засветка, «туман», вставка крупного плана | другой `seed` |\n| Цвет/свет уплыл, фон «кипит» или съезжает | **фон по маске** (bg_lock) или **KNOB color_lock** 1.0 |\n| Виден край зоны движения | **KNOB bg_feather** 40–64; маску шире |\n| Рука/волосы «обрезаются» на краю | маску шире: включить весь размах движения |\n| Видна склейка петли | **KNOB seam_crossfade** 8–12 |\n| Лицо не похоже | `face_denoise` 0.32–0.38 (AUTO выкл), `face_lora` 1.0–1.2 |\n| Лицо «чужое», мимика перерисована | `face_denoise` 0.22–0.26 |\n| Крупное лицо мылится | **KNOB large_face_mult** 0.25–0.35 |\n| Лицо дрожит | **KNOB face_lock** 1.0, `face_lock_temporal` 0.85–0.9 |\n| Рука у лица ломается | **KNOB hand_strength** 0.1–0.3 |\n| Маленькое лицо не найдено | **KNOB face_confidence** 0.25, **KNOB crop_factor** 2.2 |\n| OOM (видеопамять) | `free_vram` ВКЛ |\n| OOM (RAM) | `face_pass` ВЫКЛ → потом режим FACE PASS; фон по маске ВЫКЛ |"
+    "## Симптом → крутилка\n\n| Симптом | Крутилка |\n|---|---|\n| Не те / вялые движения | промпт (ПРОМПТ-ГАЙД), потом другой `seed` |\n| Слоу-мо | промпт: короткие фазы + «natural real-time speed»; **KNOB steps** 12–20 (без turbo) |\n| Мало амплитуды, скованно | **KNOB shift** 10–11 |\n| Уходит от кадра / плывёт поза | **KNOB shift** 13–14 |\n| Засветка, «туман», вставка крупного плана | другой `seed` |\n| Цвет/свет уплыл, фон «кипит» или съезжает | **фон по маске** (bg_lock) или **KNOB color_lock** 1.0 |\n| Виден край зоны движения | **KNOB bg_feather** 32–48; маску шире |\n| Рука/волосы «обрезаются» на краю | маску шире: включить весь размах движения |\n| Видна склейка петли | **KNOB seam_crossfade** 8–12 |\n| Лицо не похоже | `face_denoise` 0.32–0.38 (AUTO выкл), `face_lora` 1.0–1.2 |\n| Лицо «чужое», мимика перерисована | `face_denoise` 0.22–0.26 |\n| Крупное лицо мылится | **KNOB large_face_mult** 0.25–0.35 |\n| Лицо дрожит | **KNOB face_lock** 1.0, `face_lock_temporal` 0.85–0.9 |\n| Рука у лица ломается | **KNOB hand_strength** 0.1–0.3 |\n| Маленькое лицо не найдено | **KNOB face_confidence** 0.25, **KNOB crop_factor** 2.2 |\n| OOM (видеопамять) | `free_vram` ВКЛ |\n| OOM (RAM) | `face_pass` ВЫКЛ → потом режим FACE PASS; фон по маске ВЫКЛ |"
    ],
    "widgets_values_named": {
-    "text": "## Симптом → крутилка\n\n| Симптом | Крутилка |\n|---|---|\n| Не те / вялые движения | промпт (ПРОМПТ-ГАЙД), потом другой `seed` |\n| Слоу-мо | промпт: короткие фазы + «natural real-time speed»; **KNOB steps** 12–20 (без turbo) |\n| Мало амплитуды, скованно | **KNOB shift** 10–11 |\n| Уходит от кадра / плывёт поза | **KNOB shift** 13–14 |\n| Засветка, «туман», вставка крупного плана | другой `seed` |\n| Цвет/свет уплыл, фон «кипит» или съезжает | **фон по маске** (bg_lock) или **KNOB color_lock** 1.0 |\n| Виден край зоны движения | **KNOB bg_feather** 40–64; маску шире |\n| Рука/волосы «обрезаются» на краю | маску шире: включить весь размах движения |\n| Видна склейка петли | **KNOB seam_crossfade** 8–12 |\n| Лицо не похоже | `face_denoise` 0.32–0.38 (AUTO выкл), `face_lora` 1.0–1.2 |\n| Лицо «чужое», мимика перерисована | `face_denoise` 0.22–0.26 |\n| Крупное лицо мылится | **KNOB large_face_mult** 0.25–0.35 |\n| Лицо дрожит | **KNOB face_lock** 1.0, `face_lock_temporal` 0.85–0.9 |\n| Рука у лица ломается | **KNOB hand_strength** 0.1–0.3 |\n| Маленькое лицо не найдено | **KNOB face_confidence** 0.25, **KNOB crop_factor** 2.2 |\n| OOM (видеопамять) | `free_vram` ВКЛ |\n| OOM (RAM) | `face_pass` ВЫКЛ → потом режим FACE PASS; фон по маске ВЫКЛ |"
+    "text": "## Симптом → крутилка\n\n| Симптом | Крутилка |\n|---|---|\n| Не те / вялые движения | промпт (ПРОМПТ-ГАЙД), потом другой `seed` |\n| Слоу-мо | промпт: короткие фазы + «natural real-time speed»; **KNOB steps** 12–20 (без turbo) |\n| Мало амплитуды, скованно | **KNOB shift** 10–11 |\n| Уходит от кадра / плывёт поза | **KNOB shift** 13–14 |\n| Засветка, «туман», вставка крупного плана | другой `seed` |\n| Цвет/свет уплыл, фон «кипит» или съезжает | **фон по маске** (bg_lock) или **KNOB color_lock** 1.0 |\n| Виден край зоны движения | **KNOB bg_feather** 32–48; маску шире |\n| Рука/волосы «обрезаются» на краю | маску шире: включить весь размах движения |\n| Видна склейка петли | **KNOB seam_crossfade** 8–12 |\n| Лицо не похоже | `face_denoise` 0.32–0.38 (AUTO выкл), `face_lora` 1.0–1.2 |\n| Лицо «чужое», мимика перерисована | `face_denoise` 0.22–0.26 |\n| Крупное лицо мылится | **KNOB large_face_mult** 0.25–0.35 |\n| Лицо дрожит | **KNOB face_lock** 1.0, `face_lock_temporal` 0.85–0.9 |\n| Рука у лица ломается | **KNOB hand_strength** 0.1–0.3 |\n| Маленькое лицо не найдено | **KNOB face_confidence** 0.25, **KNOB crop_factor** 2.2 |\n| OOM (видеопамять) | `free_vram` ВКЛ |\n| OOM (RAM) | `face_pass` ВЫКЛ → потом режим FACE PASS; фон по маске ВЫКЛ |"
    },
    "color": "#432",
    "bgcolor": "#653"
@@ -2922,7 +2934,7 @@
    "title": "RefMod вкл/выкл"
   },
   {
-   "id": 145,
+   "id": 159,
    "type": "PrimitiveBoolean",
    "pos": [
     1180,
@@ -2941,7 +2953,7 @@
      "name": "BOOLEAN",
      "type": "BOOLEAN",
      "links": [
-      625
+      635
      ]
     }
    ],
@@ -2960,7 +2972,7 @@
    "bgcolor": "#335"
   },
   {
-   "id": 146,
+   "id": 160,
    "type": "PrimitiveInt",
    "pos": [
     1180,
@@ -2979,8 +2991,7 @@
      "name": "INT",
      "type": "INT",
      "links": [
-      617,
-      618
+      636
      ]
     }
    ],
@@ -2988,7 +2999,7 @@
     "cnr_id": "comfy-core",
     "Node name for S&R": "PrimitiveInt"
    },
-   "title": "KNOB bg_feather · px растушёвки внутрь",
+   "title": "KNOB bg_feather · px растушёвки внутрь (1344x768)",
    "widgets_values": [
     24,
     "fixed"
@@ -2999,1368 +3010,6 @@
    },
    "color": "#223",
    "bgcolor": "#335"
-  },
-  {
-   "id": 147,
-   "type": "StacyFitFrame",
-   "pos": [
-    1640,
-    2200
-   ],
-   "size": [
-    292.728125,
-    170
-   ],
-   "flags": {},
-   "order": 40,
-   "mode": 0,
-   "inputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "link": 608
-    }
-   ],
-   "outputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "slot_index": null,
-     "links": [
-      609
-     ]
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "width",
-     "locked": null,
-     "name": "width",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "height",
-     "locked": null,
-     "name": "height",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    }
-   ],
-   "title": "фон · кадр → 1344x768 (как в движке)",
-   "properties": {
-    "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-    "ver": "041aafe473e53d45aaca778a8b3e731e5ad38cb3",
-    "Node name for S&R": "StacyFitFrame",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    1344,
-    768,
-    "lanczos",
-    0.5
-   ],
-   "widgets_values_named": {
-    "width": 1344,
-    "height": 768,
-    "method": "lanczos",
-    "anchor_y": 0.5
-   }
-  },
-  {
-   "id": 148,
-   "type": "RTXVideoSuperResolution",
-   "pos": [
-    1640,
-    2400
-   ],
-   "size": [
-    285.81015625,
-    130
-   ],
-   "flags": {},
-   "order": 41,
-   "mode": 0,
-   "inputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "link": 609
-    }
-   ],
-   "outputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "upscaled_images",
-     "locked": null,
-     "name": "upscaled_images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "slot_index": null,
-     "links": [
-      610
-     ]
-    }
-   ],
-   "title": "фон · RTX → 1920x1096 (как в движке)",
-   "properties": {
-    "cnr_id": "comfyui_nvidia_rtx_nodes",
-    "ver": "892515e3eb9a4920a131a502a047e47adca9eb0d",
-    "Node name for S&R": "RTXVideoSuperResolution",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    "target dimensions",
-    1920,
-    1096,
-    "ULTRA"
-   ],
-   "widgets_values_named": {
-    "resize_type": "target dimensions",
-    "resize_type.width": 1920,
-    "resize_type.height": 1096,
-    "quality": "ULTRA"
-   }
-  },
-  {
-   "id": 149,
-   "type": "StacyFitFrame",
-   "pos": [
-    1640,
-    2560
-   ],
-   "size": [
-    292.728125,
-    170
-   ],
-   "flags": {},
-   "order": 42,
-   "mode": 0,
-   "inputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "link": 610
-    }
-   ],
-   "outputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "slot_index": null,
-     "links": [
-      628
-     ]
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "width",
-     "locked": null,
-     "name": "width",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "height",
-     "locked": null,
-     "name": "height",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    }
-   ],
-   "title": "фон · → 1920x1080 (как в движке)",
-   "properties": {
-    "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-    "ver": "041aafe473e53d45aaca778a8b3e731e5ad38cb3",
-    "Node name for S&R": "StacyFitFrame",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    1920,
-    1080,
-    "bicubic",
-    0.5
-   ],
-   "widgets_values_named": {
-    "width": 1920,
-    "height": 1080,
-    "method": "bicubic",
-    "anchor_y": 0.5
-   }
-  },
-  {
-   "id": 150,
-   "type": "MaskToImage",
-   "pos": [
-    1980,
-    2200
-   ],
-   "size": [
-    260,
-    40
-   ],
-   "flags": {},
-   "order": 43,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "mask",
-     "type": "MASK",
-     "link": 611
-    }
-   ],
-   "outputs": [
-    {
-     "name": "IMAGE",
-     "type": "IMAGE",
-     "links": [
-      612
-     ]
-    }
-   ],
-   "properties": {
-    "cnr_id": "comfy-core",
-    "Node name for S&R": "MaskToImage"
-   },
-   "title": "фон · маска → картинка",
-   "widgets_values": [],
-   "widgets_values_named": {}
-  },
-  {
-   "id": 151,
-   "type": "StacyFitFrame",
-   "pos": [
-    1980,
-    2280
-   ],
-   "size": [
-    292.728125,
-    170
-   ],
-   "flags": {},
-   "order": 44,
-   "mode": 0,
-   "inputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "link": 612
-    }
-   ],
-   "outputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "slot_index": null,
-     "links": [
-      613
-     ]
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "width",
-     "locked": null,
-     "name": "width",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "height",
-     "locked": null,
-     "name": "height",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    }
-   ],
-   "title": "фон · маска → 1344x768",
-   "properties": {
-    "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-    "ver": "041aafe473e53d45aaca778a8b3e731e5ad38cb3",
-    "Node name for S&R": "StacyFitFrame",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    1344,
-    768,
-    "bilinear",
-    0.5
-   ],
-   "widgets_values_named": {
-    "width": 1344,
-    "height": 768,
-    "method": "bilinear",
-    "anchor_y": 0.5
-   }
-  },
-  {
-   "id": 152,
-   "type": "ImageScale",
-   "pos": [
-    1980,
-    2480
-   ],
-   "size": [
-    300,
-    130
-   ],
-   "flags": {},
-   "order": 45,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "image",
-     "type": "IMAGE",
-     "link": 613
-    }
-   ],
-   "outputs": [
-    {
-     "name": "IMAGE",
-     "type": "IMAGE",
-     "links": [
-      614
-     ]
-    }
-   ],
-   "properties": {
-    "cnr_id": "comfy-core",
-    "Node name for S&R": "ImageScale"
-   },
-   "title": "фон · маска → 1920x1096",
-   "widgets_values": [
-    "bilinear",
-    1920,
-    1096,
-    "disabled"
-   ],
-   "widgets_values_named": {
-    "upscale_method": "bilinear",
-    "width": 1920,
-    "height": 1096,
-    "crop": "disabled"
-   }
-  },
-  {
-   "id": 153,
-   "type": "StacyFitFrame",
-   "pos": [
-    1980,
-    2640
-   ],
-   "size": [
-    292.728125,
-    170
-   ],
-   "flags": {},
-   "order": 46,
-   "mode": 0,
-   "inputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "link": 614
-    }
-   ],
-   "outputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "images",
-     "locked": null,
-     "name": "images",
-     "nameLocked": null,
-     "removable": null,
-     "type": "IMAGE",
-     "pos": null,
-     "slot_index": null,
-     "links": [
-      615
-     ]
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "width",
-     "locked": null,
-     "name": "width",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "height",
-     "locked": null,
-     "name": "height",
-     "nameLocked": null,
-     "removable": null,
-     "type": "INT",
-     "pos": null,
-     "slot_index": null,
-     "links": []
-    }
-   ],
-   "title": "фон · маска → 1920x1080",
-   "properties": {
-    "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-    "ver": "041aafe473e53d45aaca778a8b3e731e5ad38cb3",
-    "Node name for S&R": "StacyFitFrame",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    1920,
-    1080,
-    "bilinear",
-    0.5
-   ],
-   "widgets_values_named": {
-    "width": 1920,
-    "height": 1080,
-    "method": "bilinear",
-    "anchor_y": 0.5
-   }
-  },
-  {
-   "id": 154,
-   "type": "ImageToMask",
-   "pos": [
-    2320,
-    2200
-   ],
-   "size": [
-    260,
-    60
-   ],
-   "flags": {},
-   "order": 47,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "image",
-     "type": "IMAGE",
-     "link": 615
-    }
-   ],
-   "outputs": [
-    {
-     "name": "MASK",
-     "type": "MASK",
-     "links": [
-      616
-     ]
-    }
-   ],
-   "properties": {
-    "cnr_id": "comfy-core",
-    "Node name for S&R": "ImageToMask"
-   },
-   "title": "фон · картинка → маска",
-   "widgets_values": [
-    "red"
-   ],
-   "widgets_values_named": {
-    "channel": "red"
-   }
-  },
-  {
-   "id": 155,
-   "type": "ThresholdMask",
-   "pos": [
-    2320,
-    2300
-   ],
-   "size": [
-    300,
-    80
-   ],
-   "flags": {},
-   "order": 48,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "mask",
-     "type": "MASK",
-     "link": 616
-    }
-   ],
-   "outputs": [
-    {
-     "name": "MASK",
-     "type": "MASK",
-     "links": [
-      619,
-      623,
-      624
-     ]
-    }
-   ],
-   "properties": {
-    "cnr_id": "comfy-core",
-    "Node name for S&R": "ThresholdMask"
-   },
-   "title": "фон · зона движения (порог 0.5)",
-   "widgets_values": [
-    0.5
-   ],
-   "widgets_values_named": {
-    "value": 0.5
-   }
-  },
-  {
-   "id": 156,
-   "type": "ComfyMathExpression",
-   "pos": [
-    2320,
-    2420
-   ],
-   "size": [
-    400,
-    94
-   ],
-   "flags": {
-    "collapsed": true
-   },
-   "order": 49,
-   "mode": 0,
-   "inputs": [
-    {
-     "label": "a",
-     "localized_name": "a",
-     "name": "values.a",
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": 617
-    },
-    {
-     "localized_name": "b",
-     "name": "values.b",
-     "shape": 7,
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": null
-    },
-    {
-     "localized_name": "c",
-     "name": "values.c",
-     "shape": 7,
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": null
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "FLOAT",
-     "name": "FLOAT",
-     "type": "FLOAT",
-     "links": []
-    },
-    {
-     "localized_name": "INT",
-     "name": "INT",
-     "type": "INT",
-     "links": [
-      620
-     ]
-    },
-    {
-     "localized_name": "BOOL",
-     "name": "BOOL",
-     "type": "BOOLEAN",
-     "links": []
-    }
-   ],
-   "title": "фон · сжать на feather",
-   "properties": {
-    "cnr_id": "comfy-core",
-    "ver": "0.31.0",
-    "Node name for S&R": "ComfyMathExpression",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    "0 - a"
-   ],
-   "widgets_values_named": {
-    "expression": "0 - a"
-   },
-   "color": "#101523",
-   "bgcolor": "#191e2e"
-  },
-  {
-   "id": 157,
-   "type": "ComfyMathExpression",
-   "pos": [
-    2320,
-    2540
-   ],
-   "size": [
-    400,
-    94
-   ],
-   "flags": {
-    "collapsed": true
-   },
-   "order": 50,
-   "mode": 0,
-   "inputs": [
-    {
-     "label": "a",
-     "localized_name": "a",
-     "name": "values.a",
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": 618
-    },
-    {
-     "localized_name": "b",
-     "name": "values.b",
-     "shape": 7,
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": null
-    },
-    {
-     "localized_name": "c",
-     "name": "values.c",
-     "shape": 7,
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": null
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "FLOAT",
-     "name": "FLOAT",
-     "type": "FLOAT",
-     "links": [
-      621
-     ]
-    },
-    {
-     "localized_name": "INT",
-     "name": "INT",
-     "type": "INT",
-     "links": []
-    },
-    {
-     "localized_name": "BOOL",
-     "name": "BOOL",
-     "type": "BOOLEAN",
-     "links": []
-    }
-   ],
-   "title": "фон · размытие = feather",
-   "properties": {
-    "cnr_id": "comfy-core",
-    "ver": "0.31.0",
-    "Node name for S&R": "ComfyMathExpression",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    "a"
-   ],
-   "widgets_values_named": {
-    "expression": "a"
-   },
-   "color": "#101523",
-   "bgcolor": "#191e2e"
-  },
-  {
-   "id": 158,
-   "type": "GrowMaskWithBlur",
-   "pos": [
-    2660,
-    2200
-   ],
-   "size": [
-    330,
-    246
-   ],
-   "flags": {},
-   "order": 51,
-   "mode": 0,
-   "inputs": [
-    {
-     "localized_name": "mask",
-     "name": "mask",
-     "type": "MASK",
-     "link": 619
-    },
-    {
-     "name": "expand",
-     "type": "INT",
-     "link": 620,
-     "widget": {
-      "name": "expand"
-     }
-    },
-    {
-     "name": "blur_radius",
-     "type": "FLOAT",
-     "link": 621,
-     "widget": {
-      "name": "blur_radius"
-     }
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "mask",
-     "name": "mask",
-     "type": "MASK",
-     "links": [
-      622
-     ]
-    },
-    {
-     "localized_name": "mask_inverted",
-     "name": "mask_inverted",
-     "type": "MASK",
-     "links": []
-    }
-   ],
-   "title": "фон · растушёвка внутрь",
-   "properties": {
-    "cnr_id": "comfyui-kjnodes",
-    "ver": "1.1.4",
-    "Node name for S&R": "GrowMaskWithBlur",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "input_ue_unconnectable": {},
-     "version": "7.8"
-    }
-   },
-   "widgets_values": [
-    -24,
-    0,
-    true,
-    false,
-    24.0,
-    1,
-    1,
-    false
-   ],
-   "widgets_values_named": {
-    "expand": -24,
-    "incremental_expandrate": 0,
-    "tapered_corners": true,
-    "flip_input": false,
-    "blur_radius": 24.0,
-    "lerp_alpha": 1,
-    "decay_factor": 1,
-    "fill_holes": false
-   }
-  },
-  {
-   "id": 159,
-   "type": "MaskComposite",
-   "pos": [
-    2660,
-    2480
-   ],
-   "size": [
-    300,
-    130
-   ],
-   "flags": {},
-   "order": 52,
-   "mode": 0,
-   "inputs": [
-    {
-     "localized_name": "destination",
-     "name": "destination",
-     "type": "MASK",
-     "link": 622
-    },
-    {
-     "localized_name": "source",
-     "name": "source",
-     "type": "MASK",
-     "link": 623
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "MASK",
-     "name": "MASK",
-     "type": "MASK",
-     "links": [
-      632
-     ]
-    }
-   ],
-   "title": "фон · вне зоны = 0",
-   "properties": {
-    "cnr_id": "comfy-core",
-    "ver": "0.34.0",
-    "Node name for S&R": "MaskComposite",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "input_ue_unconnectable": {},
-     "version": "7.8"
-    }
-   },
-   "widgets_values": [
-    0,
-    0,
-    "multiply"
-   ],
-   "widgets_values_named": {
-    "x": 0,
-    "y": 0,
-    "operation": "multiply"
-   }
-  },
-  {
-   "id": 160,
-   "type": "easy isMaskEmpty",
-   "pos": [
-    2660,
-    2620
-   ],
-   "size": [
-    250,
-    60
-   ],
-   "flags": {},
-   "order": 53,
-   "mode": 0,
-   "inputs": [
-    {
-     "localized_name": "mask",
-     "name": "mask",
-     "type": "MASK",
-     "link": 624
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "boolean",
-     "name": "boolean",
-     "type": "BOOLEAN",
-     "links": [
-      626
-     ]
-    }
-   ],
-   "title": "фон · маска пустая?",
-   "properties": {
-    "cnr_id": "comfyui-easy-use",
-    "ver": "1.3.6",
-    "Node name for S&R": "easy isMaskEmpty",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "input_ue_unconnectable": {},
-     "version": "7.8"
-    }
-   },
-   "color": "#101523",
-   "bgcolor": "#191e2e"
-  },
-  {
-   "id": 161,
-   "type": "ComfyMathExpression",
-   "pos": [
-    2660,
-    2700
-   ],
-   "size": [
-    400,
-    94
-   ],
-   "flags": {
-    "collapsed": true
-   },
-   "order": 54,
-   "mode": 0,
-   "inputs": [
-    {
-     "label": "a",
-     "localized_name": "a",
-     "name": "values.a",
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": 625
-    },
-    {
-     "localized_name": "b",
-     "name": "values.b",
-     "shape": 7,
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": 626
-    },
-    {
-     "localized_name": "c",
-     "name": "values.c",
-     "shape": 7,
-     "type": "FLOAT,INT,BOOLEAN",
-     "link": null
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "FLOAT",
-     "name": "FLOAT",
-     "type": "FLOAT",
-     "links": []
-    },
-    {
-     "localized_name": "INT",
-     "name": "INT",
-     "type": "INT",
-     "links": []
-    },
-    {
-     "localized_name": "BOOL",
-     "name": "BOOL",
-     "type": "BOOLEAN",
-     "links": [
-      635
-     ]
-    }
-   ],
-   "title": "фон · включён и маска есть?",
-   "properties": {
-    "cnr_id": "comfy-core",
-    "ver": "0.31.0",
-    "Node name for S&R": "ComfyMathExpression",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    "a > b"
-   ],
-   "widgets_values_named": {
-    "expression": "a > b"
-   },
-   "color": "#101523",
-   "bgcolor": "#191e2e"
-  },
-  {
-   "id": 162,
-   "type": "GetImageSize",
-   "pos": [
-    3000,
-    2200
-   ],
-   "size": [
-    140,
-    66
-   ],
-   "flags": {},
-   "order": 55,
-   "mode": 0,
-   "inputs": [
-    {
-     "localized_name": "image",
-     "name": "image",
-     "type": "IMAGE",
-     "link": 627
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "width",
-     "name": "width",
-     "type": "INT",
-     "links": []
-    },
-    {
-     "localized_name": "height",
-     "name": "height",
-     "type": "INT",
-     "links": []
-    },
-    {
-     "localized_name": "batch_size",
-     "name": "batch_size",
-     "type": "INT",
-     "links": [
-      629
-     ]
-    }
-   ],
-   "properties": {
-    "cnr_id": "comfy-core",
-    "ver": "0.34.0",
-    "Node name for S&R": "GetImageSize",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "input_ue_unconnectable": {},
-     "version": "7.8"
-    }
-   },
-   "title": "фон · число кадров"
-  },
-  {
-   "id": 163,
-   "type": "RepeatImageBatch",
-   "pos": [
-    3000,
-    2320
-   ],
-   "size": [
-    300,
-    80
-   ],
-   "flags": {},
-   "order": 56,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "image",
-     "type": "IMAGE",
-     "link": 628
-    },
-    {
-     "name": "amount",
-     "type": "INT",
-     "link": 629,
-     "widget": {
-      "name": "amount"
-     }
-    }
-   ],
-   "outputs": [
-    {
-     "name": "IMAGE",
-     "type": "IMAGE",
-     "links": [
-      630
-     ]
-    }
-   ],
-   "properties": {
-    "cnr_id": "comfy-core",
-    "Node name for S&R": "RepeatImageBatch"
-   },
-   "title": "фон · ключевой кадр × N",
-   "widgets_values": [
-    1
-   ],
-   "widgets_values_named": {
-    "amount": 1
-   }
-  },
-  {
-   "id": 164,
-   "type": "ImageCompositeMasked",
-   "pos": [
-    3000,
-    2440
-   ],
-   "size": [
-    300,
-    190
-   ],
-   "flags": {},
-   "order": 57,
-   "mode": 0,
-   "inputs": [
-    {
-     "localized_name": "destination",
-     "name": "destination",
-     "type": "IMAGE",
-     "link": 630
-    },
-    {
-     "localized_name": "source",
-     "name": "source",
-     "type": "IMAGE",
-     "link": 631
-    },
-    {
-     "localized_name": "mask",
-     "name": "mask",
-     "shape": 7,
-     "type": "MASK",
-     "link": 632
-    }
-   ],
-   "outputs": [
-    {
-     "localized_name": "IMAGE",
-     "name": "IMAGE",
-     "type": "IMAGE",
-     "links": [
-      633
-     ]
-    }
-   ],
-   "title": "фон · видео ТОЛЬКО в зоне движения",
-   "properties": {
-    "cnr_id": "comfy-core",
-    "ver": "0.34.0",
-    "Node name for S&R": "ImageCompositeMasked",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "input_ue_unconnectable": {},
-     "version": "7.8"
-    }
-   },
-   "widgets_values": [
-    0,
-    0,
-    false
-   ],
-   "widgets_values_named": {
-    "x": 0,
-    "y": 0,
-    "resize_source": false
-   }
-  },
-  {
-   "id": 165,
-   "type": "LazySwitchKJ",
-   "pos": [
-    3000,
-    2620
-   ],
-   "size": [
-    344.3248046875,
-    78
-   ],
-   "flags": {},
-   "order": 58,
-   "mode": 0,
-   "inputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "on_false",
-     "locked": null,
-     "name": "on_false",
-     "nameLocked": null,
-     "removable": null,
-     "type": "*",
-     "pos": null,
-     "link": 634
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "on_true",
-     "locked": null,
-     "name": "on_true",
-     "nameLocked": null,
-     "removable": null,
-     "type": "*",
-     "pos": null,
-     "link": 633
-    },
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "switch",
-     "locked": null,
-     "name": "switch",
-     "nameLocked": null,
-     "removable": null,
-     "type": "BOOLEAN",
-     "widget": {
-      "name": "switch"
-     },
-     "link": 635
-    }
-   ],
-   "outputs": [
-    {
-     "color_off": null,
-     "color_on": null,
-     "dir": null,
-     "label": null,
-     "localized_name": "*",
-     "locked": null,
-     "name": "*",
-     "nameLocked": null,
-     "removable": null,
-     "type": "*",
-     "pos": null,
-     "slot_index": null,
-     "links": [
-      636
-     ]
-    }
-   ],
-   "title": "фон по маске? (выкл → видео как есть)",
-   "properties": {
-    "cnr_id": "comfyui-kjnodes",
-    "ver": "1.5.0",
-    "Node name for S&R": "LazySwitchKJ",
-    "ue_properties": {
-     "widget_ue_connectable": {},
-     "version": "7.8",
-     "input_ue_unconnectable": {}
-    }
-   },
-   "widgets_values": [
-    false
-   ],
-   "widgets_values_named": {
-    "switch": false
-   }
   }
  ],
  "links": [
@@ -4483,6 +3132,14 @@
    21,
    1,
    "MODEL"
+  ],
+  [
+   556,
+   1,
+   1,
+   10,
+   0,
+   "IMAGE"
   ],
   [
    557,
@@ -4733,236 +3390,28 @@
    "CONDITIONING"
   ],
   [
-   608,
-   7,
-   0,
-   147,
-   0,
-   "IMAGE"
-  ],
-  [
-   609,
-   147,
-   0,
-   148,
-   0,
-   "IMAGE"
-  ],
-  [
-   610,
-   148,
-   0,
-   149,
-   0,
-   "IMAGE"
-  ],
-  [
-   611,
-   7,
-   1,
-   150,
-   0,
-   "MASK"
-  ],
-  [
-   612,
-   150,
-   0,
-   151,
-   0,
-   "IMAGE"
-  ],
-  [
-   613,
-   151,
-   0,
-   152,
-   0,
-   "IMAGE"
-  ],
-  [
-   614,
-   152,
-   0,
-   153,
-   0,
-   "IMAGE"
-  ],
-  [
-   615,
-   153,
-   0,
-   154,
-   0,
-   "IMAGE"
-  ],
-  [
-   616,
-   154,
-   0,
-   155,
-   0,
-   "MASK"
-  ],
-  [
-   617,
-   146,
-   0,
-   156,
-   0,
-   "FLOAT,INT,BOOLEAN"
-  ],
-  [
-   618,
-   146,
-   0,
-   157,
-   0,
-   "FLOAT,INT,BOOLEAN"
-  ],
-  [
-   619,
-   155,
-   0,
-   158,
-   0,
-   "MASK"
-  ],
-  [
-   620,
-   156,
-   1,
-   158,
-   1,
-   "INT"
-  ],
-  [
-   621,
-   157,
-   0,
-   158,
-   2,
-   "FLOAT"
-  ],
-  [
-   622,
-   158,
-   0,
-   159,
-   0,
-   "MASK"
-  ],
-  [
-   623,
-   155,
-   0,
-   159,
-   1,
-   "MASK"
-  ],
-  [
-   624,
-   155,
-   0,
-   160,
-   0,
-   "MASK"
-  ],
-  [
-   625,
-   145,
-   0,
-   161,
-   0,
-   "FLOAT,INT,BOOLEAN"
-  ],
-  [
-   626,
-   160,
-   0,
-   161,
-   1,
-   "FLOAT,INT,BOOLEAN"
-  ],
-  [
-   627,
-   1,
-   1,
-   162,
-   0,
-   "IMAGE"
-  ],
-  [
-   628,
-   149,
-   0,
-   163,
-   0,
-   "IMAGE"
-  ],
-  [
-   629,
-   162,
-   2,
-   163,
-   1,
-   "INT"
-  ],
-  [
-   630,
-   163,
-   0,
-   164,
-   0,
-   "IMAGE"
-  ],
-  [
-   631,
-   1,
-   1,
-   164,
-   1,
-   "IMAGE"
-  ],
-  [
-   632,
-   159,
-   0,
-   164,
-   2,
-   "MASK"
-  ],
-  [
-   633,
-   164,
-   0,
-   165,
-   1,
-   "IMAGE"
-  ],
-  [
    634,
+   7,
    1,
    1,
-   165,
-   0,
-   "*"
+   22,
+   "MASK"
   ],
   [
    635,
-   161,
-   2,
-   165,
-   2,
+   159,
+   0,
+   1,
+   23,
    "BOOLEAN"
   ],
   [
    636,
-   165,
+   160,
    0,
-   10,
-   0,
-   "IMAGE"
+   1,
+   24,
+   "INT"
   ]
  ],
  "groups": [
@@ -5064,12 +3513,12 @@
   },
   {
    "id": 92,
-   "title": "5 · Фон по маске ключевого кадра (выкл по умолчанию)",
+   "title": "5 · Фон по маске ключевого кадра (выкл)",
    "bounding": [
     1160,
     2140,
-    2200,
-    700
+    480,
+    240
    ],
    "color": "#2e5a6e",
    "flags": {}
@@ -5082,7 +3531,7 @@
     "version": 1,
     "state": {
      "lastGroupId": 16,
-     "lastNodeId": 165,
+     "lastNodeId": 160,
      "lastLinkId": 636,
      "lastRerouteId": 0
     },
@@ -5434,7 +3883,7 @@
       ]
      },
      {
-      "id": "0e992e90-b155-463d-a341-f553cb75fa6c",
+      "id": "c1a0d181-bc5b-4650-9e2a-edd3a4dd8221",
       "name": "arm_model",
       "type": "MODEL",
       "linkIds": [
@@ -5448,7 +3897,7 @@
       ]
      },
      {
-      "id": "ddf28905-c14e-423d-a08e-d7f96a494094",
+      "id": "00913348-1972-4777-bffd-a02677a85d0a",
       "name": "positive",
       "type": "CONDITIONING",
       "linkIds": [
@@ -5456,6 +3905,49 @@
       ],
       "localized_name": "positive",
       "label": "кондиционирование ← RefMod",
+      "pos": [
+       0,
+       0
+      ]
+     },
+     {
+      "id": "5c4db706-fe95-4cf3-b2e4-8314152f62fc",
+      "name": "bg_mask",
+      "type": "MASK",
+      "linkIds": [
+       608
+      ],
+      "localized_name": "bg_mask",
+      "label": "фон: маска зоны движения",
+      "pos": [
+       0,
+       0
+      ]
+     },
+     {
+      "id": "803a2e55-e611-4551-915d-cd3caa527288",
+      "name": "bg_lock",
+      "type": "BOOLEAN",
+      "linkIds": [
+       620
+      ],
+      "localized_name": "bg_lock",
+      "label": "KNOB bg_lock",
+      "pos": [
+       0,
+       0
+      ]
+     },
+     {
+      "id": "a3cd7038-6858-4167-adc3-b8a00b80fc8c",
+      "name": "bg_feather",
+      "type": "INT",
+      "linkIds": [
+       612,
+       613
+      ],
+      "localized_name": "bg_feather",
+      "label": "KNOB bg_feather",
       "pos": [
        0,
        0
@@ -5554,7 +4046,7 @@
       ]
      },
      {
-      "id": "92c0b8af-dd29-44c7-a750-3fa6e5be1371",
+      "id": "1956b3be-f415-43f5-8ff4-dd5e0975a13e",
       "name": "positive_raw",
       "type": "CONDITIONING",
       "linkIds": [
@@ -6153,7 +4645,8 @@
          369,
          416,
          424,
-         432
+         432,
+         623
         ]
        },
        {
@@ -9390,9 +7883,9 @@
         "pos": null,
         "slot_index": null,
         "links": [
-         379,
-         387,
-         463
+         622,
+         626,
+         629
         ]
        }
       ],
@@ -9441,7 +7934,7 @@
         "removable": null,
         "type": "IMAGE",
         "pos": null,
-        "link": 379
+        "link": 631
        },
        {
         "color_off": null,
@@ -9559,7 +8052,7 @@
         "removable": null,
         "type": "IMAGE",
         "pos": null,
-        "link": 387
+        "link": 632
        }
       ],
       "outputs": [
@@ -13393,7 +11886,7 @@
         "removable": null,
         "type": "*",
         "pos": null,
-        "link": 463
+        "link": 633
        }
       ],
       "outputs": [
@@ -13575,6 +12068,940 @@
         "version": "7.8",
         "input_ue_unconnectable": {}
        }
+      }
+     },
+     {
+      "id": 145,
+      "type": "MaskToImage",
+      "pos": [
+       1854,
+       2400
+      ],
+      "size": [
+       260,
+       40
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "mask",
+        "type": "MASK",
+        "link": 608
+       }
+      ],
+      "outputs": [
+       {
+        "name": "IMAGE",
+        "type": "IMAGE",
+        "links": [
+         609
+        ]
+       }
+      ],
+      "properties": {
+       "cnr_id": "comfy-core",
+       "Node name for S&R": "MaskToImage"
+      },
+      "title": "фон · маска → картинка",
+      "widgets_values": [],
+      "widgets_values_named": {}
+     },
+     {
+      "id": 146,
+      "type": "StacyFitFrame",
+      "pos": [
+       1854,
+       2480
+      ],
+      "size": [
+       292.728125,
+       170
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "images",
+        "locked": null,
+        "name": "images",
+        "nameLocked": null,
+        "removable": null,
+        "type": "IMAGE",
+        "pos": null,
+        "link": 609
+       }
+      ],
+      "outputs": [
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "images",
+        "locked": null,
+        "name": "images",
+        "nameLocked": null,
+        "removable": null,
+        "type": "IMAGE",
+        "pos": null,
+        "slot_index": null,
+        "links": [
+         610
+        ]
+       },
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "width",
+        "locked": null,
+        "name": "width",
+        "nameLocked": null,
+        "removable": null,
+        "type": "INT",
+        "pos": null,
+        "slot_index": null,
+        "links": []
+       },
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "height",
+        "locked": null,
+        "name": "height",
+        "nameLocked": null,
+        "removable": null,
+        "type": "INT",
+        "pos": null,
+        "slot_index": null,
+        "links": []
+       }
+      ],
+      "title": "фон · маска → 1344x768 (как ключевой кадр)",
+      "properties": {
+       "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
+       "ver": "041aafe473e53d45aaca778a8b3e731e5ad38cb3",
+       "Node name for S&R": "StacyFitFrame",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "version": "7.8",
+        "input_ue_unconnectable": {}
+       }
+      },
+      "widgets_values": [
+       1344,
+       768,
+       "bilinear",
+       0.5
+      ],
+      "widgets_values_named": {
+       "width": 1344,
+       "height": 768,
+       "method": "bilinear",
+       "anchor_y": 0.5
+      }
+     },
+     {
+      "id": 147,
+      "type": "ImageToMask",
+      "pos": [
+       1854,
+       2680
+      ],
+      "size": [
+       260,
+       60
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "image",
+        "type": "IMAGE",
+        "link": 610
+       }
+      ],
+      "outputs": [
+       {
+        "name": "MASK",
+        "type": "MASK",
+        "links": [
+         611
+        ]
+       }
+      ],
+      "properties": {
+       "cnr_id": "comfy-core",
+       "Node name for S&R": "ImageToMask"
+      },
+      "title": "фон · картинка → маска",
+      "widgets_values": [
+       "red"
+      ],
+      "widgets_values_named": {
+       "channel": "red"
+      }
+     },
+     {
+      "id": 148,
+      "type": "ThresholdMask",
+      "pos": [
+       1854,
+       2770
+      ],
+      "size": [
+       300,
+       80
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "mask",
+        "type": "MASK",
+        "link": 611
+       }
+      ],
+      "outputs": [
+       {
+        "name": "MASK",
+        "type": "MASK",
+        "links": [
+         614,
+         618,
+         619
+        ]
+       }
+      ],
+      "properties": {
+       "cnr_id": "comfy-core",
+       "Node name for S&R": "ThresholdMask"
+      },
+      "title": "фон · зона движения (порог 0.5)",
+      "widgets_values": [
+       0.5
+      ],
+      "widgets_values_named": {
+       "value": 0.5
+      }
+     },
+     {
+      "id": 149,
+      "type": "ComfyMathExpression",
+      "pos": [
+       2194,
+       2400
+      ],
+      "size": [
+       400,
+       94
+      ],
+      "flags": {
+       "collapsed": true
+      },
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+       {
+        "label": "a",
+        "localized_name": "a",
+        "name": "values.a",
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": 612
+       },
+       {
+        "localized_name": "b",
+        "name": "values.b",
+        "shape": 7,
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": null
+       },
+       {
+        "localized_name": "c",
+        "name": "values.c",
+        "shape": 7,
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": null
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "FLOAT",
+        "name": "FLOAT",
+        "type": "FLOAT",
+        "links": []
+       },
+       {
+        "localized_name": "INT",
+        "name": "INT",
+        "type": "INT",
+        "links": [
+         615
+        ]
+       },
+       {
+        "localized_name": "BOOL",
+        "name": "BOOL",
+        "type": "BOOLEAN",
+        "links": []
+       }
+      ],
+      "title": "фон · сжать на feather",
+      "properties": {
+       "cnr_id": "comfy-core",
+       "ver": "0.31.0",
+       "Node name for S&R": "ComfyMathExpression",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "version": "7.8",
+        "input_ue_unconnectable": {}
+       }
+      },
+      "widgets_values": [
+       "0 - a"
+      ],
+      "widgets_values_named": {
+       "expression": "0 - a"
+      },
+      "color": "#101523",
+      "bgcolor": "#191e2e"
+     },
+     {
+      "id": 150,
+      "type": "ComfyMathExpression",
+      "pos": [
+       2194,
+       2510
+      ],
+      "size": [
+       400,
+       94
+      ],
+      "flags": {
+       "collapsed": true
+      },
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+       {
+        "label": "a",
+        "localized_name": "a",
+        "name": "values.a",
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": 613
+       },
+       {
+        "localized_name": "b",
+        "name": "values.b",
+        "shape": 7,
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": null
+       },
+       {
+        "localized_name": "c",
+        "name": "values.c",
+        "shape": 7,
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": null
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "FLOAT",
+        "name": "FLOAT",
+        "type": "FLOAT",
+        "links": [
+         616
+        ]
+       },
+       {
+        "localized_name": "INT",
+        "name": "INT",
+        "type": "INT",
+        "links": []
+       },
+       {
+        "localized_name": "BOOL",
+        "name": "BOOL",
+        "type": "BOOLEAN",
+        "links": []
+       }
+      ],
+      "title": "фон · размытие = feather",
+      "properties": {
+       "cnr_id": "comfy-core",
+       "ver": "0.31.0",
+       "Node name for S&R": "ComfyMathExpression",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "version": "7.8",
+        "input_ue_unconnectable": {}
+       }
+      },
+      "widgets_values": [
+       "a"
+      ],
+      "widgets_values_named": {
+       "expression": "a"
+      },
+      "color": "#101523",
+      "bgcolor": "#191e2e"
+     },
+     {
+      "id": 151,
+      "type": "GrowMaskWithBlur",
+      "pos": [
+       2194,
+       2620
+      ],
+      "size": [
+       330,
+       246
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+       {
+        "localized_name": "mask",
+        "name": "mask",
+        "type": "MASK",
+        "link": 614
+       },
+       {
+        "name": "expand",
+        "type": "INT",
+        "link": 615,
+        "widget": {
+         "name": "expand"
+        }
+       },
+       {
+        "name": "blur_radius",
+        "type": "FLOAT",
+        "link": 616,
+        "widget": {
+         "name": "blur_radius"
+        }
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "mask",
+        "name": "mask",
+        "type": "MASK",
+        "links": [
+         617
+        ]
+       },
+       {
+        "localized_name": "mask_inverted",
+        "name": "mask_inverted",
+        "type": "MASK",
+        "links": []
+       }
+      ],
+      "title": "фон · растушёвка внутрь",
+      "properties": {
+       "cnr_id": "comfyui-kjnodes",
+       "ver": "1.1.4",
+       "Node name for S&R": "GrowMaskWithBlur",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+       }
+      },
+      "widgets_values": [
+       -24,
+       0,
+       true,
+       false,
+       24.0,
+       1,
+       1,
+       false
+      ],
+      "widgets_values_named": {
+       "expand": -24,
+       "incremental_expandrate": 0,
+       "tapered_corners": true,
+       "flip_input": false,
+       "blur_radius": 24.0,
+       "lerp_alpha": 1,
+       "decay_factor": 1,
+       "fill_holes": false
+      }
+     },
+     {
+      "id": 152,
+      "type": "MaskComposite",
+      "pos": [
+       2194,
+       2900
+      ],
+      "size": [
+       300,
+       130
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+       {
+        "localized_name": "destination",
+        "name": "destination",
+        "type": "MASK",
+        "link": 617
+       },
+       {
+        "localized_name": "source",
+        "name": "source",
+        "type": "MASK",
+        "link": 618
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "MASK",
+        "name": "MASK",
+        "type": "MASK",
+        "links": [
+         627
+        ]
+       }
+      ],
+      "title": "фон · вне зоны = 0",
+      "properties": {
+       "cnr_id": "comfy-core",
+       "ver": "0.34.0",
+       "Node name for S&R": "MaskComposite",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+       }
+      },
+      "widgets_values": [
+       0,
+       0,
+       "multiply"
+      ],
+      "widgets_values_named": {
+       "x": 0,
+       "y": 0,
+       "operation": "multiply"
+      }
+     },
+     {
+      "id": 153,
+      "type": "easy isMaskEmpty",
+      "pos": [
+       2534,
+       2400
+      ],
+      "size": [
+       250,
+       60
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+       {
+        "localized_name": "mask",
+        "name": "mask",
+        "type": "MASK",
+        "link": 619
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "boolean",
+        "name": "boolean",
+        "type": "BOOLEAN",
+        "links": [
+         621
+        ]
+       }
+      ],
+      "title": "фон · маска пустая?",
+      "properties": {
+       "cnr_id": "comfyui-easy-use",
+       "ver": "1.3.6",
+       "Node name for S&R": "easy isMaskEmpty",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+       }
+      },
+      "color": "#101523",
+      "bgcolor": "#191e2e"
+     },
+     {
+      "id": 154,
+      "type": "ComfyMathExpression",
+      "pos": [
+       2534,
+       2480
+      ],
+      "size": [
+       400,
+       94
+      ],
+      "flags": {
+       "collapsed": true
+      },
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+       {
+        "label": "a",
+        "localized_name": "a",
+        "name": "values.a",
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": 620
+       },
+       {
+        "localized_name": "b",
+        "name": "values.b",
+        "shape": 7,
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": 621
+       },
+       {
+        "localized_name": "c",
+        "name": "values.c",
+        "shape": 7,
+        "type": "FLOAT,INT,BOOLEAN",
+        "link": null
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "FLOAT",
+        "name": "FLOAT",
+        "type": "FLOAT",
+        "links": []
+       },
+       {
+        "localized_name": "INT",
+        "name": "INT",
+        "type": "INT",
+        "links": []
+       },
+       {
+        "localized_name": "BOOL",
+        "name": "BOOL",
+        "type": "BOOLEAN",
+        "links": [
+         630
+        ]
+       }
+      ],
+      "title": "фон · включён и маска есть?",
+      "properties": {
+       "cnr_id": "comfy-core",
+       "ver": "0.31.0",
+       "Node name for S&R": "ComfyMathExpression",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "version": "7.8",
+        "input_ue_unconnectable": {}
+       }
+      },
+      "widgets_values": [
+       "a > b"
+      ],
+      "widgets_values_named": {
+       "expression": "a > b"
+      },
+      "color": "#101523",
+      "bgcolor": "#191e2e"
+     },
+     {
+      "id": 155,
+      "type": "GetImageSize",
+      "pos": [
+       2534,
+       2600
+      ],
+      "size": [
+       140,
+       66
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+       {
+        "localized_name": "image",
+        "name": "image",
+        "type": "IMAGE",
+        "link": 622
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "width",
+        "name": "width",
+        "type": "INT",
+        "links": []
+       },
+       {
+        "localized_name": "height",
+        "name": "height",
+        "type": "INT",
+        "links": []
+       },
+       {
+        "localized_name": "batch_size",
+        "name": "batch_size",
+        "type": "INT",
+        "links": [
+         624
+        ]
+       }
+      ],
+      "properties": {
+       "cnr_id": "comfy-core",
+       "ver": "0.34.0",
+       "Node name for S&R": "GetImageSize",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+       }
+      },
+      "title": "фон · число кадров"
+     },
+     {
+      "id": 156,
+      "type": "RepeatImageBatch",
+      "pos": [
+       2534,
+       2700
+      ],
+      "size": [
+       300,
+       80
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "image",
+        "type": "IMAGE",
+        "link": 623
+       },
+       {
+        "name": "amount",
+        "type": "INT",
+        "link": 624,
+        "widget": {
+         "name": "amount"
+        }
+       }
+      ],
+      "outputs": [
+       {
+        "name": "IMAGE",
+        "type": "IMAGE",
+        "links": [
+         625
+        ]
+       }
+      ],
+      "properties": {
+       "cnr_id": "comfy-core",
+       "Node name for S&R": "RepeatImageBatch"
+      },
+      "title": "фон · ключевой кадр × N",
+      "widgets_values": [
+       1
+      ],
+      "widgets_values_named": {
+       "amount": 1
+      }
+     },
+     {
+      "id": 157,
+      "type": "ImageCompositeMasked",
+      "pos": [
+       2534,
+       2820
+      ],
+      "size": [
+       300,
+       190
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+       {
+        "localized_name": "destination",
+        "name": "destination",
+        "type": "IMAGE",
+        "link": 625
+       },
+       {
+        "localized_name": "source",
+        "name": "source",
+        "type": "IMAGE",
+        "link": 626
+       },
+       {
+        "localized_name": "mask",
+        "name": "mask",
+        "shape": 7,
+        "type": "MASK",
+        "link": 627
+       }
+      ],
+      "outputs": [
+       {
+        "localized_name": "IMAGE",
+        "name": "IMAGE",
+        "type": "IMAGE",
+        "links": [
+         628
+        ]
+       }
+      ],
+      "title": "фон · клип ТОЛЬКО в зоне движения",
+      "properties": {
+       "cnr_id": "comfy-core",
+       "ver": "0.34.0",
+       "Node name for S&R": "ImageCompositeMasked",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "input_ue_unconnectable": {},
+        "version": "7.8"
+       }
+      },
+      "widgets_values": [
+       0,
+       0,
+       false
+      ],
+      "widgets_values_named": {
+       "x": 0,
+       "y": 0,
+       "resize_source": false
+      }
+     },
+     {
+      "id": 158,
+      "type": "LazySwitchKJ",
+      "pos": [
+       2534,
+       3000
+      ],
+      "size": [
+       344.3248046875,
+       78
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "on_false",
+        "locked": null,
+        "name": "on_false",
+        "nameLocked": null,
+        "removable": null,
+        "type": "*",
+        "pos": null,
+        "link": 629
+       },
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "on_true",
+        "locked": null,
+        "name": "on_true",
+        "nameLocked": null,
+        "removable": null,
+        "type": "*",
+        "pos": null,
+        "link": 628
+       },
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "switch",
+        "locked": null,
+        "name": "switch",
+        "nameLocked": null,
+        "removable": null,
+        "type": "BOOLEAN",
+        "widget": {
+         "name": "switch"
+        },
+        "link": 630
+       }
+      ],
+      "outputs": [
+       {
+        "color_off": null,
+        "color_on": null,
+        "dir": null,
+        "label": null,
+        "localized_name": "*",
+        "locked": null,
+        "name": "*",
+        "nameLocked": null,
+        "removable": null,
+        "type": "*",
+        "pos": null,
+        "slot_index": null,
+        "links": [
+         631,
+         632,
+         633
+        ]
+       }
+      ],
+      "title": "фон по маске? (выкл → клип как есть)",
+      "properties": {
+       "cnr_id": "comfyui-kjnodes",
+       "ver": "1.5.0",
+       "Node name for S&R": "LazySwitchKJ",
+       "ue_properties": {
+        "widget_ue_connectable": {},
+        "version": "7.8",
+        "input_ue_unconnectable": {}
+       }
+      },
+      "widgets_values": [
+       false
+      ],
+      "widgets_values_named": {
+       "switch": false
       }
      }
     ],
@@ -14074,28 +13501,12 @@
       "type": "BOOLEAN"
      },
      {
-      "id": 379,
-      "origin_id": 59,
-      "origin_slot": 0,
-      "target_id": 60,
-      "target_slot": 0,
-      "type": "IMAGE"
-     },
-     {
       "id": 380,
       "origin_id": 89,
       "origin_slot": 4,
       "target_id": 60,
       "target_slot": 1,
       "type": "BOOLEAN"
-     },
-     {
-      "id": 387,
-      "origin_id": 59,
-      "origin_slot": 0,
-      "target_id": 61,
-      "target_slot": 0,
-      "type": "IMAGE"
      },
      {
       "id": 312,
@@ -14690,14 +14101,6 @@
       "type": "BOOLEAN"
      },
      {
-      "id": 463,
-      "origin_id": 59,
-      "origin_slot": 0,
-      "target_id": 91,
-      "target_slot": 1,
-      "type": "*"
-     },
-     {
       "id": 464,
       "origin_id": 89,
       "origin_slot": 20,
@@ -15208,6 +14611,214 @@
       "target_id": 47,
       "target_slot": 0,
       "type": "CONDITIONING"
+     },
+     {
+      "id": 608,
+      "origin_id": -10,
+      "origin_slot": 22,
+      "target_id": 145,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 609,
+      "origin_id": 145,
+      "origin_slot": 0,
+      "target_id": 146,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 610,
+      "origin_id": 146,
+      "origin_slot": 0,
+      "target_id": 147,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 611,
+      "origin_id": 147,
+      "origin_slot": 0,
+      "target_id": 148,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 612,
+      "origin_id": -10,
+      "origin_slot": 24,
+      "target_id": 149,
+      "target_slot": 0,
+      "type": "FLOAT,INT,BOOLEAN"
+     },
+     {
+      "id": 613,
+      "origin_id": -10,
+      "origin_slot": 24,
+      "target_id": 150,
+      "target_slot": 0,
+      "type": "FLOAT,INT,BOOLEAN"
+     },
+     {
+      "id": 614,
+      "origin_id": 148,
+      "origin_slot": 0,
+      "target_id": 151,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 615,
+      "origin_id": 149,
+      "origin_slot": 1,
+      "target_id": 151,
+      "target_slot": 1,
+      "type": "INT"
+     },
+     {
+      "id": 616,
+      "origin_id": 150,
+      "origin_slot": 0,
+      "target_id": 151,
+      "target_slot": 2,
+      "type": "FLOAT"
+     },
+     {
+      "id": 617,
+      "origin_id": 151,
+      "origin_slot": 0,
+      "target_id": 152,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 618,
+      "origin_id": 148,
+      "origin_slot": 0,
+      "target_id": 152,
+      "target_slot": 1,
+      "type": "MASK"
+     },
+     {
+      "id": 619,
+      "origin_id": 148,
+      "origin_slot": 0,
+      "target_id": 153,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 620,
+      "origin_id": -10,
+      "origin_slot": 23,
+      "target_id": 154,
+      "target_slot": 0,
+      "type": "FLOAT,INT,BOOLEAN"
+     },
+     {
+      "id": 621,
+      "origin_id": 153,
+      "origin_slot": 0,
+      "target_id": 154,
+      "target_slot": 1,
+      "type": "FLOAT,INT,BOOLEAN"
+     },
+     {
+      "id": 622,
+      "origin_id": 59,
+      "origin_slot": 0,
+      "target_id": 155,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 623,
+      "origin_id": 33,
+      "origin_slot": 0,
+      "target_id": 156,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 624,
+      "origin_id": 155,
+      "origin_slot": 2,
+      "target_id": 156,
+      "target_slot": 1,
+      "type": "INT"
+     },
+     {
+      "id": 625,
+      "origin_id": 156,
+      "origin_slot": 0,
+      "target_id": 157,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 626,
+      "origin_id": 59,
+      "origin_slot": 0,
+      "target_id": 157,
+      "target_slot": 1,
+      "type": "IMAGE"
+     },
+     {
+      "id": 627,
+      "origin_id": 152,
+      "origin_slot": 0,
+      "target_id": 157,
+      "target_slot": 2,
+      "type": "MASK"
+     },
+     {
+      "id": 628,
+      "origin_id": 157,
+      "origin_slot": 0,
+      "target_id": 158,
+      "target_slot": 1,
+      "type": "IMAGE"
+     },
+     {
+      "id": 629,
+      "origin_id": 59,
+      "origin_slot": 0,
+      "target_id": 158,
+      "target_slot": 0,
+      "type": "*"
+     },
+     {
+      "id": 630,
+      "origin_id": 154,
+      "origin_slot": 2,
+      "target_id": 158,
+      "target_slot": 2,
+      "type": "BOOLEAN"
+     },
+     {
+      "id": 631,
+      "origin_id": 158,
+      "origin_slot": 0,
+      "target_id": 60,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 632,
+      "origin_id": 158,
+      "origin_slot": 0,
+      "target_id": 61,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 633,
+      "origin_id": 158,
+      "origin_slot": 0,
+      "target_id": 91,
+      "target_slot": 1,
+      "type": "IMAGE"
      }
     ],
     "extra": {
@@ -15220,7 +14831,7 @@
     "version": 1,
     "state": {
      "lastGroupId": 16,
-     "lastNodeId": 165,
+     "lastNodeId": 160,
      "lastLinkId": 636,
      "lastRerouteId": 0
     },

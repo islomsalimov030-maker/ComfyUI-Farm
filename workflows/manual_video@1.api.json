@@ -43,7 +43,7 @@
   "class_type": "VHS_VideoCombine",
   "inputs": {
    "images": [
-    "165",
+    "1:90",
     0
    ],
    "frame_rate": 24,
@@ -949,7 +949,7 @@
   "class_type": "StacyTemporalStabilize",
   "inputs": {
    "images": [
-    "1:59",
+    "1:158",
     0
    ],
    "loop": [
@@ -973,7 +973,7 @@
   "class_type": "ImageFromBatch",
   "inputs": {
    "image": [
-    "1:59",
+    "1:158",
     0
    ],
    "batch_index": 4095,
@@ -1616,7 +1616,7 @@
     20
    ],
    "value": [
-    "1:59",
+    "1:158",
     0
    ]
   },
@@ -1654,6 +1654,231 @@
   },
   "_meta": {
    "title": "режим: генерация (отчёт)"
+  }
+ },
+ "1:145": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "7",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "фон · маска → картинка"
+  }
+ },
+ "1:146": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "1:145",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "bilinear",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "фон · маска → 1344x768 (как ключевой кадр)"
+  }
+ },
+ "1:147": {
+  "class_type": "ImageToMask",
+  "inputs": {
+   "image": [
+    "1:146",
+    0
+   ],
+   "channel": "red"
+  },
+  "_meta": {
+   "title": "фон · картинка → маска"
+  }
+ },
+ "1:148": {
+  "class_type": "ThresholdMask",
+  "inputs": {
+   "mask": [
+    "1:147",
+    0
+   ],
+   "value": 0.5
+  },
+  "_meta": {
+   "title": "фон · зона движения (порог 0.5)"
+  }
+ },
+ "1:149": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "160",
+    0
+   ],
+   "expression": "0 - a"
+  },
+  "_meta": {
+   "title": "фон · сжать на feather"
+  }
+ },
+ "1:150": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "160",
+    0
+   ],
+   "expression": "a"
+  },
+  "_meta": {
+   "title": "фон · размытие = feather"
+  }
+ },
+ "1:151": {
+  "class_type": "GrowMaskWithBlur",
+  "inputs": {
+   "mask": [
+    "1:148",
+    0
+   ],
+   "expand": [
+    "1:149",
+    1
+   ],
+   "blur_radius": [
+    "1:150",
+    0
+   ],
+   "incremental_expandrate": 0,
+   "tapered_corners": true,
+   "flip_input": false,
+   "lerp_alpha": 1,
+   "decay_factor": 1,
+   "fill_holes": false
+  },
+  "_meta": {
+   "title": "фон · растушёвка внутрь"
+  }
+ },
+ "1:152": {
+  "class_type": "MaskComposite",
+  "inputs": {
+   "destination": [
+    "1:151",
+    0
+   ],
+   "source": [
+    "1:148",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "operation": "multiply"
+  },
+  "_meta": {
+   "title": "фон · вне зоны = 0"
+  }
+ },
+ "1:153": {
+  "class_type": "easy isMaskEmpty",
+  "inputs": {
+   "mask": [
+    "1:148",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "фон · маска пустая?"
+  }
+ },
+ "1:154": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "159",
+    0
+   ],
+   "values.b": [
+    "1:153",
+    0
+   ],
+   "expression": "a > b"
+  },
+  "_meta": {
+   "title": "фон · включён и маска есть?"
+  }
+ },
+ "1:155": {
+  "class_type": "GetImageSize",
+  "inputs": {
+   "image": [
+    "1:59",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "фон · число кадров"
+  }
+ },
+ "1:156": {
+  "class_type": "RepeatImageBatch",
+  "inputs": {
+   "image": [
+    "1:33",
+    0
+   ],
+   "amount": [
+    "1:155",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "фон · ключевой кадр × N"
+  }
+ },
+ "1:157": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "1:156",
+    0
+   ],
+   "source": [
+    "1:59",
+    0
+   ],
+   "mask": [
+    "1:152",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false
+  },
+  "_meta": {
+   "title": "фон · клип ТОЛЬКО в зоне движения"
+  }
+ },
+ "1:158": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "1:59",
+    0
+   ],
+   "on_true": [
+    "1:157",
+    0
+   ],
+   "switch": [
+    "1:154",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "фон по маске? (выкл → клип как есть)"
   }
  },
  "2:94": {
@@ -2391,7 +2616,7 @@
    "title": "ARM loras · LoRA руки"
   }
  },
- "145": {
+ "159": {
   "class_type": "PrimitiveBoolean",
   "inputs": {
    "value": false
@@ -2400,318 +2625,13 @@
    "title": "KNOB bg_lock · фон вне маски = ключевой кадр"
   }
  },
- "146": {
+ "160": {
   "class_type": "PrimitiveInt",
   "inputs": {
    "value": 24
   },
   "_meta": {
-   "title": "KNOB bg_feather · px растушёвки внутрь"
-  }
- },
- "147": {
-  "class_type": "StacyFitFrame",
-  "inputs": {
-   "images": [
-    "7",
-    0
-   ],
-   "width": 1344,
-   "height": 768,
-   "method": "lanczos",
-   "anchor_y": 0.5
-  },
-  "_meta": {
-   "title": "фон · кадр → 1344x768 (как в движке)"
-  }
- },
- "148": {
-  "class_type": "RTXVideoSuperResolution",
-  "inputs": {
-   "images": [
-    "147",
-    0
-   ],
-   "resize_type": "target dimensions",
-   "resize_type.width": 1920,
-   "resize_type.height": 1096,
-   "quality": "ULTRA"
-  },
-  "_meta": {
-   "title": "фон · RTX → 1920x1096 (как в движке)"
-  }
- },
- "149": {
-  "class_type": "StacyFitFrame",
-  "inputs": {
-   "images": [
-    "148",
-    0
-   ],
-   "width": 1920,
-   "height": 1080,
-   "method": "bicubic",
-   "anchor_y": 0.5
-  },
-  "_meta": {
-   "title": "фон · → 1920x1080 (как в движке)"
-  }
- },
- "150": {
-  "class_type": "MaskToImage",
-  "inputs": {
-   "mask": [
-    "7",
-    1
-   ]
-  },
-  "_meta": {
-   "title": "фон · маска → картинка"
-  }
- },
- "151": {
-  "class_type": "StacyFitFrame",
-  "inputs": {
-   "images": [
-    "150",
-    0
-   ],
-   "width": 1344,
-   "height": 768,
-   "method": "bilinear",
-   "anchor_y": 0.5
-  },
-  "_meta": {
-   "title": "фон · маска → 1344x768"
-  }
- },
- "152": {
-  "class_type": "ImageScale",
-  "inputs": {
-   "image": [
-    "151",
-    0
-   ],
-   "upscale_method": "bilinear",
-   "width": 1920,
-   "height": 1096,
-   "crop": "disabled"
-  },
-  "_meta": {
-   "title": "фон · маска → 1920x1096"
-  }
- },
- "153": {
-  "class_type": "StacyFitFrame",
-  "inputs": {
-   "images": [
-    "152",
-    0
-   ],
-   "width": 1920,
-   "height": 1080,
-   "method": "bilinear",
-   "anchor_y": 0.5
-  },
-  "_meta": {
-   "title": "фон · маска → 1920x1080"
-  }
- },
- "154": {
-  "class_type": "ImageToMask",
-  "inputs": {
-   "image": [
-    "153",
-    0
-   ],
-   "channel": "red"
-  },
-  "_meta": {
-   "title": "фон · картинка → маска"
-  }
- },
- "155": {
-  "class_type": "ThresholdMask",
-  "inputs": {
-   "mask": [
-    "154",
-    0
-   ],
-   "value": 0.5
-  },
-  "_meta": {
-   "title": "фон · зона движения (порог 0.5)"
-  }
- },
- "156": {
-  "class_type": "ComfyMathExpression",
-  "inputs": {
-   "values.a": [
-    "146",
-    0
-   ],
-   "expression": "0 - a"
-  },
-  "_meta": {
-   "title": "фон · сжать на feather"
-  }
- },
- "157": {
-  "class_type": "ComfyMathExpression",
-  "inputs": {
-   "values.a": [
-    "146",
-    0
-   ],
-   "expression": "a"
-  },
-  "_meta": {
-   "title": "фон · размытие = feather"
-  }
- },
- "158": {
-  "class_type": "GrowMaskWithBlur",
-  "inputs": {
-   "mask": [
-    "155",
-    0
-   ],
-   "expand": [
-    "156",
-    1
-   ],
-   "blur_radius": [
-    "157",
-    0
-   ],
-   "incremental_expandrate": 0,
-   "tapered_corners": true,
-   "flip_input": false,
-   "lerp_alpha": 1,
-   "decay_factor": 1,
-   "fill_holes": false
-  },
-  "_meta": {
-   "title": "фон · растушёвка внутрь"
-  }
- },
- "159": {
-  "class_type": "MaskComposite",
-  "inputs": {
-   "destination": [
-    "158",
-    0
-   ],
-   "source": [
-    "155",
-    0
-   ],
-   "x": 0,
-   "y": 0,
-   "operation": "multiply"
-  },
-  "_meta": {
-   "title": "фон · вне зоны = 0"
-  }
- },
- "160": {
-  "class_type": "easy isMaskEmpty",
-  "inputs": {
-   "mask": [
-    "155",
-    0
-   ]
-  },
-  "_meta": {
-   "title": "фон · маска пустая?"
-  }
- },
- "161": {
-  "class_type": "ComfyMathExpression",
-  "inputs": {
-   "values.a": [
-    "145",
-    0
-   ],
-   "values.b": [
-    "160",
-    0
-   ],
-   "expression": "a > b"
-  },
-  "_meta": {
-   "title": "фон · включён и маска есть?"
-  }
- },
- "162": {
-  "class_type": "GetImageSize",
-  "inputs": {
-   "image": [
-    "1:90",
-    0
-   ]
-  },
-  "_meta": {
-   "title": "фон · число кадров"
-  }
- },
- "163": {
-  "class_type": "RepeatImageBatch",
-  "inputs": {
-   "image": [
-    "149",
-    0
-   ],
-   "amount": [
-    "162",
-    2
-   ]
-  },
-  "_meta": {
-   "title": "фон · ключевой кадр × N"
-  }
- },
- "164": {
-  "class_type": "ImageCompositeMasked",
-  "inputs": {
-   "destination": [
-    "163",
-    0
-   ],
-   "source": [
-    "1:90",
-    0
-   ],
-   "mask": [
-    "159",
-    0
-   ],
-   "x": 0,
-   "y": 0,
-   "resize_source": false
-  },
-  "_meta": {
-   "title": "фон · видео ТОЛЬКО в зоне движения"
-  }
- },
- "165": {
-  "class_type": "LazySwitchKJ",
-  "inputs": {
-   "on_false": [
-    "1:90",
-    0
-   ],
-   "on_true": [
-    "164",
-    0
-   ],
-   "switch": [
-    "161",
-    2
-   ]
-  },
-  "_meta": {
-   "title": "фон по маске? (выкл → видео как есть)"
+   "title": "KNOB bg_feather · px растушёвки внутрь (1344x768)"
   }
  }
 }

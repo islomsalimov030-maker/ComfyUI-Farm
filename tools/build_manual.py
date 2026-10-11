@@ -470,75 +470,74 @@ def build_video(nd_path, compact_path, video_ui, outdir):
     top.connect(ap, 0, inst, "positive", "CONDITIONING")
     inst["inputs"][-1]["label"] = "кондиционирование ← RefMod"
 
-    # ---- фон по маске ключевого кадра (поверх итога FullHD)
+    # ---- фон по маске ключевого кадра: склейка на этапе 1344x768 внутри движка (после шва петли, до анти-дрожи
+    #      и RTX). Фон = тот же кадр, что движок взял якорем (keyframe 1344x768). FullHD-копий не держит.
     kf = top.node(7)
+    S = {"bg_mask": eng.add_sub_input("bg_mask", "MASK", label="фон: маска зоны движения"),
+         "bg_lock": eng.add_sub_input("bg_lock", "BOOLEAN", label="KNOB bg_lock"),
+         "bg_feather": eng.add_sub_input("bg_feather", "INT", label="KNOB bg_feather")}
+    ex, ey = 1854, 2400
+    m2i = eng.add_node("MaskToImage", "фон · маска → картинка", (ex, ey), (260, 40), inputs=[("mask", "MASK")],
+                       outputs=[("IMAGE", "IMAGE")], widgets={}, props=CORE("MaskToImage"))
+    fit_m = eng.clone_node(eng.node(33), "фон · маска → 1344x768 (как ключевой кадр)", (ex, ey + 80),
+                           widgets={"method": "bilinear"})
+    i2m = eng.add_node("ImageToMask", "фон · картинка → маска", (ex, ey + 280), (260, 60), inputs=[("image", "IMAGE")],
+                       outputs=[("MASK", "MASK")], widgets={"channel": "red"}, props=CORE("ImageToMask"))
+    thr = eng.add_node("ThresholdMask", "фон · зона движения (порог 0.5)", (ex, ey + 370), (300, 80),
+                       inputs=[("mask", "MASK")], outputs=[("MASK", "MASK")], widgets={"value": 0.5},
+                       props=CORE("ThresholdMask"))
+    neg = eng.clone_node(tp(("nd", 11308)), "фон · сжать на feather", (ex + 340, ey))
+    K.set_widgets(neg, {"expression": "0 - a"})
+    flt = eng.clone_node(tp(("nd", 11308)), "фон · размытие = feather", (ex + 340, ey + 110))
+    K.set_widgets(flt, {"expression": "a"})
+    gmb = eng.clone_node(tp(("nd", 11085)), "фон · растушёвка внутрь", (ex + 340, ey + 220), widgets={
+        "expand": -24, "tapered_corners": True, "blur_radius": 24.0, "fill_holes": False})
+    mul = eng.clone_node(tp(("nd", 11074)), "фон · вне зоны = 0", (ex + 340, ey + 500),
+                         widgets={"x": 0, "y": 0, "operation": "multiply"})
+    empty = eng.clone_node(tp(("nd", 11109)), "фон · маска пустая?", (ex + 680, ey))
+    on = eng.clone_node(tp(("nd", 11308)), "фон · включён и маска есть?", (ex + 680, ey + 80))
+    K.set_widgets(on, {"expression": "a > b"})
+    size = eng.clone_node(tp(("nd", 11116)), "фон · число кадров", (ex + 680, ey + 200))
+    rep = eng.add_node("RepeatImageBatch", "фон · ключевой кадр × N", (ex + 680, ey + 300), (300, 80),
+                       inputs=[("image", "IMAGE"), ("amount", "INT", True)], outputs=[("IMAGE", "IMAGE")],
+                       widgets={"amount": 1}, props=CORE("RepeatImageBatch"))
+    comp = eng.clone_node(tp(("nd", 11075)), "фон · клип ТОЛЬКО в зоне движения", (ex + 680, ey + 420),
+                          widgets={"x": 0, "y": 0, "resize_source": False})
+    sw = eng.clone_node(tp(("st", 35)), "фон по маске? (выкл → клип как есть)", (ex + 680, ey + 600))
+    src = eng.node(59)                                   # «петля? шов» — клип 1344x768 после шва
+    eng.connect(-10, S["bg_mask"], m2i, "mask"); eng.connect(m2i, 0, fit_m, "images")
+    eng.connect(fit_m, 0, i2m, "image"); eng.connect(i2m, 0, thr, "mask")
+    eng.connect(-10, S["bg_feather"], neg, "values.a"); eng.connect(-10, S["bg_feather"], flt, "values.a")
+    eng.connect(thr, 0, gmb, "mask")
+    eng.connect(neg, 1, gmb, "expand", "INT", True); eng.connect(flt, 0, gmb, "blur_radius", "FLOAT", True)
+    eng.connect(gmb, 0, mul, "destination"); eng.connect(thr, 0, mul, "source")
+    eng.connect(thr, 0, empty, "mask")
+    eng.connect(-10, S["bg_lock"], on, "values.a"); eng.connect(empty, 0, on, "values.b")
+    eng.connect(src, 0, size, "image", "IMAGE")
+    eng.connect(eng.node(33), 0, rep, "image"); eng.connect(size, 2, rep, "amount", "INT", True)
+    eng.connect(rep, 0, comp, "destination"); eng.connect(src, 0, comp, "source", "IMAGE")
+    eng.connect(mul, 0, comp, "mask")
+    eng.connect(comp, 0, sw, "on_true"); eng.connect(src, 0, sw, "on_false")
+    eng.connect(on, 2, sw, "switch", "BOOLEAN", True)
+    for nid, inp in ((60, "images"), (61, "image"), (91, "value")):     # анти-дрожь → RTX, последний кадр, raw
+        eng.connect(sw, 0, eng.node(nid), inp, "IMAGE")
+
     gx, gy = 1180, 2140
     knobs = {}
     knob = knob_factory(top, knobs)
     knob("bg_lock", "BOOLEAN", False, (gx, gy + 60), "фон вне маски = ключевой кадр")
-    knob("bg_feather", "INT", 24, (gx, gy + 140), "px растушёвки внутрь")
-    fit_kf = top.clone_node(tp(("st", 33)), "фон · кадр → 1344x768 (как в движке)", (gx + 460, gy + 60))
-    rtx = top.clone_node(tp(("st", 62)), "фон · RTX → 1920x1096 (как в движке)", (gx + 460, gy + 260))
-    fit_kf2 = top.clone_node(tp(("st", 63)), "фон · → 1920x1080 (как в движке)", (gx + 460, gy + 420))
-    m2i = top.add_node("MaskToImage", "фон · маска → картинка", (gx + 800, gy + 60), (260, 40),
-                       inputs=[("mask", "MASK")], outputs=[("IMAGE", "IMAGE")], widgets={}, props=CORE("MaskToImage"))
-    fit_m = top.clone_node(tp(("st", 33)), "фон · маска → 1344x768", (gx + 800, gy + 140),
-                           widgets={"method": "bilinear"})
-    up_m = top.add_node("ImageScale", "фон · маска → 1920x1096", (gx + 800, gy + 340), (300, 130),
-                        inputs=[("image", "IMAGE")], outputs=[("IMAGE", "IMAGE")],
-                        widgets={"upscale_method": "bilinear", "width": 1920, "height": 1096, "crop": "disabled"},
-                        props=CORE("ImageScale"))
-    fit_m2 = top.clone_node(tp(("st", 63)), "фон · маска → 1920x1080", (gx + 800, gy + 500),
-                            widgets={"method": "bilinear"})
-    i2m = top.add_node("ImageToMask", "фон · картинка → маска", (gx + 1140, gy + 60), (260, 60),
-                       inputs=[("image", "IMAGE")], outputs=[("MASK", "MASK")], widgets={"channel": "red"},
-                       props=CORE("ImageToMask"))
-    thr = top.add_node("ThresholdMask", "фон · зона движения (порог 0.5)", (gx + 1140, gy + 160), (300, 80),
-                       inputs=[("mask", "MASK")], outputs=[("MASK", "MASK")], widgets={"value": 0.5},
-                       props=CORE("ThresholdMask"))
-    neg = top.clone_node(tp(("nd", 11308)), "фон · сжать на feather", (gx + 1140, gy + 280))
-    K.set_widgets(neg, {"expression": "0 - a"})
-    flt = top.clone_node(tp(("nd", 11308)), "фон · размытие = feather", (gx + 1140, gy + 400))
-    K.set_widgets(flt, {"expression": "a"})
-    gmb = top.clone_node(tp(("nd", 11085)), "фон · растушёвка внутрь", (gx + 1480, gy + 60), widgets={
-        "expand": -24, "tapered_corners": True, "blur_radius": 24.0, "fill_holes": False})
-    mul = top.clone_node(tp(("nd", 11074)), "фон · вне зоны = 0", (gx + 1480, gy + 340),
-                         widgets={"x": 0, "y": 0, "operation": "multiply"})
-    empty = top.clone_node(tp(("nd", 11109)), "фон · маска пустая?", (gx + 1480, gy + 480))
-    on = top.clone_node(tp(("nd", 11308)), "фон · включён и маска есть?", (gx + 1480, gy + 560))
-    K.set_widgets(on, {"expression": "a > b"})
-    size = top.clone_node(tp(("nd", 11116)), "фон · число кадров", (gx + 1820, gy + 60))
-    rep = top.add_node("RepeatImageBatch", "фон · ключевой кадр × N", (gx + 1820, gy + 180), (300, 80),
-                       inputs=[("image", "IMAGE"), ("amount", "INT", True)], outputs=[("IMAGE", "IMAGE")],
-                       widgets={"amount": 1}, props=CORE("RepeatImageBatch"))
-    comp = top.clone_node(tp(("nd", 11075)), "фон · видео ТОЛЬКО в зоне движения", (gx + 1820, gy + 300),
-                          widgets={"x": 0, "y": 0, "resize_source": False})
-    sw = top.clone_node(tp(("st", 35)), "фон по маске? (выкл → видео как есть)", (gx + 1820, gy + 480))
-
-    top.connect(kf, 0, fit_kf, "images"); top.connect(fit_kf, 0, rtx, "images"); top.connect(rtx, 0, fit_kf2, "images")
-    top.connect(kf, 1, m2i, "mask"); top.connect(m2i, 0, fit_m, "images"); top.connect(fit_m, 0, up_m, "image")
-    top.connect(up_m, 0, fit_m2, "images"); top.connect(fit_m2, 0, i2m, "image"); top.connect(i2m, 0, thr, "mask")
-    top.connect(knobs["bg_feather"], 0, neg, "values.a"); top.connect(knobs["bg_feather"], 0, flt, "values.a")
-    top.connect(thr, 0, gmb, "mask")
-    top.connect(neg, 1, gmb, "expand", "INT", True); top.connect(flt, 0, gmb, "blur_radius", "FLOAT", True)
-    top.connect(gmb, 0, mul, "destination"); top.connect(thr, 0, mul, "source")
-    top.connect(thr, 0, empty, "mask")
-    top.connect(knobs["bg_lock"], 0, on, "values.a"); top.connect(empty, 0, on, "values.b")
-    vid = (inst, 1)                                     # «итог FullHD»
-    top.connect(*vid, size, "image", "IMAGE")
-    top.connect(fit_kf2, 0, rep, "image"); top.connect(size, 2, rep, "amount", "INT", True)
-    top.connect(rep, 0, comp, "destination"); top.connect(*vid, comp, "source", "IMAGE"); top.connect(mul, 0, comp, "mask")
-    top.connect(comp, 0, sw, "on_true"); top.connect(*vid, sw, "on_false")
-    top.connect(on, 2, sw, "switch", "BOOLEAN", True)
-    top.connect(sw, 0, top.node(10), "images", "IMAGE")
+    knob("bg_feather", "INT", 24, (gx, gy + 140), "px растушёвки внутрь (1344x768)")
+    top.connect(kf, 1, inst, "bg_mask", "MASK")
+    top.connect(knobs["bg_lock"], 0, inst, "bg_lock", "BOOLEAN")
+    top.connect(knobs["bg_feather"], 0, inst, "bg_feather", "INT")
 
     kf["title"] = "IN keyframe · ключевой кадр (+ маска зоны движения в MaskEditor, если фон по маске)"
     ui["groups"] += [
         {"id": 90, "title": REFMOD_GROUP, "bounding": [rx - 20, ry, 1180, 400], "color": C_REF, "flags": {}},
         {"id": 91, "title": "Рука: ARM model + ARM loras (вместо char_lora)", "bounding": [ax - 20, ay, 560, 420],
          "color": C_PANEL, "flags": {}},
-        {"id": 92, "title": "5 · Фон по маске ключевого кадра (выкл по умолчанию)",
-         "bounding": [gx - 20, gy, 2200, 700], "color": "#2e5a6e", "flags": {}},
+        {"id": 92, "title": "5 · Фон по маске ключевого кадра (выкл)",
+         "bounding": [gx - 20, gy, 480, 240], "color": "#2e5a6e", "flags": {}},
     ]
     K.set_widgets(top.node(3), {"text": VIDEO_README})
     K.set_widgets(top.node(4), {"text": VIDEO_CHEAT})
@@ -567,13 +566,13 @@ VIDEO_README = """## Ручное видео · manual_video@1 (петля FullH
 **ARM model** (Singularity ref2va по умолчанию) + **ARM loras** (Power Lora Loader: `stacy_h3_A_stills` 1.0; вторая строка — ref2v turbo 8-step, выкл). С turbo-LoRA ставь **KNOB steps** 8; без неё 8–20 (WS-07).
 
 ### Фон по маске (группа 5, выкл по умолчанию)
-Против дрейфа цвета, «кипения» и сдвига статичного фона. В **IN keyframe**: ПКМ → Open in MaskEditor → закрасить **зону движения** (персонаж + куда тянутся руки/ноги/волосы, с запасом) → Save. **KNOB bg_lock** ВКЛ. Вне маски каждый кадр итога = ключевой кадр, пропущенный тем же путём (1344x768 → RTX → 1920x1080), край растушёван внутрь на `bg_feather`. Тени и отражения вне маски замрут — включай их в маску. Маска пустая или bg_lock ВЫКЛ → видео как есть. Действует на итог FullHD (raw и последний кадр — без изменений).
+Против дрейфа цвета, «кипения» и сдвига статичного фона. В **IN keyframe**: ПКМ → Open in MaskEditor → закрасить **зону движения** (персонаж + куда тянутся руки/ноги/волосы, с запасом) → Save. **KNOB bg_lock** ВКЛ. Внутри движка, сразу после шва петли (на 1344x768), вне маски каждый кадр = ключевой кадр, который движок взял якорем; край растушёван внутрь на `bg_feather` px. Дальше общий путь: анти-дрожь → RTX → FullHD → face pass, поэтому фон в итоге статичен и одной резкости с персонажем. Тени и отражения вне маски замрут — включай их в маску. Маска пустая или bg_lock ВЫКЛ → клип как есть. Действует и на raw, и на последний кадр.
 
 ### RefMod (H3Mod)
 Группа **RefMod** выключена: пакет ComfyUI-MiniMaxH3Mod (MIT) пока не установлен на сервере. Включить: поставить пакет, сделать мод (*Create H3 RefMod*, `models/refmods/`), выбрать в **RefMod · загрузка**, включить группу **RefMod вкл/выкл**. Применяется к кондиционированию ref2va перед якорями кадров.
 
 ### Память
-- OOM на цвете / RTX → `free_vram` ВКЛ. Фон по маске держит в RAM 3 копии FullHD-клипа (~5 ГБ каждая на 8 с) — при нехватке RAM выключить.
+- OOM на цвете / RTX → `free_vram` ВКЛ. Фон по маске добавляет в RAM ~5 ГБ (две копии клипа 1344x768 на 8 с).
 
 **Ноды:** ComfyUI-StacyLoop (свой, ⚠ нет LICENSE), ComfyUI-H3-FaceRefine (MIT), KJNodes (GPL-3), VideoHelperSuite (GPL-3), Nvidia RTX nodes (Apache-2.0), rgthree (MIT), ComfyUI-MiniMaxH3Mod (MIT, необязательно)."""
 
@@ -587,7 +586,7 @@ VIDEO_CHEAT = """## Симптом → крутилка
 | Уходит от кадра / плывёт поза | **KNOB shift** 13–14 |
 | Засветка, «туман», вставка крупного плана | другой `seed` |
 | Цвет/свет уплыл, фон «кипит» или съезжает | **фон по маске** (bg_lock) или **KNOB color_lock** 1.0 |
-| Виден край зоны движения | **KNOB bg_feather** 40–64; маску шире |
+| Виден край зоны движения | **KNOB bg_feather** 32–48; маску шире |
 | Рука/волосы «обрезаются» на краю | маску шире: включить весь размах движения |
 | Видна склейка петли | **KNOB seam_crossfade** 8–12 |
 | Лицо не похоже | `face_denoise` 0.32–0.38 (AUTO выкл), `face_lora` 1.0–1.2 |
