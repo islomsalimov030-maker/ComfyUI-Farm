@@ -292,7 +292,8 @@ class Worker:
         prev_codes = self._prev_fail_codes(sid, stage, try_no)
         knobs = self._knobs_for(prev_codes)
         ctx = {"try_no": try_no, "fail_codes": prev_codes, "knobs": knobs,
-               "comment": shot.get("review_comment"), "template": sp.get("prompt_template")}
+               "comment": shot.get("review_comment"), "template": sp.get("prompt_template"),
+               "workflow": ref, "params": params}          # v0.6: метки входов для линтера (WS-04)
         pr = self.plugins.prompts.build(stage, shot, self.plugins.library, prof, ctx=ctx)
         lint_errors = [i for i in (_get(pr, "lint") or []) if _get(i, "severity") == "error"]
         if lint_errors:

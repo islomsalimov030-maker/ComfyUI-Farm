@@ -1,0 +1,559 @@
+# WS-04: эталонные JSON-поля (то, что должен вернуть LLM) для 20 SFW-строк — golden-тесты без LLM.
+# Формат полей — farm/prompts/schema.py (VIDEO_FIELDS / FRAME_FIELDS). Пишется вручную по строке таблицы.
+
+STD-01:
+  frame:
+    location_en: the living room of her apartment
+    framing_en: ""
+    placement: standing in the middle of the room, a few steps deeper than the camera
+    pose: upright, her weight evenly on both feet, her arms relaxed at her sides
+    expression: She looks straight ahead with a calm, relaxed expression
+    summary_pose: standing upright in the middle of the room
+    scale_anchor: ""
+  video:
+    location_en: the living room of her apartment
+    framing_en: ""
+    start_pose: standing upright with her weight evenly on both feet, her arms relaxed at her sides, looking straight ahead
+    end_pose: ""
+    summary_action: shifts her weight from one foot to the other with a gentle sway of her torso and hips, glancing slightly to the side
+    phases:
+      - {kind: move, sec: 1.2, text: "she shifts her weight onto her right leg, her hips swaying gently to her right and her eyes drifting slightly to her right"}
+      - {kind: move, sec: 1.2, text: "she shifts her weight across onto her left leg, her hips swaying gently to her left"}
+      - {kind: return, sec: 1.2, text: "she brings her weight back to the center, evenly on both feet, and looks straight ahead again"}
+    moving_parts: her hips, legs and torso below the waist
+    still_parts: her head, arms and hands
+    extra_rules: ["Her feet stay planted on the same spot and never leave the floor."]
+    expression: a calm, relaxed expression throughout
+    face_expression: calm relaxed expression
+    idle_detail: looking straight ahead
+    sounds: the soft rustle of fabric
+
+STD-02:
+  frame:
+    location_en: her apartment by the window with curtains
+    framing_en: a frontal shot showing the window with curtains and a small table
+    placement: standing in front of the window, a few steps away from it
+    pose: relaxed, her hands clasped behind her back, both feet flat on the floor
+    expression: She looks at the camera with a light shy smile
+    summary_pose: standing by the window
+    scale_anchor: the small table reaches the middle of her thighs
+  video:
+    location_en: her apartment by the window with curtains, next to a small table
+    framing_en: a frontal shot showing the window with curtains and the small table
+    start_pose: standing relaxed with her hands clasped behind her back, both feet flat on the floor, looking at the camera
+    end_pose: ""
+    summary_action: rises from her heels onto her toes and lowers back down, rocking gently
+    phases:
+      - {kind: move, sec: 0.9, text: "she rises from her heels onto her toes, her body lifting gently"}
+      - {kind: move, sec: 0.8, text: "she lowers back down onto her heels"}
+      - {kind: move, sec: 0.9, text: "she rises onto her toes once more, rocking gently on the spot"}
+      - {kind: return, sec: 0.9, text: "she lowers back onto her full feet, her weight evenly on both legs"}
+    moving_parts: her feet, ankles and legs
+    still_parts: her head, her arms and her hands clasped behind her back
+    extra_rules: ["Her feet never leave their spot on the floor; only her heels lift."]
+    expression: a light shy smile throughout
+    face_expression: light shy smile
+    idle_detail: smiling shyly at the camera
+    sounds: a faint creak of the floor
+
+STD-03:
+  frame:
+    location_en: the bathroom of her apartment beside the shower cabin
+    framing_en: a frontal shot that shows only the bathroom
+    placement: standing in front of the shower cabin
+    pose: upright, her arms hanging loosely along her body
+    expression: She looks straight ahead with a light shy smile
+    summary_pose: standing in front of the shower cabin
+    scale_anchor: the door handle of the shower cabin reaches her waist
+  video:
+    location_en: the bathroom of her apartment beside the shower cabin, with a little steam in the air
+    framing_en: a frontal shot that shows only the bathroom
+    start_pose: standing upright, her arms hanging loosely at her sides, looking straight ahead
+    end_pose: ""
+    summary_action: tucks a strand of hair behind her right ear and smooths her hair with her right palm, briefly lowering her eyes
+    phases:
+      - {kind: move, sec: 0.7, text: "her right hand lifts briskly from her side to a strand of hair at her right cheek"}
+      - {kind: move, sec: 0.7, text: "she tucks the strand behind her right ear"}
+      - {kind: move, sec: 0.7, text: "her right palm smooths her hair down at the side of her head"}
+      - {kind: hold, sec: 0.6, text: "she lowers her eyes for a moment"}
+      - {kind: return, sec: 0.8, text: "her right hand drops back down to her side and she looks straight ahead again"}
+    moving_parts: her right hand, right forearm and eyes
+    still_parts: her shoulders, torso, left arm and legs
+    extra_rules:
+      - "Her right hand moves only at the side of her head; it never passes in front of her face."
+      - "Her right elbow stays almost still while her hand and forearm do the work."
+    expression: a light shy smile throughout
+    face_expression: light shy smile
+    idle_detail: looking straight ahead with a shy smile
+    sounds: the soft brush of her palm over her hair and a faint drip of water
+
+STD-04:
+  frame:
+    location_en: the living room of her apartment beside a vertical pole, with a window with white curtains behind her
+    framing_en: ""
+    placement: standing next to the vertical pole
+    pose: relaxed, her arms down at her sides, her weight evenly on both feet
+    expression: She looks straight ahead with a neutral expression
+    summary_pose: standing next to the pole
+    scale_anchor: ""
+  video:
+    location_en: the living room of her apartment beside a vertical pole, with a window with white curtains behind her
+    framing_en: ""
+    start_pose: standing relaxed with her arms down at her sides, her face neutral
+    end_pose: standing upright with her arms crossed over her chest, frowning, her weight evenly on both feet, looking straight ahead
+    summary_action: crosses her arms over her chest and starts to frown
+    phases:
+      - {kind: move, sec: 0.9, text: "her right forearm lifts from her side and folds across her chest"}
+      - {kind: move, sec: 0.9, text: "her left forearm lifts and folds over her right forearm, so her arms are crossed over her chest"}
+      - {kind: hold, sec: 1.0, text: "she draws her eyebrows together into a slight frown and holds the pose"}
+    moving_parts: her arms, hands and eyebrows
+    still_parts: her head, torso, legs and feet
+    extra_rules: ["Her feet stay planted on the same spot."]
+    expression: neutral at first, turning into a slight frown as she crosses her arms
+    face_expression: slight frown
+    idle_detail: frowning slightly, looking straight ahead
+    sounds: the soft rustle of her sleeves
+
+STD-05:
+  frame:
+    location_en: the living room of her apartment beside a vertical pole, with a window with white curtains behind her
+    framing_en: ""
+    placement: standing next to the vertical pole
+    pose: upright, her arms crossed over her chest, her weight evenly on both feet
+    expression: She looks straight ahead with a slight frown
+    summary_pose: standing with her arms crossed next to the pole
+    scale_anchor: ""
+  video:
+    location_en: the living room of her apartment beside a vertical pole, with a window with white curtains behind her
+    framing_en: ""
+    start_pose: standing upright with her arms crossed over her chest, her weight evenly on both feet, frowning and looking straight ahead
+    end_pose: ""
+    summary_action: shifts her weight from one foot to the other while keeping her arms crossed
+    phases:
+      - {kind: move, sec: 1.3, text: "she shifts her weight onto her right leg, her hips swaying gently to her right"}
+      - {kind: hold, sec: 1.0, text: "she rests her weight on her right leg"}
+      - {kind: move, sec: 1.3, text: "she shifts her weight across onto her left leg, her hips swaying gently to her left"}
+      - {kind: return, sec: 1.2, text: "she brings her weight back to the center, evenly on both feet"}
+    moving_parts: her hips and legs
+    still_parts: her head, her crossed arms and her hands
+    extra_rules: ["Her arms stay crossed over her chest the whole time.", "Her feet stay planted on the same spot."]
+    expression: a slight frown throughout
+    face_expression: slight frown
+    idle_detail: frowning, looking straight ahead
+    sounds: the soft rustle of fabric
+
+STD-06:
+  frame:
+    location_en: the reception area of the stretching class hall, behind the reception desk with a laptop, a mug and a desk lamp
+    framing_en: a frontal shot that shows only the reception desk, the walls, the laptop and her
+    placement: standing behind the reception desk
+    pose: both hands on the laptop keyboard as she types, her shoulders relaxed, her head bent slightly towards the screen
+    expression: Her eyes are on the laptop screen and her face is calm
+    summary_pose: standing behind the reception desk typing on a laptop
+    scale_anchor: the top of the reception desk reaches her hip
+  video:
+    location_en: the reception area of the stretching class hall, behind the reception desk with a laptop, a mug and a desk lamp
+    framing_en: a frontal shot that shows only the reception desk, the walls, the laptop and her
+    start_pose: standing behind the reception desk, typing on the laptop with both hands, her eyes on the screen
+    end_pose: ""
+    summary_action: stops typing and looks up into the camera, holds the look and turns her eyes back to the laptop
+    phases:
+      - {kind: move, sec: 0.6, text: "her hands stop typing and rest still on the keyboard"}
+      - {kind: move, sec: 0.8, text: "she lifts her head slightly and looks up from the screen into the camera"}
+      - {kind: hold, sec: 2.2, text: "she holds her gaze on the camera"}
+      - {kind: return, sec: 0.9, text: "she lowers her head slightly and turns her eyes back to the laptop screen"}
+    moving_parts: her head, eyes and fingers
+    still_parts: her shoulders, her torso and the rest of her body behind the desk
+    extra_rules: ["While she types, only her fingers and wrists make small movements."]
+    expression: a calm, relaxed expression throughout
+    face_expression: calm relaxed expression
+    idle_detail: typing on the laptop, her eyes on the screen
+    sounds: soft keyboard clicks
+
+STD-07:
+  frame:
+    location_en: the stretching class hall in front of the wall mirror with a ballet barre
+    framing_en: a full-length frontal shot
+    placement: standing with her back to the mirror, a step in front of the barre
+    pose: her arms hanging loosely at her sides, her weight evenly on both feet
+    expression: She looks at the camera with a warm smile
+    summary_pose: standing in front of the mirror
+    scale_anchor: the ballet barre reaches her hip
+  video:
+    location_en: the stretching class hall in front of the wall mirror with a ballet barre
+    framing_en: a full-length frontal shot
+    start_pose: standing with her back to the mirror, looking at the camera, her arms hanging loosely at her sides
+    end_pose: ""
+    summary_action: rests her right hand on the barre, shifts her weight onto her right leg and crosses her left leg over her right
+    phases:
+      - {kind: move, sec: 1.0, text: "her right hand reaches back and rests on the barre beside her right hip"}
+      - {kind: move, sec: 0.9, text: "she shifts her weight onto her right leg, leaning lightly on the barre"}
+      - {kind: move, sec: 0.9, text: "her left leg crosses in front of her right leg, the toes of her left foot touching the floor"}
+      - {kind: hold, sec: 1.4, text: "she holds the relaxed crossed-leg pose, leaning on the barre"}
+      - {kind: move, sec: 0.7, text: "she briskly uncrosses her legs and puts both feet back on the floor with her weight on both legs"}
+      - {kind: return, sec: 0.6, text: "her right hand leaves the barre and drops back to her side"}
+    moving_parts: her right arm, her hips and her legs
+    still_parts: her head, her left arm and her gaze on the camera
+    extra_rules: ["She stays in the same spot in front of the mirror."]
+    expression: a warm smile throughout
+    face_expression: warm smile
+    idle_detail: smiling at the camera
+    sounds: a soft creak of the barre and the light tap of her foot
+
+STD-09:
+  frame:
+    location_en: the stretching class hall beside a cabinet with trophies and prizes
+    framing_en: ""
+    placement: standing in front of the trophy cabinet
+    pose: relaxed, her arms down at her sides, her weight evenly on both feet
+    expression: She looks straight ahead with a neutral expression
+    summary_pose: standing in front of the trophy cabinet
+    scale_anchor: ""
+  video:
+    location_en: the stretching class hall beside a cabinet with trophies and prizes
+    framing_en: ""
+    start_pose: standing relaxed with her arms down at her sides, her face neutral
+    end_pose: standing upright with her arms crossed over her chest, frowning, her weight evenly on both feet, looking straight ahead
+    summary_action: crosses her arms over her chest and starts to frown
+    phases:
+      - {kind: move, sec: 0.9, text: "her right forearm lifts from her side and folds across her chest"}
+      - {kind: move, sec: 0.9, text: "her left forearm lifts and folds over her right forearm, so her arms are crossed over her chest"}
+      - {kind: hold, sec: 1.0, text: "she draws her eyebrows together into a slight frown and holds the pose"}
+    moving_parts: her arms, hands and eyebrows
+    still_parts: her head, torso, legs and feet
+    extra_rules: ["Her feet stay planted on the same spot."]
+    expression: neutral at first, turning into a slight frown as she crosses her arms
+    face_expression: slight frown
+    idle_detail: frowning slightly, looking straight ahead
+    sounds: the soft rustle of her sleeves
+
+STD-10:
+  frame:
+    location_en: the stretching class hall beside a cabinet with trophies and prizes
+    framing_en: ""
+    placement: standing in front of the trophy cabinet
+    pose: upright, her arms crossed over her chest, her weight evenly on both feet
+    expression: She looks straight ahead with a slight frown
+    summary_pose: standing with her arms crossed in front of the trophy cabinet
+    scale_anchor: ""
+  video:
+    location_en: the stretching class hall beside a cabinet with trophies and prizes
+    framing_en: ""
+    start_pose: standing upright with her arms crossed over her chest, her weight evenly on both feet, frowning and looking straight ahead
+    end_pose: ""
+    summary_action: shifts her weight from one foot to the other while keeping her arms crossed
+    phases:
+      - {kind: move, sec: 1.3, text: "she shifts her weight onto her right leg, her hips swaying gently to her right"}
+      - {kind: hold, sec: 1.0, text: "she rests her weight on her right leg"}
+      - {kind: move, sec: 1.3, text: "she shifts her weight across onto her left leg, her hips swaying gently to her left"}
+      - {kind: return, sec: 1.2, text: "she brings her weight back to the center, evenly on both feet"}
+    moving_parts: her hips and legs
+    still_parts: her head, her crossed arms and her hands
+    extra_rules: ["Her arms stay crossed over her chest the whole time.", "Her feet stay planted on the same spot."]
+    expression: a slight frown throughout
+    face_expression: slight frown
+    idle_detail: frowning, looking straight ahead
+    sounds: the soft rustle of fabric
+
+STD-11:
+  frame:
+    location_en: the stretching class hall beside the ballet barre in front of the wall mirror
+    framing_en: a full-length shot
+    placement: standing sideways to the ballet barre
+    pose: her right hand holding the barre, her back straight, her left arm down at her side, her head turned towards the mirror
+    expression: She looks at herself in the mirror with a calm expression
+    summary_pose: standing sideways at the barre
+    scale_anchor: the ballet barre reaches her hip
+  video:
+    location_en: the stretching class hall beside the ballet barre in front of the wall mirror
+    framing_en: a full-length shot
+    start_pose: standing sideways to the barre with her right hand holding it, her back straight, her left arm down at her side, looking at herself in the mirror
+    end_pose: ""
+    summary_action: raises her left arm over her head and leans into a side stretch towards the barre
+    phases:
+      - {kind: move, sec: 1.2, text: "her left arm rises from her side, out to her left and up over her head"}
+      - {kind: move, sec: 1.3, text: "she bends her upper body sideways towards the barre, her left arm reaching over her head towards the barre"}
+      - {kind: hold, sec: 1.8, text: "she holds the side stretch, breathing calmly"}
+      - {kind: return, sec: 1.2, text: "her upper body straightens and her left arm lowers back down to her side"}
+    moving_parts: her left arm, her upper body and her waist
+    still_parts: her right hand on the barre, her hips, her legs and her feet
+    extra_rules: ["Her head moves only a little as she keeps looking at herself in the mirror."]
+    expression: a calm, focused expression throughout
+    face_expression: calm focused expression
+    idle_detail: looking at herself in the mirror
+    sounds: her calm breathing and a soft creak of the barre
+
+STD-12:
+  frame:
+    location_en: the stretching class hall, on the open floor
+    framing_en: a frontal shot from slightly to the side, far enough to show her whole body
+    placement: standing on the open floor of the hall
+    pose: slightly turned to the side, her arms hanging loosely at her sides, her weight on both feet
+    expression: She looks at the camera with a light smile
+    summary_pose: standing slightly turned on the open floor
+    scale_anchor: ""
+  video:
+    location_en: the stretching class hall, on the open floor
+    framing_en: a frontal shot from slightly to the side, far enough to show her whole body
+    start_pose: standing slightly turned to the side, her arms hanging loosely at her sides
+    end_pose: ""
+    summary_action: rises onto her toes and back down, then does two quick lunges
+    phases:
+      - {kind: move, sec: 0.6, text: "she rises briskly onto her toes"}
+      - {kind: move, sec: 0.5, text: "she lowers back onto her heels"}
+      - {kind: move, sec: 0.9, text: "her right foot lunges out in front of her and she sinks into a deep lunge, bending both knees"}
+      - {kind: move, sec: 0.7, text: "she pushes off her right foot and brings it back beside her left foot"}
+      - {kind: move, sec: 0.9, text: "her left foot lunges out in front of her and she sinks into a second deep lunge"}
+      - {kind: return, sec: 0.8, text: "she pushes off her left foot and brings it back beside her right foot, standing slightly turned to the side again"}
+    moving_parts: her legs, hips and torso
+    still_parts: her head position and her arms at her sides
+    extra_rules: ["Each lunge returns to the same spot on the floor.", "The movements are sharp and sporty."]
+    expression: a light smile throughout
+    face_expression: light smile
+    idle_detail: smiling lightly at the camera
+    sounds: the soft thud of her feet on the floor and her quick breathing
+
+SIT-01:
+  frame:
+    location_en: the living room of her apartment with a pink velvet sofa
+    framing_en: ""
+    placement: sitting on the pink velvet sofa
+    pose: her back straight, both feet flat on the floor, her hands resting on her thighs
+    expression: She looks straight ahead with a light shy smile
+    summary_pose: sitting upright on the sofa
+    scale_anchor: the seat of the sofa reaches just below her knees
+  video:
+    location_en: the living room of her apartment on a pink velvet sofa
+    framing_en: ""
+    start_pose: sitting upright on the pink velvet sofa, her back straight, both feet flat on the floor, looking straight ahead
+    end_pose: ""
+    summary_action: crosses her right leg over her left and gently swings her right foot
+    phases:
+      - {kind: move, sec: 1.0, text: "her right leg lifts and crosses over her left knee"}
+      - {kind: move, sec: 1.4, text: "her right foot swings gently up and down twice from the knee"}
+      - {kind: hold, sec: 0.8, text: "her right foot comes to rest, crossed over her left knee"}
+      - {kind: return, sec: 1.0, text: "her right leg uncrosses and her right foot returns to the floor beside her left foot"}
+    moving_parts: her right leg and right foot
+    still_parts: her upper body, her arms, her hips and her left leg
+    extra_rules: ["Her right foot never rises above the level of her left knee.", "Her hips barely move."]
+    expression: a light shy smile throughout, also when she returns to the starting pose
+    face_expression: light shy smile
+    idle_detail: looking straight ahead with a shy smile
+    sounds: the soft rustle of velvet
+
+SIT-02:
+  frame:
+    location_en: the living room of her apartment with a pink velvet sofa
+    framing_en: ""
+    placement: sitting on the pink velvet sofa
+    pose: her right elbow resting on the armrest, her right palm against her right cheek, her head upright, her left hand resting on her lap
+    expression: She looks straight ahead with a light half-smile
+    summary_pose: sitting on the sofa leaning on the armrest
+    scale_anchor: the seat of the sofa reaches just below her knees
+  video:
+    location_en: the living room of her apartment on a pink velvet sofa
+    framing_en: ""
+    start_pose: sitting on the pink velvet sofa with her right elbow on the armrest and her right palm resting against her right cheek, her head upright, looking straight ahead with a light half-smile
+    end_pose: ""
+    summary_action: lets her gaze slide to her left, holds it there and brings it back
+    phases:
+      - {kind: move, sec: 1.0, text: "her eyes and head turn smoothly a little to her left"}
+      - {kind: hold, sec: 1.4, text: "she holds her gaze to her left"}
+      - {kind: return, sec: 1.0, text: "her head and eyes turn back to look straight ahead"}
+    moving_parts: her head, neck and eyes
+    still_parts: her right shoulder, her right elbow on the armrest, her torso and her legs
+    extra_rules: ["Her right palm stays against her right cheek and does not cover her face.", "Her torso does not turn."]
+    expression: a calm, light half-smile throughout
+    face_expression: light half-smile
+    idle_detail: looking straight ahead with a light half-smile
+    sounds: ""
+
+SIT-03:
+  frame:
+    location_en: the living room of her apartment with a pink velvet sofa
+    framing_en: ""
+    placement: sitting on the pink velvet sofa
+    pose: her legs tucked under her, leaning back against the backrest, her head tilted slightly, her right hand propping her chin and her left hand resting on her left thigh
+    expression: She looks at the camera with a warm smile
+    summary_pose: curled up on the sofa
+    scale_anchor: the backrest of the sofa reaches her shoulders
+  video:
+    location_en: the living room of her apartment on a pink velvet sofa
+    framing_en: ""
+    start_pose: sitting on the pink velvet sofa with her legs tucked under her, leaning back against the backrest, her head tilted slightly, her right hand propping her chin and her left hand resting on her left thigh, looking at the camera
+    end_pose: ""
+    summary_action: stretches her left arm up over her head, her upper body lifting away from the backrest
+    phases:
+      - {kind: move, sec: 1.2, text: "her left arm rises from her left thigh straight up over her head in a lively stretch"}
+      - {kind: move, sec: 0.9, text: "her upper body straightens a little, lifting away from the backrest"}
+      - {kind: hold, sec: 1.2, text: "she holds the stretch, her left arm high above her head"}
+      - {kind: return, sec: 1.2, text: "her left arm lowers back to rest on her left thigh and her back settles against the backrest"}
+    moving_parts: her left arm, her upper body and, a little, her head
+    still_parts: her right hand at her chin, her hips and her tucked legs
+    extra_rules: ["Her left arm rises beside her head; it never passes in front of her face."]
+    expression: a warm smile throughout
+    face_expression: warm smile
+    idle_detail: smiling at the camera
+    sounds: the soft rustle of velvet
+
+SIT-06:
+  frame:
+    location_en: the stretching class hall, in a beanbag chair
+    framing_en: a full-length frontal shot
+    placement: sitting slightly sideways in the beanbag chair
+    pose: her knees slightly bent, her left elbow resting on the back of the beanbag, her right hand resting on her lap
+    expression: She looks at the camera with a soft, natural smile
+    summary_pose: sitting in the beanbag chair
+    scale_anchor: ""
+  video:
+    location_en: the stretching class hall, in a beanbag chair
+    framing_en: a full-length frontal shot
+    start_pose: sitting slightly sideways in the beanbag chair, her knees slightly bent, her left elbow resting on the back of the beanbag, her right hand resting on her lap
+    end_pose: ""
+    summary_action: smooths her hair with her right hand
+    phases:
+      - {kind: move, sec: 0.8, text: "her right hand lifts briskly from her lap to her hair at the right side of her head"}
+      - {kind: move, sec: 0.9, text: "the fingers of her right hand run through her hair once, smoothing it back behind her right shoulder"}
+      - {kind: return, sec: 0.8, text: "her right hand returns to rest on her lap"}
+    moving_parts: her right hand and right arm
+    still_parts: her head, her left arm on the beanbag, her torso and her legs
+    extra_rules: ["Her right hand moves only at the side of her head; it never passes in front of her face."]
+    expression: a soft, natural smile throughout
+    face_expression: soft natural smile
+    idle_detail: smiling softly at the camera
+    sounds: the soft rustle of the beanbag
+
+SIT-07:
+  frame:
+    location_en: the stretching class hall, on a yoga mat
+    framing_en: a frontal shot from slightly below
+    placement: sitting on the yoga mat in the middle of the hall
+    pose: both knees bent and drawn up, her hands resting on the mat behind her, her head tilted slightly
+    expression: She smiles at the camera
+    summary_pose: sitting on the yoga mat
+    scale_anchor: she fits on a single yoga mat
+  video:
+    location_en: the stretching class hall, on a yoga mat
+    framing_en: a frontal shot from slightly below
+    start_pose: sitting on the yoga mat with both knees bent and drawn up, her hands resting on the mat behind her, her head tilted slightly, smiling
+    end_pose: ""
+    summary_action: lowers her right leg and straightens it along the mat, holds it and draws it back up
+    phases:
+      - {kind: move, sec: 1.6, text: "her right leg lowers and straightens out along the mat"}
+      - {kind: hold, sec: 2.2, text: "she holds her right leg straight on the mat"}
+      - {kind: return, sec: 1.2, text: "she briskly draws her right knee back up, bending it to the starting position"}
+    moving_parts: her right leg
+    still_parts: her upper body, her arms, her head and her left leg
+    extra_rules: ["Her right heel slides along the mat and stays on it."]
+    expression: a light smile throughout
+    face_expression: light smile
+    idle_detail: smiling at the camera
+    sounds: the soft brush of her heel on the yoga mat
+
+SIT-08:
+  frame:
+    location_en: the stretching class hall by the large window, with a tall wooden stool with a footrest
+    framing_en: a full-length frontal shot
+    placement: sitting on the tall wooden stool in front of the window, deeper in the room
+    pose: her feet on the footrest, her right hand resting on the stool seat beside her right hip and her left hand lying loosely on her left thigh, her back straight
+    expression: She looks straight at the camera with a warm, natural smile
+    summary_pose: sitting on the tall wooden stool
+    scale_anchor: the seat of the stool reaches the middle of her thighs
+  video:
+    location_en: the stretching class hall by the large window, with a tall wooden stool with a footrest
+    framing_en: a full-length frontal shot
+    start_pose: sitting on the tall wooden stool, feet on the footrest, her right hand on the stool seat and her left hand resting on her left thigh, smiling at the camera
+    end_pose: ""
+    summary_action: lowers her eyes to the straps of her outfit at her left hip and straightens them with her left hand in two small tugs
+    phases:
+      - {kind: move, sec: 1.0, text: "her left hand lifts from her left thigh to the straps at her left hip, and she lowers her eyes to look at them"}
+      - {kind: move, sec: 1.6, text: "she pinches a strap between her thumb and index finger and straightens it with two small, quick tugs"}
+      - {kind: return, sec: 1.2, text: "she raises her head and looks back at the camera with a bright smile while her left hand returns to rest on her left thigh"}
+    moving_parts: her left hand, left arm, head and eyes
+    still_parts: her right hand on the stool, her legs and her feet on the footrest
+    extra_rules: ["Her head tilts down only slightly, so her face stays visible the whole time; her left hand works at her left hip, far below her face."]
+    expression: a warm, natural smile throughout, also while she looks down
+    face_expression: warm natural smile
+    idle_detail: smiling at the camera
+    sounds: a soft snap of the strap and a faint creak of the wooden stool
+
+LIE-02:
+  frame:
+    location_en: her bedroom, on the bed
+    framing_en: ""
+    placement: lying on her back on the bed
+    pose: her head in the middle of the pillow, her right hand resting on her stomach, her left arm along her body, her legs straight
+    expression: She looks towards the top of the frame with a calm, soft expression
+    summary_pose: lying on her back on the bed
+    scale_anchor: she fits on the bed with space around her
+  video:
+    location_en: her bedroom, on the bed
+    framing_en: ""
+    start_pose: lying on her back with her head in the middle of the pillow, her right hand resting on her stomach, looking towards the top of the frame
+    end_pose: ""
+    summary_action: turns her head a little towards the camera with a soft look and turns it back
+    phases:
+      - {kind: move, sec: 1.0, text: "her head turns a little towards the camera on the pillow"}
+      - {kind: hold, sec: 1.4, text: "she looks softly at the camera with a light smile at the corners of her mouth"}
+      - {kind: return, sec: 1.0, text: "her head turns back to the middle of the pillow, her eyes towards the top of the frame"}
+    moving_parts: her head, neck and eyes
+    still_parts: her shoulders, her right hand on her stomach and the rest of her body
+    extra_rules: ["Her head turns only a small amount, never into profile.", "Her shoulders stay on the bed."]
+    expression: calm and soft, with a light smile at the corners of her mouth while she looks at the camera
+    face_expression: soft light smile
+    idle_detail: looking towards the top of the frame
+    sounds: the faint rustle of the pillow
+
+LIE-04:
+  frame:
+    location_en: her bedroom, on the bed
+    framing_en: a shot from far enough to show her legs at their full length
+    placement: lying on her back on the bed
+    pose: propped up on both elbows, her head towards the headboard, both legs stretched out straight
+    expression: She looks at the camera with a light smile
+    summary_pose: lying propped on her elbows on the bed
+    scale_anchor: she fits on the bed with her feet well short of its end
+  video:
+    location_en: her bedroom, on the bed
+    framing_en: a shot from far enough to show her legs at their full length
+    start_pose: lying on her back propped up on both elbows, her head towards the headboard, both legs stretched out straight, looking at the camera
+    end_pose: ""
+    summary_action: draws her right knee up, glances to the side for a moment and straightens her leg again
+    phases:
+      - {kind: move, sec: 0.8, text: "her right knee draws briskly up, her right foot sliding along the bed towards her hips"}
+      - {kind: hold, sec: 0.8, text: "she glances to her left for a moment"}
+      - {kind: move, sec: 0.6, text: "she looks back at the camera"}
+      - {kind: return, sec: 0.8, text: "her right leg slides back down and straightens out on the bed"}
+    moving_parts: her right leg, her eyes and, a little, her head
+    still_parts: her arms, her elbows on the bed, her torso and her left leg
+    extra_rules: ["The movement is lively and crisp, not smooth and floaty."]
+    expression: a light smile throughout
+    face_expression: light smile
+    idle_detail: looking at the camera
+    sounds: the soft rustle of the bedsheet
+
+STD-13:
+  frame:
+    location_en: the living room of her apartment
+    framing_en: ""
+    placement: standing in the middle of the room
+    pose: upright, her arms hanging loosely at her sides, her weight on both feet
+    expression: She looks at the camera with a warm smile
+    summary_pose: standing in the middle of the room
+    scale_anchor: ""
+  video:
+    location_en: the living room of her apartment
+    framing_en: ""
+    start_pose: standing upright with her arms hanging loosely at her sides, looking at the camera
+    end_pose: ""
+    summary_action: sways her shoulders and hips like the woman in <Video 1>, her hands moving at waist height
+    phases:
+      - {kind: move, sec: 3.0, text: "she sways her shoulders and hips exactly like the woman in <Video 1>, copying her movements and their timing, her hands moving at waist height"}
+      - {kind: return, sec: 0.9, text: "her hands drop back to her sides and she stands upright again"}
+    moving_parts: her shoulders, hips, arms and hands
+    still_parts: her feet
+    extra_rules: ["Her feet stay planted on the same spot.", "Her hands never rise above her chest."]
+    expression: a warm smile throughout
+    face_expression: warm smile
+    idle_detail: smiling at the camera
+    sounds: the soft rustle of fabric

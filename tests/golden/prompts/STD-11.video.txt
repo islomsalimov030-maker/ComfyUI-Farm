@@ -1,0 +1,25 @@
+subject_definitions:
+<Subject 1> is St4cy_H3, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, wearing exactly the clothes shown in <Picture 1>.
+<Subject 2> is the stretching class hall beside the ballet barre in front of the wall mirror in <Picture 1>.
+<Picture 2> is a close-up identity reference of the face of <Subject 1>.
+<Picture 1> is the first frame of [Shot 1] and also its last frame.
+
+summary:
+[keyframe completion] The target video is one continuous static shot of 10.08 seconds that begins from <Picture 1> and ends on <Picture 1>: <Subject 1> raises her left arm over her head and leans into a side stretch towards the barre in <Subject 2>, then returns to exactly the starting pose so the clip loops seamlessly.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.
+<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.
+<Picture 1>: fully_preserved - the first and the last frame of [Shot 1] match it exactly.
+
+detailed_description:
+The target video is photorealistic live-action footage with neutral soft light from the front, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: a full-length shot frames her standing sideways to the barre with her right hand holding it, her back straight, her left arm down at her side, looking at herself in the mirror. From 0.00 to 0.80 seconds, she holds the starting pose, looking at herself in the mirror. From 0.80 to 2.00 seconds, her left arm rises from her side, out to her left and up over her head. From 2.00 to 3.30 seconds, she bends her upper body sideways towards the barre, her left arm reaching over her head towards the barre. From 3.30 to 5.10 seconds, she holds the side stretch, breathing calmly. From 5.10 to 6.20 seconds, her upper body straightens and her left arm lowers back down to her side, returning to exactly the starting pose. From 6.20 to 10.08 seconds, she stands relaxed in the starting pose, breathing softly and blinking, looking at herself in the mirror. At 10.08 seconds the shot ends on <Picture 1>: she is back in exactly the starting pose, expression and position, so the last frame matches the first frame. The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression is a calm, focused expression throughout; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only her left arm, her upper body and her waist move; her right hand on the barre, her hips, her legs and her feet stay still. Her head moves only a little as she keeps looking at herself in the mirror. Her reflection in the mirror follows every movement exactly. Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+Quiet room tone; faint city noise behind the windows; her calm breathing and a soft creak of the barre.
+
+non_diegetic_music:
+N/A
+
+# inputs: {"face_prompt": "St4cy_H3, a close-up of the face of a young woman, calm focused expression, natural skin texture, sharp focus on the eyes, neutral soft light from the front. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."}

@@ -1,0 +1,27 @@
+subject_definitions:
+<Subject 1> is St4cy_H3, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, wearing exactly the clothes shown in <Picture 1>.
+<Subject 2> is the living room of her apartment beside a vertical pole, with a window with white curtains behind her in <Picture 1>.
+<Picture 2> is a close-up identity reference of the face of <Subject 1>.
+<Picture 1> is the first frame of [Shot 1].
+<Picture 3> is the last frame of [Shot 1].
+
+summary:
+[keyframe completion] The target video is one continuous static shot of 5.12 seconds that begins from <Picture 1> and ends on <Picture 3>: <Subject 1> crosses her arms over her chest and starts to frown in <Subject 2> and settles in the final pose of <Picture 3>.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.
+<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.
+<Picture 1>: fully_preserved - the first frame of [Shot 1] matches it exactly.
+<Picture 3>: fully_preserved - the final pose, position and expression of <Subject 1> are retained in the last frame.
+
+detailed_description:
+The target video is photorealistic live-action footage with the soft natural light of the room, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: she is standing relaxed with her arms down at her sides, her face neutral. From 0.00 to 0.60 seconds, she holds the starting pose. From 0.60 to 1.50 seconds, her right forearm lifts from her side and folds across her chest. From 1.50 to 2.40 seconds, her left forearm lifts and folds over her right forearm, so her arms are crossed over her chest. From 2.40 to 3.40 seconds, she draws her eyebrows together into a slight frown and holds the pose. From 3.40 to 5.12 seconds, she stands still in the final pose, breathing softly and blinking, frowning slightly, looking straight ahead. At 5.12 seconds the shot ends on <Picture 3>: she is in exactly the pose, expression and position of <Picture 3>, standing upright with her arms crossed over her chest, frowning, her weight evenly on both feet, looking straight ahead. The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression is neutral at first, turning into a slight frown as she crosses her arms; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only her arms, hands and eyebrows move; her head, torso, legs and feet stay still. Her feet stay planted on the same spot. Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+Quiet room tone; the soft rustle of her sleeves.
+
+non_diegetic_music:
+N/A
+
+# inputs: {"face_prompt": "St4cy_H3, a close-up of the face of a young woman, slight frown, natural skin texture, sharp focus on the eyes, the soft natural light of the room. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."}

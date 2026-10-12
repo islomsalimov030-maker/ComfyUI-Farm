@@ -1,0 +1,22 @@
+{%- import "_video_common.j2" as c with context -%}
+subject_definitions:
+{{ c.subjects() }}
+<Picture 1> is the first frame of [Shot 1] and also its last frame.
+{% if has_video %}
+{{ c.video_subject() }}
+{% endif %}
+
+summary:
+[keyframe completion{% if has_video %} + reference generation{% endif %}] The target video is one continuous static shot of {{ end_s }} seconds that begins from <Picture 1> and ends on <Picture 1>: <Subject 1> {{ summary_action }} in <Subject 2>, then returns to exactly the starting pose so the clip loops seamlessly.
+
+retention_analysis:
+{{ c.retention_common() }}
+<Picture 1>: fully_preserved - the first and the last frame of [Shot 1] match it exactly.
+{% if has_video %}
+{{ c.video_retention() }}
+{% endif %}
+
+detailed_description:
+{{ c.style() }} [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: {{ opening }}.{{ c.timeline() }} At {{ end_s }} seconds the shot ends on <Picture 1>: she is back in exactly the starting pose, expression and position, so the last frame matches the first frame. {{ c.rules() }}
+
+{{ c.sound() }}

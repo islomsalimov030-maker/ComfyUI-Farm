@@ -75,3 +75,9 @@
 - Под: Ctrl-C в tmux-сессии `comfy` закрывает всю сессию; поднимать заново `/workspace/bootstrap.sh` (= `svc-start`), работающие aitk/ollama он не трогает.
 - Под, Claude in Chrome: переход, запущенный самим расширением (`navigate`) на `localhost:8188`, получает 403; переход со страницы (`location.href` с другой вкладки туннеля, напр. `localhost:11434`) — 200. curl на поде — 200.
 - Под: видео 5 с ref2va + RTX до FullHD, face pass выкл — 134 с при загруженных моделях, пик RAM ~45 ГБ, VRAM ~50 ГБ.
+
+## WS-04 (12.10.2026)
+- Ollama structured outputs: `/api/chat` принимает в `format` JSON-схему (не только `"json"`); рекомендуют дублировать схему текстом в промпте и temperature 0; в Ollama Cloud не работает. [docs](https://docs.ollama.com/capabilities/structured-outputs)
+- Гайд ref H3: новые метки вводятся только в `subject_definitions`; в `retention_analysis` по строке на каждую метку, маркеры видимого контента — fully_preserved / partially_preserved / attribute_transfer / weak_reference; `[Shot 1]` без таймкода, поздние шоты `[Shot N] At MM:SS.mmm`; теги summary — keyframe completion, reference generation, video editing, video continuation, audio reuse, audio reference (через « + », без повторов); описание 350–500 слов. [ref guide](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md)
+- Сетка длины H3 подтверждена на образцах: n = 17k+5 ≥ duration·24, длина (n−1)/24 — 8 с → 7.96 (образец Sitting-8), 5 с → 5.12 (WS-09), 7 с → 7.25 (WS-01).
+- Jinja2 (BSD-3-Clause) — новая зависимость сборщика промптов.

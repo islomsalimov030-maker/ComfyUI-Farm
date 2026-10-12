@@ -1,0 +1,60 @@
+{
+ "LIE-02.frame": [],
+ "LIE-02.video": [],
+ "LIE-04.frame": [],
+ "LIE-04.video": [],
+ "SIT-01.frame": [],
+ "SIT-01.video": [],
+ "SIT-02.frame": [],
+ "SIT-02.video": [],
+ "SIT-03.frame": [],
+ "SIT-03.video": [],
+ "SIT-06.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "SIT-06.video": [],
+ "SIT-07.frame": [],
+ "SIT-07.video": [],
+ "SIT-08.frame": [],
+ "SIT-08.video": [],
+ "STD-01.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-01.video": [],
+ "STD-02.frame": [],
+ "STD-02.video": [],
+ "STD-03.frame": [],
+ "STD-03.video": [],
+ "STD-04.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-04.video": [],
+ "STD-05.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-05.video": [],
+ "STD-06.frame": [],
+ "STD-06.video": [],
+ "STD-07.frame": [],
+ "STD-07.video": [],
+ "STD-09.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-09.video": [],
+ "STD-10.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-10.video": [],
+ "STD-11.frame": [],
+ "STD-11.video": [],
+ "STD-12.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-12.video": [],
+ "STD-13.frame": [
+  "W_SCALE_ANCHOR"
+ ],
+ "STD-13.video": [
+  "W_LONG_PHASE"
+ ]
+}

@@ -1,0 +1,23 @@
+subject_definitions:
+<Subject 1> is {{ trigger }}, the young woman in <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, {{ outfit_clause }}.
+<Subject 2> is {{ location_en }}, as shown in <Picture 1>.
+{% if has_pose %}<Subject 3> is the body pose of the person in <Picture 4>; only the pose and the placement of her arms and legs are used, not that person's face, hair, clothes or room.
+{% endif %}<Picture 1> is the empty room that the image is built on: its layout, camera position, framing and light are kept exactly.
+
+summary:
+[reference generation] The target is one single static image, a photorealistic photograph of <Subject 1> {{ summary_pose }} in <Subject 2>{% if has_pose %}, in the body pose of <Subject 3>{% endif %}, placed into <Picture 1> without changing its camera position, framing or light.
+
+retention_analysis:
+<Subject 1>: fully_preserved - her face, hair, skin tone{% if has_outfit %}, body proportions and outfit{% else %} and body proportions{% endif %} are retained.
+<Subject 2>: fully_preserved - the room, furniture, light and colors are retained.
+{% if has_pose %}<Subject 3>: attribute_transfer - only the body pose is transferred to <Subject 1>.
+{% endif %}<Picture 1>: fully_preserved - the layout, camera position and framing are retained.
+
+detailed_description:
+The target is one single photorealistic photograph, a static image with {{ light_en }}, taken from one fixed position; the camera is completely static and locked-off, with no camera movement, no zoom and no pan, exactly as in <Picture 1>. [Shot 1] {{ opening }}: <Subject 1> is {{ placement }}, {{ pose }}. {{ expression }}. One single photograph. <Picture 2> is only an identity reference sheet, not a layout. {{ scale_line }}{% if scale_anchor %} Scale anchor: {{ scale_anchor }}.{% endif %}{% for r in extra_rules %} {{ r }}{% endfor %} Her face is sharp, natural and recognisably the same person as in <Picture 2>. The room, the furniture and every object keep their places and their true size. The lighting is preserved unchanged. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+N/A
+
+non_diegetic_music:
+N/A

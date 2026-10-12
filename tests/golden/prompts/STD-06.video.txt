@@ -1,0 +1,25 @@
+subject_definitions:
+<Subject 1> is St4cy_H3, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, wearing exactly the clothes shown in <Picture 1>.
+<Subject 2> is the reception area of the stretching class hall, behind the reception desk with a laptop, a mug and a desk lamp in <Picture 1>.
+<Picture 2> is a close-up identity reference of the face of <Subject 1>.
+<Picture 1> is the first frame of [Shot 1] and also its last frame.
+
+summary:
+[keyframe completion] The target video is one continuous static shot of 9.38 seconds that begins from <Picture 1> and ends on <Picture 1>: <Subject 1> stops typing and looks up into the camera, holds the look and turns her eyes back to the laptop in <Subject 2>, then returns to exactly the starting pose so the clip loops seamlessly.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.
+<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.
+<Picture 1>: fully_preserved - the first and the last frame of [Shot 1] match it exactly.
+
+detailed_description:
+The target video is photorealistic live-action footage with the soft natural light of the room, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: a frontal shot that shows only the reception desk, the walls, the laptop and her frames her standing behind the reception desk, typing on the laptop with both hands, her eyes on the screen. From 0.00 to 0.80 seconds, she holds the starting pose, typing on the laptop, her eyes on the screen. From 0.80 to 1.40 seconds, her hands stop typing and rest still on the keyboard. From 1.40 to 2.20 seconds, she lifts her head slightly and looks up from the screen into the camera. From 2.20 to 4.40 seconds, she holds her gaze on the camera. From 4.40 to 5.30 seconds, she lowers her head slightly and turns her eyes back to the laptop screen, returning to exactly the starting pose. From 5.30 to 9.38 seconds, she stands relaxed in the starting pose, breathing softly and blinking, typing on the laptop, her eyes on the screen. At 9.38 seconds the shot ends on <Picture 1>: she is back in exactly the starting pose, expression and position, so the last frame matches the first frame. The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression is a calm, relaxed expression throughout; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only her head, eyes and fingers move; her shoulders, her torso and the rest of her body behind the desk stay still. While she types, only her fingers and wrists make small movements. Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+Quiet room tone; soft keyboard clicks.
+
+non_diegetic_music:
+N/A
+
+# inputs: {"face_prompt": "St4cy_H3, a close-up of the face of a young woman, calm relaxed expression, natural skin texture, sharp focus on the eyes, the soft natural light of the room. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."}

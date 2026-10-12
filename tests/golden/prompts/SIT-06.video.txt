@@ -1,0 +1,25 @@
+subject_definitions:
+<Subject 1> is St4cy_H3, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, wearing exactly the clothes shown in <Picture 1>.
+<Subject 2> is the stretching class hall, in a beanbag chair in <Picture 1>.
+<Picture 2> is a close-up identity reference of the face of <Subject 1>.
+<Picture 1> is the first frame of [Shot 1] and also its last frame.
+
+summary:
+[keyframe completion] The target video is one continuous static shot of 7.96 seconds that begins from <Picture 1> and ends on <Picture 1>: <Subject 1> smooths her hair with her right hand in <Subject 2>, then returns to exactly the starting pose so the clip loops seamlessly.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.
+<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.
+<Picture 1>: fully_preserved - the first and the last frame of [Shot 1] match it exactly.
+
+detailed_description:
+The target video is photorealistic live-action footage with the soft natural light of the room, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: a full-length frontal shot frames her sitting slightly sideways in the beanbag chair, her knees slightly bent, her left elbow resting on the back of the beanbag, her right hand resting on her lap. From 0.00 to 0.80 seconds, she holds the starting pose, smiling softly at the camera. From 0.80 to 1.60 seconds, her right hand lifts briskly from her lap to her hair at the right side of her head. From 1.60 to 2.50 seconds, the fingers of her right hand run through her hair once, smoothing it back behind her right shoulder. From 2.50 to 3.30 seconds, her right hand returns to rest on her lap, returning to exactly the starting pose. From 3.30 to 7.96 seconds, she sits relaxed in the starting pose, breathing softly and blinking, smiling softly at the camera. At 7.96 seconds the shot ends on <Picture 1>: she is back in exactly the starting pose, expression and position, so the last frame matches the first frame. The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression is a soft, natural smile throughout; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only her right hand and right arm move; her head, her left arm on the beanbag, her torso and her legs stay still. Her right hand moves only at the side of her head; it never passes in front of her face. Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+Quiet room tone; the soft rustle of the beanbag.
+
+non_diegetic_music:
+N/A
+
+# inputs: {"face_prompt": "St4cy_H3, a close-up of the face of a young woman, soft natural smile, natural skin texture, sharp focus on the eyes, the soft natural light of the room. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."}

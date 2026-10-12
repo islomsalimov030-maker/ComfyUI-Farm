@@ -1,0 +1,25 @@
+subject_definitions:
+<Subject 1> is St4cy_H3, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, wearing exactly the clothes shown in <Picture 1>.
+<Subject 2> is the bathroom of her apartment beside the shower cabin, with a little steam in the air in <Picture 1>.
+<Picture 2> is a close-up identity reference of the face of <Subject 1>.
+<Picture 1> is the first frame of [Shot 1] and also its last frame.
+
+summary:
+[keyframe completion] The target video is one continuous static shot of 7.25 seconds that begins from <Picture 1> and ends on <Picture 1>: <Subject 1> tucks a strand of hair behind her right ear and smooths her hair with her right palm, briefly lowering her eyes in <Subject 2>, then returns to exactly the starting pose so the clip loops seamlessly.
+
+retention_analysis:
+<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.
+<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.
+<Picture 1>: fully_preserved - the first and the last frame of [Shot 1] match it exactly.
+
+detailed_description:
+The target video is photorealistic live-action footage with the soft natural light of the room, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: a frontal shot that shows only the bathroom frames her standing upright, her arms hanging loosely at her sides, looking straight ahead. From 0.00 to 0.80 seconds, she holds the starting pose, looking straight ahead with a shy smile. From 0.80 to 1.50 seconds, her right hand lifts briskly from her side to a strand of hair at her right cheek. From 1.50 to 2.20 seconds, she tucks the strand behind her right ear. From 2.20 to 2.90 seconds, her right palm smooths her hair down at the side of her head. From 2.90 to 3.50 seconds, she lowers her eyes for a moment. From 3.50 to 4.30 seconds, her right hand drops back down to her side and she looks straight ahead again, returning to exactly the starting pose. From 4.30 to 7.25 seconds, she stands relaxed in the starting pose, breathing softly and blinking, looking straight ahead with a shy smile. At 7.25 seconds the shot ends on <Picture 1>: she is back in exactly the starting pose, expression and position, so the last frame matches the first frame. The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression is a light shy smile throughout; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only her right hand, right forearm and eyes move; her shoulders, torso, left arm and legs stay still. Her right hand moves only at the side of her head; it never passes in front of her face. Her right elbow stays almost still while her hand and forearm do the work. Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+Quiet room tone; the soft brush of her palm over her hair and a faint drip of water.
+
+non_diegetic_music:
+N/A
+
+# inputs: {"face_prompt": "St4cy_H3, a close-up of the face of a young woman, light shy smile, natural skin texture, sharp focus on the eyes, the soft natural light of the room. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."}

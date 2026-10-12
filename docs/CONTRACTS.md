@@ -1,6 +1,6 @@
-# CONTRACTS v0.5 — договорённости между потоками
+# CONTRACTS v0.6 — договорённости между потоками
 
-> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10). v0.5 (WS-08, 2026-10-11): бот (§9), фильтр пакета на пульте, redo из `needs_human`.
+> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10). v0.5 (WS-08, 2026-10-11): бот (§9), фильтр пакета на пульте, redo из `needs_human`. v0.6 (WS-04, 2026-10-12): сборщик промптов (§7) — `ctx.workflow/params`, состав `fields_json`, `llm.*` профиля (§5).
 
 Этот файл позволяет потокам работать независимо. Каждый поток реализует свою часть **строго по контракту** и может подменять соседей заглушками. Изменение контракта = версия +1 и строка в `STATUS.md → Решения`. Язык кода — Python 3.12, без тяжёлых фреймворков.
 
@@ -109,6 +109,16 @@ v0.3 (WS-02, реализация — `farm/comfy_client.bind`, совпадае
 
 ## 7. Сборщик промптов (WS-04)
 `build(stage, shot: dict, lib: Library, profile, ctx: dict|None = None) -> PromptResult{text, fields_json, lint: list[LintIssue], template_ver}` (v0.3: `ctx = {try_no, fail_codes, knobs, comment, template}` — подсказки ремонтной петли, параметр необязателен; `fields_json.inputs = {face_prompt: …}` — доп. текстовые входы воркфлоу); `lint(text, stage, ctx) -> list[LintIssue{code, msg, severity}]`. LLM возвращает только JSON-поля; строку собирает шаблон. Ошибка `severity=error` → не отправлять на GPU.
+
+**v0.6 — реализация (WS-04, `farm/prompts/`, подробности — `farm/prompts/README.md`):**
+- `ctx` дополнен (передаёт воркер): `workflow` (`<name>@<ver>` стадии), `params` (dict params.yaml) — линтер сверяет `<Picture N>`/`<Video N>` в тексте с подключёнными входами. Для ручных вызовов: `fields` (готовые поля вместо LLM), `no_llm`, `no_cache`, `workflows_dir`.
+- `fields_json = {fields: <поля LLM>, inputs: {face_prompt | face_prompt_h3: …}, meta: {builder, schema, template, mode: loop|transition, end_s, connected, scale_anchor, fields_source: llm|cache|ctx|provider, llm: {model, attempts, first_try_ok, ms}, llm_first_json_ok, lint_rounds}, llm_input}`.
+- Шаблон выбирает сборщик: `video_loop_ref_v1`; при `end_frame_on` (или loop=нет + «Закончить кадром шота») — `video_transition_ref_v1`; `<Video 1>` — если `resolve_inputs` вернул `motion_ref`. loop=нет без конечного кадра → `E_MODE` (error).
+- Метка входа = `<Picture N>`/`<Video N>` из его title в params.yaml (`keyframe` без метки → `<Picture 1>`). Подключён: обязательный вход, необязательный из `resolve_inputs`, `end_frame` — только при `end_frame_on`.
+- Длина в промпте = фактическая по сетке H3 `(n-1)/24`, `n = 17k+5 ≥ duration_s·24` (8 с → 7.96, 7 → 7.25, 5 → 5.12).
+- Нет полей (LLM выключен/недоступен, JSON не сошёлся за 3 попытки, ошибки линтера после 2 раундов правки) → `lint` с `severity=error` (`E_NO_FIELDS`, `E_LLM_UNAVAILABLE`, `E_LLM_JSON`, `E_*`) → воркер: `needs_human` «PROMPT_LINT …», GPU не тратится.
+- Профиль (§5) может задать `llm.url`, `llm.format_mode: schema|json`, `llm.options`, `llm.system_prompt: <имя> | {frame: путь, video: путь}` (подмена системного промпта — механизм; SFW-промпты — `farm/prompts/system/sfw_v1_*.md`). `prompt_model: none` — без LLM.
+- Кэш полей: `$FARM_HOME/cache/prompts/<ключ>.json` (ключ: строка, режим, системный промпт, модель, seed = f(shot, stage) + try_no).
 
 ## 8. Проверки качества (WS-05 кадры, WS-06 видео)
 ```python

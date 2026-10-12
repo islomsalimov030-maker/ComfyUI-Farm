@@ -1,0 +1,107 @@
+# Настройки сборщика промптов (WS-04). Пороги и списки — здесь, не в коде.
+# Перекрываются файлом $FARM_HOME/prompts.yaml (тот же формат, слияние по ключам).
+version: 1
+
+# Сетка длины H3: кадров n = 17k+5 ≥ duration_s*fps; фактическая длина = (n-1)/fps (WS-01 V11).
+fps: 24
+grid: {mult: 17, add: 5}
+
+timing:
+  start_hold: 0.8          # первая фаза: держит стартовую позу 0.00–0.80 с
+  start_hold_short: 0.6    # при длине < short_clip_s
+  short_clip_s: 6.0
+  loop_window: 0.62        # петля: все действия (включая возврат) заканчиваются до этой доли клипа
+  transition_window: 0.78  # переход в другую позу: движение заканчивается до этой доли
+  min_rest_s: 1.5          # последняя фаза-отдых не короче
+  min_phase_s: 0.4
+  round_s: 0.1             # границы фаз округляются до 0.1 с
+  max_phases: 6            # фаз от LLM (без стартового удержания и финального отдыха)
+
+# Проверки линтера: длины, ориентиры.
+lint:
+  words: {video: [300, 560], frame: [150, 450]}   # слов в detailed_description (гайд ref: 350–500)
+  move_phase_max_s: 2.2    # жест длиннее — предупреждение (гайд: 0.6–1.5 с)
+  hold_phase_max_s: 3.2
+  allowed_retention: [fully_preserved, partially_preserved, attribute_transfer, weak_reference]
+  allowed_tags: [keyframe completion, reference generation, video editing, video continuation,
+                 audio reuse, audio reference]
+  sections: [subject_definitions, summary, retention_analysis, detailed_description,
+             overall_soundscape, non_diegetic_music]
+
+# Регулярки (ищутся без учёта регистра). error — на GPU не отправляем, warn — пишем в fields_json.
+patterns:
+  banned_error:
+    STUDIO: 'studio'                                     # правило пользователя: никакого «studio»
+    CAMERA_MOVE: '\b(pan|pans|panning|zoom|zooms|zooming|dolly|dollies|trucking|tracking shot|orbit|orbits|orbiting|crane shot|handheld|push-in|pull-back|camera (pushes|pulls) (in|back)|camera (moves|tilts|arcs|follows|rotates|shakes|turns|pans|zooms|drifts|circles))\b|\b(tilt|arc) shot\b'
+    SLOWMO_WORD: 'slow[- ]motion'                        # разрешено только в обязательной строке
+    LIGHT_CHANGE: '\b(lights? (dims?|brightens?|flickers?|changes?|goes out)|turns (on|off) the light|sunset|sunrise|getting darker|darkens)\b'
+    WRONG_TRIGGER: '\bStacy_v1\b'                        # триггер Z-image, не H3
+  banned_loop_error:                                     # только в петлях
+    DIRECTED_MOVE: '\b(walks?|walking|steps? (forward|back|toward|towards|closer|away)|approach(es|ing)? the camera|(moves|comes|leans|walks) (toward|towards|closer to) the camera|leaves the frame|exits the frame)\b'
+  warn:
+    SLOWLY: '\bslowly\b'
+    FALLING: '\b(falls? (to|onto|off) the \w+|falling (off|to|onto)|drops? (the|a|an) \w+)\b'
+    ABSTRACT: '\b(seductive(ly)?|sexy|sensual(ly)?|flirt(s|y|ing|atious(ly)?)?|poses? beautifully|dances? sexy)\b'
+    DEGREES: '\d+\s*(°|degrees?\b|%|percent\b)'
+    CLOSE_UP: 'close-?up'                                # кроме обязательной строки и определения <Picture 2>
+    FACE_COVER: 'in front of her face'
+  side_parts: '\bher (hand|arm|leg|knee|foot|elbow|wrist|thigh|shoulder|ankle|heel|palm|forearm)\b'
+
+# Строки, которые вырезаются перед поиском запрещённых слов (обязательные формулировки).
+mandatory_exempt:
+  - 'with no camera movement, no zoom and no pan'
+  - 'never in slow motion'
+  - 'no cuts and no close-up inserts'
+  - 'is a close-up identity reference'
+  - 'a close-up of the face of a young woman'
+  - 'a tight close-up portrait of a woman'
+  - 'it never passes in front of her face'
+
+# Подсказки ремонтной петли: код отказа QA → строка в LLM и/или правка шаблона.
+repair:
+  SLOWMO:
+    llm: "The previous video came out in slow motion. Use brisk, short phases and quick verbs (briskly, quick, crisp)."
+    phase_scale: 0.8
+    extra_en: "All movements are brisk and quick, like in everyday life."
+  FREEZE:
+    llm: "The previous video barely moved. Make every movement clearly visible and a bit larger, with concrete start and end positions."
+    extra_en: "Each movement is clearly visible from start to finish."
+  CAMERA_MOVE:
+    extra_en: "The frame never moves or reframes; only <Subject 1> moves inside it."
+  CUT:
+    extra_en: "There is no cut, no jump and no change of angle at any moment."
+  SEAM:
+    llm: "The loop seam was visible. Make the return to the starting pose explicit and end the motion earlier."
+    phase_scale: 0.9
+  LIGHT_DRIFT:
+    extra_en: "The light stays exactly the same from the first to the last frame."
+  COLOR_DRIFT:
+    extra_en: "The white balance stays exactly the same from the first to the last frame."
+  SCALE:
+    llm: "The figure came out too large for the room. Place her deeper in the room and stress real-world scale."
+    extra_en: "She stays small enough that the furniture keeps its real size around her; the frame shows plenty of room around her."
+  COMPOSITION:
+    extra_en: "The composition of <Picture 1> is kept: the same framing, the same horizon and the same empty space around her."
+  FACE_ID:
+    extra_en: "Her face is clearly visible, softly lit and turned towards the camera."
+  HANDS:
+    llm: "Hands were malformed. Keep the hands in simple, clearly visible positions with relaxed fingers."
+    extra_en: "Her hands have five relaxed fingers each and stay clearly visible."
+
+# Метки входов, которых нет в title params.yaml (title без <Picture N>).
+label_fallback:
+  keyframe: '<Picture 1>'
+
+# Добавочные строки по объектам сцены (ID объекта → предложение).
+object_rules:
+  mirror: "Her reflection in the mirror follows every movement exactly."
+
+defaults:
+  trigger: St4cy_H3
+  height_cm: 168
+  light_en: "the soft natural light of the room"
+  rest_verb: {standing: stands, sitting: sits, lying: lies, other: stays}
+  frame_template: frame_ref_v1
+  video_template: video_loop_ref_v1
+  transition_template: video_transition_ref_v1
+  system_prompt: sfw_v1              # farm/prompts/system/<имя>_<frame|video>.md; профиль может подменить

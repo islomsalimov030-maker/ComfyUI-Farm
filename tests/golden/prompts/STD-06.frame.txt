@@ -1,0 +1,23 @@
+subject_definitions:
+<Subject 1> is St4cy_H3, the young woman in <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, wearing exactly the outfit shown in <Picture 3>.
+<Subject 2> is the reception area of the stretching class hall, behind the reception desk with a laptop, a mug and a desk lamp, as shown in <Picture 1>.
+<Picture 1> is the empty room that the image is built on: its layout, camera position, framing and light are kept exactly.
+
+summary:
+[reference generation] The target is one single static image, a photorealistic photograph of <Subject 1> standing behind the reception desk typing on a laptop in <Subject 2>, placed into <Picture 1> without changing its camera position, framing or light.
+
+retention_analysis:
+<Subject 1>: fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2>: fully_preserved - the room, furniture, light and colors are retained.
+<Picture 1>: fully_preserved - the layout, camera position and framing are retained.
+
+detailed_description:
+The target is one single photorealistic photograph, a static image with the soft natural light of the room, taken from one fixed position; the camera is completely static and locked-off, with no camera movement, no zoom and no pan, exactly as in <Picture 1>. [Shot 1] A frontal shot that shows only the reception desk, the walls, the laptop and her: <Subject 1> is standing behind the reception desk, both hands on the laptop keyboard as she types, her shoulders relaxed, her head bent slightly towards the screen. Her eyes are on the laptop screen and her face is calm. One single photograph. <Picture 2> is only an identity reference sheet, not a layout. True-to-life scale: the woman is an average adult (about 168 cm tall) and is sized by the real-world objects in <Picture 1> — doors, windows, furniture, mats and floor tiles keep their true size, she stands at the correct depth on the floor plane with her feet grounded and her height matching the perspective of that spot, and she is never enlarged to fill the frame. Scale anchor: the reception desk reaches her waist. Her face is sharp, natural and recognisably the same person as in <Picture 2>. The room, the furniture and every object keep their places and their true size. The lighting is preserved unchanged. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+N/A
+
+non_diegetic_music:
+N/A
+
+# inputs: {"face_prompt_h3": "St4cy_H3, a tight close-up portrait of a woman. Static camera. Lighting preserved unchanged. Colors and saturation unchanged."}

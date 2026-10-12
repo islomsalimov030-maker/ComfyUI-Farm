@@ -1,0 +1,33 @@
+{#- общие куски видео-шаблонов; обязательные строки живут здесь, не в LLM -#}
+{% macro subjects() -%}
+<Subject 1> is {{ trigger }}, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, {{ outfit_clause }}.
+<Subject 2> is {{ location_en }} in <Picture 1>.
+<Picture 2> is a close-up identity reference of the face of <Subject 1>.
+{%- endmacro %}
+{% macro video_subject() -%}
+<Video 1> is a motion reference clip of a different woman; only her movements and their timing are used as reference. Her face, hair, clothes and the room in <Video 1> are not used and never appear.
+{%- endmacro %}
+{% macro retention_common() -%}
+<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.
+<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.
+{%- endmacro %}
+{% macro video_retention() -%}
+<Video 1>: weak_reference - only the movements and their timing are transferred to <Subject 1>; the face, hair, clothes and room of the woman in <Video 1> are not retained.
+{%- endmacro %}
+{% macro style() -%}
+The target video is photorealistic live-action footage with {{ light_en }}, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan.
+{%- endmacro %}
+{% macro timeline() -%}
+{% for p in phases %} From {{ p.a }} to {{ p.b }} seconds, {{ p.text }}.{% endfor %}
+{%- endmacro %}
+{% macro rules() -%}
+The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression is {{ expression }}; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only {{ moving_parts }} move; {{ still_parts }} stay still.{% for r in extra_rules %} {{ r }}{% endfor %} Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.
+{%- endmacro %}
+{% macro sound() -%}
+overall_soundscape:
+{{ soundscape }}
+
+non_diegetic_music:
+N/A
+{%- endmacro %}
