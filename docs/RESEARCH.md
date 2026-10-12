@@ -70,3 +70,8 @@
 - `ImageCompositeMasked` при маске 0 копирует пиксели назначения точно; 8-битный PNG → float32 → SaveImage восстанавливается бит в бит → «вне маски = 0 отличий» достижимо без своих нод.
 - comfy.next-genium.com: RAM 132 ГБ, до старта занято ~74 ГБ; video_h3_loop (8 с, face pass) + 2–3 лишние копии FullHD-клипа (~5 ГБ каждая) → бэкенд лёг (502). Любые доп. копии видео — на 1344x768 или по кадрам.
 - `ComfyMathExpression`: работают `a > b`, `a - b`, `0 - a`, `a` (выходы FLOAT/INT/BOOL).
+- Под (12.10): `ComfyUI-StacyLoop` на томе был старым (04.10, 10 нод, без git) — движкам WS-01/WS-09 нужен ≥ 041aafe (26 нод: StacyPanel, StacySettings, StacyColorLock, StacyGate, StacyVideoInput, StacyReport…). Обновлён git clone; LICENSE в репо нет.
+- Под: для manual_frame нет Inpaint-CropAndStitch, `h3_img2img_latent` (H3LatentFromImage), z_image_turbo_bf16, Stacy_v1_z-image LoRA, qwen_3_4b, ae.safetensors; видео-движку хватает того, что есть.
+- Под: Ctrl-C в tmux-сессии `comfy` закрывает всю сессию; поднимать заново `/workspace/bootstrap.sh` (= `svc-start`), работающие aitk/ollama он не трогает.
+- Под, Claude in Chrome: переход, запущенный самим расширением (`navigate`) на `localhost:8188`, получает 403; переход со страницы (`location.href` с другой вкладки туннеля, напр. `localhost:11434`) — 200. curl на поде — 200.
+- Под: видео 5 с ref2va + RTX до FullHD, face pass выкл — 134 с при загруженных моделях, пик RAM ~45 ГБ, VRAM ~50 ГБ.
