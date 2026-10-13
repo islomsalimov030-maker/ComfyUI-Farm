@@ -9,7 +9,7 @@
 ## Серии (каждая — сетка, фиксированные сиды, 4 позы: Sitting-8, Standing-2, Lying-7, Sitting-2)
 1. **Генератор кадра:** H3 Image Studio (ND_MMH3) vs Fizgig-H3-Still vs MM-1Frame (только тест) × t1 image VAE vs video VAE. Метрики WS-05 + глаз.
 2. **Масштаб (главная боль):** (a) fix_e якорь; (b) скелет позы нужного размера как Picture 4; (c) зелёная рамка на плите; (d) широкий кадр + кроп; (e) одиночный ID-кроп вместо листа персонажа. Метрика — `scale` из WS-05.
-3. **Модели/LoRA («руки»):** базовый ref2va, Singularity ref2va, DaSiWa REF2VA hybrid, PinkCherry fl2va, 10Eros Max × LoRA Стейси 1.0/1.5 × turbo 4/8 шагов — только в SFW-профиле. Лицензию каждой модели на Civitai записать до загрузки.
+3. **Модели/LoRA («руки»):** базовый ref2va, Singularity ref2va, PinkCherry fl2va, 10Eros Max × LoRA Стейси 1.0/1.5 × turbo 4/8 шагов — только в SFW-профиле. Лицензию каждой модели на Civitai записать до загрузки.
 4. **RefMod (H3Mod):** персонаж/наряд/плита как RefMod vs картинки — сходство, время, стабильность.
 5. **Видео-апскейл:** RTX VSR (текущий) vs SeedVR2 vs без апскейла + 1080p генерация — резкость лица, время.
 6. **VLM:** qwen3-vl:8b vs 32b vs qwen3.6:27b на чек-листах WS-05 (P(Yes) по logprobs), VRAM рядом с H3.
