@@ -1,0 +1,3086 @@
+{
+ "agree": 27,
+ "n": 27,
+ "frames": {
+  "Lying-1": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 3.76,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 179.7446,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 617.5,
+      "ver": "sharp@1",
+      "face_native": 450.2,
+      "face_px": 424,
+      "source": "face",
+      "ms": 1935
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 423.9584,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 424,
+      "yaw": 7.6,
+      "roll": -0.5,
+      "luma_p95": 205,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1639,
+       397,
+       1991,
+       821
+      ],
+      "reliable": true,
+      "ms": 191
+     }
+    },
+    {
+     "name": "age",
+     "value": 8.3283,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 34.2,
+      "ref_age": 25.9,
+      "delta": 8.3,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 134
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7391,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 424,
+      "ver": "face_id@1",
+      "ms": 1020
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 2,
+      "matched": [
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1527,
+        619,
+        2032,
+        1124
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 339
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 52
+     }
+    }
+   ]
+  },
+  "Lying-2": {
+   "verdict": "человек",
+   "eye": "отказ",
+   "hit": true,
+   "sec": 0.58,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 181.1704,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 559.9,
+      "ver": "sharp@1",
+      "face_native": 331.5,
+      "face_px": 497,
+      "source": "face",
+      "ms": 272
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 497.3163,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 497,
+      "yaw": 51.8,
+      "roll": 53.5,
+      "luma_p95": 198,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       914,
+       382,
+       1412,
+       817
+      ],
+      "reliable": false,
+      "why": [
+       "поворот 52°",
+       "наклон 54°"
+      ],
+      "ms": 4
+     }
+    },
+    {
+     "name": "age",
+     "value": 8.9267,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "age": 34.8,
+      "ref_age": 25.9,
+      "delta": 8.9,
+      "model": "genderage",
+      "ver": "age@1",
+      "unreliable": [
+       "поворот 52°",
+       "наклон 54°"
+      ],
+      "ms": 12
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.5184,
+     "passed": false,
+     "severity": "hard",
+     "fail_code": "FACE_UNRELIABLE",
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 497,
+      "ver": "face_id@1",
+      "unreliable": [
+       "поворот 52°",
+       "наклон 54°"
+      ],
+      "ms": 101
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": false,
+     "severity": "info",
+     "fail_code": "HANDS",
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 0,
+      "matched": [],
+      "missing": [
+       "r"
+      ],
+      "crops": [
+       [
+        2266,
+        672,
+        2763,
+        1169
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 192
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Lying-4": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.59,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 174.2595,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 576.3,
+      "ver": "sharp@1",
+      "face_native": 1461.5,
+      "face_px": 119,
+      "source": "face",
+      "ms": 267
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 119.1369,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 119,
+      "yaw": -0.3,
+      "roll": 24.2,
+      "luma_p95": 200,
+      "n_faces": 1,
+      "source": "pose",
+      "bbox": [
+       1019,
+       479,
+       1129,
+       598
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 4.7822,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 30.6,
+      "ref_age": 25.9,
+      "delta": 4.8,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 9
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.8049,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 119,
+      "ver": "face_id@1",
+      "ms": 95
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 1,
+      "matched": [
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        925,
+        740,
+        1097,
+        912
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 217
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Lying-5": {
+   "verdict": "человек",
+   "eye": "отказ",
+   "hit": true,
+   "sec": 0.52,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 94.2396,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 328.9,
+      "ver": "sharp@1",
+      "face_native": 190.2,
+      "face_px": 456,
+      "source": "face",
+      "ms": 300
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 456.4668,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 456,
+      "yaw": -3.9,
+      "roll": 66.4,
+      "luma_p95": 133,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       349,
+       386,
+       806,
+       796
+      ],
+      "reliable": false,
+      "why": [
+       "наклон 66°",
+       "лицо в тени (L95=133)"
+      ],
+      "ms": 5
+     }
+    },
+    {
+     "name": "age",
+     "value": 11.1922,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "age": 37.0,
+      "ref_age": 25.9,
+      "delta": 11.2,
+      "model": "genderage",
+      "ver": "age@1",
+      "unreliable": [
+       "наклон 66°",
+       "лицо в тени (L95=133)"
+      ],
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7844,
+     "passed": false,
+     "severity": "hard",
+     "fail_code": "FACE_UNRELIABLE",
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 456,
+      "ver": "face_id@1",
+      "unreliable": [
+       "наклон 66°",
+       "лицо в тени (L95=133)"
+      ],
+      "ms": 86
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 124
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Lying-6": {
+   "verdict": "принять",
+   "eye": "без лица",
+   "hit": true,
+   "sec": 0.33,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 250.9386,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 250.9,
+      "ver": "sharp@1",
+      "source": "center",
+      "ms": 208
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "лицо не ожидается",
+      "ver": "face_detect@1",
+      "ms": 0
+     }
+    },
+    {
+     "name": "age",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет лица",
+      "ver": "age@1",
+      "ms": 0
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет лица",
+      "ver": "face_id@1",
+      "ms": 0
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 120
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Lying-7": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.52,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 137.5032,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 323.8,
+      "ver": "sharp@1",
+      "face_native": 734.4,
+      "face_px": 158,
+      "source": "face",
+      "ms": 219
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 157.5703,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 158,
+      "yaw": -15.5,
+      "roll": 25.0,
+      "luma_p95": 199,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       647,
+       506,
+       796,
+       663
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 5.4383,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 31.3,
+      "ref_age": 25.9,
+      "delta": 5.4,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 7
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7835,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 158,
+      "ver": "face_id@1",
+      "ms": 85
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 2,
+      "matched": [
+       "l"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        612,
+        891,
+        674,
+        953
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 212
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Lying-8": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.55,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 127.5179,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 352.8,
+      "ver": "sharp@1",
+      "face_native": 697.5,
+      "face_px": 145,
+      "source": "face",
+      "ms": 215
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 145.2625,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 145,
+      "yaw": -6.8,
+      "roll": -29.5,
+      "luma_p95": 207,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1572,
+       242,
+       1713,
+       387
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 2.1346,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 28.0,
+      "ref_age": 25.9,
+      "delta": 2.1,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 10
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.684,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 145,
+      "ver": "face_id@1",
+      "ms": 89
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 2,
+      "matched": [
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1092,
+        226,
+        1352,
+        486
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 232
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-1": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.6,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 126.8026,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 1069.3,
+      "ver": "sharp@1",
+      "face_native": 824.1,
+      "face_px": 140,
+      "source": "face",
+      "ms": 289
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 139.6806,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 140,
+      "yaw": -6.3,
+      "roll": 7.5,
+      "luma_p95": 220,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1106,
+       389,
+       1227,
+       528
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 1.0171,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 26.9,
+      "ref_age": 25.9,
+      "delta": 1.0,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.6889,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 140,
+      "ver": "face_id@1",
+      "ms": 79
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1225,
+        852,
+        1501,
+        1128
+       ],
+       [
+        805,
+        846,
+        1080,
+        1122
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 225
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-10": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.55,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 170.2348,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 276.7,
+      "ver": "sharp@1",
+      "face_native": 740.1,
+      "face_px": 217,
+      "source": "face",
+      "ms": 306
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 217.1717,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 217,
+      "yaw": 18.0,
+      "roll": 1.0,
+      "luma_p95": 204,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1292,
+       257,
+       1476,
+       474
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 1.4117,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 27.3,
+      "ref_age": 25.9,
+      "delta": 1.4,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 9
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.8054,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 217,
+      "ver": "face_id@1",
+      "ms": 114
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 123
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-2": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.59,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 105.7092,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 588.6,
+      "ver": "sharp@1",
+      "face_native": 468.9,
+      "face_px": 181,
+      "source": "face",
+      "ms": 245
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 180.8017,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 181,
+      "yaw": 0.3,
+      "roll": 36.0,
+      "luma_p95": 220,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       548,
+       214,
+       726,
+       394
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 2.9206,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 28.8,
+      "ref_age": 25.9,
+      "delta": 2.9,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7138,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 181,
+      "ver": "face_id@1",
+      "ms": 98
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.5,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 1,
+      "matched": [
+       "l"
+      ],
+      "missing": [
+       "r"
+      ],
+      "crops": [
+       [
+        626,
+        564,
+        937,
+        876
+       ],
+       [
+        438,
+        262,
+        750,
+        574
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 236
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-3": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.65,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 124.0431,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 297.6,
+      "ver": "sharp@1",
+      "face_native": 459.6,
+      "face_px": 248,
+      "source": "face",
+      "ms": 293
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 247.5231,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 248,
+      "yaw": 7.9,
+      "roll": 2.8,
+      "luma_p95": 203,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1456,
+       301,
+       1675,
+       548
+      ],
+      "reliable": true,
+      "ms": 2
+     }
+    },
+    {
+     "name": "age",
+     "value": 9.4279,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 35.3,
+      "ref_age": 25.9,
+      "delta": 9.4,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 7
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7747,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 248,
+      "ver": "face_id@1",
+      "ms": 79
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1608,
+        309,
+        1994,
+        696
+       ],
+       [
+        1238,
+        1005,
+        1625,
+        1391
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 265
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-4": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.54,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 128.249,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 458.7,
+      "ver": "sharp@1",
+      "face_native": 533.8,
+      "face_px": 217,
+      "source": "face",
+      "ms": 265
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 217.2803,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 217,
+      "yaw": -18.2,
+      "roll": 9.7,
+      "luma_p95": 198,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1281,
+       210,
+       1469,
+       428
+      ],
+      "reliable": true,
+      "ms": 2
+     }
+    },
+    {
+     "name": "age",
+     "value": 3.2439,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 29.1,
+      "ref_age": 25.9,
+      "delta": 3.2,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7116,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 217,
+      "ver": "face_id@1",
+      "ms": 80
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 1,
+      "matched": [
+       "l"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1514,
+        1103,
+        1834,
+        1423
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 182
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-5": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.6,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 101.3939,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 463.4,
+      "ver": "sharp@1",
+      "face_native": 498.0,
+      "face_px": 174,
+      "source": "face",
+      "ms": 296
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 173.7315,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 174,
+      "yaw": -2.8,
+      "roll": 2.4,
+      "luma_p95": 198,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1313,
+       328,
+       1460,
+       502
+      ],
+      "reliable": true,
+      "ms": 2
+     }
+    },
+    {
+     "name": "age",
+     "value": 3.659,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 29.5,
+      "ref_age": 25.9,
+      "delta": 3.7,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 10
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7676,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 174,
+      "ver": "face_id@1",
+      "ms": 84
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 2,
+      "matched": [
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        851,
+        857,
+        1235,
+        1240
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 209
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-6": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.64,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 99.9257,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 560.2,
+      "ver": "sharp@1",
+      "face_native": 417.5,
+      "face_px": 251,
+      "source": "face",
+      "ms": 286
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 251.289,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 251,
+      "yaw": -8.1,
+      "roll": 0.9,
+      "luma_p95": 207,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1044,
+       223,
+       1254,
+       474
+      ],
+      "reliable": true,
+      "ms": 2
+     }
+    },
+    {
+     "name": "age",
+     "value": 9.1172,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 35.0,
+      "ref_age": 25.9,
+      "delta": 9.1,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 9
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7949,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 251,
+      "ver": "face_id@1",
+      "ms": 81
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.5,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 1,
+      "matched": [
+       "l"
+      ],
+      "missing": [
+       "r"
+      ],
+      "crops": [
+       [
+        923,
+        631,
+        1340,
+        1048
+       ],
+       [
+        718,
+        486,
+        1135,
+        903
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 257
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-7": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.5,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 121.3366,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 381.8,
+      "ver": "sharp@1",
+      "face_native": 495.0,
+      "face_px": 235,
+      "source": "face",
+      "ms": 289
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 235.024,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 235,
+      "yaw": 5.2,
+      "roll": -28.8,
+      "luma_p95": 194,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1267,
+       177,
+       1493,
+       412
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 8.2354,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 34.1,
+      "ref_age": 25.9,
+      "delta": 8.2,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 9
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.5796,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 235,
+      "ver": "face_id@1",
+      "ms": 82
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 123
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-8": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.69,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 140.2739,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 981.9,
+      "ver": "sharp@1",
+      "face_native": 832.4,
+      "face_px": 151,
+      "source": "face",
+      "ms": 298
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 151.1672,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 151,
+      "yaw": 7.6,
+      "roll": -11.2,
+      "luma_p95": 179,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1120,
+       172,
+       1254,
+       324
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 1.1774,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 27.0,
+      "ref_age": 25.9,
+      "delta": 1.2,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7389,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 151,
+      "ver": "face_id@1",
+      "ms": 105
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.5,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 3,
+      "matched": [
+       "l"
+      ],
+      "missing": [
+       "r"
+      ],
+      "crops": [
+       [
+        1296,
+        576,
+        1595,
+        875
+       ],
+       [
+        951,
+        699,
+        1250,
+        998
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 275
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Sitting-9": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.61,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 139.6225,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 512.5,
+      "ver": "sharp@1",
+      "face_native": 526.8,
+      "face_px": 200,
+      "source": "face",
+      "ms": 276
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 199.6047,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 200,
+      "yaw": -2.4,
+      "roll": 1.3,
+      "luma_p95": 204,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1303,
+       205,
+       1474,
+       405
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": -0.4707,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 25.4,
+      "ref_age": 25.9,
+      "delta": -0.5,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 7
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.789,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 200,
+      "ver": "face_id@1",
+      "ms": 85
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1515,
+        904,
+        1939,
+        1328
+       ],
+       [
+        817,
+        721,
+        1240,
+        1144
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 243
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-1": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.54,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 115.5794,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 824.7,
+      "ver": "sharp@1",
+      "face_native": 1335.8,
+      "face_px": 70,
+      "source": "face",
+      "ms": 225
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 69.6771,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 70,
+      "yaw": -3.5,
+      "roll": 6.9,
+      "luma_p95": 196,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1006,
+       252,
+       1067,
+       322
+      ],
+      "reliable": true,
+      "ms": 0
+     }
+    },
+    {
+     "name": "age",
+     "value": 3.17,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 29.0,
+      "ref_age": 25.9,
+      "delta": 3.2,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 9
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.8171,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 70,
+      "ver": "face_id@1",
+      "ms": 86
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1049,
+        505,
+        1197,
+        653
+       ],
+       [
+        869,
+        507,
+        1017,
+        654
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 221
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-11": {
+   "verdict": "человек",
+   "eye": "человек",
+   "hit": true,
+   "sec": 0.67,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 64.5471,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 242.2,
+      "ver": "sharp@1",
+      "face_native": 935.5,
+      "face_px": 73,
+      "source": "face",
+      "ms": 295
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 73.4958,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 73,
+      "yaw": -54.0,
+      "roll": 13.5,
+      "luma_p95": 188,
+      "n_faces": 1,
+      "source": "pose",
+      "bbox": [
+       530,
+       100,
+       588,
+       173
+      ],
+      "reliable": false,
+      "why": [
+       "поворот -54°"
+      ],
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 0.5919,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "age": 26.4,
+      "ref_age": 25.9,
+      "delta": 0.6,
+      "model": "genderage",
+      "ver": "age@1",
+      "unreliable": [
+       "поворот -54°"
+      ],
+      "ms": 7
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.5845,
+     "passed": false,
+     "severity": "hard",
+     "fail_code": "FACE_UNRELIABLE",
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 73,
+      "ver": "face_id@1",
+      "unreliable": [
+       "поворот -54°"
+      ],
+      "ms": 83
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": false,
+     "severity": "info",
+     "fail_code": "HANDS",
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 0,
+      "matched": [],
+      "missing": [
+       "l"
+      ],
+      "crops": [
+       [
+        503,
+        352,
+        561,
+        410
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 282
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-12": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.49,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 137.5849,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 543.9,
+      "ver": "sharp@1",
+      "face_native": 1231.8,
+      "face_px": 98,
+      "source": "face",
+      "ms": 229
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 98.353,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 98,
+      "yaw": -20.2,
+      "roll": 2.6,
+      "luma_p95": 205,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1248,
+       71,
+       1333,
+       170
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 3.2597,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 29.1,
+      "ref_age": 25.9,
+      "delta": 3.3,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.8037,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 98,
+      "ver": "face_id@1",
+      "ms": 84
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": false,
+     "severity": "info",
+     "fail_code": "HANDS",
+     "evidence": {
+      "wrists": 1,
+      "hands_found": 0,
+      "matched": [],
+      "missing": [
+       "l"
+      ],
+      "crops": [
+       [
+        1269,
+        522,
+        1330,
+        583
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 167
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-2": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.44,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 82.0755,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 393.1,
+      "ver": "sharp@1",
+      "face_native": 661.1,
+      "face_px": 104,
+      "source": "face",
+      "ms": 227
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 104.1009,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 104,
+      "yaw": -4.3,
+      "roll": 13.3,
+      "luma_p95": 192,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       922,
+       80,
+       1017,
+       184
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 4.1296,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 30.0,
+      "ref_age": 25.9,
+      "delta": 4.1,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7476,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 104,
+      "ver": "face_id@1",
+      "ms": 82
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 127
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-3": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.61,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 57.5737,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 1020.9,
+      "ver": "sharp@1",
+      "face_native": 582.7,
+      "face_px": 102,
+      "source": "face",
+      "ms": 276
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 101.6265,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 102,
+      "yaw": -0.5,
+      "roll": 0.6,
+      "luma_p95": 150,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1381,
+       503,
+       1468,
+       605
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 4.4841,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 30.3,
+      "ref_age": 25.9,
+      "delta": 4.5,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 10
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7666,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 102,
+      "ver": "face_id@1",
+      "ms": 87
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1447,
+        889,
+        1660,
+        1103
+       ],
+       [
+        1187,
+        876,
+        1401,
+        1090
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 239
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-4": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.52,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 96.875,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 828.8,
+      "ver": "sharp@1",
+      "face_native": 1330.9,
+      "face_px": 67,
+      "source": "face",
+      "ms": 217
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 66.5625,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 67,
+      "yaw": -2.0,
+      "roll": 1.1,
+      "luma_p95": 200,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       739,
+       178,
+       796,
+       244
+      ],
+      "reliable": true,
+      "ms": 0
+     }
+    },
+    {
+     "name": "age",
+     "value": 4.2681,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 30.1,
+      "ref_age": 25.9,
+      "delta": 4.3,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7012,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 67,
+      "ver": "face_id@1",
+      "ms": 85
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        785,
+        419,
+        928,
+        562
+       ],
+       [
+        617,
+        416,
+        760,
+        559
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 212
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-6": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.53,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 86.4128,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 394.7,
+      "ver": "sharp@1",
+      "face_native": 308.0,
+      "face_px": 277,
+      "source": "face",
+      "ms": 298
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 276.7824,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 277,
+      "yaw": -5.2,
+      "roll": 0.5,
+      "luma_p95": 202,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1293,
+       297,
+       1533,
+       574
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": -0.7184,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 25.1,
+      "ref_age": 25.9,
+      "delta": -0.7,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 9
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.6759,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 277,
+      "ver": "face_id@1",
+      "ms": 92
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 127
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-7": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.78,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 137.935,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 731.6,
+      "ver": "sharp@1",
+      "face_native": 1028.3,
+      "face_px": 125,
+      "source": "face",
+      "ms": 369
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 124.8522,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 125,
+      "yaw": 4.2,
+      "roll": -0.9,
+      "luma_p95": 197,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       977,
+       153,
+       1086,
+       278
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 1.9193,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 27.8,
+      "ref_age": 25.9,
+      "delta": 1.9,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7527,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 125,
+      "ver": "face_id@1",
+      "ms": 85
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        1074,
+        613,
+        1273,
+        811
+       ],
+       [
+        817,
+        646,
+        1016,
+        844
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 318
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-8": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.46,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 118.0731,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 181.1,
+      "ver": "sharp@1",
+      "face_native": 502.4,
+      "face_px": 217,
+      "source": "face",
+      "ms": 242
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 217.3306,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 217,
+      "yaw": -13.8,
+      "roll": 4.5,
+      "luma_p95": 179,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       1291,
+       146,
+       1477,
+       364
+      ],
+      "reliable": true,
+      "ms": 2
+     }
+    },
+    {
+     "name": "age",
+     "value": 5.8253,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 31.7,
+      "ref_age": 25.9,
+      "delta": 5.8,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 8
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.8525,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 217,
+      "ver": "face_id@1",
+      "ms": 79
+     }
+    },
+    {
+     "name": "hands",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "запястья не видны",
+      "ver": "hands@1",
+      "ms": 128
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  },
+  "Standing-9": {
+   "verdict": "принять",
+   "eye": "принять",
+   "hit": true,
+   "sec": 0.57,
+   "checks": [
+    {
+     "name": "sharp",
+     "value": 94.9046,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "center": 960.6,
+      "ver": "sharp@1",
+      "face_native": 1081.3,
+      "face_px": 83,
+      "source": "face",
+      "ms": 252
+     }
+    },
+    {
+     "name": "face_detect",
+     "value": 83.1405,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "face_px": 83,
+      "yaw": -2.6,
+      "roll": 0.4,
+      "luma_p95": 187,
+      "n_faces": 1,
+      "source": "blazeface",
+      "bbox": [
+       760,
+       190,
+       832,
+       273
+      ],
+      "reliable": true,
+      "ms": 1
+     }
+    },
+    {
+     "name": "age",
+     "value": 5.029,
+     "passed": true,
+     "severity": "soft",
+     "fail_code": null,
+     "evidence": {
+      "age": 30.9,
+      "ref_age": 25.9,
+      "delta": 5.0,
+      "model": "genderage",
+      "ver": "age@1",
+      "ms": 10
+     }
+    },
+    {
+     "name": "face_id",
+     "value": 0.7598,
+     "passed": true,
+     "severity": "hard",
+     "fail_code": null,
+     "evidence": {
+      "backend": "auraface",
+      "ref": "dataset_face_v1_ready",
+      "ref_n": 77,
+      "threshold": 0.57,
+      "face_px": 83,
+      "ver": "face_id@1",
+      "ms": 86
+     }
+    },
+    {
+     "name": "hands",
+     "value": 1.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "wrists": 2,
+      "hands_found": 2,
+      "matched": [
+       "l",
+       "r"
+      ],
+      "missing": [],
+      "crops": [
+       [
+        819,
+        503,
+        993,
+        677
+       ],
+       [
+        602,
+        511,
+        776,
+        685
+       ]
+      ],
+      "ver": "hands@1",
+      "ms": 218
+     }
+    },
+    {
+     "name": "scale",
+     "value": 0.0,
+     "passed": true,
+     "severity": "info",
+     "fail_code": null,
+     "evidence": {
+      "note": "нет карточки плиты с якорями",
+      "ver": "scale@1",
+      "ms": 0
+     }
+    }
+   ]
+  }
+ }
+}

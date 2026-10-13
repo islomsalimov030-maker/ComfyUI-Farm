@@ -1,0 +1,69 @@
+# Пороги проверок профиля sfw_base (CONTRACTS §8: пороги — в YAML, не в коде).
+# frame: — WS-05 (калибровка: docs/qa/frames_baseline.md); video: — WS-06 (правит WS-06).
+version: 1
+frame:
+  stop_cost: 3          # после hard-отказа проверки с cost >= 3 (hands, scale, checklist) не гоняются
+  # enabled: [sharp, face_detect, face_id]   # — запускать только эти; disabled: [...] — выключить
+  sharp:
+    norm_px: 256        # внутренняя часть лица приводится к 256 px — порог не зависит от размера лица
+    face_min: 50        # дисперсия лапласиана на 256 px; на 26 кадрах v2 минимум 58 (Стоя-3, на глаз норм.)
+    center_min: 15      # центр кадра на 1024 px, если лица нет/мелкое
+    min_face_px: 64
+    severity: soft
+  face_detect:
+    detector: mediapipe          # прод (Apache-2.0); buffalo_l|auraface = SCRFD, веса InsightFace — только тест
+    min_face_px: {mediapipe: 64, buffalo_l: 80, auraface: 80}  # рамка MediaPipe ~15 % меньше SCRFD
+    max_yaw: 45
+    max_roll: 50                 # лёжа «набок» — ArcFace/AuraFace ненадёжны (Лежа-2/5)
+    min_luma_p95: 150            # L (Lab) 95-й перцентиль в лице: ниже — лицо в тени / жёсткий свет
+    severity_missing: soft       # лица нет, а шот не помечен no_face → COMPOSITION
+  face_id:
+    backend: auraface            # прод: AuraFace-v1 glintr100 (Apache-2.0); buffalo_l — только сверка
+    min: {auraface: 0.57, buffalo_l: 0.62}   # калибровка WS-05: надёжные позитивы AuraFace >= 0.58, негативы < 0.55
+    unreliable_action: human     # ненадёжно → FACE_UNRELIABLE (hard) → needs_human; info — пропускать молча
+    ref_dir: null                # запасной эталон: папка лиц, «{character}» подставляется
+    severity: hard
+  age:
+    model: none                  # genderage = buffalo_l (НЕкоммерческие веса) — только тест; MiVOLO v2 — после согласования
+    min_delta: -8                # лет от медианы эталона; выше эталона на 8+ — AGE
+    max_delta: 10                # genderage завышает на ~4 года против эталона (медиана 25.4, кадры v2 ~30)
+    severity: soft
+  hands:
+    min_wrist_vis: 0.6
+    crop_k: 0.55                 # сторона кропа руки = 1.1 × ширина плеч
+    min_ratio: 0.5               # доля видимых запястий с распознанной кистью
+    vlm: false                   # вопросы VLM по кропам (GPU, qwen3-vl) — включить на поде
+    vlm_min_p: 0.5
+    severity: info               # CV-сигнал не откалиброван (нет разметки рук) — пока только в отчёт
+  scale:
+    default_height_cm: 168
+    tol: 0.08                    # |доля роста верха якоря − ожидаемая|
+    max_floor_dy: 0.08           # низ якоря и стопы на одном уровне пола (доля высоты кадра)
+    max_dx: 0.35
+    min_vis: 0.5
+    severity: soft
+  checklist:
+    enabled: false               # VLM (Ollama, P(Yes) из logprobs) — включить на поде
+    root_min_p: 0.5
+    min_p: 0.5
+    agg: min
+    max_questions: 6
+    severity: soft
+
+# ---------------------------------------------------------------- WS-06: видео
+# Стартовые пороги по разведке 25 петель H3 (p480, docs/qa/WS-06_video.md); калибруются по разметке.
+video:
+  seam:          {ratio: 1.5, floor: 0.004, window: 12, dup_eps: 0.25, severity: hard}
+  seam_velocity: {jump_max: 2.5, stop_go_max: 4.0, min_px: 0.3, severity: soft}
+  cut:           {spike: 6.0, spike_abs: 0.15, scenedetect: true, sd_threshold: 27.0, severity: hard}
+  camera_move:   {shift_frac: 0.01, scale_max: 0.01, jitter_px: 6.0, inliers_min: 0.4, step: 4, severity: hard}
+  light_drift:   {dL_max: 4.0, severity: hard}
+  color_drift:   {dE_max: 4.0, dC_max: 3.0, ref_dE_max: 6.0, severity: soft}
+  flicker:       {hz_min: 3.0, amp_max: 0.6, severity: soft}
+  freeze:        {still_frac: 0.12, run_s: 0.75, edge_s: 0.5, min_motion: 0.02, severity: soft}
+  slowmo:        {peak_min: 0.10, moving_speed: 0.03, viscous_moving: 0.7, viscous_peak: 0.16, severity: soft}
+  identity_dip:  {fps: 4, yaw_max: 45, window: 4, start_min: 0.55, dip_max: 0.15, ref_min: 0.35, lost_max: 0.5,
+                  det: mediapipe, backend: auraface, severity: hard}
+  # постобработка (farm/post/*)
+  post_loop:     {search: 12, crossfade: [6, 8, 10, 12], ratio: 1.5, floor: 0.004, window: 12, dup_eps: 0.25}
+  post_color:    {smooth: 9, strength: 1.0, target: frame0}

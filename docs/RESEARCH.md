@@ -97,3 +97,22 @@
 | rife_v4.26.safetensors (Comfy-Org/RIFE, для FrameInterpolate) | MIT | mit-and-apache-2.0 (перепаковка Practical-RIFE) | ✅ | [HF](https://huggingface.co/Comfy-Org/RIFE) |
 
 Решение WS-06: шов меряется 1−SSIM (OpenCV), не LPIPS; лицо для identity_dip — `farm/qa/face.py` WS-05 (MediaPipe + AuraFace), не YuNet/SFace; мост RIFE — только на поде через FrameInterpolate (веса из Comfy-Org/RIFE).
+
+## WS-05 (13.10.2026) — лицо, возраст, руки для проверок кадра
+| Компонент | Код | Веса | Коммерция | Источник |
+|---|---|---|---|---|
+| AuraFace-v1 `glintr100.onnx` (эмбеддинг лица) | Apache-2.0 | Apache-2.0 | ✅ прод | [HF fal/AuraFace-v1](https://huggingface.co/fal/AuraFace-v1) |
+| `scrfd_10g_bnkps.onnx`, `2d106det.onnx`, `1k3d68.onnx`, `genderage.onnx` из того же репо fal | — | файлы InsightFace model zoo — «non-commercial research purposes only», Apache репо fal на них не распространяется | ⚠ только тест | [InsightFace Model Zoo](https://github.com/deepinsight/insightface/wiki/Model-Zoo) |
+| MediaPipe Tasks: BlazeFace full-range, Face/Hand/Pose Landmarker (`.task`/`.tflite`) | Apache-2.0 | Apache-2.0 | ✅ прод (детектор лица, руки, поза) | [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector) |
+| MiVOLO v2 (`iitolstykh/mivolo_v2`) — возраст | Apache-2.0 (WildChlamydia/MiVOLO) | Apache-2.0 (карточка HF) | ✅, но ставится `pip install git+…MiVOLO` + torch/timm 0.8.13.dev0 — не согласовано | [HF](https://huggingface.co/iitolstykh/mivolo_v2) |
+| MiVOLO GDrive-чекпоинты (IMDB/Lagenda) | — | отдельного LICENSE рядом нет | ⚠ брать только HF v2 | [repo](https://github.com/WildChlamydia/MiVOLO) |
+| YOLO-Face-Person-Detector (детектор MiVOLO), ultralytics yolov8-face | AGPL-3.0 | AGPL-3.0 | ⚠ внутренне ок; нам не нужен — лица даёт MediaPipe | [HF](https://huggingface.co/iitolstykh/YOLO-Face-Person-Detector) |
+| akanametov/yolo-face | GPL-3.0 | GPL-3.0 | ⚠ | [repo](https://github.com/akanametov/yolo-face) |
+| DWPose `dw-ll_ucoco_384.onnx` + `yolox_l.onnx` (yzd-v/DWPose) | Apache-2.0 | Apache-2.0 | ✅ (запасной вариант позы; сейчас MediaPipe Pose) | [HF](https://huggingface.co/yzd-v/DWPose) |
+
+Факты из прогона (подробно `docs/qa/frames_baseline.md`):
+- Пакет `insightface` не нужен: SCRFD + norm_crop + ArcFace на чистом onnxruntime воспроизводят `face_metrics_final.csv` (Spearman 0.93–0.98, MAE 0.02).
+- AuraFace против buffalo_l на 78 кадрах Стейси: Spearman 0.87, на 77 кадрах датасета 0.86 → AuraFace годится; порог 0.57 (у buffalo_l 0.62–0.65).
+- Сходство лица на лежащих с наклоном головы >50° нестабильно (Лежа-5: 0.445 → 0.72–0.78 при смене 5 точек выравнивания) — такие кадры только к человеку.
+- Рамка лица MediaPipe (по 478 точкам) примерно на 15 % меньше рамки SCRFD → порог «мелкое лицо» 64 px вместо 80.
+- genderage завышает возраст Стейси на ~4 года (кадры ~30 против медианы датасета 25.4), корреляция с CSV 0.70.

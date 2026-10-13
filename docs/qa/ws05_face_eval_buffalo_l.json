@@ -1,0 +1,1106 @@
+{
+ "frames": {
+  "Lying-1": {
+   "gt": {
+    "id_src": "0.794",
+    "id_old_c83": "0.6",
+    "id_new": "0.738",
+    "age_new": "30",
+    "sharp_new": "399"
+   },
+   "new": {
+    "face_px": 502,
+    "yaw": 7.3,
+    "det_score": 0.822,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7429,
+    "id_auraface": 0.7384,
+    "age": 31.6,
+    "sharp": 411.0
+   },
+   "old": {
+    "face_px": 506,
+    "yaw": 8.0,
+    "det_score": 0.82,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6228,
+    "id_auraface": 0.6226
+   },
+   "src": {
+    "face_px": 505,
+    "yaw": 8.4,
+    "det_score": 0.826,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7987,
+    "id_auraface": 0.7989
+   }
+  },
+  "Lying-2": {
+   "gt": {
+    "id_src": "0.286",
+    "id_old_c83": "0.261",
+    "id_new": "0.364",
+    "age_new": "31",
+    "sharp_new": "356"
+   },
+   "new": {
+    "face_px": 599,
+    "yaw": 58.2,
+    "det_score": 0.684,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5192,
+    "id_auraface": 0.4864,
+    "age": 42.6,
+    "sharp": 461.0
+   },
+   "old": {
+    "face_px": 635,
+    "yaw": 90.0,
+    "det_score": 0.686,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5024,
+    "id_auraface": 0.5147
+   },
+   "src": {
+    "face_px": 620,
+    "yaw": 90.0,
+    "det_score": 0.699,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5652,
+    "id_auraface": 0.4953
+   }
+  },
+  "Lying-4": {
+   "gt": {
+    "id_src": "0.668",
+    "id_old_c83": "0.695",
+    "id_new": "0.746",
+    "age_new": "27",
+    "sharp_new": "907"
+   },
+   "new": {
+    "face_px": 134,
+    "yaw": -4.4,
+    "det_score": 0.902,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7459,
+    "id_auraface": 0.8004,
+    "age": 28.7,
+    "sharp": 1315.8
+   },
+   "old": {
+    "face_px": 136,
+    "yaw": -5.4,
+    "det_score": 0.893,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7052,
+    "id_auraface": 0.74
+   },
+   "src": {
+    "face_px": 133,
+    "yaw": -5.0,
+    "det_score": 0.902,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6685,
+    "id_auraface": 0.7463
+   }
+  },
+  "Lying-5": {
+   "gt": {
+    "id_src": "0.486",
+    "id_old_c83": "0.234",
+    "id_new": "0.445",
+    "age_new": "50",
+    "sharp_new": "162"
+   },
+   "new": {
+    "face_px": 456,
+    "yaw": -36.1,
+    "det_score": 0.766,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5831,
+    "id_auraface": 0.6115,
+    "age": 36.5,
+    "sharp": 195.4
+   },
+   "old": {
+    "face_px": 448,
+    "yaw": -27.2,
+    "det_score": 0.758,
+    "n_faces": 1,
+    "id_buffalo_l": 0.1502,
+    "id_auraface": 0.2875
+   },
+   "src": {
+    "face_px": 473,
+    "yaw": -34.3,
+    "det_score": 0.788,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5516,
+    "id_auraface": 0.5902
+   }
+  },
+  "Lying-6": {
+   "gt": {
+    "id_src": "",
+    "id_old_c83": "",
+    "id_new": "",
+    "age_new": "",
+    "sharp_new": ""
+   },
+   "new": {
+    "face": null
+   },
+   "old": {
+    "face": null
+   },
+   "src": {
+    "face": null
+   }
+  },
+  "Lying-7": {
+   "gt": {
+    "id_src": "0.731",
+    "id_old_c83": "0.674",
+    "id_new": "0.766",
+    "age_new": "31",
+    "sharp_new": "633"
+   },
+   "new": {
+    "face_px": 173,
+    "yaw": -14.1,
+    "det_score": 0.881,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7809,
+    "id_auraface": 0.7744,
+    "age": 30.9,
+    "sharp": 784.8
+   },
+   "old": {
+    "face_px": 171,
+    "yaw": -16.1,
+    "det_score": 0.877,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6782,
+    "id_auraface": 0.679
+   },
+   "src": {
+    "face_px": 173,
+    "yaw": -14.9,
+    "det_score": 0.884,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7297,
+    "id_auraface": 0.7494
+   }
+  },
+  "Lying-8": {
+   "gt": {
+    "id_src": "0.604",
+    "id_old_c83": "0.622",
+    "id_new": "0.719",
+    "age_new": "30",
+    "sharp_new": "596"
+   },
+   "new": {
+    "face_px": 175,
+    "yaw": 1.0,
+    "det_score": 0.889,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7134,
+    "id_auraface": 0.7091,
+    "age": 27.9,
+    "sharp": 706.5
+   },
+   "old": {
+    "face_px": 183,
+    "yaw": 2.1,
+    "det_score": 0.874,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6307,
+    "id_auraface": 0.6234
+   },
+   "src": {
+    "face_px": 179,
+    "yaw": -0.7,
+    "det_score": 0.894,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6208,
+    "id_auraface": 0.6628
+   }
+  },
+  "Sitting-1": {
+   "gt": {
+    "id_src": "0.65",
+    "id_old_c83": "0.662",
+    "id_new": "0.644",
+    "age_new": "23",
+    "sharp_new": "593"
+   },
+   "new": {
+    "face_px": 165,
+    "yaw": -4.0,
+    "det_score": 0.904,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6645,
+    "id_auraface": 0.6615,
+    "age": 23.0,
+    "sharp": 701.1
+   },
+   "old": {
+    "face_px": 163,
+    "yaw": -4.7,
+    "det_score": 0.898,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6395,
+    "id_auraface": 0.6631
+   },
+   "src": {
+    "face_px": 164,
+    "yaw": -4.5,
+    "det_score": 0.91,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6344,
+    "id_auraface": 0.7077
+   }
+  },
+  "Sitting-10": {
+   "gt": {
+    "id_src": "0.816",
+    "id_old_c83": "0.648",
+    "id_new": "0.749",
+    "age_new": "31",
+    "sharp_new": "689"
+   },
+   "new": {
+    "face_px": 266,
+    "yaw": 20.8,
+    "det_score": 0.865,
+    "n_faces": 1,
+    "id_buffalo_l": 0.76,
+    "id_auraface": 0.8124,
+    "age": 27.5,
+    "sharp": 653.9
+   },
+   "old": {
+    "face_px": 265,
+    "yaw": 20.1,
+    "det_score": 0.865,
+    "n_faces": 1,
+    "id_buffalo_l": 0.641,
+    "id_auraface": 0.6099
+   },
+   "src": {
+    "face_px": 265,
+    "yaw": 21.4,
+    "det_score": 0.869,
+    "n_faces": 1,
+    "id_buffalo_l": 0.8096,
+    "id_auraface": 0.8189
+   }
+  },
+  "Sitting-2": {
+   "gt": {
+    "id_src": "0.631",
+    "id_old_c83": "0.582",
+    "id_new": "0.597",
+    "age_new": "30",
+    "sharp_new": "444"
+   },
+   "new": {
+    "face_px": 224,
+    "yaw": -4.4,
+    "det_score": 0.898,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6431,
+    "id_auraface": 0.7245,
+    "age": 32.5,
+    "sharp": 426.6
+   },
+   "old": {
+    "face_px": 223,
+    "yaw": -2.4,
+    "det_score": 0.895,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5795,
+    "id_auraface": 0.602
+   },
+   "src": {
+    "face_px": 221,
+    "yaw": -3.4,
+    "det_score": 0.901,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6548,
+    "id_auraface": 0.6979
+   }
+  },
+  "Sitting-3": {
+   "gt": {
+    "id_src": "0.787",
+    "id_old_c83": "0.727",
+    "id_new": "0.741",
+    "age_new": "39",
+    "sharp_new": "338"
+   },
+   "new": {
+    "face_px": 303,
+    "yaw": 9.3,
+    "det_score": 0.908,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7572,
+    "id_auraface": 0.7732,
+    "age": 33.1,
+    "sharp": 421.6
+   },
+   "old": {
+    "face_px": 304,
+    "yaw": 8.5,
+    "det_score": 0.906,
+    "n_faces": 1,
+    "id_buffalo_l": 0.707,
+    "id_auraface": 0.7932
+   },
+   "src": {
+    "face_px": 303,
+    "yaw": 9.0,
+    "det_score": 0.908,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7846,
+    "id_auraface": 0.8157
+   }
+  },
+  "Sitting-4": {
+   "gt": {
+    "id_src": "0.68",
+    "id_old_c83": "0.594",
+    "id_new": "0.672",
+    "age_new": "30",
+    "sharp_new": "467"
+   },
+   "new": {
+    "face_px": 256,
+    "yaw": -22.0,
+    "det_score": 0.878,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6737,
+    "id_auraface": 0.7532,
+    "age": 33.4,
+    "sharp": 458.6
+   },
+   "old": {
+    "face_px": 252,
+    "yaw": -21.2,
+    "det_score": 0.873,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6139,
+    "id_auraface": 0.6436
+   },
+   "src": {
+    "face_px": 257,
+    "yaw": -22.2,
+    "det_score": 0.882,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6681,
+    "id_auraface": 0.7209
+   }
+  },
+  "Sitting-5": {
+   "gt": {
+    "id_src": "0.707",
+    "id_old_c83": "0.665",
+    "id_new": "0.71",
+    "age_new": "29",
+    "sharp_new": "331"
+   },
+   "new": {
+    "face_px": 208,
+    "yaw": -3.0,
+    "det_score": 0.842,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6963,
+    "id_auraface": 0.7833,
+    "age": 27.7,
+    "sharp": 353.3
+   },
+   "old": {
+    "face_px": 204,
+    "yaw": -3.1,
+    "det_score": 0.826,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6678,
+    "id_auraface": 0.634
+   },
+   "src": {
+    "face_px": 209,
+    "yaw": -3.1,
+    "det_score": 0.839,
+    "n_faces": 1,
+    "id_buffalo_l": 0.701,
+    "id_auraface": 0.7464
+   }
+  },
+  "Sitting-6": {
+   "gt": {
+    "id_src": "0.814",
+    "id_old_c83": "0.635",
+    "id_new": "0.817",
+    "age_new": "33",
+    "sharp_new": "404"
+   },
+   "new": {
+    "face_px": 296,
+    "yaw": -9.3,
+    "det_score": 0.902,
+    "n_faces": 1,
+    "id_buffalo_l": 0.8214,
+    "id_auraface": 0.7937,
+    "age": 32.1,
+    "sharp": 363.0
+   },
+   "old": {
+    "face_px": 294,
+    "yaw": -11.3,
+    "det_score": 0.901,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6522,
+    "id_auraface": 0.6982
+   },
+   "src": {
+    "face_px": 296,
+    "yaw": -9.3,
+    "det_score": 0.906,
+    "n_faces": 1,
+    "id_buffalo_l": 0.8194,
+    "id_auraface": 0.7863
+   }
+  },
+  "Sitting-7": {
+   "gt": {
+    "id_src": "0.637",
+    "id_old_c83": "0.624",
+    "id_new": "0.666",
+    "age_new": "41",
+    "sharp_new": "687"
+   },
+   "new": {
+    "face_px": 274,
+    "yaw": 16.3,
+    "det_score": 0.911,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6748,
+    "id_auraface": 0.5951,
+    "age": 37.8,
+    "sharp": 540.9
+   },
+   "old": {
+    "face_px": 275,
+    "yaw": 15.6,
+    "det_score": 0.906,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6102,
+    "id_auraface": 0.6394
+   },
+   "src": {
+    "face_px": 274,
+    "yaw": 16.8,
+    "det_score": 0.914,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6484,
+    "id_auraface": 0.6304
+   }
+  },
+  "Sitting-8": {
+   "gt": {
+    "id_src": "0.674",
+    "id_old_c83": "0.695",
+    "id_new": "0.729",
+    "age_new": "27",
+    "sharp_new": "718"
+   },
+   "new": {
+    "face_px": 176,
+    "yaw": 12.0,
+    "det_score": 0.913,
+    "n_faces": 1,
+    "id_buffalo_l": 0.74,
+    "id_auraface": 0.76,
+    "age": 26.2,
+    "sharp": 786.0
+   },
+   "old": {
+    "face_px": 176,
+    "yaw": 12.2,
+    "det_score": 0.913,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6759,
+    "id_auraface": 0.7455
+   },
+   "src": {
+    "face_px": 176,
+    "yaw": 11.4,
+    "det_score": 0.909,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6698,
+    "id_auraface": 0.7189
+   }
+  },
+  "Sitting-9": {
+   "gt": {
+    "id_src": "0.779",
+    "id_old_c83": "0.746",
+    "id_new": "0.769",
+    "age_new": "24",
+    "sharp_new": "340"
+   },
+   "new": {
+    "face_px": 245,
+    "yaw": -0.6,
+    "det_score": 0.845,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7763,
+    "id_auraface": 0.8062,
+    "age": 23.2,
+    "sharp": 484.1
+   },
+   "old": {
+    "face_px": 246,
+    "yaw": 0.3,
+    "det_score": 0.846,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7489,
+    "id_auraface": 0.7491
+   },
+   "src": {
+    "face_px": 241,
+    "yaw": -0.8,
+    "det_score": 0.841,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7879,
+    "id_auraface": 0.8381
+   }
+  },
+  "Standing-1": {
+   "gt": {
+    "id_src": "0.271",
+    "id_old_c83": "0.668",
+    "id_new": "0.779",
+    "age_new": "25",
+    "sharp_new": "985"
+   },
+   "new": {
+    "face_px": 82,
+    "yaw": -1.5,
+    "det_score": 0.881,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7714,
+    "id_auraface": 0.815,
+    "age": 23.9,
+    "sharp": 1177.0
+   },
+   "old": {
+    "face_px": 85,
+    "yaw": -1.3,
+    "det_score": 0.887,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6607,
+    "id_auraface": 0.6323
+   },
+   "src": {
+    "face_px": 81,
+    "yaw": -1.3,
+    "det_score": 0.883,
+    "n_faces": 1,
+    "id_buffalo_l": 0.2538,
+    "id_auraface": 0.359
+   }
+  },
+  "Standing-11": {
+   "gt": {
+    "id_src": "0.279",
+    "id_old_c83": "0.52",
+    "id_new": "0.566",
+    "age_new": "27",
+    "sharp_new": "868"
+   },
+   "new": {
+    "face_px": 84,
+    "yaw": 62.5,
+    "det_score": 0.785,
+    "n_faces": 2,
+    "id_buffalo_l": 0.5574,
+    "id_auraface": 0.5128,
+    "age": 27.9,
+    "sharp": 814.6
+   },
+   "old": {
+    "face_px": 87,
+    "yaw": 61.3,
+    "det_score": 0.81,
+    "n_faces": 2,
+    "id_buffalo_l": 0.6189,
+    "id_auraface": 0.6065
+   },
+   "src": {
+    "face_px": 83,
+    "yaw": 81.2,
+    "det_score": 0.794,
+    "n_faces": 2,
+    "id_buffalo_l": 0.2063,
+    "id_auraface": 0.2496
+   }
+  },
+  "Standing-12": {
+   "gt": {
+    "id_src": "0.445",
+    "id_old_c83": "0.703",
+    "id_new": "0.724",
+    "age_new": "30",
+    "sharp_new": "924"
+   },
+   "new": {
+    "face_px": 118,
+    "yaw": -16.7,
+    "det_score": 0.857,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7231,
+    "id_auraface": 0.7765,
+    "age": 30.1,
+    "sharp": 1099.9
+   },
+   "old": {
+    "face_px": 116,
+    "yaw": -16.0,
+    "det_score": 0.851,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7071,
+    "id_auraface": 0.745
+   },
+   "src": {
+    "face_px": 118,
+    "yaw": -16.9,
+    "det_score": 0.862,
+    "n_faces": 1,
+    "id_buffalo_l": 0.4649,
+    "id_auraface": 0.4463
+   }
+  },
+  "Standing-2": {
+   "gt": {
+    "id_src": "0.539",
+    "id_old_c83": "0.712",
+    "id_new": "0.733",
+    "age_new": "30",
+    "sharp_new": "661"
+   },
+   "new": {
+    "face_px": 125,
+    "yaw": -6.4,
+    "det_score": 0.911,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7361,
+    "id_auraface": 0.7659,
+    "age": 29.2,
+    "sharp": 600.7
+   },
+   "old": {
+    "face_px": 123,
+    "yaw": -6.9,
+    "det_score": 0.914,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7165,
+    "id_auraface": 0.7452
+   },
+   "src": {
+    "face_px": 124,
+    "yaw": -6.1,
+    "det_score": 0.913,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5384,
+    "id_auraface": 0.609
+   }
+  },
+  "Standing-3": {
+   "gt": {
+    "id_src": "0.634",
+    "id_old_c83": "0.689",
+    "id_new": "0.736",
+    "age_new": "27",
+    "sharp_new": "375"
+   },
+   "new": {
+    "face_px": 119,
+    "yaw": -2.1,
+    "det_score": 0.867,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7301,
+    "id_auraface": 0.7455,
+    "age": 25.5,
+    "sharp": 430.4
+   },
+   "old": {
+    "face_px": 114,
+    "yaw": -2.7,
+    "det_score": 0.876,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6747,
+    "id_auraface": 0.5936
+   },
+   "src": {
+    "face_px": 118,
+    "yaw": -2.3,
+    "det_score": 0.872,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6357,
+    "id_auraface": 0.6046
+   }
+  },
+  "Standing-4": {
+   "gt": {
+    "id_src": "0.747",
+    "id_old_c83": "0.712",
+    "id_new": "0.748",
+    "age_new": "30",
+    "sharp_new": "887"
+   },
+   "new": {
+    "face_px": 79,
+    "yaw": -1.9,
+    "det_score": 0.843,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7339,
+    "id_auraface": 0.6731,
+    "age": 30.2,
+    "sharp": 1084.2
+   },
+   "old": {
+    "face_px": 77,
+    "yaw": -5.2,
+    "det_score": 0.852,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6982,
+    "id_auraface": 0.6855
+   },
+   "src": {
+    "face_px": 78,
+    "yaw": -3.4,
+    "det_score": 0.851,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7482,
+    "id_auraface": 0.7419
+   }
+  },
+  "Standing-6": {
+   "gt": {
+    "id_src": "0.793",
+    "id_old_c83": "0.657",
+    "id_new": "0.746",
+    "age_new": "28",
+    "sharp_new": "262"
+   },
+   "new": {
+    "face_px": 329,
+    "yaw": -6.6,
+    "det_score": 0.906,
+    "n_faces": 1,
+    "id_buffalo_l": 0.72,
+    "id_auraface": 0.7441,
+    "age": 27.1,
+    "sharp": 248.7
+   },
+   "old": {
+    "face_px": 338,
+    "yaw": -6.0,
+    "det_score": 0.906,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6694,
+    "id_auraface": 0.6999
+   },
+   "src": {
+    "face_px": 331,
+    "yaw": -6.1,
+    "det_score": 0.912,
+    "n_faces": 1,
+    "id_buffalo_l": 0.776,
+    "id_auraface": 0.7684
+   }
+  },
+  "Standing-7": {
+   "gt": {
+    "id_src": "0.57",
+    "id_old_c83": "0.709",
+    "id_new": "0.724",
+    "age_new": "27",
+    "sharp_new": "661"
+   },
+   "new": {
+    "face_px": 142,
+    "yaw": 5.5,
+    "det_score": 0.876,
+    "n_faces": 1,
+    "id_buffalo_l": 0.734,
+    "id_auraface": 0.7694,
+    "age": 26.6,
+    "sharp": 923.8
+   },
+   "old": {
+    "face_px": 140,
+    "yaw": 1.6,
+    "det_score": 0.861,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7157,
+    "id_auraface": 0.6592
+   },
+   "src": {
+    "face_px": 142,
+    "yaw": 4.7,
+    "det_score": 0.873,
+    "n_faces": 1,
+    "id_buffalo_l": 0.5896,
+    "id_auraface": 0.7115
+   }
+  },
+  "Standing-8": {
+   "gt": {
+    "id_src": "0.803",
+    "id_old_c83": "0.738",
+    "id_new": "0.739",
+    "age_new": "31",
+    "sharp_new": "456"
+   },
+   "new": {
+    "face_px": 255,
+    "yaw": -17.0,
+    "det_score": 0.876,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7561,
+    "id_auraface": 0.8487,
+    "age": 28.4,
+    "sharp": 438.6
+   },
+   "old": {
+    "face_px": 258,
+    "yaw": -18.5,
+    "det_score": 0.878,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7267,
+    "id_auraface": 0.7995
+   },
+   "src": {
+    "face_px": 257,
+    "yaw": -15.7,
+    "det_score": 0.882,
+    "n_faces": 1,
+    "id_buffalo_l": 0.8029,
+    "id_auraface": 0.8424
+   }
+  },
+  "Standing-9": {
+   "gt": {
+    "id_src": "0.71",
+    "id_old_c83": "0.727",
+    "id_new": "0.709",
+    "age_new": "27",
+    "sharp_new": "692"
+   },
+   "new": {
+    "face_px": 98,
+    "yaw": -5.6,
+    "det_score": 0.873,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6954,
+    "id_auraface": 0.7915,
+    "age": 27.3,
+    "sharp": 757.1
+   },
+   "old": {
+    "face_px": 99,
+    "yaw": -5.7,
+    "det_score": 0.881,
+    "n_faces": 1,
+    "id_buffalo_l": 0.7306,
+    "id_auraface": 0.7142
+   },
+   "src": {
+    "face_px": 98,
+    "yaw": -4.5,
+    "det_score": 0.885,
+    "n_faces": 1,
+    "id_buffalo_l": 0.6986,
+    "id_auraface": 0.7514
+   }
+  }
+ },
+ "dataset": {
+  "buffalo_l": {
+   "g_00208.png": 0.7058529853820801,
+   "g_00212.png": 0.7909744381904602,
+   "g_00214.png": 0.7433919906616211,
+   "g_00219.png": 0.8124977350234985,
+   "g_00222.png": 0.7705915570259094,
+   "g_00225.png": 0.8193451762199402,
+   "g_00227.png": 0.8361124992370605,
+   "g_00229.png": 0.602036714553833,
+   "g_00231.png": 0.5522698163986206,
+   "g_00231_r2.png": 0.5522698163986206,
+   "g_00232.png": 0.44110020995140076,
+   "g_00234.png": 0.819136917591095,
+   "g_00235.png": 0.672299325466156,
+   "g_00236.png": 0.8283014893531799,
+   "g_00237.png": 0.8619199395179749,
+   "g_00237_r2.png": 0.8619199395179749,
+   "g_00238.png": 0.8353522419929504,
+   "g_00239.png": 0.7778802514076233,
+   "g_00241.png": 0.7246164083480835,
+   "g_00242.png": 0.9001882076263428,
+   "g_00242_r2.png": 0.9001882076263428,
+   "g_00244.png": 0.7738510370254517,
+   "g_00246.png": 0.8132262229919434,
+   "g_00247.png": 0.6956484913825989,
+   "g_00249.png": 0.7966130971908569,
+   "g_00249_r2.png": 0.7966130971908569,
+   "g_00250.png": 0.7911374568939209,
+   "g_00251.png": 0.6211985349655151,
+   "g_00252.png": 0.7837443351745605,
+   "g_00253.png": 0.6646534204483032,
+   "g_00255.png": 0.7824728488922119,
+   "g_00255_r2.png": 0.7824728488922119,
+   "s_0002.png": 0.8059500455856323,
+   "s_0002_r2.png": 0.8059500455856323,
+   "s_0003.png": 0.8653932809829712,
+   "s_0004.png": 0.8851361274719238,
+   "s_0006.png": 0.718082845211029,
+   "s_0007.png": 0.8598505854606628,
+   "s_0008.png": 0.7934402823448181,
+   "s_0009.png": 0.8884124159812927,
+   "s_0010.png": 0.839026689529419,
+   "s_0011.png": 0.8467580080032349,
+   "s_0012.png": 0.7891374230384827,
+   "s_0013.png": 0.6705788373947144,
+   "s_0014.png": 0.7098231911659241,
+   "s_0014_r2.png": 0.7098231911659241,
+   "s_0015.png": 0.6835116147994995,
+   "s_0015_r2.png": 0.6835116147994995,
+   "s_0016.png": 0.6818743944168091,
+   "s_0017.png": 0.8551307320594788,
+   "s_0018.png": 0.7878650426864624,
+   "s_0020.png": 0.8246487379074097,
+   "s_0020_r2.png": 0.8246487379074097,
+   "s_0021.png": 0.8230397701263428,
+   "s_0021_r2.png": 0.8230397701263428,
+   "s_0022.png": 0.8334078788757324,
+   "s_0023.png": 0.8452343344688416,
+   "s_0024.png": 0.7987816333770752,
+   "s_0026.png": 0.8019905090332031,
+   "s_0027.png": 0.8459898233413696,
+   "s_0028.png": 0.7519084215164185,
+   "s_0029.png": 0.7890079617500305,
+   "s_0030.png": 0.8022390604019165,
+   "s_0031.png": 0.8528059720993042,
+   "s_0032.png": 0.8150726556777954,
+   "s_0048.png": 0.8286083936691284,
+   "s_0049.png": 0.7458068132400513,
+   "s_0049_r2.png": 0.7458068132400513,
+   "s_0050.png": 0.8411469459533691,
+   "s_0051.png": 0.804481565952301,
+   "s_0055.png": 0.7168046236038208,
+   "s_0057.png": 0.8066323399543762,
+   "s_0058.png": 0.7689266204833984,
+   "s_0074.png": 0.5529732704162598,
+   "s_0079.png": 0.8371816873550415,
+   "s_0106.png": 0.49455851316452026,
+   "s_0118.png": 0.8068094253540039
+  },
+  "auraface": {
+   "g_00208.png": 0.701789915561676,
+   "g_00212.png": 0.7678292393684387,
+   "g_00214.png": 0.7023791074752808,
+   "g_00219.png": 0.7829864025115967,
+   "g_00222.png": 0.7683424949645996,
+   "g_00225.png": 0.8717634081840515,
+   "g_00227.png": 0.8144199252128601,
+   "g_00229.png": 0.5666310787200928,
+   "g_00231.png": 0.3636438250541687,
+   "g_00231_r2.png": 0.3636438250541687,
+   "g_00232.png": 0.6356438398361206,
+   "g_00234.png": 0.8744921684265137,
+   "g_00235.png": 0.5015815496444702,
+   "g_00236.png": 0.8061285018920898,
+   "g_00237.png": 0.8757474422454834,
+   "g_00237_r2.png": 0.8757474422454834,
+   "g_00238.png": 0.8402588367462158,
+   "g_00239.png": 0.8113173246383667,
+   "g_00241.png": 0.7054259181022644,
+   "g_00242.png": 0.8972134590148926,
+   "g_00242_r2.png": 0.8972134590148926,
+   "g_00244.png": 0.8212076425552368,
+   "g_00246.png": 0.8481295108795166,
+   "g_00247.png": 0.7121570110321045,
+   "g_00249.png": 0.7822504043579102,
+   "g_00249_r2.png": 0.7822504043579102,
+   "g_00250.png": 0.8467719554901123,
+   "g_00251.png": 0.5191105604171753,
+   "g_00252.png": 0.8086626529693604,
+   "g_00253.png": 0.645391583442688,
+   "g_00255.png": 0.7729332447052002,
+   "g_00255_r2.png": 0.7729332447052002,
+   "s_0002.png": 0.8328474164009094,
+   "s_0002_r2.png": 0.8328474164009094,
+   "s_0003.png": 0.8744543790817261,
+   "s_0004.png": 0.905117928981781,
+   "s_0006.png": 0.7937580347061157,
+   "s_0007.png": 0.8639423251152039,
+   "s_0008.png": 0.8395578861236572,
+   "s_0009.png": 0.883517861366272,
+   "s_0010.png": 0.7995731830596924,
+   "s_0011.png": 0.7881948947906494,
+   "s_0012.png": 0.7866435050964355,
+   "s_0013.png": 0.6448652744293213,
+   "s_0014.png": 0.7279983758926392,
+   "s_0014_r2.png": 0.7279983758926392,
+   "s_0015.png": 0.6727845668792725,
+   "s_0015_r2.png": 0.6727845668792725,
+   "s_0016.png": 0.6797242164611816,
+   "s_0017.png": 0.8715294599533081,
+   "s_0018.png": 0.8009605407714844,
+   "s_0020.png": 0.8410040140151978,
+   "s_0020_r2.png": 0.8410040140151978,
+   "s_0021.png": 0.8055287003517151,
+   "s_0021_r2.png": 0.8055287003517151,
+   "s_0022.png": 0.7690112590789795,
+   "s_0023.png": 0.8351511359214783,
+   "s_0024.png": 0.816819429397583,
+   "s_0026.png": 0.8401639461517334,
+   "s_0027.png": 0.815245509147644,
+   "s_0028.png": 0.8020331859588623,
+   "s_0029.png": 0.8758599758148193,
+   "s_0030.png": 0.7943806648254395,
+   "s_0031.png": 0.8696240186691284,
+   "s_0032.png": 0.8547266721725464,
+   "s_0048.png": 0.8583981394767761,
+   "s_0049.png": 0.7623845338821411,
+   "s_0049_r2.png": 0.7623845338821411,
+   "s_0050.png": 0.8158254623413086,
+   "s_0051.png": 0.838890552520752,
+   "s_0055.png": 0.7436934113502502,
+   "s_0057.png": 0.8250575661659241,
+   "s_0058.png": 0.8125430941581726,
+   "s_0074.png": 0.6100244522094727,
+   "s_0079.png": 0.8274692893028259,
+   "s_0106.png": 0.43179067969322205,
+   "s_0118.png": 0.8545979261398315
+  }
+ },
+ "centroid": {
+  "buffalo_l": {
+   "n": 77,
+   "age_median": 25.36626434326172,
+   "self_sim_p10": 0.668208658695221,
+   "self_sim_mean": 0.7710478901863098
+  },
+  "auraface": {
+   "n": 77,
+   "age_median": 25.36626434326172,
+   "self_sim_p10": 0.641176700592041,
+   "self_sim_mean": 0.7720030546188354
+  }
+ }
+}

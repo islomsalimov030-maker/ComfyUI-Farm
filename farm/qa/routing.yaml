@@ -1,0 +1,27 @@
+# Маршрут «код отказа → ручка» (CONTRACTS §8). Перекрывает farm/routing_default.yaml по ключам;
+# порядок ключей = приоритет (при нескольких отказах берётся первый). Кадры — WS-05, видео — WS-06.
+# Жёсткие видео-отказы (CUT, CAMERA_MOVE, IDENTITY_DIP) выше SEAM: при CUT+SEAM — новый seed, не постобработка.
+version: 1
+routes:
+  TECH:         {action: retry, knobs: [seed]}
+  PROMPT_LINT:  {action: needs_human}
+  CUT:          {action: retry, knobs: [seed]}          # склейку внутри idle-клипа обрезкой не вылечить
+  CAMERA_MOVE:  {action: retry, knobs: [prompt, seed]}
+  IDENTITY_DIP: {action: retry, knobs: [seed]}
+  # --- кадр (WS-05)
+  FACE_ID:      {action: retry, knobs: [face_pass, lora_w, seed]}
+  FACE_UNRELIABLE: {action: needs_human}                # лицо мелкое/профиль/наклон/в тени — сходству не верим
+  COMPOSITION:  {action: retry, knobs: [prompt, seed]}  # лица нет, а шот его ждёт
+  AGE:          {action: retry, knobs: [prompt, seed]}
+  SCALE:        {action: retry, knobs: [plate_slot, anchor, seed]}
+  ANATOMY:      {action: retry, knobs: [seed]}
+  HANDS:        {action: retry, knobs: [prompt, seed]}
+  CHECKLIST:    {action: retry, knobs: [prompt, seed]}
+  SHARP:        {action: retry, knobs: [seed]}
+  # --- видео (WS-06)
+  SEAM:         {action: post_fix, fixer: post.loop}
+  COLOR_DRIFT:  {action: post_fix, fixer: post.color}
+  FREEZE:       {action: retry, knobs: [prompt, seed]}
+  SLOWMO:       {action: retry, knobs: [prompt, steps]}
+  LIGHT_DRIFT:  {action: retry, knobs: [prompt, seed]}
+  FLICKER:      {action: retry, knobs: [seed]}
