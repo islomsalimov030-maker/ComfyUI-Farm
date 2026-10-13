@@ -24,9 +24,12 @@ frame:
     ref_dir: null                # запасной эталон: папка лиц, «{character}» подставляется
     severity: hard
   age:
-    model: none                  # genderage = buffalo_l (НЕкоммерческие веса) — только тест; MiVOLO v2 — после согласования
-    min_delta: -8                # лет от медианы эталона; выше эталона на 8+ — AGE
-    max_delta: 10                # genderage завышает на ~4 года против эталона (медиана 25.4, кадры v2 ~30)
+    model: mivolo                # MiVOLO v2 (Apache-2.0), отдельный venv: FARM_MIVOLO_PY или python: ниже; нет venv → info
+    python: null                 # путь к python venv MiVOLO (по умолчанию /workspace/venv_mivolo/bin/python, ~/.cache/farm_qa/venv_mivolo)
+    use_body: true               # кроп тела по MediaPipe Pose (эталон считается по лицу — в датасете тела нет)
+    face_pad: 1.25               # рамка лица MediaPipe ×1.25 (MiVOLO учили на более широких рамках YOLO)
+    min_delta: -5                # лет от медианы эталона (Стейси: 22.6, p10–p90 21.2–24.6)
+    max_delta: 5                 # кадры v2: Δ медиана +1.2, макс +6.0 (Лежа-2 — и так к человеку)
     severity: soft
   hands:
     min_wrist_vis: 0.6

@@ -1,6 +1,6 @@
 """WS-05: прогон реестра проверок кадра (farm.qa.registry.run_stage) по 26 кадрам v2 Стейси.
 
-    .venv/Scripts/python tools/ws05_baseline.py [--set new|old|src] [--age genderage] [--out docs/qa/ws05_baseline_<set>.json]
+    .venv/Scripts/python tools/ws05_baseline.py [--set new|old|src] [--age mivolo|genderage|none] [--out docs/qa/ws05_baseline_<set>.json]
 
 Эталон лица — dataset_face_v1_ready (77 кадров, как в STACY_CONTEXT §6). Решение «глаз» — по STACY_CONTEXT §6:
 Лежа-2/5 — не дотянуто (отказ), Стоя-11 — ненадёжно (к человеку), остальные — принять, Лежа-6 — без лица.
@@ -39,7 +39,7 @@ def verdict(results) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", default="new", choices=list(SETS))
-    ap.add_argument("--age", default="genderage", help="none | genderage (НЕкоммерч., только тест)")
+    ap.add_argument("--age", default="mivolo", help="mivolo | genderage (НЕкоммерч., только тест) | none")
     ap.add_argument("--backend", default="auraface")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()

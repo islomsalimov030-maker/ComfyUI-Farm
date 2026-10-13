@@ -6,7 +6,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 2.59,
+   "sec": 11.0,
    "checks": [
     {
      "name": "sharp",
@@ -20,7 +20,7 @@
       "face_native": 246.1,
       "face_px": 426,
       "source": "face",
-      "ms": 1421
+      "ms": 1372
      }
     },
     {
@@ -43,22 +43,22 @@
        820
       ],
       "reliable": true,
-      "ms": 154
+      "ms": 114
      }
     },
     {
      "name": "age",
-     "value": 1.8432,
+     "value": 1.8972,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 27.7,
-      "ref_age": 25.9,
-      "delta": 1.8,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 107
+      "age": 24.4,
+      "ref_age": 22.6,
+      "delta": 1.9,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 7909
      }
     },
     {
@@ -74,7 +74,7 @@
       "threshold": 0.57,
       "face_px": 426,
       "ver": "face_id@1",
-      "ms": 697
+      "ms": 1317
      }
     },
     {
@@ -86,7 +86,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 110
+      "ms": 160
      }
     },
     {
@@ -98,7 +98,7 @@
      "evidence": {
       "note": "нет карточки плиты с якорями",
       "ver": "scale@1",
-      "ms": 37
+      "ms": 87
      }
     }
    ]
@@ -107,7 +107,7 @@
    "verdict": "человек",
    "eye": "отказ",
    "hit": true,
-   "sec": 0.48,
+   "sec": 1.84,
    "checks": [
     {
      "name": "sharp",
@@ -121,7 +121,7 @@
       "face_native": 352.2,
       "face_px": 492,
       "source": "face",
-      "ms": 266
+      "ms": 471
      }
     },
     {
@@ -148,26 +148,26 @@
        "поворот 52°",
        "наклон 53°"
       ],
-      "ms": 6
+      "ms": 8
      }
     },
     {
      "name": "age",
-     "value": 4.4643,
+     "value": 2.0128,
      "passed": true,
      "severity": "info",
      "fail_code": null,
      "evidence": {
-      "age": 30.3,
-      "ref_age": 25.9,
-      "delta": 4.5,
-      "model": "genderage",
-      "ver": "age@1",
+      "age": 24.6,
+      "ref_age": 22.6,
+      "delta": 2.0,
+      "model": "mivolo",
+      "ver": "age@2",
       "unreliable": [
        "поворот 52°",
        "наклон 53°"
       ],
-      "ms": 7
+      "ms": 1061
      }
     },
     {
@@ -187,7 +187,7 @@
        "поворот 52°",
        "наклон 53°"
       ],
-      "ms": 84
+      "ms": 120
      }
     },
     {
@@ -199,7 +199,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 118
+      "ms": 178
      }
     },
     {
@@ -220,7 +220,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.63,
+   "sec": 2.0,
    "checks": [
     {
      "name": "sharp",
@@ -234,7 +234,7 @@
       "face_native": 568.9,
       "face_px": 119,
       "source": "face",
-      "ms": 262
+      "ms": 452
      }
     },
     {
@@ -262,17 +262,17 @@
     },
     {
      "name": "age",
-     "value": 0.0459,
+     "value": -1.5743,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 25.9,
-      "ref_age": 25.9,
-      "delta": 0.0,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 11
+      "age": 21.0,
+      "ref_age": 22.6,
+      "delta": -1.6,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 989
      }
     },
     {
@@ -288,7 +288,7 @@
       "threshold": 0.57,
       "face_px": 119,
       "ver": "face_id@1",
-      "ms": 95
+      "ms": 127
      }
     },
     {
@@ -313,7 +313,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 266
+      "ms": 430
      }
     },
     {
@@ -334,7 +334,7 @@
    "verdict": "человек",
    "eye": "отказ",
    "hit": true,
-   "sec": 0.5,
+   "sec": 1.8,
    "checks": [
     {
      "name": "sharp",
@@ -348,7 +348,7 @@
       "face_native": 133.9,
       "face_px": 466,
       "source": "face",
-      "ms": 276
+      "ms": 479
      }
     },
     {
@@ -375,26 +375,26 @@
        "наклон 66°",
        "лицо в тени (L95=139)"
       ],
-      "ms": 4
+      "ms": 5
      }
     },
     {
      "name": "age",
-     "value": 5.6973,
+     "value": 2.9834,
      "passed": true,
      "severity": "info",
      "fail_code": null,
      "evidence": {
-      "age": 31.6,
-      "ref_age": 25.9,
-      "delta": 5.7,
-      "model": "genderage",
-      "ver": "age@1",
+      "age": 25.5,
+      "ref_age": 22.6,
+      "delta": 3.0,
+      "model": "mivolo",
+      "ver": "age@2",
       "unreliable": [
        "наклон 66°",
        "лицо в тени (L95=139)"
       ],
-      "ms": 8
+      "ms": 1010
      }
     },
     {
@@ -414,7 +414,7 @@
        "наклон 66°",
        "лицо в тени (L95=139)"
       ],
-      "ms": 83
+      "ms": 121
      }
     },
     {
@@ -426,7 +426,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 127
+      "ms": 179
      }
     },
     {
@@ -447,7 +447,7 @@
    "verdict": "принять",
    "eye": "без лица",
    "hit": true,
-   "sec": 0.31,
+   "sec": 0.52,
    "checks": [
     {
      "name": "sharp",
@@ -459,7 +459,7 @@
       "center": 260.6,
       "ver": "sharp@1",
       "source": "center",
-      "ms": 195
+      "ms": 330
      }
     },
     {
@@ -482,7 +482,7 @@
      "fail_code": null,
      "evidence": {
       "note": "нет лица",
-      "ver": "age@1",
+      "ver": "age@2",
       "ms": 0
      }
     },
@@ -507,7 +507,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 111
+      "ms": 187
      }
     },
     {
@@ -528,7 +528,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.55,
+   "sec": 1.72,
    "checks": [
     {
      "name": "sharp",
@@ -542,7 +542,7 @@
       "face_native": 676.3,
       "face_px": 158,
       "source": "face",
-      "ms": 212
+      "ms": 308
      }
     },
     {
@@ -565,22 +565,22 @@
        664
       ],
       "reliable": true,
-      "ms": 1
+      "ms": 2
      }
     },
     {
      "name": "age",
-     "value": -0.8911,
+     "value": 2.1012,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 25.0,
-      "ref_age": 25.9,
-      "delta": -0.9,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 24.7,
+      "ref_age": 22.6,
+      "delta": 2.1,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 948
      }
     },
     {
@@ -596,7 +596,7 @@
       "threshold": 0.57,
       "face_px": 158,
       "ver": "face_id@1",
-      "ms": 93
+      "ms": 121
      }
     },
     {
@@ -621,7 +621,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 236
+      "ms": 339
      }
     },
     {
@@ -642,7 +642,7 @@
    "verdict": "принять",
    "eye": "пограничное",
    "hit": true,
-   "sec": 0.57,
+   "sec": 1.78,
    "checks": [
     {
      "name": "sharp",
@@ -656,7 +656,7 @@
       "face_native": 464.2,
       "face_px": 146,
       "source": "face",
-      "ms": 245
+      "ms": 345
      }
     },
     {
@@ -679,22 +679,22 @@
        389
       ],
       "reliable": true,
-      "ms": 1
+      "ms": 2
      }
     },
     {
      "name": "age",
-     "value": 1.0381,
+     "value": 3.2637,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 26.9,
-      "ref_age": 25.9,
-      "delta": 1.0,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 25.8,
+      "ref_age": 22.6,
+      "delta": 3.3,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 925
      }
     },
     {
@@ -710,7 +710,7 @@
       "threshold": 0.57,
       "face_px": 146,
       "ver": "face_id@1",
-      "ms": 80
+      "ms": 128
      }
     },
     {
@@ -735,7 +735,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 234
+      "ms": 379
      }
     },
     {
@@ -756,7 +756,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.62,
+   "sec": 1.96,
    "checks": [
     {
      "name": "sharp",
@@ -770,7 +770,7 @@
       "face_native": 997.8,
       "face_px": 139,
       "source": "face",
-      "ms": 299
+      "ms": 469
      }
     },
     {
@@ -798,17 +798,17 @@
     },
     {
      "name": "age",
-     "value": -2.6906,
+     "value": -0.3233,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 23.2,
-      "ref_age": 25.9,
-      "delta": -2.7,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 22.2,
+      "ref_age": 22.6,
+      "delta": -0.3,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 998
      }
     },
     {
@@ -824,7 +824,7 @@
       "threshold": 0.57,
       "face_px": 139,
       "ver": "face_id@1",
-      "ms": 79
+      "ms": 128
      }
     },
     {
@@ -856,7 +856,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 228
+      "ms": 365
      }
     },
     {
@@ -877,7 +877,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.46,
+   "sec": 1.72,
    "checks": [
     {
      "name": "sharp",
@@ -891,7 +891,7 @@
       "face_native": 693.8,
       "face_px": 218,
       "source": "face",
-      "ms": 223
+      "ms": 409
      }
     },
     {
@@ -914,22 +914,22 @@
        474
       ],
       "reliable": true,
-      "ms": 2
+      "ms": 4
      }
     },
     {
      "name": "age",
-     "value": -1.5351,
+     "value": -0.4634,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 24.3,
-      "ref_age": 25.9,
-      "delta": -1.5,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 22.1,
+      "ref_age": 22.6,
+      "delta": -0.5,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 999
      }
     },
     {
@@ -945,7 +945,7 @@
       "threshold": 0.57,
       "face_px": 218,
       "ver": "face_id@1",
-      "ms": 90
+      "ms": 132
      }
     },
     {
@@ -957,7 +957,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 133
+      "ms": 179
      }
     },
     {
@@ -978,7 +978,7 @@
    "verdict": "принять",
    "eye": "пограничное",
    "hit": true,
-   "sec": 0.6,
+   "sec": 1.82,
    "checks": [
     {
      "name": "sharp",
@@ -992,7 +992,7 @@
       "face_native": 372.9,
       "face_px": 179,
       "source": "face",
-      "ms": 206
+      "ms": 380
      }
     },
     {
@@ -1015,22 +1015,22 @@
        394
       ],
       "reliable": true,
-      "ms": 1
+      "ms": 2
      }
     },
     {
      "name": "age",
-     "value": 1.6981,
+     "value": 2.3389,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 27.6,
-      "ref_age": 25.9,
-      "delta": 1.7,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 24.9,
+      "ref_age": 22.6,
+      "delta": 2.3,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 910
      }
     },
     {
@@ -1046,7 +1046,7 @@
       "threshold": 0.57,
       "face_px": 179,
       "ver": "face_id@1",
-      "ms": 96
+      "ms": 121
      }
     },
     {
@@ -1079,7 +1079,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 287
+      "ms": 403
      }
     },
     {
@@ -1100,7 +1100,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.68,
+   "sec": 2.01,
    "checks": [
     {
      "name": "sharp",
@@ -1114,7 +1114,7 @@
       "face_native": 333.0,
       "face_px": 246,
       "source": "face",
-      "ms": 296
+      "ms": 413
      }
     },
     {
@@ -1137,22 +1137,22 @@
        547
       ],
       "reliable": true,
-      "ms": 2
+      "ms": 1
      }
     },
     {
      "name": "age",
-     "value": 4.5984,
+     "value": 2.9548,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 30.5,
-      "ref_age": 25.9,
-      "delta": 4.6,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 25.5,
+      "ref_age": 22.6,
+      "delta": 3.0,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1004
      }
     },
     {
@@ -1168,7 +1168,7 @@
       "threshold": 0.57,
       "face_px": 246,
       "ver": "face_id@1",
-      "ms": 88
+      "ms": 128
      }
     },
     {
@@ -1200,7 +1200,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 285
+      "ms": 468
      }
     },
     {
@@ -1221,7 +1221,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.55,
+   "sec": 1.79,
    "checks": [
     {
      "name": "sharp",
@@ -1235,7 +1235,7 @@
       "face_native": 177.9,
       "face_px": 215,
       "source": "face",
-      "ms": 254
+      "ms": 400
      }
     },
     {
@@ -1263,17 +1263,17 @@
     },
     {
      "name": "age",
-     "value": 0.2036,
+     "value": -1.6728,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 26.1,
-      "ref_age": 25.9,
-      "delta": 0.2,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 20.9,
+      "ref_age": 22.6,
+      "delta": -1.7,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 936
      }
     },
     {
@@ -1289,7 +1289,7 @@
       "threshold": 0.57,
       "face_px": 215,
       "ver": "face_id@1",
-      "ms": 82
+      "ms": 122
      }
     },
     {
@@ -1314,7 +1314,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 202
+      "ms": 326
      }
     },
     {
@@ -1335,7 +1335,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.58,
+   "sec": 2.06,
    "checks": [
     {
      "name": "sharp",
@@ -1349,7 +1349,7 @@
       "face_native": 191.4,
       "face_px": 174,
       "source": "face",
-      "ms": 290
+      "ms": 500
      }
     },
     {
@@ -1372,22 +1372,22 @@
        502
       ],
       "reliable": true,
-      "ms": 2
+      "ms": 3
      }
     },
     {
      "name": "age",
-     "value": 3.2705,
+     "value": -1.0783,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 29.1,
-      "ref_age": 25.9,
-      "delta": 3.3,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 10
+      "age": 21.5,
+      "ref_age": 22.6,
+      "delta": -1.1,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1121
      }
     },
     {
@@ -1403,7 +1403,7 @@
       "threshold": 0.57,
       "face_px": 174,
       "ver": "face_id@1",
-      "ms": 84
+      "ms": 111
      }
     },
     {
@@ -1428,7 +1428,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 196
+      "ms": 324
      }
     },
     {
@@ -1449,7 +1449,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.65,
+   "sec": 2.06,
    "checks": [
     {
      "name": "sharp",
@@ -1463,7 +1463,7 @@
       "face_native": 288.7,
       "face_px": 251,
       "source": "face",
-      "ms": 265
+      "ms": 477
      }
     },
     {
@@ -1486,22 +1486,22 @@
        475
       ],
       "reliable": true,
-      "ms": 2
+      "ms": 4
      }
     },
     {
      "name": "age",
-     "value": 3.017,
+     "value": 1.1398,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 28.9,
-      "ref_age": 25.9,
-      "delta": 3.0,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 7
+      "age": 23.7,
+      "ref_age": 22.6,
+      "delta": 1.1,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 990
      }
     },
     {
@@ -1517,7 +1517,7 @@
       "threshold": 0.57,
       "face_px": 251,
       "ver": "face_id@1",
-      "ms": 83
+      "ms": 128
      }
     },
     {
@@ -1550,7 +1550,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 290
+      "ms": 458
      }
     },
     {
@@ -1571,7 +1571,7 @@
    "verdict": "принять",
    "eye": "пограничное",
    "hit": true,
-   "sec": 0.5,
+   "sec": 1.89,
    "checks": [
     {
      "name": "sharp",
@@ -1585,7 +1585,7 @@
       "face_native": 505.9,
       "face_px": 233,
       "source": "face",
-      "ms": 282
+      "ms": 468
      }
     },
     {
@@ -1608,22 +1608,22 @@
        411
       ],
       "reliable": true,
-      "ms": 1
+      "ms": 4
      }
     },
     {
      "name": "age",
-     "value": 2.2203,
+     "value": 1.5017,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 28.1,
-      "ref_age": 25.9,
-      "delta": 2.2,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 7
+      "age": 24.1,
+      "ref_age": 22.6,
+      "delta": 1.5,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1070
      }
     },
     {
@@ -1639,7 +1639,7 @@
       "threshold": 0.57,
       "face_px": 233,
       "ver": "face_id@1",
-      "ms": 85
+      "ms": 163
      }
     },
     {
@@ -1651,7 +1651,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 124
+      "ms": 189
      }
     },
     {
@@ -1672,7 +1672,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.67,
+   "sec": 2.06,
    "checks": [
     {
      "name": "sharp",
@@ -1686,7 +1686,7 @@
       "face_native": 488.4,
       "face_px": 150,
       "source": "face",
-      "ms": 305
+      "ms": 474
      }
     },
     {
@@ -1714,17 +1714,17 @@
     },
     {
      "name": "age",
-     "value": -0.903,
+     "value": 1.986,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 25.0,
-      "ref_age": 25.9,
-      "delta": -0.9,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 24.5,
+      "ref_age": 22.6,
+      "delta": 2.0,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1052
      }
     },
     {
@@ -1740,7 +1740,7 @@
       "threshold": 0.57,
       "face_px": 150,
       "ver": "face_id@1",
-      "ms": 83
+      "ms": 120
      }
     },
     {
@@ -1773,7 +1773,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 277
+      "ms": 415
      }
     },
     {
@@ -1794,7 +1794,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.64,
+   "sec": 2.02,
    "checks": [
     {
      "name": "sharp",
@@ -1808,7 +1808,7 @@
       "face_native": 284.5,
       "face_px": 199,
       "source": "face",
-      "ms": 289
+      "ms": 473
      }
     },
     {
@@ -1831,22 +1831,22 @@
        403
       ],
       "reliable": true,
-      "ms": 3
+      "ms": 2
      }
     },
     {
      "name": "age",
-     "value": -3.346,
+     "value": -1.4184,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 22.5,
-      "ref_age": 25.9,
-      "delta": -3.3,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 21.1,
+      "ref_age": 22.6,
+      "delta": -1.4,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1037
      }
     },
     {
@@ -1862,7 +1862,7 @@
       "threshold": 0.57,
       "face_px": 199,
       "ver": "face_id@1",
-      "ms": 95
+      "ms": 120
      }
     },
     {
@@ -1894,7 +1894,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 249
+      "ms": 388
      }
     },
     {
@@ -1915,7 +1915,7 @@
    "verdict": "отказ",
    "eye": "отказ",
    "hit": true,
-   "sec": 0.55,
+   "sec": 1.71,
    "checks": [
     {
      "name": "sharp",
@@ -1929,7 +1929,7 @@
       "face_native": 2250.9,
       "face_px": 70,
       "source": "face",
-      "ms": 226
+      "ms": 330
      }
     },
     {
@@ -1957,17 +1957,17 @@
     },
     {
      "name": "age",
-     "value": -0.4842,
+     "value": 1.1571,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 25.4,
-      "ref_age": 25.9,
-      "delta": -0.5,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 23.7,
+      "ref_age": 22.6,
+      "delta": 1.2,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 879
      }
     },
     {
@@ -1983,7 +1983,7 @@
       "threshold": 0.57,
       "face_px": 70,
       "ver": "face_id@1",
-      "ms": 79
+      "ms": 143
      }
     },
     {
@@ -2015,7 +2015,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 232
+      "ms": 358
      }
     },
     {
@@ -2036,7 +2036,7 @@
    "verdict": "человек",
    "eye": "человек",
    "hit": true,
-   "sec": 0.5,
+   "sec": 1.59,
    "checks": [
     {
      "name": "sharp",
@@ -2050,7 +2050,7 @@
       "face_native": 801.0,
       "face_px": 73,
       "source": "face",
-      "ms": 201
+      "ms": 305
      }
     },
     {
@@ -2081,20 +2081,20 @@
     },
     {
      "name": "age",
-     "value": -4.1046,
+     "value": 3.8479,
      "passed": true,
      "severity": "info",
      "fail_code": null,
      "evidence": {
-      "age": 21.8,
-      "ref_age": 25.9,
-      "delta": -4.1,
-      "model": "genderage",
-      "ver": "age@1",
+      "age": 26.4,
+      "ref_age": 22.6,
+      "delta": 3.8,
+      "model": "mivolo",
+      "ver": "age@2",
       "unreliable": [
        "поворот -48°"
       ],
-      "ms": 11
+      "ms": 861
      }
     },
     {
@@ -2113,7 +2113,7 @@
       "unreliable": [
        "поворот -48°"
       ],
-      "ms": 83
+      "ms": 115
      }
     },
     {
@@ -2138,7 +2138,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 206
+      "ms": 305
      }
     },
     {
@@ -2159,7 +2159,7 @@
    "verdict": "отказ",
    "eye": "отказ",
    "hit": true,
-   "sec": 0.47,
+   "sec": 1.62,
    "checks": [
     {
      "name": "sharp",
@@ -2173,7 +2173,7 @@
       "face_native": 968.4,
       "face_px": 99,
       "source": "face",
-      "ms": 190
+      "ms": 324
      }
     },
     {
@@ -2196,22 +2196,22 @@
        171
       ],
       "reliable": true,
-      "ms": 1
+      "ms": 2
      }
     },
     {
      "name": "age",
-     "value": -2.5211,
+     "value": 1.2735,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 23.3,
-      "ref_age": 25.9,
-      "delta": -2.5,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 7
+      "age": 23.8,
+      "ref_age": 22.6,
+      "delta": 1.3,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 888
      }
     },
     {
@@ -2227,7 +2227,7 @@
       "threshold": 0.57,
       "face_px": 99,
       "ver": "face_id@1",
-      "ms": 91
+      "ms": 130
      }
     },
     {
@@ -2252,7 +2252,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 183
+      "ms": 278
      }
     },
     {
@@ -2273,7 +2273,7 @@
    "verdict": "отказ",
    "eye": "отказ",
    "hit": true,
-   "sec": 0.44,
+   "sec": 1.59,
    "checks": [
     {
      "name": "sharp",
@@ -2287,7 +2287,7 @@
       "face_native": 599.5,
       "face_px": 103,
       "source": "face",
-      "ms": 220
+      "ms": 367
      }
     },
     {
@@ -2310,22 +2310,22 @@
        184
       ],
       "reliable": true,
-      "ms": 2
+      "ms": 1
      }
     },
     {
      "name": "age",
-     "value": 0.7726,
+     "value": 0.6195,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 26.6,
-      "ref_age": 25.9,
-      "delta": 0.8,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 23.2,
+      "ref_age": 22.6,
+      "delta": 0.6,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 956
      }
     },
     {
@@ -2341,7 +2341,7 @@
       "threshold": 0.57,
       "face_px": 103,
       "ver": "face_id@1",
-      "ms": 86
+      "ms": 115
      }
     },
     {
@@ -2353,7 +2353,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 122
+      "ms": 148
      }
     },
     {
@@ -2374,7 +2374,7 @@
    "verdict": "принять",
    "eye": "пограничное",
    "hit": true,
-   "sec": 0.6,
+   "sec": 1.9,
    "checks": [
     {
      "name": "sharp",
@@ -2388,7 +2388,7 @@
       "face_native": 213.1,
       "face_px": 101,
       "source": "face",
-      "ms": 267
+      "ms": 446
      }
     },
     {
@@ -2416,17 +2416,17 @@
     },
     {
      "name": "age",
-     "value": 3.4872,
+     "value": 0.5922,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 29.3,
-      "ref_age": 25.9,
-      "delta": 3.5,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 23.1,
+      "ref_age": 22.6,
+      "delta": 0.6,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 943
      }
     },
     {
@@ -2442,7 +2442,7 @@
       "threshold": 0.57,
       "face_px": 101,
       "ver": "face_id@1",
-      "ms": 86
+      "ms": 131
      }
     },
     {
@@ -2474,7 +2474,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 238
+      "ms": 381
      }
     },
     {
@@ -2495,7 +2495,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.55,
+   "sec": 1.72,
    "checks": [
     {
      "name": "sharp",
@@ -2509,7 +2509,7 @@
       "face_native": 703.0,
       "face_px": 67,
       "source": "face",
-      "ms": 231
+      "ms": 361
      }
     },
     {
@@ -2537,17 +2537,17 @@
     },
     {
      "name": "age",
-     "value": 0.1118,
+     "value": -1.5722,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 26.0,
-      "ref_age": 25.9,
-      "delta": 0.1,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 21.0,
+      "ref_age": 22.6,
+      "delta": -1.6,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 882
      }
     },
     {
@@ -2563,7 +2563,7 @@
       "threshold": 0.57,
       "face_px": 67,
       "ver": "face_id@1",
-      "ms": 78
+      "ms": 130
      }
     },
     {
@@ -2595,7 +2595,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 236
+      "ms": 343
      }
     },
     {
@@ -2616,7 +2616,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.55,
+   "sec": 1.8,
    "checks": [
     {
      "name": "sharp",
@@ -2630,7 +2630,7 @@
       "face_native": 173.2,
       "face_px": 279,
       "source": "face",
-      "ms": 320
+      "ms": 459
      }
     },
     {
@@ -2653,22 +2653,22 @@
        574
       ],
       "reliable": true,
-      "ms": 2
+      "ms": 5
      }
     },
     {
      "name": "age",
-     "value": -3.1263,
+     "value": -1.1641,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 22.7,
-      "ref_age": 25.9,
-      "delta": -3.1,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 10
+      "age": 21.4,
+      "ref_age": 22.6,
+      "delta": -1.2,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1007
      }
     },
     {
@@ -2684,7 +2684,7 @@
       "threshold": 0.57,
       "face_px": 279,
       "ver": "face_id@1",
-      "ms": 91
+      "ms": 137
      }
     },
     {
@@ -2696,7 +2696,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 126
+      "ms": 194
      }
     },
     {
@@ -2717,7 +2717,7 @@
    "verdict": "принять",
    "eye": "пограничное",
    "hit": true,
-   "sec": 0.74,
+   "sec": 2.4,
    "checks": [
     {
      "name": "sharp",
@@ -2731,7 +2731,7 @@
       "face_native": 1181.5,
       "face_px": 124,
       "source": "face",
-      "ms": 317
+      "ms": 575
      }
     },
     {
@@ -2759,17 +2759,17 @@
     },
     {
      "name": "age",
-     "value": -0.0858,
+     "value": -0.575,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 25.8,
-      "ref_age": 25.9,
-      "delta": -0.1,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 10
+      "age": 22.0,
+      "ref_age": 22.6,
+      "delta": -0.6,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 1146
      }
     },
     {
@@ -2785,7 +2785,7 @@
       "threshold": 0.57,
       "face_px": 124,
       "ver": "face_id@1",
-      "ms": 77
+      "ms": 136
      }
     },
     {
@@ -2817,7 +2817,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 334
+      "ms": 539
      }
     },
     {
@@ -2838,7 +2838,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.48,
+   "sec": 1.64,
    "checks": [
     {
      "name": "sharp",
@@ -2852,7 +2852,7 @@
       "face_native": 329.7,
       "face_px": 215,
       "source": "face",
-      "ms": 262
+      "ms": 393
      }
     },
     {
@@ -2880,17 +2880,17 @@
     },
     {
      "name": "age",
-     "value": 0.4144,
+     "value": 1.1386,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 26.3,
-      "ref_age": 25.9,
-      "delta": 0.4,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 9
+      "age": 23.7,
+      "ref_age": 22.6,
+      "delta": 1.1,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 940
      }
     },
     {
@@ -2906,7 +2906,7 @@
       "threshold": 0.57,
       "face_px": 215,
       "ver": "face_id@1",
-      "ms": 89
+      "ms": 127
      }
     },
     {
@@ -2918,7 +2918,7 @@
      "evidence": {
       "note": "запястья не видны",
       "ver": "hands@1",
-      "ms": 113
+      "ms": 179
      }
     },
     {
@@ -2939,7 +2939,7 @@
    "verdict": "принять",
    "eye": "принять",
    "hit": true,
-   "sec": 0.57,
+   "sec": 1.76,
    "checks": [
     {
      "name": "sharp",
@@ -2953,7 +2953,7 @@
       "face_native": 660.1,
       "face_px": 85,
       "source": "face",
-      "ms": 249
+      "ms": 377
      }
     },
     {
@@ -2981,17 +2981,17 @@
     },
     {
      "name": "age",
-     "value": 0.359,
+     "value": 1.4224,
      "passed": true,
      "severity": "soft",
      "fail_code": null,
      "evidence": {
-      "age": 26.2,
-      "ref_age": 25.9,
-      "delta": 0.4,
-      "model": "genderage",
-      "ver": "age@1",
-      "ms": 8
+      "age": 24.0,
+      "ref_age": 22.6,
+      "delta": 1.4,
+      "model": "mivolo",
+      "ver": "age@2",
+      "ms": 897
      }
     },
     {
@@ -3007,7 +3007,7 @@
       "threshold": 0.57,
       "face_px": 85,
       "ver": "face_id@1",
-      "ms": 87
+      "ms": 117
      }
     },
     {
@@ -3039,7 +3039,7 @@
        ]
       ],
       "ver": "hands@1",
-      "ms": 224
+      "ms": 365
      }
     },
     {

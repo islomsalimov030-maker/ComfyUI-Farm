@@ -85,7 +85,7 @@ def test_thresholds_yaml_has_frame_sections():
         assert k in th["frame"]
     assert th["frame"]["face_detect"]["detector"] == "mediapipe"     # прод — коммерчески чистый детектор
     assert th["frame"]["face_id"]["backend"] == "auraface"
-    assert th["frame"]["age"]["model"] == "none"                     # genderage некоммерческий — не в проде
+    assert th["frame"]["age"]["model"] == "mivolo"                   # genderage некоммерческий — не в проде
 
 
 def test_scale_frac_interpolation():
@@ -135,3 +135,17 @@ def test_face_yaw_roll_from_points():
     rot = np.array([[np.cos(np.pi / 3), -np.sin(np.pi / 3)], [np.sin(np.pi / 3), np.cos(np.pi / 3)]])
     f2 = Face(bbox=f.bbox, kps=(f.kps - c) @ rot.T + c, score=1)
     assert abs(f2.yaw) < 1 and f2.roll == pytest.approx(60, abs=1)
+
+
+def test_age_mivolo_boxes_and_missing_venv(monkeypatch):
+    from farm.qa import age_mivolo
+    assert age_mivolo.pad_box([10, 10, 30, 50], 1.5, 100, 100) == [5.0, 0.0, 35.0, 60.0]
+    pose = {"l_ankle": (40, 90, 0.9), "r_ankle": (60, 90, 0.9), "l_eye": (45, 20, 0.9), "r_eye": (55, 20, 0.9),
+            "nose": (50, 22, 0.1), "_area": 0.5}
+    x0, y0, x1, y1 = age_mivolo.body_box(pose, 100, 100)
+    assert x0 < 40 and x1 > 60 and y0 < 20 and y1 > 90 and y1 <= 100
+    assert age_mivolo.body_box({"nose": (1, 1, 0.9)}, 100, 100) is None
+    monkeypatch.setattr(age_mivolo, "python_path", lambda cfg_py=None: None)
+    monkeypatch.setattr(age_mivolo, "_proc", None)
+    with pytest.raises(age_mivolo.MivoloUnavailable):
+        age_mivolo.predict("x.png", [0, 0, 1, 1], None)
