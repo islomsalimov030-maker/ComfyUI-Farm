@@ -1,6 +1,6 @@
-# CONTRACTS v0.6 — договорённости между потоками
+# CONTRACTS v0.7 — договорённости между потоками
 
-> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10). v0.5 (WS-08, 2026-10-11): бот (§9), фильтр пакета на пульте, redo из `needs_human`. v0.6 (WS-04, 2026-10-12): сборщик промптов (§7) — `ctx.workflow/params`, состав `fields_json`, `llm.*` профиля (§5).
+> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10). v0.5 (WS-08, 2026-10-11): бот (§9), фильтр пакета на пульте, redo из `needs_human`. v0.6 (WS-04, 2026-10-12): сборщик промптов (§7) — `ctx.workflow/params`, состав `fields_json`, `llm.*` профиля (§5). v0.7 (WS-06, 2026-10-13): проверки видео и фиксеры (§8) — `ctx` фиксера с порогами и `refs`, состав `video:` порогов.
 
 Этот файл позволяет потокам работать независимо. Каждый поток реализует свою часть **строго по контракту** и может подменять соседей заглушками. Изменение контракта = версия +1 и строка в `STATUS.md → Решения`. Язык кода — Python 3.12, без тяжёлых фреймворков.
 
@@ -130,6 +130,13 @@ CheckResult(name, value: float, passed: bool, severity: "hard|soft|info", fail_c
 **v0.3:** `farm/qa/registry.py` отдаёт `run_stage(stage, asset: Asset, ctx: QAContext) -> list[CheckResult]` (все проверки стадии по `cost`; вправе остановиться на первом hard-отказе). Типы — `farm/contracts.py` (или свои с теми же полями). Нет реестра → заглушка «всё прошло», решает человек. Итог по ассету: `qa_passed` = нет проваленных hard; `qa_score` = доля пройденных с весами hard 1 / soft 0.5 / info 0. Фиксеры post_fix: `farm/post/<name>.py: fix(asset, ctx) -> path` (имя из routing, напр. `post.loop`).
 
 Маршрут `fail_code → ручка` (таблица в `qa/routing.yaml`; v0.3: дефолт — `farm/routing_default.yaml`, `farm/qa/routing.yaml` перекрывает по ключам, порядок ключей = приоритет; `action: retry|post_fix|needs_human`, `knobs: [...]` — имена ручек из params.yaml, `fixer: post.loop`): например `SEAM → post.loop`, `SLOWMO → prompt+steps`, `CAMERA_MOVE → prompt+seed`, `SCALE → plate_slot/anchor`, `FACE_ID → face_pass/lora_w`. Пороги — в `thresholds_*.yaml`, не в коде.
+
+**v0.7 — проверки видео (WS-06, `farm/qa/video/*`, `farm/post/*`; отчёт — `docs/qa/WS-06_video.md`):**
+- Проверки `stage="video"`: `cut`, `seam`, `light_drift`, `color_drift`, `flicker` (cost 2), `seam_velocity`, `camera_move`, `freeze`, `slowmo` (3), `identity_dip` (5). Для видео реестр не останавливается на первом hard-отказе: маршрут выбирается по приоритету кодов в routing.yaml (`CUT`, `CAMERA_MOVE`, `IDENTITY_DIP` выше `SEAM`).
+- Пороги — секция `video.<проверка>` в `thresholds_*.yaml` (плоский dict, ключ `severity` перекрывает тяжесть); `video.disabled: [...]` выключает проверки. Фиксеры читают `video.post_loop`, `video.post_color`.
+- Петля: `ctx.refs.loop` (из `library.resolve_inputs`) → иначе `shot.loop`; при `loop=0` (переход) `seam*` не запускаются.
+- Входы: `keyframe` — из `attempt.params_json` (его кладёт воркер) или `refs`; `face_ref` — из `refs`. Нет входа → соответствующая часть проверки пропускается.
+- `post_fix`: воркер передаёт фиксеру `QAContext` с `thresholds` профиля и `refs` (раньше — только `extra`). Фиксер пишет отчёт в `ctx.extra["post_loop" | "post_color"]`, возвращает путь к временному mp4.
 
 ## 9. Бот (WS-08)
 Читает `assets` в состоянии `*_review` и пишет в `reviews`. (v0.3: кандидаты = `assets.candidate=1 AND approved IS NULL` — шот к этому моменту может уже уйти дальше; плюс шоты в `needs_human`. Статус очереди — `GET /farm/status` на 8188 или `Worker.status()`.) Кнопки: ✅ Принять, 🔁 Переделать, ✍️ Переделать с комментарием, ▶️ Запустить пакет (фильтр по листу/приоритету), 📊 Статус очереди. Пуш только для готовых кандидатов, с вердиктами проверок одной строкой. Никаких входящих портов (long polling).

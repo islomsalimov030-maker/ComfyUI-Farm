@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Разметка петель — WS-06</title>
+<style>
+  :root { --bg:#16171a; --panel:#1f2126; --line:#30333a; --text:#e8e8ea; --dim:#9a9ca3; --good:#3fa56b; --bad:#d0533f; --acc:#5b8def; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; background:var(--bg); color:var(--text); display:grid; grid-template-columns:260px 1fr; height:100vh; }
+  aside { border-right:1px solid var(--line); overflow:auto; }
+  aside .top { padding:12px; border-bottom:1px solid var(--line); }
+  aside button, main button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 10px; cursor:pointer; }
+  aside button:hover, main button:hover { border-color:var(--acc); }
+  .list div { padding:7px 12px; cursor:pointer; display:flex; justify-content:space-between; border-bottom:1px solid #222; }
+  .list div.cur { background:#2a2d34; }
+  .tag { font-size:12px; color:var(--dim); }
+  .tag.good { color:var(--good); } .tag.bad { color:var(--bad); }
+  main { display:flex; flex-direction:column; padding:14px 18px; gap:12px; overflow:auto; }
+  video { width:100%; max-height:62vh; background:#000; border-radius:6px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .verdict button { font-size:15px; padding:8px 18px; }
+  .verdict button.on.good { background:var(--good); border-color:var(--good); }
+  .verdict button.on.bad { background:var(--bad); border-color:var(--bad); }
+  .codes label { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:5px 9px; cursor:pointer; user-select:none; }
+  .codes input { margin-right:5px; }
+  textarea { width:100%; min-height:54px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; }
+  .hint { color:var(--dim); font-size:12px; }
+  h1 { font-size:16px; margin:0; }
+  kbd { background:#2a2d34; border:1px solid var(--line); border-radius:4px; padding:0 5px; font-size:12px; }
+</style>
+</head>
+<body>
+<aside>
+  <div class="top">
+    <div class="row" style="margin-bottom:8px"><label><button onclick="document.getElementById('pick').click()">Открыть папку с mp4</button>
+      <input id="pick" type="file" webkitdirectory multiple accept="video/mp4" style="display:none"></label></div>
+    <div class="row"><button onclick="exportJson()">Скачать labels.json</button>
+      <label><button onclick="document.getElementById('imp').click()">Загрузить</button>
+      <input id="imp" type="file" accept=".json" style="display:none"></label></div>
+    <div class="hint" id="count" style="margin-top:8px">Клипов нет — откройте папку.</div>
+  </div>
+  <div class="list" id="list"></div>
+</aside>
+<main>
+  <div class="row"><h1 id="title">—</h1><span class="hint" id="meta"></span></div>
+  <video id="v" controls loop muted playsinline></video>
+  <div class="row hint">
+    <span>Скорость:</span>
+    <button onclick="rate(0.25)">0.25×</button><button onclick="rate(0.5)">0.5×</button><button onclick="rate(1)">1×</button>
+    <span style="margin-left:10px">Шов: </span><button onclick="seam()">прыгнуть за 1.5 с до конца</button>
+    <span style="margin-left:10px"><kbd>←</kbd>/<kbd>→</kbd> кадр, <kbd>G</kbd> хорошо, <kbd>B</kbd> плохо, <kbd>N</kbd> следующий</span>
+  </div>
+  <div class="row verdict">
+    <button id="bGood" class="good" onclick="setVerdict('good')">✓ Хорошо</button>
+    <button id="bBad" class="bad" onclick="setVerdict('bad')">✗ Плохо / на переделку</button>
+  </div>
+  <div class="row codes" id="codes"></div>
+  <textarea id="note" placeholder="Причина своими словами (что видно, на какой секунде)"></textarea>
+  <div class="hint">Разметка хранится в этом браузере (localStorage) и в скачанном labels.json. Видео никуда не загружаются.</div>
+</main>
+<script>
+const CODES = [
+  ["SEAM", "Рывок/шов петли"], ["FREEZE", "Замирание"], ["SLOWMO", "Слоу-мо"],
+  ["CAMERA_MOVE", "Камера двигается"], ["LIGHT_DRIFT", "Свет меняется"], ["COLOR_DRIFT", "Цвет плывёт"],
+  ["FLICKER", "Мерцание"], ["CUT", "Склейка/смена плана"], ["IDENTITY_DIP", "Лицо «плывёт»"],
+  ["WRONG_MOTION", "Не то движение"], ["UNNATURAL_EDGES", "Неестественные начало/конец"], ["OTHER", "Другое"],
+];
+const KEY = "ws06_labels_v1";
+let files = [], cur = -1, labels = JSON.parse(localStorage.getItem(KEY) || "{}");
+const $ = id => document.getElementById(id);
+const v = $("v");
+
+$("codes").innerHTML = CODES.map(([c, t]) =>
+  `<label title="${c}"><input type="checkbox" value="${c}" onchange="saveCur()">${t}</label>`).join("");
+
+$("pick").onchange = e => {
+  files = [...e.target.files].filter(f => f.name.toLowerCase().endsWith(".mp4"))
+    .sort((a, b) => a.name.localeCompare(b.name, "ru", {numeric: true}));
+  renderList(); if (files.length) openClip(0);
+};
+$("imp").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  Object.assign(labels, JSON.parse(await f.text())); persist(); renderList(); if (cur >= 0) openClip(cur);
+};
+const stem = f => f.name.replace(/\.mp4$/i, "");
+function persist() { localStorage.setItem(KEY, JSON.stringify(labels)); }
+function renderList() {
+  const done = files.filter(f => labels[stem(f)]?.verdict).length;
+  $("count").textContent = files.length ? `Размечено ${done} из ${files.length}` : "Клипов нет — откройте папку.";
+  $("list").innerHTML = files.map((f, i) => {
+    const l = labels[stem(f)] || {};
+    const tag = l.verdict ? `<span class="tag ${l.verdict}">${l.verdict === "good" ? "✓" : "✗ " + (l.codes || []).length}</span>` : `<span class="tag">—</span>`;
+    return `<div class="${i === cur ? "cur" : ""}" onclick="openClip(${i})"><span>${stem(f)}</span>${tag}</div>`;
+  }).join("");
+}
+function openClip(i) {
+  cur = i; const f = files[i];
+  if (v.src) URL.revokeObjectURL(v.src);
+  v.src = URL.createObjectURL(f); v.playbackRate = 1; v.play();
+  $("title").textContent = stem(f);
+  const l = labels[stem(f)] || {};
+  document.querySelectorAll("#codes input").forEach(c => c.checked = (l.codes || []).includes(c.value));
+  $("note").value = l.note || "";
+  paintVerdict(l.verdict); renderList();
+}
+v.onloadedmetadata = () => $("meta").textContent = `${v.videoWidth}×${v.videoHeight}, ${v.duration.toFixed(2)} с`;
+function paintVerdict(x) {
+  $("bGood").classList.toggle("on", x === "good"); $("bBad").classList.toggle("on", x === "bad");
+}
+function setVerdict(x) {
+  if (cur < 0) return;
+  const k = stem(files[cur]); labels[k] = {...(labels[k] || {}), verdict: x};
+  paintVerdict(x); saveCur();
+}
+function saveCur() {
+  if (cur < 0) return;
+  const k = stem(files[cur]);
+  const codes = [...document.querySelectorAll("#codes input:checked")].map(c => c.value);
+  labels[k] = {...(labels[k] || {}), codes, note: $("note").value.trim()};
+  if (codes.length && !labels[k].verdict) { labels[k].verdict = "bad"; paintVerdict("bad"); }
+  persist(); renderList();
+}
+$("note").oninput = saveCur;
+function rate(r) { v.playbackRate = r; }
+function seam() { v.currentTime = Math.max(0, v.duration - 1.5); v.play(); }
+function exportJson() {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(labels, null, 1)], {type: "application/json"}));
+  a.download = "labels.json"; a.click();
+}
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "TEXTAREA") return;
+  const step = 1 / 24;
+  if (e.key === "ArrowRight") { v.pause(); v.currentTime = Math.min(v.duration, v.currentTime + step); e.preventDefault(); }
+  if (e.key === "ArrowLeft") { v.pause(); v.currentTime = Math.max(0, v.currentTime - step); e.preventDefault(); }
+  if (e.key === "g" || e.key === "п") setVerdict("good");
+  if (e.key === "b" || e.key === "и") setVerdict("bad");
+  if ((e.key === "n" || e.key === "т") && cur < files.length - 1) openClip(cur + 1);
+});
+</script>
+</body>
+</html>

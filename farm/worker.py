@@ -486,15 +486,18 @@ class Worker:
             "AND s.kind=? ORDER BY s.created_at, s.asset_id",
             (shot_id, stage, try_no, MAIN_KIND[stage]))
 
-    def _qa_asset(self, shot: dict, stage: str, asset: dict, prof: dict) -> dict:
-        att = self.db.one("SELECT * FROM attempts WHERE attempt_id=?", (asset["attempt_id"],))
-        thresholds = {}
+    @staticmethod
+    def _thresholds(prof: dict) -> dict:
         tf = (prof.get("qa") or {}).get("thresholds_file")
         if tf:
             for base in (repo_dir() / "farm", repo_dir()):
                 if (base / tf).exists():
-                    thresholds = load_yaml(base / tf) or {}
-                    break
+                    return load_yaml(base / tf) or {}
+        return {}
+
+    def _qa_asset(self, shot: dict, stage: str, asset: dict, prof: dict) -> dict:
+        att = self.db.one("SELECT * FROM attempts WHERE attempt_id=?", (asset["attempt_id"],))
+        thresholds = self._thresholds(prof)
         ctx = QAContext(shot=shot, stage=stage, profile=prof, attempt=att, thresholds=thresholds,
                         refs=dict(self.plugins.library.resolve_inputs(shot, stage) or {}))
         a = Asset(**{k: asset.get(k) for k in ("asset_id", "attempt_id", "kind", "path", "sha256",
@@ -619,7 +622,10 @@ class Worker:
                 return True
             prof = self.profile(shot["profile"])
             att = self.db.one("SELECT * FROM attempts WHERE attempt_id=?", (src["attempt_id"],))
+            # v0.7 (WS-06): фиксер видит те же пороги и входы, что и QA (video.post_loop, keyframe…)
             ctx = QAContext(shot=shot, stage="video", profile=prof, attempt=att,
+                            thresholds=self._thresholds(prof),
+                            refs=dict(self.plugins.library.resolve_inputs(shot, "video") or {}),
                             extra={"fail_codes": codes, "route": route})
             a = Asset(**{k: src.get(k) for k in ("asset_id", "attempt_id", "kind", "path", "sha256",
                                                  "w", "h", "frames")})
