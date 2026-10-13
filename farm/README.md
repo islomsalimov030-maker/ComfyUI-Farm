@@ -6,6 +6,8 @@
 (по умолчанию `/workspace/farm`), поэтому Terminate пода ничего не теряет.
 
 ## Установка на под
+Одной командой (WS-10, идемпотентно; ноды, зависимости, venv MiVOLO, модели, Ollama, бот, проверка
+`install/pod_doctor.py`) — см. шапку `install/pod_setup.sh`. Вручную:
 1. ComfyUI → Manager → **Install via Git URL** → `https://github.com/islomsalimov030-maker/ComfyUI-Farm`
    (или `cd ComfyUI/custom_nodes && git clone … && pip install -r ComfyUI-Farm/requirements.txt`).
    Зависимости: `pyyaml`, `httpx`, `websockets` (+ stdlib `sqlite3`). GPU пакету не нужен.

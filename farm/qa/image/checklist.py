@@ -36,7 +36,7 @@ def _fields(ctx: QAContext) -> dict:
     pj = pj or {}
     f = pj.get("_fields") or (pj.get("_prompt_fields_json") or {}).get("fields") or {}
     f = f if isinstance(f, dict) else {}
-    if not f:  # воркер (v0.6) хранит только prompt_text — поля сборщика, если переданы, в ctx.extra
+    if not f:  # v0.8: воркер кладёт поля и в params_json._fields, и в ctx.extra.prompt_fields
         f = (ctx.extra or {}).get("prompt_fields") or {}
     return f
 

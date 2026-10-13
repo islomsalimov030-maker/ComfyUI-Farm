@@ -332,6 +332,8 @@ class Worker:
         base_index = self.db.one("SELECT COUNT(*) c FROM attempts WHERE shot_id=? AND stage=?",
                                  (sid, stage))["c"]
         arm_id = arm_key(prof["name"], stage, arm["id"]) if arm else None
+        # поля сборщика (v0.8) — для чек-листа QA; в idem_key не входят, bind их не видит (нет в params.yaml)
+        prompt_fields = (_get(pr, "fields_json") or {}).get("fields") or {}
         with self.db.tx():
             for i in range(n_seeds):
                 seed = _seed_for(sid, stage, base_index + i)
@@ -339,6 +341,8 @@ class Worker:
                 if "face_seed" in specs:
                     vals["face_seed"] = seed
                 idem = make_idem_key(ref, {**hashed, "arm": arm_id}, image_shas, seed)
+                if prompt_fields:
+                    vals["_fields"] = prompt_fields
                 self.enqueue_attempt({
                     "attempt_id": f"at_{idem[:20]}", "shot_id": sid, "stage": stage, "arm_id": arm_id,
                     "workflow": name, "workflow_ver": ver or "1", "params_json": vals,
@@ -498,8 +502,10 @@ class Worker:
     def _qa_asset(self, shot: dict, stage: str, asset: dict, prof: dict) -> dict:
         att = self.db.one("SELECT * FROM attempts WHERE attempt_id=?", (asset["attempt_id"],))
         thresholds = self._thresholds(prof)
+        fields = ((att or {}).get("params_json") or {}).get("_fields") or {}
         ctx = QAContext(shot=shot, stage=stage, profile=prof, attempt=att, thresholds=thresholds,
-                        refs=dict(self.plugins.library.resolve_inputs(shot, stage) or {}))
+                        refs=dict(self.plugins.library.resolve_inputs(shot, stage) or {}),
+                        extra={"prompt_fields": fields} if fields else {})
         a = Asset(**{k: asset.get(k) for k in ("asset_id", "attempt_id", "kind", "path", "sha256",
                                                "w", "h", "frames")})
         results = self.plugins.qa.run_stage(stage, a, ctx)

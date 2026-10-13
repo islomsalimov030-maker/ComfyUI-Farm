@@ -149,3 +149,27 @@ def test_background_thread_runs_and_pauses(make_worker):
     assert w.status()["thread_alive"]
     w.stop()
     assert not w.status()["thread_alive"]
+
+
+def test_prompt_fields_reach_qa(make_worker):
+    """Блокер 12: поля сборщика → attempts.params_json._fields → QAContext.extra.prompt_fields (чек-лист)."""
+    from farm.contracts import PromptResult
+
+    class FieldsBuilder:
+        def build(self, stage, shot, lib, profile, ctx=None):
+            return PromptResult(text=f"p {stage}", template_ver="t",
+                                fields_json={"fields": {"pose": f"{stage} pose"}, "inputs": {}})
+
+    class SpyQA(ScriptedQA):
+        def run_stage(self, stage, asset, ctx):
+            self.seen = getattr(self, "seen", []) + [(stage, ctx.extra.get("prompt_fields"))]
+            return super().run_stage(stage, asset, ctx)
+
+    qa = SpyQA()
+    w = make_worker(qa=qa)
+    w.plugins.prompts = FieldsBuilder()
+    add_shot(w.db, "F1")
+    w.run_until_idle()
+    assert ("frame", {"pose": "frame pose"}) in qa.seen and ("video", {"pose": "video pose"}) in qa.seen
+    at = w.db.one("SELECT params_json FROM attempts WHERE shot_id='F1' AND stage='frame'")
+    assert at["params_json"]["_fields"] == {"pose": "frame pose"}

@@ -205,7 +205,7 @@ class Library:
             return cell
         rel = Path("refs") / self._lib_spec(lib)["dir"] / str(id_).lower()
         default = self._col(lib, key).get("default") or ""
-        return str(rel / default.replace(".*", ".png|jpg|webp"))
+        return (rel / default.replace(".*", ".png|jpg|webp")).as_posix()   # как в таблице, и на Windows
 
     # --- карточка плиты (CONTRACTS §10) --------------------------------------------------
     def plate(self, id_):

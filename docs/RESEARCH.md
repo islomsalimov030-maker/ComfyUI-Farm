@@ -117,3 +117,9 @@
 - Рамка лица MediaPipe (по 478 точкам) примерно на 15 % меньше рамки SCRFD → порог «мелкое лицо» 64 px вместо 80.
 - genderage завышает возраст Стейси на ~4 года (кадры ~30 против медианы датасета 25.4), корреляция с CSV 0.70.
 - MiVOLO v2: эталон Стейси 22.6 (p10–p90 21.2–24.6), кадры v2 Δ медиана +1.2 (genderage +7.2); на CPU 0.8 с/кадр; `setup.py` MiVOLO требует `setuptools<70` + `--no-build-isolation` (pkg_resources) и `--no-deps` (иначе тянет ultralytics 8.1.0, AGPL, и yt-dlp — для кропов от своего детектора не нужны; проверено 13.10, разница 0.000 на 26 кадрах); ревизию HF фиксировать (trust_remote_code).
+
+## WS-10 (14.10.2026) — установка на под
+- Z-image для manual_frame: `Comfy-Org/z_image_turbo` (ревизия 6fc90a3) — `z_image_turbo_bf16` 12.3 ГБ, `qwen_3_4b` 8.0 ГБ, `ae` 0.34 ГБ; карточка Apache-2.0, исходник Tongyi-MAI/Z-Image-Turbo — Apache-2.0; `ae` — автоэнкодер FLUX, у BFL Apache-2.0 (некоммерческие только веса FLUX.1 [dev]). [HF](https://huggingface.co/Comfy-Org/z_image_turbo) · [BFL](https://github.com/black-forest-labs/flux)
+- mediapipe 1.1.0 объявляет `opencv-contrib-python`, scenedetect 0.7.2 — `opencv-python` (оба не headless): в venv ComfyUI получились бы две сборки cv2. Ставить `--no-deps` + явные зависимости; на Linux x86_64 есть колесо `py3-none-manylinux_2_28`. [pypi](https://pypi.org/project/mediapipe/1.1.0/)
+- `/object_info` годится как dry-run окружения: классы нод + допустимые значения списков (файлы моделей, LoRA) — `install/pod_doctor.py`, без постановки в очередь.
+
