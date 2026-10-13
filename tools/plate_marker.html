@@ -86,6 +86,13 @@ textarea { resize: vertical; min-height: 70px; white-space: pre; overflow-x: aut
 
     <aside>
       <div class="card">
+        <h2>Импорт</h2>
+        <label for="imp">Строка из листа «Локации» (ячейки от «ID плиты» до «Примечание», можно с заголовком) или строки якорей и слотов
+          <textarea id="imp" rows="3" spellcheck="false" placeholder="apartment/sofa&#9;Розовый диван&#9;…"></textarea></label>
+        <div class="out-head"><span id="imp-msg"></span><button class="copy" id="imp-go">Загрузить разметку</button></div>
+      </div>
+
+      <div class="card">
         <h2>Карточка</h2>
         <div class="row">
           <label for="pid">ID плиты<input id="pid" value="stretch_studio/stool" spellcheck="false"></label>
@@ -94,6 +101,9 @@ textarea { resize: vertical; min-height: 70px; white-space: pre; overflow-x: aut
         <div class="row">
           <label for="hor">Горизонт (доля)<input id="hor" type="number" step="0.001" min="0" max="1" value="0.46"></label>
           <label for="light">Свет, откуда<select id="light"><option>left</option><option>right</option><option>front</option><option>back</option><option>top</option></select></label>
+        </div>
+        <div class="row">
+          <label for="tone">Свет, тон<select id="tone"><option value="">—</option><option>warm</option><option>neutral</option><option>cool</option></select></label>
         </div>
       </div>
 
@@ -121,11 +131,72 @@ textarea { resize: vertical; min-height: 70px; white-space: pre; overflow-x: aut
 </div>
 
 <script>
+// Импорт разметки: чистые функции без DOM (проверяются в node: tests/test_ws03_plate_marker.py).
+const PlateImport = (() => {
+  // порядок колонок листа «Локации» (farm/sheet_schema.yaml → libraries.plates) — если строка вставлена без заголовка
+  const COLS = ['ID плиты', 'Зона', 'Плита (файл)', 'RefMod', 'Карточка (YAML)', 'Высота камеры, см', 'Горизонт (доля)',
+    'Якоря', 'Слоты', 'Свет, откуда', 'Свет, тон', 'Звук фона (EN)', 'Описание (EN)', 'Примечание'];
+  const KEYS = {'ID плиты': 'id', 'Высота камеры, см': 'cam', 'Горизонт (доля)': 'hor', 'Якоря': 'anchors',
+    'Слоты': 'slots', 'Свет, откуда': 'light', 'Свет, тон': 'tone'};
+  const POSES = {стоя: 'стоя', сидя: 'сидя', лежа: 'лежа', лёжа: 'лежа', standing: 'стоя', sitting: 'сидя', lying: 'лежа'};
+  const num = v => Number(String(v).replace(',', '.'));
+  // TSV из Google Sheets: ячейка с переводами строк приходит в кавычках, "" внутри — кавычка
+  function tsv(text) {
+    const rows = [[]]; let cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+      else if (c === '"' && cell === '') q = true;
+      else if (c === '\t') { rows[rows.length - 1].push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; rows[rows.length - 1].push(cell); cell = ''; rows.push([]); }
+      else cell += c;
+    }
+    rows[rows.length - 1].push(cell);
+    return rows.filter(r => r.some(v => v.trim() !== ''));
+  }
+  const lines = t => String(t || '').split(/[;\n]/).map(s => s.trim()).filter(Boolean);
+  function anchors(t, errs) {
+    return lines(t).flatMap(l => {
+      const p = l.split(/\s+/);
+      const b = p.slice(2).map(num);
+      if (p.length !== 6 || b.some(isNaN)) { errs.push(`якорь «${l}»: нужно «имя высота_см x0 y0 x1 y1»`); return []; }
+      return [{name: p[0], cm: p[1] === '?' || isNaN(num(p[1])) ? null : num(p[1]), b}];
+    });
+  }
+  function slots(t, errs) {
+    return lines(t).flatMap(l => {
+      const p = l.split(/\s+/), pose = POSES[(p[1] || '').toLowerCase()];
+      if ((p.length !== 4 && p.length !== 5) || !pose || isNaN(num(p[2])) || isNaN(num(p[3]))) { errs.push(`слот «${l}»: нужно «id поза x y [рост_px]»`); return []; }
+      return [{id: p[0], pose, x: num(p[2]), y: num(p[3]), h: p.length === 5 ? Math.round(num(p[4])) : null}];
+    });
+  }
+  // → {fields: {id, cam, hor, light, tone}, anchors, slots, errors}
+  function parse(text) {
+    const errs = [], fields = {};
+    const rows = tsv(String(text || ''));
+    let cells = null;
+    if (rows.length >= 2 && rows[0].includes('ID плиты')) cells = Object.fromEntries(rows[0].map((h, i) => [h.trim(), rows[1][i] ?? '']));
+    else if (rows.length >= 1 && rows[0].length >= 9) cells = Object.fromEntries(COLS.map((h, i) => [h, rows[0][i] ?? '']));
+    if (cells) {
+      for (const [h, k] of Object.entries(KEYS)) if ((cells[h] ?? '').trim() !== '' && k !== 'anchors' && k !== 'slots') fields[k] = cells[h].trim();
+      return {fields, anchors: anchors(cells['Якоря'], errs), slots: slots(cells['Слоты'], errs), errors: errs};
+    }
+    // без колонок: строки якорей (6 значений) и слотов (поза вторым словом) вперемешку
+    const A = [], S = [];
+    for (const l of lines(text)) (POSES[(l.split(/\s+/)[1] || '').toLowerCase()] ? S : A).push(l);
+    return {fields, anchors: anchors(A.join('\n'), errs), slots: slots(S.join('\n'), errs), errors: errs};
+  }
+  return {parse, tsv, COLS};
+})();
+if (typeof module !== 'undefined') module.exports = PlateImport;
+</script>
+
+<script>
 (() => {
   const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  let img = null, mode = 'anchor', drag = null, pendingSlot = null;
+  let img = null, mode = 'anchor', drag = null, pendingSlot = null, imported = false;
   // пример: табуретка у стены (данные помечены как пример, пока не загружена своя плита)
   let anchors = [{name: 'stool_seat', cm: 75, b: [0.52, 0.55, 0.66, 0.6]}, {name: 'barre', cm: 105, b: [0.08, 0.38, 0.45, 0.42]}];
   let slots = [{id: 'A', pose: 'сидя', x: 0.59, y: 0.84, h: null}];
@@ -245,7 +316,7 @@ textarea { resize: vertical; min-height: 70px; white-space: pre; overflow-x: aut
       `horizon_y: ${$('hor').value || 'null'}`,
       'anchors:', ...anchors.map(a => `  - {name: ${a.name || '?'}, top_cm: ${a.cm ?? 'null'}, bbox: [${a.b.join(', ')}]}`),
       'slots:', ...slots.map(s => `  - {id: ${s.id}, pose: ${P[s.pose]}, feet_xy: [${s.x}, ${s.y}]${s.h ? ', expect_height_px: ' + s.h : ''}}`),
-      `light: {key_dir: ${$('light').value}, temp: null}`];
+      `light: {key_dir: ${$('light').value}, temp: ${$('tone').value || 'null'}}`];
     if (!anchors.length) y.splice(y.indexOf('anchors:'), 1, 'anchors: []');
     if (!slots.length) y.splice(y.indexOf('slots:'), 1, 'slots: []');
     $('out-yaml').value = y.join('\n');
@@ -261,14 +332,31 @@ textarea { resize: vertical; min-height: 70px; white-space: pre; overflow-x: aut
     document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     setHint();
   });
-  ['pid', 'cam', 'hor', 'light'].forEach(id => $(id).addEventListener('input', () => { out(); draw(); }));
+  ['pid', 'cam', 'hor', 'light', 'tone'].forEach(id => $(id).addEventListener('input', () => { out(); draw(); }));
+
+  // импорт: строка из листа → поля, рамки и слоты (картинку плиты загрузить до или после — разметка сохранится)
+  $('imp-go').onclick = () => {
+    const r = PlateImport.parse($('imp').value);
+    if (!r.anchors.length && !r.slots.length && !Object.keys(r.fields).length) {
+      $('imp-msg').textContent = 'Не нашёл ни якорей, ни слотов.'; return;
+    }
+    const f = r.fields, set = (id, v) => { if (v !== undefined) $(id).value = v; };
+    set('pid', f.id); set('cam', f.cam); set('hor', f.hor?.replace(',', '.'));
+    if (f.light) set('light', f.light);
+    if (f.tone) set('tone', f.tone);
+    anchors = r.anchors; slots = r.slots; pendingSlot = null; imported = true;
+    if (!img) $('sample-tag').textContent = 'загрузите плиту';
+    $('imp-msg').textContent = `Якорей ${anchors.length}, слотов ${slots.length}` + (r.errors.length ? `; пропущено: ${r.errors.join('; ')}` : '.');
+    render();
+  };
 
   function loadFile(f) {
     if (!f || !f.type.startsWith('image/')) return;
     const url = URL.createObjectURL(f), im = new Image();
     im.onload = () => {
       img = im; cv.width = im.naturalWidth; cv.height = im.naturalHeight;
-      anchors = []; slots = []; $('sample-tag').hidden = true; render();
+      if (!imported) { anchors = []; slots = []; }
+      $('sample-tag').hidden = true; render();
     };
     im.src = url;
   }

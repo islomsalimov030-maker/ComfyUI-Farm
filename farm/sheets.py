@@ -160,12 +160,28 @@ def _norm_header(h: Any) -> str:
 
 
 def header_map(header: list[Any], columns: list[dict], sheet: str) -> dict[str, int]:
-    """{key: индекс колонки 0-based}. Нет обязательной колонки → SheetError."""
-    pos = {_norm_header(h): i for i, h in enumerate(header) if _norm_header(h)}
+    """{key: индекс колонки 0-based}. Нет обязательной колонки → SheetError.
+
+    Совпадение по заголовку целиком, иначе по части до запятой («Свет, тон» ↔ «Свет»): листы,
+    созданные до схемы v1 с кавычками, имеют обрезанные заголовки; одинаковые берутся по порядку.
+    """
+    pos: dict[str, list[int]] = {}
+    for i, h in enumerate(header):
+        if _norm_header(h):
+            pos.setdefault(_norm_header(h), []).append(i)
+    used: set[int] = set()
+
+    def take(name: str) -> Optional[int]:
+        return next((i for i in pos.get(name, []) if i not in used), None)
+
     out = {}
     for c in columns:
-        i = pos.get(_norm_header(c["header"]))
+        full = _norm_header(c["header"])
+        i = take(full)
+        if i is None and "," in full:
+            i = take(full.split(",")[0].strip())
         if i is not None:
+            used.add(i)
             out[c["key"]] = i
         elif c.get("required") or c.get("orchestrator"):
             raise SheetError(f"в листе «{sheet}» нет колонки «{c['header']}»")

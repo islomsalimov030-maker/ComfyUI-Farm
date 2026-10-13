@@ -69,6 +69,8 @@ def make_env(home: Path):
     motion = _touch(home / "inbox" / "motion.mp4")
 
     by_header = {c["header"]: c["key"] for c in SCHEMA["scenes"]["columns"]}
+    # выгрузка листа до кавычек в схеме: «Длительность» вместо «Длительность, с» (как farm.sheets.header_map)
+    by_header.update({h.split(",")[0]: k for h, k in list(by_header.items()) if "," in h})
     rows = []
     for n, r in enumerate(data["rows"], start=2):
         raw = {by_header[h]: v for h, v in {**data["common"], **r}.items()}

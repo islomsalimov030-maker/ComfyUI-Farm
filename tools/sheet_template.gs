@@ -200,8 +200,7 @@ const FARM_SCHEMA = {
    },
    {
     "key": "duration",
-    "header": "Длительность",
-    "с": null,
+    "header": "Длительность, с",
     "width": 85,
     "type": "number",
     "note": "Для видео: от 5 до 10 секунд, шаг 0,25."
@@ -336,8 +335,7 @@ const FARM_SCHEMA = {
     },
     {
      "key": "height_cm",
-     "header": "Рост",
-     "см": null,
+     "header": "Рост, см",
      "width": 70,
      "type": "number",
      "note": "Для проверки масштаба."
@@ -397,8 +395,7 @@ const FARM_SCHEMA = {
     },
     {
      "key": "camera_height_cm",
-     "header": "Высота камеры",
-     "см": null,
+     "header": "Высота камеры, см",
      "width": 90,
      "type": "number"
     },
@@ -425,8 +422,7 @@ const FARM_SCHEMA = {
     },
     {
      "key": "light_dir",
-     "header": "Свет",
-     "откуда": null,
+     "header": "Свет, откуда",
      "width": 85,
      "type": "list",
      "values": [
@@ -439,8 +435,7 @@ const FARM_SCHEMA = {
     },
     {
      "key": "light_temp",
-     "header": "Свет",
-     "тон": null,
+     "header": "Свет, тон",
      "width": 80,
      "type": "list",
      "values": [
@@ -539,8 +534,7 @@ const FARM_SCHEMA = {
     },
     {
      "key": "height_cm",
-     "header": "Высота",
-     "см": null,
+     "header": "Высота, см",
      "width": 75,
      "type": "number",
      "note": "Для масштаба: высота сиденья, перекладины…"

@@ -65,7 +65,7 @@ scenes:
        note: "Тег для игры (neutral, happy, frowny…). Можно вписать свой."}
     - {key: loop, header: Петля, width: 60, type: list, list: yesno,
        note: "да — первый кадр = последний. Для видео обязательно. Нет — если задан «Закончить кадром шота»."}
-    - {key: duration, header: Длительность, с, width: 85, type: number,
+    - {key: duration, header: "Длительность, с", width: 85, type: number,
        note: "Для видео: от 5 до 10 секунд, шаг 0,25."}
     - {key: start_from, header: Начать с кадра шота, width: 110, type: shot,
        note: "ID шота: видео начнётся с последнего кадра его принятого видео (продолжение). Свой кадр не генерируется."}
@@ -102,7 +102,7 @@ libraries:
       - {key: face, header: Эталон лица, width: 160, file: true, default: "face.*", note: "Пусто → refs/characters/<ID>/face.png|jpg|webp"}
       - {key: sheet, header: Лист персонажа, width: 160, file: true, default: "sheet.*", note: "<Picture 2> кадра. Пусто → refs/characters/<ID>/sheet.*"}
       - {key: refmod, header: RefMod, width: 160, file: true, default: "refmod.safetensors"}
-      - {key: height_cm, header: Рост, см, width: 70, type: number, note: "Для проверки масштаба."}
+      - {key: height_cm, header: "Рост, см", width: 70, type: number, note: "Для проверки масштаба."}
       - {key: desc_en, header: Описание (EN), width: 260, note: "Внешность коротко по-английски, для промпта."}
       - {key: note, header: Примечание, width: 200}
   plates:
@@ -114,14 +114,14 @@ libraries:
       - {key: plate, header: Плита (файл), width: 160, file: true, default: "plate.*", note: "<Picture 1>. Пусто → refs/locations/<локация>/<зона>/plate.*"}
       - {key: refmod, header: RefMod, width: 140, file: true, default: "refmod.safetensors"}
       - {key: card, header: Карточка (YAML), width: 140, file: true, default: "card.yaml", note: "Необязательно: если файл есть, его поля важнее колонок справа."}
-      - {key: camera_height_cm, header: Высота камеры, см, width: 90, type: number}
+      - {key: camera_height_cm, header: "Высота камеры, см", width: 90, type: number}
       - {key: horizon_y, header: Горизонт (доля), width: 85, type: number, note: "Линия горизонта: доля высоты кадра сверху, 0–1."}
       - {key: anchors, header: Якоря, width: 260, type: anchors,
          note: "Предметы известной высоты, по строке на предмет: имя высота_см x0 y0 x1 y1 (рамка в долях 0–1 от кадра). Пример: barre 105 0.10 0.41 0.92 0.45. Разметка — tools/plate_marker.html."}
       - {key: slots, header: Слоты, width: 220, type: slots,
          note: "Где может быть персонаж, по строке: id поза x y [рост_px]. Поза: стоя|сидя|лежа. Пример: A стоя 0.55 0.88 610"}
-      - {key: light_dir, header: Свет, откуда, width: 85, type: list, values: [left, right, front, back, top]}
-      - {key: light_temp, header: Свет, тон, width: 80, type: list, values: [warm, neutral, cool]}
+      - {key: light_dir, header: "Свет, откуда", width: 85, type: list, values: [left, right, front, back, top]}
+      - {key: light_temp, header: "Свет, тон", width: 80, type: list, values: [warm, neutral, cool]}
       - {key: ambience_en, header: Звук фона (EN), width: 160}
       - {key: desc_en, header: Описание (EN), width: 240}
       - {key: note, header: Примечание, width: 200}
@@ -143,7 +143,7 @@ libraries:
       - {key: name, header: Название, width: 160}
       - {key: image, header: Картинка, width: 150, file: true, default: "image.*"}
       - {key: refmod, header: RefMod, width: 140, file: true, default: "refmod.safetensors"}
-      - {key: height_cm, header: Высота, см, width: 75, type: number, note: "Для масштаба: высота сиденья, перекладины…"}
+      - {key: height_cm, header: "Высота, см", width: 75, type: number, note: "Для масштаба: высота сиденья, перекладины…"}
       - {key: desc_en, header: Описание (EN), width: 240}
       - {key: note, header: Примечание, width: 200}
   profiles:
