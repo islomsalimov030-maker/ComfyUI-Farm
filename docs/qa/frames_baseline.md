@@ -65,7 +65,7 @@ CSV — `face_metrics_final.csv` (buffalo_l, SCRFD); дальше наши зн�
 | `face_detect` | 1 | лицо есть? надёжно ли: размер, поворот, наклон, тень | **MediaPipe** BlazeFace + Pose + Face Landmarker (Apache-2.0, код и веса) | info; нет лица там, где ждём → COMPOSITION (soft) |
 | `face_id` | 2 | косинус с центроидом эталона | **AuraFace-v1 glintr100** (Apache-2.0) | hard, порог 0.57; ненадёжно → FACE_UNRELIABLE → человек |
 | `age` | 2 | Δ возраста от медианы эталона (той же моделью) | **MiVOLO v2** (Apache-2.0; отдельный venv, подпроцесс `farm/qa/age_mivolo.py`); genderage — только тест (некоммерческий) | soft, ±5 лет; нет venv → info |
-| `hands` | 3 | запястья по позе → кисть найдена Hand Landmarker? кропы → VLM | MediaPipe (Apache-2.0); VLM — Ollama | info: без разметки рук калибровать нечего; VLM-вопросы — на поде |
+| `hands` | 3 | запястья по позе → кисть найдена Hand Landmarker? кропы → VLM | MediaPipe (Apache-2.0); VLM — Ollama | info; VLM по рукам не включаем (решение 13.10) — руки оценивает человек в боте |
 | `scale` | 3 | стоя: верх якоря карточки в долях роста по позе против top_cm/рост | MediaPipe Pose | soft; на 26 кадрах карточек плит нет → info. Сидя/лёжа → info |
 | `checklist` | 5 | DSG-вопросы из полей шота → P(Yes) из logprobs | Ollama `qwen3-vl:8b-instruct` | выкл. (`enabled: false`) до пода; на ПК модели нет |
 
@@ -73,20 +73,22 @@ CSV — `face_metrics_final.csv` (buffalo_l, SCRFD); дальше наши зн�
 
 ## Что осталось / риски
 - **Возраст** — MiVOLO v2 поставлен (раздел ниже). Корреляции с колонкой возраста CSV нет смысла добиваться: она сама из genderage.
-- **Руки и чек-лист** — CV-часть и VLM-клиент готовы, калибровка — на поде с qwen3-vl и разметкой 10–20 кадров с плохими руками (у нас таких нет).
+- **Руки** — решение 13.10: VLM по рукам не включаем (нет примеров плохих рук), руки оценивает человек в боте; CV-сигнал `hands` остаётся info в отчёте. **Чек-лист** — калибровка на qwen3-vl в сессию пода.
 - **Масштаб** — нужен хотя бы один кадр, сгенерированный на плите с карточкой (WS-03/WS-07).
 - Поля сборщика промптов воркер в attempt не сохраняет (только `prompt_text`) — чек-лист берёт их из `ctx.extra.prompt_fields`, если воркер передаст (WS-02/WS-10).
 
 ## Возраст: MiVOLO v2 (13.10, после согласия пользователя)
-- Код `WildChlamydia/MiVOLO` (commit 37475e3) + веса HF `iitolstykh/mivolo_v2` (ревизия `53393526…`, зафиксирована: код модели выполняется через `trust_remote_code`), оба Apache-2.0. Зависимостью тянется `ultralytics 8.1.0` (AGPL-3.0) — мы его не вызываем (лица — MediaPipe), только внутренне.
+- Код `WildChlamydia/MiVOLO` (commit 37475e3) + веса HF `iitolstykh/mivolo_v2` (ревизия `53393526…`, зафиксирована: код модели выполняется через `trust_remote_code`), оба Apache-2.0.
+- **Без ultralytics.** Пакет `mivolo` объявляет зависимость `ultralytics==8.1.0` (AGPL-3.0), но она нужна только его YOLO-детектору (`mivolo/model/yolo_detector.py`, `mivolo/structures.py`). Наш путь (кропы лица от MediaPipe → `create_timm_model` + `data/misc`) её не импортирует. Проверено 13.10: возраст на 26 кадрах v2 до и после удаления ultralytics совпадает побайтно (разница 0.000); рецепт ниже собран с нуля и даёт тот же результат. Поэтому MiVOLO ставится с `--no-deps`, нужные ему пакеты — явно.
 - Отдельный venv (torch 2.5.1 CPU, timm 0.8.13.dev0, transformers 4.51, numpy<2), ферма общается с ним через подпроцесс `farm/qa/mivolo_worker.py` (JSON-строки, модель грузится один раз). Установка:
   ```
   uv venv --python 3.12 <venv>                       # ПК: ~/.cache/farm_qa/venv_mivolo, под: /workspace/venv_mivolo
   uv pip install --python <venv>/python --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchvision==0.20.1
   uv pip install --python <venv>/python "setuptools<70" wheel     # setup.py MiVOLO импортирует pkg_resources
-  uv pip install --python <venv>/python --no-build-isolation transformers==4.51.0 accelerate==1.8.1       "git+https://github.com/WildChlamydia/MiVOLO.git" opencv-python-headless "numpy<2" huggingface_hub
+  uv pip install --python <venv>/python transformers==4.51.0 accelerate==1.8.1 "timm==0.8.13.dev0" "lapx>=0.5.2"       scipy opencv-python-headless "numpy<2" huggingface_hub
+  uv pip install --python <venv>/python --no-build-isolation --no-deps       "git+https://github.com/WildChlamydia/MiVOLO.git@37475e3f8818b5f22448003feec3e64b01bfb188"
   ```
-  На поде можно ставить torch с CUDA — модель маленькая (115 МБ), CPU хватает (0.8 с на кадр).
+  Проверка: `<venv>/python -c "import importlib.util as u; assert u.find_spec('ultralytics') is None"`. На поде можно ставить torch с CUDA — модель маленькая (115 МБ), CPU хватает (0.8 с на кадр).
 - Эталон Стейси (77 кадров датасета, по лицу): медиана **22.6**, p10–p90 21.2–24.6. Кадры v2 (лицо + тело): 21.9–28.6, Δ медиана +1.2, макс +6.0 (Лежа-2, и так к человеку) → порог ±5 лет, отказов AGE на v2 нет. Старая версия c83: Лежа-7, Лежа-8, Сидя-4 — +5.3…5.8 (soft AGE) — совпадает с наблюдением STACY_CONTEXT §6, что c83 «старит».
 - genderage на тех же кадрах: Δ медиана +7.2, макс +14.5 (Лежа-5 — 37 лет) — для порога непригоден; корреляция с CSV выше (0.75) только потому, что CSV посчитан им же.
 - Вердикт реестра с MiVOLO не изменился: 27/27 на v2, c83 и исходниках.

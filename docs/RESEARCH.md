@@ -104,7 +104,7 @@
 | AuraFace-v1 `glintr100.onnx` (эмбеддинг лица) | Apache-2.0 | Apache-2.0 | ✅ прод | [HF fal/AuraFace-v1](https://huggingface.co/fal/AuraFace-v1) |
 | `scrfd_10g_bnkps.onnx`, `2d106det.onnx`, `1k3d68.onnx`, `genderage.onnx` из того же репо fal | — | файлы InsightFace model zoo — «non-commercial research purposes only», Apache репо fal на них не распространяется | ⚠ только тест | [InsightFace Model Zoo](https://github.com/deepinsight/insightface/wiki/Model-Zoo) |
 | MediaPipe Tasks: BlazeFace full-range, Face/Hand/Pose Landmarker (`.task`/`.tflite`) | Apache-2.0 | Apache-2.0 | ✅ прод (детектор лица, руки, поза) | [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector) |
-| MiVOLO v2 (`iitolstykh/mivolo_v2`) — возраст | Apache-2.0 (WildChlamydia/MiVOLO) | Apache-2.0 (карточка HF) | ✅ прод (13.10): отдельный venv, тянет `ultralytics` 8.1.0 (AGPL) — не используем | [HF](https://huggingface.co/iitolstykh/mivolo_v2) |
+| MiVOLO v2 (`iitolstykh/mivolo_v2`) — возраст | Apache-2.0 (WildChlamydia/MiVOLO) | Apache-2.0 (карточка HF) | ✅ прод (13.10): отдельный venv, ставится `--no-deps` **без** `ultralytics` (AGPL) — он нужен только YOLO-детектору MiVOLO, возраст по кропам MediaPipe без него совпадает побайтно | [HF](https://huggingface.co/iitolstykh/mivolo_v2) |
 | MiVOLO GDrive-чекпоинты (IMDB/Lagenda) | — | отдельного LICENSE рядом нет | ⚠ брать только HF v2 | [repo](https://github.com/WildChlamydia/MiVOLO) |
 | YOLO-Face-Person-Detector (детектор MiVOLO), ultralytics yolov8-face | AGPL-3.0 | AGPL-3.0 | ⚠ внутренне ок; нам не нужен — лица даёт MediaPipe | [HF](https://huggingface.co/iitolstykh/YOLO-Face-Person-Detector) |
 | akanametov/yolo-face | GPL-3.0 | GPL-3.0 | ⚠ | [repo](https://github.com/akanametov/yolo-face) |
@@ -116,4 +116,4 @@
 - Сходство лица на лежащих с наклоном головы >50° нестабильно (Лежа-5: 0.445 → 0.72–0.78 при смене 5 точек выравнивания) — такие кадры только к человеку.
 - Рамка лица MediaPipe (по 478 точкам) примерно на 15 % меньше рамки SCRFD → порог «мелкое лицо» 64 px вместо 80.
 - genderage завышает возраст Стейси на ~4 года (кадры ~30 против медианы датасета 25.4), корреляция с CSV 0.70.
-- MiVOLO v2: эталон Стейси 22.6 (p10–p90 21.2–24.6), кадры v2 Δ медиана +1.2 (genderage +7.2); на CPU 0.8 с/кадр; `setup.py` MiVOLO требует `setuptools<70` + `--no-build-isolation` (pkg_resources); ревизию HF фиксировать (trust_remote_code).
+- MiVOLO v2: эталон Стейси 22.6 (p10–p90 21.2–24.6), кадры v2 Δ медиана +1.2 (genderage +7.2); на CPU 0.8 с/кадр; `setup.py` MiVOLO требует `setuptools<70` + `--no-build-isolation` (pkg_resources) и `--no-deps` (иначе тянет ultralytics 8.1.0, AGPL, и yt-dlp — для кропов от своего детектора не нужны; проверено 13.10, разница 0.000 на 26 кадрах); ревизию HF фиксировать (trust_remote_code).
