@@ -67,6 +67,7 @@ video:
   slowmo:        {peak_min: 0.10, moving_speed: 0.03, viscous_moving: 0.7, viscous_peak: 0.16, severity: soft}
   identity_dip:  {fps: 4, yaw_max: 45, window: 4, start_min: 0.35, dip_max: 0.20, ref_min: 0.35, lost_max: 0.5,
                   det: mediapipe, backend: auraface, severity: hard}
+  face_ref:      {p10_min: 0.55, severity: soft}   # к центроиду face_ref; мягко (гримаса по задумке даёт то же)
   # постобработка (farm/post/*)
   post_loop:     {search: 12, crossfade: [6, 8, 10, 12], ratio: 1.5, floor: 0.004, window: 12, dup_eps: 0.25, sigma: 3.0}
   post_color:    {smooth: 9, strength: 1.0, target: frame0}

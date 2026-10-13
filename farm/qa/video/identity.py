@@ -71,15 +71,49 @@ def _dip(sims: np.ndarray, win: int) -> tuple[float, int]:
     return best, at
 
 
-@register("video", "identity_dip", cost=5)
-def check_identity(asset, ctx):
-    from .. import face as FA
-    t = F.th(ctx, "identity_dip")
+def _rows(asset, t) -> tuple[F.Clip, list[dict], int]:
     det, backend = t.get("det", "mediapipe"), t.get("backend", "auraface")
     clip = F.read(asset.path)
     step = max(1, int(round(clip.fps / float(t.get("fps", 4)))))
     rows = clip.memo(("identity", det, backend, step),
                      lambda: track(asset.path, clip.n, step, det, backend, float(t.get("yaw_max", 45))))
+    return clip, rows, step
+
+
+@register("video", "face_ref", cost=5)
+def check_face_ref(asset, ctx):
+    """Мягко: лицо по клипу далеко от эталона персонажа (10-й перцентиль косинуса к центроиду face_ref).
+
+    Разметка 13.10: ловит «не та» / пересушенную эмоцию (Sitting-5, Standing-10), но сильная гримаса
+    по задумке (Standing-9) даёт то же значение — поэтому soft → решает человек, а не новый seed.
+    Настройки — общие с identity_dip (det, backend, fps), порог — `video.face_ref.p10_min`.
+    """
+    from .. import face as FA
+    t = {**F.th(ctx, "identity_dip"), **F.th(ctx, "face_ref")}
+    ref = F.ref_path(ctx, "face_ref", allow_dir=True)
+    if not ref:
+        return None
+    _, rows, _ = _rows(asset, t)
+    used = [r for r in rows if "emb" in r]
+    if len(used) < 3:
+        return F.result("face_ref", 0.0, True, "info", "FACE_REF",
+                        {"note": "мало кадров с лицом анфас", "used": len(used), "ver": VER}, VER)
+    cen = FA.centroid(ref, backend=t.get("backend", "auraface"), det=t.get("det", "mediapipe"))
+    sr = np.array([FA.cos(cen["emb"], r["emb"]) for r in used])
+    p10 = float(np.percentile(sr, 10))
+    thr = float(t.get("p10_min", 0.55))
+    return F.result("face_ref", round(p10, 4), p10 >= thr, t.get("severity", "soft"), "IDENTITY_DIP",
+                    {"ref_p10": round(p10, 4), "ref_med": round(float(np.median(sr)), 4),
+                     "ref_min": round(float(sr.min()), 4), "worst_frame": int(used[int(np.argmin(sr))]["i"]),
+                     "p10_min": thr, "used": len(used), "ver": VER}, VER)
+
+
+@register("video", "identity_dip", cost=5)
+def check_identity(asset, ctx):
+    from .. import face as FA
+    t = F.th(ctx, "identity_dip")
+    det, backend = t.get("det", "mediapipe"), t.get("backend", "auraface")
+    clip, rows, step = _rows(asset, t)
     used = [r for r in rows if "emb" in r]
     with_face0 = bool(rows and rows[0].get("face"))
     lost = 1 - sum(r["face"] for r in rows) / max(len(rows), 1)
@@ -91,7 +125,7 @@ def check_identity(asset, ctx):
     s0 = np.array([FA.cos(e0, r["emb"]) for r in used])
     ev = {"checked": len(rows), "used": len(used), "lost": round(lost, 3), "step": step}
     ref_min = None
-    ref = F.ref_path(ctx, "face_ref")
+    ref = F.ref_path(ctx, "face_ref", allow_dir=True)
     if ref:
         cen = FA.centroid(ref, backend=backend, det=det)
         sr = np.array([FA.cos(cen["emb"], r["emb"]) for r in used])

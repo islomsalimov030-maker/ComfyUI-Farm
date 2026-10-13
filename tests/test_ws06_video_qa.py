@@ -17,7 +17,7 @@ from farm.contracts import Asset, QAContext  # noqa: E402
 from farm.qa import registry  # noqa: E402
 from farm.qa.video import _frames as F  # noqa: E402
 
-TH = {"video": {"disabled": ["identity_dip"], "cut": {"scenedetect": False}}}
+TH = {"video": {"disabled": ["identity_dip", "face_ref"], "cut": {"scenedetect": False}}}
 FPS = 24.0
 W, H = 320, 180
 
@@ -87,7 +87,7 @@ def clips(tmp_path_factory):
 def test_all_video_checks_registered():
     names = {c.name for c in registry.checks("video")}
     assert {"seam", "seam_velocity", "cut", "camera_move", "light_drift", "color_drift", "flicker",
-            "freeze", "slowmo", "identity_dip"} <= names
+            "freeze", "slowmo", "identity_dip", "face_ref"} <= names
 
 
 def test_good_loop_passes(clips):
@@ -182,3 +182,10 @@ def test_results_are_plain_json(clips):
             assert type(r.passed) is bool and isinstance(r.value, float)
             json.dumps(r.evidence)
             assert (r.fail_code is None) == r.passed
+
+
+def test_ref_path_accepts_face_ref_folder(tmp_path):
+    """face_ref — папка эталона: раньше ref_path брал только файлы, и face_ref/identity молча не запускались."""
+    ctx = QAContext(shot={}, stage="video", profile={}, attempt={}, refs={"face_ref": str(tmp_path)})
+    assert F.ref_path(ctx, "face_ref") is None
+    assert F.ref_path(ctx, "face_ref", allow_dir=True) == str(tmp_path)

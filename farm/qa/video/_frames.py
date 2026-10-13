@@ -256,8 +256,10 @@ def th(ctx, name: str) -> dict:
     return dict(((getattr(ctx, "thresholds", None) or {}).get("video") or {}).get(name) or {})
 
 
-def ref_path(ctx, *names: str) -> Optional[str]:
-    """Первый существующий путь из ctx.refs / ctx.attempt.params_json (keyframe, face_ref…)."""
+def ref_path(ctx, *names: str, allow_dir: bool = False) -> Optional[str]:
+    """Первый существующий путь из ctx.refs / ctx.attempt.params_json (keyframe, face_ref…).
+
+    allow_dir — принимать и папку (эталон лица: face.centroid берёт файл или папку кадров)."""
     refs = dict(getattr(ctx, "refs", None) or {})
     att = getattr(ctx, "attempt", None) or {}
     params = att.get("params_json") or {}
@@ -270,6 +272,6 @@ def ref_path(ctx, *names: str) -> Optional[str]:
     for n in names:
         for src in (refs, params, getattr(ctx, "extra", None) or {}):
             v = src.get(n)
-            if isinstance(v, str) and Path(v).is_file():
+            if isinstance(v, str) and (Path(v).is_file() or (allow_dir and Path(v).is_dir())):
                 return v
     return None

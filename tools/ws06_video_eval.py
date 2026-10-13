@@ -102,6 +102,21 @@ def main() -> int:
         print(f"{name:24} {row['route']:22} hard={','.join(codes) or '-':24} soft={','.join(soft) or '-':22} "
               f"{'post: ' + str(pl['seam_before']) + '→' + str(pl['seam_after']) + ' ' + ','.join(pl['hard_after'] or ['ok']) if pl else ''}"
               f" {sec:.0f}s", flush=True)
+    lab = [r for r in rows if r.get("human", {}).get("verdict")]
+    if lab:
+        # «брак» для фермы = hard-отказ (→ seed/постобработка) или мягкий флаг лица (→ к человеку)
+        for r in lab:
+            r["qa_verdict"] = "bad" if (r["hard"] or "IDENTITY_DIP" in r["soft"]) else "good"
+        hit = sum(r["qa_verdict"] == r["human"]["verdict"] for r in lab)
+        bad = [r for r in lab if r["human"]["verdict"] == "bad"]
+        good = [r for r in lab if r["human"]["verdict"] == "good"]
+        print(f"\nсовпадение с разметкой: {hit}/{len(lab)} = {hit / len(lab):.0%}; брак пойман "
+              f"{sum(r['qa_verdict'] == 'bad' for r in bad)}/{len(bad)}; ложных отказов "
+              f"{sum(r['qa_verdict'] == 'bad' for r in good)}/{len(good)}")
+        for r in lab:
+            if r["qa_verdict"] != r["human"]["verdict"]:
+                print(f"  расхождение {r['clip']}: человек={r['human']['verdict']} "
+                      f"({','.join(r['human'].get('codes') or [])}) qa={r['qa_verdict']}")
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(rows, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
     return 0
