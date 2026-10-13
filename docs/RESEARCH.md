@@ -123,3 +123,28 @@
 - mediapipe 1.1.0 объявляет `opencv-contrib-python`, scenedetect 0.7.2 — `opencv-python` (оба не headless): в venv ComfyUI получились бы две сборки cv2. Ставить `--no-deps` + явные зависимости; на Linux x86_64 есть колесо `py3-none-manylinux_2_28`. [pypi](https://pypi.org/project/mediapipe/1.1.0/)
 - `/object_info` годится как dry-run окружения: классы нод + допустимые значения списков (файлы моделей, LoRA) — `install/pod_doctor.py`, без постановки в очередь.
 
+## WS-07 (14.10.2026) — модели и ноды серий пода
+Сводка с размерами — `docs/experiments/WS-07_models.md`. Размеры взяты из API HF (`lfs.size`) и Civitai (`sizeKB`).
+
+| Компонент | Лицензия / права | Вывод | Источник |
+|---|---|---|---|
+| Singularity ref2va v1.3 (`Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8`, 20.97 ГБ; есть w4a8 11.77 ГБ) | Apache-2.0 (карточка HF) + H3 CLA | ✅ тест/прод на условиях H3. На Civitai у автора лежит другая модель (не ref2va) | [HF](https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity) |
+| PinkCherry fl2va v1_final turbo int8 (20.48 ГБ) | Civitai: Image/RentCivit/Rent/Sell/SellMerge | ✅ | [Civitai 2938352](https://civitai.com/models/2938352) |
+| 10eros Max Int8 ref2va v1.1 (20.48 ГБ) | Civitai: Sell/SellMerge | ✅ | [Civitai 2868392](https://civitai.com/models/2868392) |
+| 10Eros `TURBO-hybrid_beta4_int8_convrot` (рука движка кадра) | не найден ни на Civitai, ни на HF | ⚠ происхождение неизвестно | — |
+| DaSiWa MiniMax H3 (исключена 13.10) | Civitai: Image/RentCivit/Rent, **нет Sell** | ⚠ | [Civitai 2877206](https://civitai.com/models/2877206) |
+| ref2v turbo 8 step (`…_8step_v1.0_768p_comfyui_bf16`, 1.82 ГБ) | Apache-2.0; только в lightx2v (в Comfy-Org — только 4 step v0.1) | ✅ | [HF](https://huggingface.co/lightx2v/Minimax-h3-Turbo) |
+| t1 image VAE `minimax_h3_t1_image_vae_step1597` (5.21 ГБ) | лицензии в карточке нет; обучен на 41k Booru + 9.8k фото | ⚠ только тест | [HF](https://huggingface.co/Mamad8/MiniMax-H3-Image-VAE) |
+| ComfyUI-Fizgig-H3-Still `10d5171` | MIT, без зависимостей | ✅ | [GitHub](https://github.com/shootthesound/ComfyUI-Fizgig-H3-Still) |
+| ComfyUI-MM-1Frame `3e1b1f4` | нет LICENSE | ⚠ только тест | [GitHub](https://github.com/cicalooo/ComfyUI-MM-1Frame) |
+| SeedVR2 nodes `4490bd1` + `numz/SeedVR2_comfyUI` (3B fp8 3.39 ГБ, 7B fp8 8.24 ГБ, VAE 0.50 ГБ) | Apache-2.0 | ✅; модели качает сам при первом запуске → путь задать заранее | [GitHub](https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler) · [HF](https://huggingface.co/numz/SeedVR2_comfyUI) |
+| Nvidia RTX nodes (`RTXVideoSuperResolution`) | код Apache-2.0, `nvidia-vfx` проприетарная NVIDIA; Linux — драйвер 570.190+, torch cu130+ | ⚠ проверить на поде | [GitHub](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI) |
+| `malcolmrey/minimaxh3` (RefMod/refLoRA) | Apache-2.0, но это моды реальных людей и знаменитостей | ⚠ не используем, моды Стейси извлекаем сами | [HF](https://huggingface.co/malcolmrey/minimaxh3) |
+| Ollama `qwen3-vl:8b-instruct` 6.1 / q8 9.8; `32b-instruct` 21 / q8 36; `qwen3.6:27b` q4 17 / q8 30 ГБ | Apache-2.0 (HF Qwen) | ✅ | [ollama](https://ollama.com/library/qwen3-vl/tags) · [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) |
+
+Факты по нодам (из исходников):
+- Image Studio **a138b50** (стоит в движке) не умеет `quality_profile = single image | 1 frame (image VAE)`: в нём только 5/9/13/20 кадров. Профиль появился в v23+, а HEAD `9834e55` требует ComfyUI ≥ 0.37 (на поде 0.34). [GitHub](https://github.com/astropuzzo/ComfyUI-MiniMax-H3-Image-Studio)
+- Fizgig: латент ровно на 1 кадр, `FizgigH3StillLatent`. Декод `FizgigH3StillDecode` размножает кадр в группу из 5 и декодирует обычным video VAE, отдельный image VAE не нужен. Ref-edit собирается на core `MiniMaxH3ReferenceToVideo` (только условие) + BasicGuider.
+- Core `MiniMaxH3ReferenceToVideo` (ComfyUI master): Autogrow-слоты в API выглядят как `ref_images.ref_image_N` (так в нашем video_h3_loop@1). Метки `<Picture N>` нумеруются по порядку слотов, поэтому при пропуске одежды метку позы надо сдвигать.
+- RefMod: извлечение (`MiniMaxH3RefModExtract`) требует только VAE — без диффузии и обучения. Для лица автор советует пресет `identity_encode` (Full Reference, 1024). `MiniMaxH3RefModApply` дописывает блоки в `minimax_refs` после токенизации, поэтому `<Picture N>` на мод не ссылается.
+- Civitai `api/download` без токена отдаёт 401.

@@ -1,0 +1,96 @@
+# WS-07: серии экспериментов на поде. Раннер: tools/ws07_run.py, оценка: tools/ws07_eval.py, VLM: tools/ws07_vlm_eval.py.
+# План сессии и оценка времени: docs/experiments/WS-07_plan.md. Модели: tools/ws07_models.yaml (tools/ws07_fetch.py).
+kit: /workspace/farm/experiments/kit          # tools/ws07_prepare.py на ПК → scp -r на под
+out: /workspace/farm/experiments
+timeout_s: 900
+
+# 4 позы брифа; Lying-7 нет среди SFW-строк (решение команды) → Lying-4. Сиды — из прогона fix_e (v1/v2 кадров).
+poses: [Sitting-8, Standing-2, Sitting-2, Lying-4]
+seeds:
+  Sitting-8: [7964195526916, 55405436144670]
+  Standing-2: [27679282781481, 61875092394976]
+  Sitting-2: [17676988137143, 83539730532196]
+  Lying-4: [96719494912228, 29868172234514]
+
+# «Руки» кадра: модель + LoRA + ручки движка frame_h3@1 (KNOB-узлы). Файлы — tools/ws07_models.yaml.
+# Модели с встроенным turbo идут без turbo-LoRA. Только SFW-профиль.
+arms:
+  base_t8_L15:       # эталон: STACY_CONTEXT §4 (fix_e), проверка WS-01
+    model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    loras: [{name: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, w: 1.0},
+            {name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
+    knobs: {pass1_steps: 8}
+  base_t8_L10:
+    model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    loras: [{name: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, w: 1.0},
+            {name: stacy_h3_A_stills_000001750.safetensors, w: 1.0}]
+    knobs: {pass1_steps: 8}
+  base_t4_L15:
+    model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    loras: [{name: minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors, w: 1.0},
+            {name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
+    knobs: {pass1_steps: 4, pass2_steps: 4}
+  singularity_t8_L15:
+    model: Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors
+    loras: [{name: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, w: 1.0},
+            {name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
+    knobs: {pass1_steps: 8}
+  # DaSiWa REF2VA — исключена пользователем 13.10 (STATUS «Решения»; на Civitai ещё и нет права Sell)
+  pinkcherry_L15:    # fl2va turbo — проверка, работает ли fl2va в ref-edit вообще
+    model: pinkcherryFl2vaV1FinalTurbo_v10.safetensors
+    loras: [{name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
+    knobs: {pass1_steps: 8}
+  eros_L15:          # 10Eros Max: на поде — локальный файл движка; если нет, Civitai v1.1 (10erosMaxInt8Ref2va_v11)
+    model: 10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors
+    alt_model: 10erosMaxInt8Ref2va_v11.safetensors
+    loras: [{name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
+    knobs: {pass1_steps: 8}
+
+# Серия: декартово произведение gen × arm × variant × pose × seed (seeds: сколько сидов брать из списка).
+# variant — входы и промпт кадра (tools/ws07_lib.prompt_variant): fixe | skeleton | green | wide | idcrop.
+series:
+  s2_scale:          # 1-я сессия, главная боль; метрика scale_ratio против рамки тела кадра v2
+    kind: frame
+    gen: [A]
+    arm: [base_t8_L15]
+    variant: [fixe, skeleton, green, wide, idcrop]
+    seeds: 2
+  s1_gen:            # 1-я сессия; A × fixe × base_t8_L15 берётся из s2_scale
+    kind: frame
+    gen: [A_p2lo, B, C]
+    arm: [base_t8_L15]
+    variant: [fixe]
+    seeds: 2
+  s1_gen_t1:         # 1-я сессия; t1 image VAE (эксперимент, лицензии нет) — по 1 сиду. A_t1 — только если
+    kind: frame      # Image Studio на поде ≥ v23 (ws07_run check скажет); иначе запускать без него: s1_gen_t1_bc
+    gen: [A_t1, B_t1, C_t1]
+    arm: [base_t8_L15]
+    variant: [fixe]
+    seeds: 1
+  s1_gen_t1_bc:
+    kind: frame
+    gen: [B_t1, C_t1]
+    arm: [base_t8_L15]
+    variant: [fixe]
+    seeds: 1
+  s3_arms:           # 1-я сессия — модели при LoRA 1.5; base_t8_L15 берётся из s2_scale
+    kind: frame
+    gen: [A]
+    arm: [singularity_t8_L15, pinkcherry_L15, eros_L15]
+    variant: [fixe]
+    seeds: 2
+  s3_lora_turbo:     # 1-я сессия, если останется время; иначе 2-я
+    kind: frame
+    gen: [A]
+    arm: [base_t8_L10, base_t4_L15]
+    variant: [fixe]
+    seeds: 2
+  s4_refmod:         # 2-я сессия: RefMod персонажа (identity_encode) поверх листа; извлечение — --extract-refmod
+    kind: frame
+    gen: [A_refmod]
+    arm: [base_t8_L15]
+    variant: [fixe]
+    seeds: 2
+  s5_upscale:        # 2-я сессия (или резерв 1-й): готовые raw 1344x768 из kit/clips
+    kind: upscale
+    method: [none, rtx, seedvr2_3b, seedvr2_7b]

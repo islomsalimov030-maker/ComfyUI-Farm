@@ -1,0 +1,57 @@
+# WS-07: модели серий. Скачивание — tools/ws07_fetch.py (на поде, в /workspace/models/<folder>).
+# Размеры и лицензии проверены 13–14.10.2026 по API HF (lfs.size, cardData.license) и Civitai (sizeKB, allowCommercialUse).
+# need: have — уже на томе (движки WS-01/WS-09); s1 — сессия 1; s2 — сессия 2. ⚠ — сообщить пользователю.
+# Все производные H3 подчиняются лицензии MiniMax H3 (территория без ЕС/UK/KR/US — под EU-RO-1, см. RESEARCH §1).
+models:
+  # --- уже на томе (проверить ls в check) ---------------------------------------------------------------
+  - {file: minimax_h3_ref2va_pruned_int8_convrot.safetensors, folder: diffusion_models, gb: 20.97, need: have,
+     src: hf, repo: Comfy-Org/MiniMax-H3, path: diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors,
+     license: "MiniMax H3 CLA"}
+  - {file: minimax_h3_video_vae_fp16.safetensors, folder: vae, gb: 5.21, need: have, src: hf, repo: Comfy-Org/MiniMax-H3,
+     path: vae/minimax_h3_video_vae_fp16.safetensors, license: "MiniMax H3 CLA"}
+  - {file: Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors, folder: diffusion_models, gb: 20.97, need: have,
+     src: hf, repo: WarmBloodAban/Minimax-h3_Singularity, path: Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors,
+     license: "Apache-2.0 (карточка HF) + MiniMax H3 CLA"}
+  - {file: stacy_h3_A_stills_000001750.safetensors, folder: loras, need: have, src: local, license: "своя LoRA"}
+  - {file: qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors, folder: text_encoders, need: have, src: local,
+     license: "⚠ сторонняя abliterated-перепаковка Qwen3-VL-32B (Apache-2.0 база); источник на томе не задокументирован",
+     note: "кодировщик движков; на SFW можно сравнить с Comfy-Org qwen3vl_32b_minimax_h3_int8_convrot (27.14 ГБ) — не в этой сессии"}
+  # --- сессия 1 -------------------------------------------------------------------------------------------
+  - {file: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, folder: loras, gb: 1.82, need: s1, src: hf,
+     repo: lightx2v/Minimax-h3-Turbo, path: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors,
+     license: "Apache-2.0 + MiniMax H3 CLA", note: "был на comfy.next-genium.com; на поде проверить"}
+  - {file: minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors, folder: loras, gb: 1.82, need: s1, src: hf,
+     repo: Comfy-Org/MiniMax-H3, path: loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors,
+     license: "MiniMax H3 CLA"}
+  - {file: minimax_h3_t1_image_vae_step1597.safetensors, folder: vae, gb: 5.21, need: s1, src: hf,
+     repo: Mamad8/MiniMax-H3-Image-VAE, path: minimax_h3_t1_image_vae_step1597.safetensors,
+     license: "⚠ лицензии в карточке нет; дообучен на 41k Booru + 9.8k фото — только тест, удалить после s1_gen_t1"}
+  - {file: pinkcherryFl2vaV1FinalTurbo_v10.safetensors, folder: diffusion_models, gb: 20.48, need: s1, src: civitai,
+     url: "https://civitai.com/api/download/models/3326433?fileId=3212341",
+     license: "Civitai PinkCherry (model 2938352): Image/RentCivit/Rent/Sell/SellMerge; fl2va-база"}
+  - {file: 10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors, folder: diffusion_models, need: have, src: local,
+     license: "⚠ публично не найдено (ни Civitai, ни HF) — происхождение неизвестно; только тест",
+     alt: {file: 10erosMaxInt8Ref2va_v11.safetensors, gb: 20.48, src: civitai,
+           url: "https://civitai.com/api/download/models/3255792?fileId=3138956",
+           license: "Civitai 10eros (model 2868392): Image/RentCivit/Rent/Sell/SellMerge"}}
+  # --- сессия 2 -------------------------------------------------------------------------------------------
+  - {file: seedvr2_ema_3b_fp8_e4m3fn.safetensors, folder: SEEDVR2, gb: 3.39, need: s2, src: hf, repo: numz/SeedVR2_comfyUI,
+     path: seedvr2_ema_3b_fp8_e4m3fn.safetensors, license: "Apache-2.0 (перепаковка ByteDance-Seed/SeedVR2-3B)"}
+  - {file: seedvr2_ema_7b_fp8_e4m3fn.safetensors, folder: SEEDVR2, gb: 8.24, need: s2, src: hf, repo: numz/SeedVR2_comfyUI,
+     path: seedvr2_ema_7b_fp8_e4m3fn.safetensors, license: "Apache-2.0"}
+  - {file: ema_vae_fp16.safetensors, folder: SEEDVR2, gb: 0.50, need: s2, src: hf, repo: numz/SeedVR2_comfyUI,
+     path: ema_vae_fp16.safetensors, license: "Apache-2.0"}
+ollama:   # OLLAMA_MODELS должен указывать в /workspace/models/ollama
+  - {tag: qwen3-vl:8b-instruct, gb: 6.1, need: s1, license: Apache-2.0}
+  - {tag: qwen3-vl:32b-instruct, gb: 21, need: s2, license: Apache-2.0}
+  - {tag: qwen3.6:27b, gb: 17, need: s2, license: "Apache-2.0 (HF Qwen/Qwen3.6-27B)"}
+nodes:    # custom_nodes на томе; коммиты — на 13.10.2026
+  - {name: ComfyUI-Fizgig-H3-Still, repo: https://github.com/shootthesound/ComfyUI-Fizgig-H3-Still, commit: 10d5171, license: MIT, need: s1}
+  - {name: ComfyUI-MM-1Frame, repo: https://github.com/cicalooo/ComfyUI-MM-1Frame, commit: 3e1b1f4,
+     license: "⚠ нет LICENSE — только тест, удалить после s1", need: s1}
+  - {name: ComfyUI-MiniMax-H3-Image-Studio, repo: https://github.com/astropuzzo/ComfyUI-MiniMax-H3-Image-Studio,
+     commit: "a138b50 (на томе, движок WS-01; новее 9834e55 требует ComfyUI ≥ 0.37)", license: Unlicense, need: have}
+  - {name: ComfyUI-MiniMaxH3Mod, repo: https://github.com/Luisacaotica/ComfyUI-MiniMaxH3Mod, commit: f946208, license: MIT, need: have,
+     note: "ставит install/pod_setup.sh (WS-10)"}
+  - {name: ComfyUI-SeedVR2_VideoUpscaler, repo: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler, commit: 4490bd1,
+     license: Apache-2.0, need: s2, note: "автоскачивание моделей — отключить: класть в /workspace/models/SEEDVR2 (extra_model_paths)"}

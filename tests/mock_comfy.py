@@ -45,6 +45,7 @@ class MockComfy:
         self.uploads: dict = {}
         self.submissions: Counter = Counter()
         self.bodies: dict = {}
+        self.object_info: dict = {}       # GET /object_info (WS-07: проверка нод/моделей)
         self.vram_used = 0.2
         self.free_calls = 0
         self.free_lowers = True
@@ -210,6 +211,8 @@ class MockComfy:
                         run = [[mock.running[0], mock.running[1], {}, {}, []]] if mock.running else []
                         pend = [[n, p, {}, {}, []] for n, p, _ in mock.queue]
                     return self._json({"queue_running": run, "queue_pending": pend})
+                if u.path == "/object_info":
+                    return self._json(mock.object_info)
                 if u.path.startswith("/history/"):
                     pid = u.path.split("/", 2)[2]
                     with mock.lock:
