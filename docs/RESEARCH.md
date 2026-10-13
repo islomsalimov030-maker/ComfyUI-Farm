@@ -81,3 +81,19 @@
 - Гайд ref H3: новые метки вводятся только в `subject_definitions`; в `retention_analysis` по строке на каждую метку, маркеры видимого контента — fully_preserved / partially_preserved / attribute_transfer / weak_reference; `[Shot 1]` без таймкода, поздние шоты `[Shot N] At MM:SS.mmm`; теги summary — keyframe completion, reference generation, video editing, video continuation, audio reuse, audio reference (через « + », без повторов); описание 350–500 слов. [ref guide](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md)
 - Сетка длины H3 подтверждена на образцах: n = 17k+5 ≥ duration·24, длина (n−1)/24 — 8 с → 7.96 (образец Sitting-8), 5 с → 5.12 (WS-09), 7 с → 7.25 (WS-01).
 - Jinja2 (BSD-3-Clause) — новая зависимость сборщика промптов.
+
+## WS-06 (13.10.2026) — лицензии для проверок видео
+Сверено по LICENSE в клонах репозиториев.
+
+| Компонент | Код | Веса | Коммерция | Источник |
+|---|---|---|---|---|
+| numpy 2.5.4 | BSD-3-Clause | — | ✅ | [pypi](https://pypi.org/project/numpy/) |
+| opencv-python-headless 5.0.0.93 | Apache-2.0 | — | ✅ | [pypi](https://pypi.org/project/opencv-python-headless/) |
+| scenedetect (PySceneDetect) 0.7.2 | BSD-3-Clause | — | ✅ | [pypi](https://pypi.org/project/scenedetect/) |
+| opencv_zoo YuNet (детектор лица) | MIT | MIT, обучен на WIDER FACE (только исследования) | ⚠ | [LICENSE](https://github.com/opencv/opencv_zoo/blob/main/models/face_detection_yunet/LICENSE) |
+| opencv_zoo SFace (эмбеддинг лица) | Apache-2.0 | Apache-2.0, но в статье обучен в т.ч. на MS-Celeb-1M (отозван Microsoft) | ⚠ | [LICENSE](https://github.com/opencv/opencv_zoo/blob/main/models/face_recognition_sface/LICENSE) · [MS-Celeb](https://exposing.ai/msceleb/) |
+| LPIPS (richzhang) | BSD-2-Clause | linear-слои BSD-2; база AlexNet/VGG из torchvision на ImageNet (только исследования) | ⚠ | [LICENSE](https://github.com/richzhang/PerceptualSimilarity/blob/master/LICENSE) |
+| Practical-RIFE v4.x (hzwer) | MIT | MIT | ✅ | [repo](https://github.com/hzwer/Practical-RIFE) |
+| rife_v4.26.safetensors (Comfy-Org/RIFE, для FrameInterpolate) | MIT | mit-and-apache-2.0 (перепаковка Practical-RIFE) | ✅ | [HF](https://huggingface.co/Comfy-Org/RIFE) |
+
+Решение WS-06: шов меряется 1−SSIM (OpenCV), не LPIPS; лицо для identity_dip — `farm/qa/face.py` WS-05 (MediaPipe + AuraFace), не YuNet/SFace; мост RIFE — только на поде через FrameInterpolate (веса из Comfy-Org/RIFE).
