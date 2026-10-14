@@ -11,12 +11,12 @@ description: Протокол работы над контент-фермой Ne
 3. Сверь «Вход» брифа с реальностью (файлы есть? под нужен?). Если под нужен, а его нет — делай офлайн-часть и скажи, что нужно от пользователя.
 
 ## Где живёт состояние
-- Код и документы — git-репозиторий `ComfyUI-Farm` (GitHub islomsalimov030-maker). Пока GitHub не подключён к claude.ai — папка на ПК `C:\stacy-lora\farm-kit\` через мост устройства; отдавать файлы через SendUserFile.
+- Код и документы — git-репозиторий `ComfyUI-Farm` (GitHub islomsalimov030-maker); работа в Claude Code, перед push — `git pull --rebase`.
 - На поде: `/workspace/farm/` (repo, db, results, refs), модели `/workspace/models/...`, логи `/workspace/logs/`. Всё вне `/workspace` исчезает при Terminate.
 - Решения, которые меняют контракты, — только через `docs/CONTRACTS.md` (версия +1) и строку в «Решения» STATUS.md.
 
 ## Работа с подом (RunPod EU-RO-1, гайд работодателя)
-- Под поднимает пользователь: Template `linear_ivory_antlion`, Secure Cloud, том `physical_harlequin_ferret`; SSH с `-L 8188 -L 8675 -L 11434 -L 8888`; затем `/workspace/bootstrap.sh` до `УСПЕХ`. HTTP-порты не открывать, Community Cloud не брать.
+- Под поднимает пользователь по гайду работодателя (Template, Secure Cloud и имя тома — из гайда, в репо не публикуются); SSH с `-L 8188 -L 8675 -L 11434 -L 8888`; затем `/workspace/bootstrap.sh` до `УСПЕХ`. HTTP-порты не открывать, Community Cloud не брать.
 - Доступ ассистента: Chrome пользователя → `localhost:8888` (JupyterLab, терминал = shell на поде) и `localhost:8188/system_stats` (лёгкая страница для `fetch` к `/prompt`, `/history/<id>`, `/view`, `/upload/image`, `/queue`, `/free`). Тяжёлый редактор не открывать без нужды. Либо Claude Code прямо на поде (конфиг `/workspace/.claude`, скилы в `/workspace/.claude/skills`).
 - JS-вызовы в Chrome ≤45 с: длинное — фоновой async-функцией + опрос. Не хранить и не eval-ить код из localStorage.
 - VRAM: ComfyUI `POST /free {"unload_models":true,"free_memory":true}`; Ollama `keep_alive:0` или `ollama stop`. Группировать задачи по модели.
