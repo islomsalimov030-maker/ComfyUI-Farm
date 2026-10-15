@@ -143,6 +143,7 @@
 | Ollama `qwen3-vl:8b-instruct` 6.1 / q8 9.8; `32b-instruct` 21 / q8 36; `qwen3.6:27b` q4 17 / q8 30 ГБ | Apache-2.0 (HF Qwen) | ✅ | [ollama](https://ollama.com/library/qwen3-vl/tags) · [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) |
 
 Факты по нодам (из исходников):
+- WS-07, 15.10: официальный non-turbo r2v-шаблон использует `res_multistep/simple`, 20 шагов и BasicGuider; это не подтверждение двухпроходного однокадрового ref-edit. Для выбранного SFW-раунда рецепт и совместимость пока экспериментальные — `docs/experiments/WS-07_round_a.md`. [Источник: Comfy-Org](https://github.com/Comfy-Org/workflow_templates/blob/main/templates/video_minimax_h3_r2v.json).
 - Image Studio **a138b50** (стоит в движке) не умеет `quality_profile = single image | 1 frame (image VAE)`: в нём только 5/9/13/20 кадров. Профиль появился в v23+, а HEAD `9834e55` требует ComfyUI ≥ 0.37 (на поде 0.34). [GitHub](https://github.com/astropuzzo/ComfyUI-MiniMax-H3-Image-Studio)
 - Fizgig: латент ровно на 1 кадр, `FizgigH3StillLatent`. Декод `FizgigH3StillDecode` размножает кадр в группу из 5 и декодирует обычным video VAE, отдельный image VAE не нужен. Ref-edit собирается на core `MiniMaxH3ReferenceToVideo` (только условие) + BasicGuider.
 - Core `MiniMaxH3ReferenceToVideo` (ComfyUI master): Autogrow-слоты в API выглядят как `ref_images.ref_image_N` (так в нашем video_h3_loop@1). Метки `<Picture N>` нумеруются по порядку слотов, поэтому при пропуске одежды метку позы надо сдвигать.

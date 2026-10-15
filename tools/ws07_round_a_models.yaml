@@ -1,0 +1,50 @@
+# Только зависимости выбранного SFW-раунда A. Не каталог кандидатов.
+# Проверено по HF API blobs=true, 15.10.2026. sha256 — LFS, не HTTP etag.
+# Новый объём двух основ: 42.026673704 ГБ; общие файлы сначала проверить на томе.
+models:
+  - file: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    folder: diffusion_models
+    gb: 20.97
+    need: round_a
+    src: hf
+    repo: Comfy-Org/MiniMax-H3
+    path: diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    license: "см. существующую проверку базовой модели"
+  - file: 10Eros_Max_h3_hybrid_beta5_int8.safetensors
+    folder: diffusion_models
+    gb: 20.970414464
+    bytes: 20970414464
+    sha256: 488e0d51fad9fd6b277b6ebfbe46b3fd44374ff7baa1e3c9dfce58d3a1e5b33c
+    need: round_a
+    src: hf
+    repo: TenStrip/10Eros-Max
+    revision: 84c820586c62701c2a29a6eafb94416d490564ed
+    path: 10Eros_Max_h3_hybrid_beta5_int8.safetensors
+    license: "доноры: Wan2.2 Apache-2.0; LTX2.3 — коммерческое соглашение при выручке >= $10M; Krea2 — enterprise при выручке >= $1M и дополнительные условия; применимость переноса требует уточнения, прод не одобрен"
+    note: "обычный hybrid, НЕ TURBO-hybrid; single-frame ref-edit требует пробы"
+  - file: PinkCherry_hybrid_v1.8_int8_minimax_h3_pruned.safetensors
+    folder: diffusion_models
+    gb: 21.056259240
+    bytes: 21056259240
+    sha256: cff4adf96f503d4a7f631e5757306192d3bbc6477980da244caba86e2656654e
+    need: round_a
+    src: hf
+    repo: SexGod1979/PinkCherry-NSFW_MiniMax-H3
+    revision: 08ac92dbd56a8523beea55aafaaba1a1d72c45cb
+    path: 1.8-hybrid/PinkCherry_hybrid_v1.8_int8_minimax_h3_pruned.safetensors
+    license: "тег HF Apache-2.0, отдельный LICENSE не найден; коммерческий допуск не подтверждён"
+    note: "выбрана именно v1.8; пресет и single-frame ref-edit требуют проверки"
+  - file: minimax_h3_video_vae_fp16.safetensors
+    folder: vae
+    gb: 5.21
+    need: round_a
+    src: hf
+    repo: Comfy-Org/MiniMax-H3
+    path: vae/minimax_h3_video_vae_fp16.safetensors
+    license: "см. существующую проверку базовой модели"
+  - file: qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors
+    folder: text_encoders
+    need: round_a
+    src: local
+    license: "источник установленной перепаковки ещё не задокументирован; без файла — стоп"
+    note: "общий кодировщик существующего движка; не заменять автоматически"
