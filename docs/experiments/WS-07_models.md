@@ -33,7 +33,7 @@
 
 ## ⚠ Что важно для прода
 1. **DaSiWa** — исключена пользователем 13.10. Для справки: на Civitai у неё ещё и нет права продажи (`Sell`), так что для прода она не годится в любом случае.
-2. **10Eros Max `TURBO-hybrid_beta4`** (рука движка кадра по умолчанию в WS-01) — публично не найден ни на Civitai, ни на HF. Происхождение и лицензия неизвестны. На Civitai есть только `10eros_Max_Int8_ref2va` v1.1 (разрешена продажа) — для сравнения берём её.
+2. **10Eros Max `TURBO-hybrid_beta4`** (источник уточнён 15.10): [TenStrip/10Eros-Max](https://huggingface.co/TenStrip/10Eros-Max/blob/main/10Eros_Max_h3_TURBO-hybrid_beta4.safetensors); INT8 ConvRot-перепаковки есть у [cicalooo](https://huggingface.co/cicalooo/10Eros-Max-h3-int8-convrot). README TenStrip прямо помечает beta3/beta4 как **corrupted test versions**. Новые серии — beta5 (TURBO и non-TURBO) и beta6 8stepTURBO. Замена в графах/сериях пока не выбрана, файлы и параметры не менялись. Дополнительные условия hybrid непростые: автор перечисляет доноров LTX 2.3, Wan 2.2, Krea 2 и их лицензии; самостоятельного LICENSE в репо нет. Это не независимая проверка корректности переноса весов или лицензирования.
 3. **t1 image VAE и MM-1Frame** — без лицензии. Только тест, после s1 удалить.
 4. **Singularity** — файл тот же, что на HF `WarmBloodAban/Minimax-h3_Singularity` (Apache-2.0 в карточке). На Civitai лежит другая версия (не ref2va).
 5. **Кодировщик движков** `qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot` — сторонняя «abliterated» перепаковка, источник на томе не задокументирован. Официальная замена от Comfy-Org: `qwen3vl_32b_minimax_h3_int8_convrot` (27.14 ГБ). Для SFW-профиля стоит сравнить, но не в 1-й сессии.

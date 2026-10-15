@@ -131,7 +131,7 @@
 | Singularity ref2va v1.3 (`Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8`, 20.97 ГБ; есть w4a8 11.77 ГБ) | Apache-2.0 (карточка HF) + H3 CLA | ✅ тест/прод на условиях H3. На Civitai у автора лежит другая модель (не ref2va) | [HF](https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity) |
 | PinkCherry fl2va v1_final turbo int8 (20.48 ГБ) | Civitai: Image/RentCivit/Rent/Sell/SellMerge | ✅ | [Civitai 2938352](https://civitai.com/models/2938352) |
 | 10eros Max Int8 ref2va v1.1 (20.48 ГБ) | Civitai: Sell/SellMerge | ✅ | [Civitai 2868392](https://civitai.com/models/2868392) |
-| 10Eros `TURBO-hybrid_beta4_int8_convrot` (рука движка кадра) | не найден ни на Civitai, ни на HF | ⚠ происхождение неизвестно | — |
+| 10Eros `TURBO-hybrid_beta4_int8_convrot` (рука движка кадра; источник уточнён 15.10) | TenStrip/10Eros-Max; дополнительная INT8 ConvRot-перепаковка — cicalooo | ⚠ README автора помечает beta3/beta4 как corrupted test versions; наличие файла не означает пригодность | [TenStrip](https://huggingface.co/TenStrip/10Eros-Max) · [ConvRot](https://huggingface.co/cicalooo/10Eros-Max-h3-int8-convrot) |
 | DaSiWa MiniMax H3 (исключена 13.10) | Civitai: Image/RentCivit/Rent, **нет Sell** | ⚠ | [Civitai 2877206](https://civitai.com/models/2877206) |
 | ref2v turbo 8 step (`…_8step_v1.0_768p_comfyui_bf16`, 1.82 ГБ) | Apache-2.0; только в lightx2v (в Comfy-Org — только 4 step v0.1) | ✅ | [HF](https://huggingface.co/lightx2v/Minimax-h3-Turbo) |
 | t1 image VAE `minimax_h3_t1_image_vae_step1597` (5.21 ГБ) | лицензии в карточке нет; обучен на 41k Booru + 9.8k фото | ⚠ только тест | [HF](https://huggingface.co/Mamad8/MiniMax-H3-Image-VAE) |

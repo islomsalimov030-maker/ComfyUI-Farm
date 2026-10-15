@@ -12,7 +12,7 @@
 
 ## Затем — подготовка пода и ферма
 - Токен Civitai → `C:\stacy-lora\secrets\civitai_token.txt` (на под — `CIVITAI_TOKEN` в `/workspace/farm/secrets/.env`).
-- Блокер 4: выяснить происхождение `10Eros_Max_h3_TURBO-hybrid_beta4` до выбора замены.
+- Блокер 4: источник beta4 уточнён (TenStrip/10Eros-Max), но README помечает beta3/beta4 как corrupted test versions. Выбрать замену и проверить дополнительные условия hybrid.
 - Новый Telegram-бот + Telegram id ревьюеров — до живого ревью фермы.
-- День с подом: `docs/coord/pod_session_01.md`, детали WS-07 — `docs/experiments/WS-07_plan.md`. Порядок и бюджет пересмотреть после приёмки ручных версий.
+- Модель руки кадра: beta4 → замена. Кандидаты: TenStrip beta5 non-TURBO hybrid / beta6 8stepTURBO; Singularity ref2va v1.3 (int8/w4a8); PinkCherry FL2VA v1.5 + внешний turbo-LoRA; официальный ref2va/fl2va baseline. Тесты на поде, кандидат(ы) выберет пользователь.
 - Оценка WS-07 на ПК → решения пользователя → `profiles/sfw_base.yaml` → интеграционные тесты WS-10.
