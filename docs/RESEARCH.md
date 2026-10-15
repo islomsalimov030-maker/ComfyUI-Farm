@@ -140,6 +140,12 @@
 | SeedVR2 nodes `4490bd1` + `numz/SeedVR2_comfyUI` (3B fp8 3.39 ГБ, 7B fp8 8.24 ГБ, VAE 0.50 ГБ) | Apache-2.0 | ✅; модели качает сам при первом запуске → путь задать заранее | [GitHub](https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler) · [HF](https://huggingface.co/numz/SeedVR2_comfyUI) |
 | Nvidia RTX nodes (`RTXVideoSuperResolution`) | код Apache-2.0, `nvidia-vfx` проприетарная NVIDIA; Linux — драйвер 570.190+, torch cu130+ | ⚠ проверить на поде | [GitHub](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI) |
 | `malcolmrey/minimaxh3` (RefMod/refLoRA) | Apache-2.0, но это моды реальных людей и знаменитостей | ⚠ не используем, моды Стейси извлекаем сами | [HF](https://huggingface.co/malcolmrey/minimaxh3) |
+| 10Eros Max beta5 hybrid / TURBO-hybrid beta5 / beta6 8stepTURBO (int8 ≈ 21 ГБ, w4a8 14 ГБ — 15.10) | license:other = H3 CLA + лицензии доноров LTX 2.3 / Wan 2.2 / Krea 2 (перенос «характера») | ⚠ автор: beta5 — единственная функциональная, beta3/4 corrupted; beta6 — «mostly-reference», VSA-вариант unstable; reference без cache/spectrum | [TenStrip](https://huggingface.co/TenStrip/10Eros-Max) |
+| PinkCherry HF (SexGod1979): v1.5 fl2va int8 21.22, v1.8 hybrid int8 21.06, ref2va beta-0.6 int8 20.98 ГБ | карточка HF: apache-2.0 (+ H3 CLA как finetune) | ✅ v1.5 — euler/simple, совместимый turbo: lightx2v fl2v 8step (1.96 ГБ, в той же папке); v1.8 «hybrid» без описания в README | [HF](https://huggingface.co/SexGod1979/PinkCherry-NSFW_MiniMax-H3) |
+| PinkCherry-LoRA r768 неофиц. (maximsobolev275: H3 14.79, v18 12.36 ГБ, a3-r256/a5/b6) | лицензии нет | ⚠ только эксперимент; distill стороннего автора, r768 ≈ почти полноранговая | [HF](https://huggingface.co/maximsobolev275/PinkCherry-H3-lora-r768-convrot) |
+| SparseRef15_Hybrid (Aki7777777) | Civitai: Image/RentCivit/Rent, **нет Sell/SellMerge** | ⚠ для прода хуже остальных | [Civitai 2900456](https://civitai.com/models/2900456) |
+| H3 Remix v0.6 (FX_FeiHou) | Civitai: полный набор прав | ⚠ назначение/качество неясны, эксперимент | [Civitai 2879272](https://civitai.com/models/2879272) |
+| Гибриды fl2va-ref2va сообщества (smhfacct, berryber09 w4a8, binglingzhimeng w6a8, jfar-z NVFP4) | license:other (у всех — H3 CLA) | ⚠ эксперимент, экономия VRAM | [smhfacct](https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models) |
 | Ollama `qwen3-vl:8b-instruct` 6.1 / q8 9.8; `32b-instruct` 21 / q8 36; `qwen3.6:27b` q4 17 / q8 30 ГБ | Apache-2.0 (HF Qwen) | ✅ | [ollama](https://ollama.com/library/qwen3-vl/tags) · [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) |
 
 Факты по нодам (из исходников):
@@ -148,3 +154,4 @@
 - Core `MiniMaxH3ReferenceToVideo` (ComfyUI master): Autogrow-слоты в API выглядят как `ref_images.ref_image_N` (так в нашем video_h3_loop@1). Метки `<Picture N>` нумеруются по порядку слотов, поэтому при пропуске одежды метку позы надо сдвигать.
 - RefMod: извлечение (`MiniMaxH3RefModExtract`) требует только VAE — без диффузии и обучения. Для лица автор советует пресет `identity_encode` (Full Reference, 1024). `MiniMaxH3RefModApply` дописывает блоки в `minimax_refs` после токенизации, поэтому `<Picture N>` на мод не ссылается.
 - Civitai `api/download` без токена отдаёт 401.
+- Civitai API: коммерческие права (`allowCommercialUse` и др.) возвращаются только на уровне модели (`/api/v1/models/{id}`), в `/model-versions/{id}` и во вложенных версиях этих полей нет (15.10).
