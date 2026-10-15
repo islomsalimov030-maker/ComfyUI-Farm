@@ -29,11 +29,8 @@ models:
   - {file: pinkcherryFl2vaV1FinalTurbo_v10.safetensors, folder: diffusion_models, gb: 20.48, need: s1, src: civitai,
      url: "https://civitai.com/api/download/models/3326433?fileId=3212341",
      license: "Civitai PinkCherry (model 2938352): Image/RentCivit/Rent/Sell/SellMerge; fl2va-база"}
-  - {file: 10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors, folder: diffusion_models, need: have, src: local,
-     license: "⚠ публично не найдено (ни Civitai, ни HF) — происхождение неизвестно; только тест",
-     alt: {file: 10erosMaxInt8Ref2va_v11.safetensors, gb: 20.48, src: civitai,
-           url: "https://civitai.com/api/download/models/3255792?fileId=3138956",
-           license: "Civitai 10eros (model 2868392): Image/RentCivit/Rent/Sell/SellMerge"}}
+  # 10Eros beta4 исключена пользователем 15.10: плохой результат уже проверен.
+  # Замену не выбираем автоматически; запасная загрузка вместо beta4 также убрана.
   # --- сессия 2 -------------------------------------------------------------------------------------------
   - {file: seedvr2_ema_3b_fp8_e4m3fn.safetensors, folder: SEEDVR2, gb: 3.39, need: s2, src: hf, repo: numz/SeedVR2_comfyUI,
      path: seedvr2_ema_3b_fp8_e4m3fn.safetensors, license: "Apache-2.0 (перепаковка ByteDance-Seed/SeedVR2-3B)"}

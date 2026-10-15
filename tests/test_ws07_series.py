@@ -46,6 +46,17 @@ def test_frame_graph_links_and_output(gen, ins):
     assert g[out]["class_type"] == "SaveImage"
 
 
+def test_active_configs_exclude_beta4():
+    import yaml
+
+    models = yaml.safe_load((REPO / "tools" / "ws07_models.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((REPO / "tools" / "ws07_series.yaml").read_text(encoding="utf-8"))
+    assert not any("beta4" in m["file"].lower() for m in models["models"])
+    assert not any("beta4" in arm["model"].lower() for arm in cfg["arms"].values())
+    for series in cfg["series"].values():
+        assert set(series.get("arm", [])) <= cfg["arms"].keys()
+
+
 def test_renumber_rejects_unconnected_label():
     with pytest.raises(ValueError):
         L.renumber_pictures("<Picture 1> <Picture 4>", [1, 2])
