@@ -60,7 +60,7 @@
 
 - 2026-10-14 · WS-00: карточки плит записаны в «Локации». У 8 старых плит «Зона» оставлена короткой (как в листе и golden-промптах WS-04): уточнения ракурса («фронтально», «крупно») в `zone_ru` могли бы попасть в промпт как движение камеры; детали — в «Описание (EN)».
 
-- 2026-10-16 · WS-01 (по просьбе пользователя): пульт StacyLoop `feff837` — `model_10eros` (10Eros TURBO beta4 ↔ Singularity), `steps`, `shift`; `char_lora` перед `free_vram`. Ручной `Stacy_H3_compact` на comfy.next-genium.com обновлён (бэкап `Stacy_H3_compact_v11_before_10eros.json`). Для ручного воркфлоу beta4 пока остаётся (исключение из серий WS-07 в силе). `pod_setup.sh` → StacyLoop `feff837`; в `video_h3_loop@1` / `manual_video@1` новые поля PANEL фиксированы (модель/шаги задают ARM/KNOB). Рекомендации steps/shift — `RESEARCH.md` WS-01 (16.10).
+- 2026-10-16 · WS-01 (по просьбе пользователя): пульт StacyLoop `c93c08a` — `model_10eros` (10Eros hybrid beta5 int8 ↔ Singularity), `steps`, `shift`; `char_lora` перед `free_vram`. Ручной `Stacy_H3_compact` на comfy.next-genium.com обновлён (бэкапы `…_v11_before_10eros`, `…_v12_before_beta5`); beta5 скачана на сервер, beta4 оставлена (нужна 3 другим воркфлоу), исключение beta4 из серий WS-07 в силе. Обе модели без turbo → steps 20, shift 12. `pod_setup.sh` → StacyLoop `c93c08a`; в `video_h3_loop@1` / `manual_video@1` новые поля PANEL фиксированы (модель/шаги задают ARM/KNOB). Подробности — `RESEARCH.md` WS-01 (16.10).
 
 ## Блокеры и вопросы к пользователю
 1. ⚠ **Лицензия H3 и ЕС:** под в EU-RO-1 (ЕС) — по тексту лицензии ЕС исключён. При покупке лицензии уточнить датацентр, рынки и обучение на outputs (см. RESEARCH §1).
@@ -77,4 +77,4 @@
 11. ~~WS-05: MiVOLO v2~~ — решено 13.10: поставлен в отдельный venv, проверка возраста в проде включена.
 12. ~~WS-05 → WS-02: поля сборщика в QA; тест WS-03 на Windows~~ — закрыто 14.10 (WS-10): воркер кладёт `fields_json.fields` в `params_json._fields` и `QAContext.extra.prompt_fields` (CONTRACTS v0.8); `library.expected_file` отдаёт путь с `/`.
 13. ~~WS-06: разметка видео~~ — сделана 13.10 (19 клипов), сверка 84 %.
-15. comfy.next-genium.com: StacyLoop обновлён до `feff837` на диске, но ComfyUI **не перезапущен** — пока не перезапустить, грузится старый пульт, и новый `Stacy_H3_compact` откроется с красными/сдвинутыми полями. Перезапуск общего сервера — по решению пользователя (очередь была пуста 16.10).
+15. comfy.next-genium.com: StacyLoop `c93c08a` на диске; ComfyUI перезапущен после `feff837` (новый пульт работает), правка `c93c08a` (подписи/отчёт под beta5) подхватится при следующем перезапуске.
