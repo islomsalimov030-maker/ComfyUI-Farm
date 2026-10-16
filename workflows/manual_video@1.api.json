@@ -69,13 +69,16 @@
    "duration_sec": 7,
    "loop": true,
    "end_frame": false,
+   "model_10eros": false,
+   "steps": 8,
+   "shift": 12.0,
+   "char_lora": 1.0,
    "free_vram": "auto",
    "face_pass": "auto",
    "face_denoise_auto": true,
    "face_denoise": 0.3,
    "face_lora": 1,
-   "face_lock_temporal": 0.8,
-   "char_lora": 1.0
+   "face_lock_temporal": 0.8
   },
   "_meta": {
    "title": "PANEL"

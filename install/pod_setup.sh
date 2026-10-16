@@ -115,7 +115,7 @@ NODES=(
   "ComfyUI-MiniMax-H3-Image-Studio|https://github.com/astropuzzo/ComfyUI-MiniMax-H3-Image-Studio||кадр, ref-edit (Unlicense)"
   "ComfyUI-Inpaint-CropAndStitch|https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch||manual_frame, frame_h3 (GPL-3.0)"
   "h3_img2img_latent|https://github.com/islomsalimov030-maker/h3_img2img_latent|512b1b3fe3d35a71ec69b55a9d59b7511370fd62|manual_frame движок 1 (свой, MIT)"
-  "ComfyUI-StacyLoop|https://github.com/islomsalimov030-maker/ComfyUI-StacyLoop|041aafe473e53d45aaca778a8b3e731e5ad38cb3|видео-петля (свой, MIT)"
+  "ComfyUI-StacyLoop|https://github.com/islomsalimov030-maker/ComfyUI-StacyLoop|feff837e9be1c7e1033132c3de75245c29386753|видео-петля (свой, MIT)"
   "ComfyUI-H3-FaceRefine|https://github.com/Carasibana/ComfyUI-H3-FaceRefine||видео face pass (MIT)"
   "Nvidia_RTX_Nodes_ComfyUI|https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI||RTX VSR (Apache-2.0 + NVIDIA SDK)"
   "ComfyUI-Impact-Pack|https://github.com/ltdrdata/ComfyUI-Impact-Pack||frame_h3 лицо Z (GPL-3.0)"

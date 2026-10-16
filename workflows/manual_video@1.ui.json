@@ -518,13 +518,16 @@
       "duration_sec": true,
       "loop": true,
       "end_frame": true,
+      "model_10eros": true,
+      "steps": true,
+      "shift": true,
+      "char_lora": true,
       "free_vram": true,
       "face_pass": true,
       "face_denoise_auto": true,
       "face_denoise": true,
       "face_lora": true,
-      "face_lock_temporal": true,
-      "char_lora": true
+      "face_lock_temporal": true
      },
      "version": "7.8",
      "input_ue_unconnectable": {}
@@ -537,28 +540,34 @@
     7,
     true,
     false,
+    false,
+    8,
+    12.0,
+    1.0,
     "auto",
     "auto",
     true,
     0.3,
     1,
-    0.8,
-    1.0
+    0.8
    ],
    "widgets_values_named": {
     "mode": true,
     "seed": 3875932223,
-    "fixed": "fixed",
+    "control_after_generate": "fixed",
     "duration_sec": 7,
     "loop": true,
     "end_frame": false,
+    "model_10eros": false,
+    "steps": 8,
+    "shift": 12.0,
+    "char_lora": 1.0,
     "free_vram": "auto",
     "face_pass": "auto",
     "face_denoise_auto": true,
     "face_denoise": 0.3,
     "face_lora": 1,
-    "face_lock_temporal": 0.8,
-    "char_lora": 1.0
+    "face_lock_temporal": 0.8
    }
   },
   {

@@ -45,6 +45,12 @@ knobs:             # что крутит ремонтная петля (fail_cod
 
 fixed:             # не трогать оркестратором
   mode: {title: "PANEL", input: mode, value: true}          # true = GENERATE; режим face pass готового видео — только в ui
+  # StacyLoop ≥ feff837: на PANEL есть model_10eros / steps / shift (для ручного Stacy_H3_compact). В этом движке
+  # они ни к чему не подключены — модель задаёт ARM model, шаги и shift — KNOB steps / KNOB shift. Значения только
+  # для валидации и строки в отчёте.
+  panel_model_10eros: {title: "PANEL", input: model_10eros, value: false}
+  panel_steps:        {title: "PANEL", input: steps, value: 8}
+  panel_shift:        {title: "PANEL", input: shift, value: 12.0}
 
 outputs:
   video_fullhd: {title: "OUT video · итог FullHD 24 fps", kind: video}   # history: gifs[0] (VHS)

@@ -123,6 +123,12 @@
 - mediapipe 1.1.0 объявляет `opencv-contrib-python`, scenedetect 0.7.2 — `opencv-python` (оба не headless): в venv ComfyUI получились бы две сборки cv2. Ставить `--no-deps` + явные зависимости; на Linux x86_64 есть колесо `py3-none-manylinux_2_28`. [pypi](https://pypi.org/project/mediapipe/1.1.0/)
 - `/object_info` годится как dry-run окружения: классы нод + допустимые значения списков (файлы моделей, LoRA) — `install/pod_doctor.py`, без постановки в очередь.
 
+## WS-01 (16.10.2026) — пульт StacyLoop: 10Eros / steps / shift
+- `ComfyUI-StacyLoop` `feff837`: на `StacyPanel` переключатель `model_10eros` (10Eros Max TURBO-hybrid beta4 ↔ Singularity ref2va), `steps` 4–30, `shift` 6–12; `char_lora` перед `free_vram`. `StacySettings` — новый последний выход `model_10eros` (старые номера выходов не сдвинуты); отчёт пишет модель и рекомендацию. Новые поля обязательные → API-промпты со старым пультом не проходят валидацию (обновлены `video_h3_loop@1`, `manual_video@1`).
+- Рекомендация: **Singularity ref2va — steps 20, shift 12** (не дистиллирована: автор предлагает для скорости только `ref2v_turbo_4step`; без turbo — официальная схема H3 20 шагов, `res_multistep/simple`); **10Eros TURBO-hybrid — steps 8 (6–8), shift 12** (turbo вшит). Для 10Eros это перенос с beta5 (у автора: `res_multistep/simple` 6–8, «my go-to for best motion quality»); beta4 автор считает corrupted, на ней не проверено. Сторонние LoRA на 10Eros — обычно 0.2–0.6 (автор).
+- ⚠ 10Eros Max (TenStrip): кроме H3 Community License, по карточке действуют лицензии доноров — LTX 2.3, Wan 2.2, Krea 2. Для прода проверить LTX и Krea на некоммерческие ограничения.
+- Manager на сервере студии: нода не из Registry → `update` с `version: nightly` падает (`KeyError comfyui-stacyloop`), `git_url` — «Already exists». Работает `POST /v2/manager/queue/batch` с `update: [{id: ComfyUI-StacyLoop, version: unknown, files: [<git-URL>]}]`; новая версия грузится после перезапуска ComfyUI.
+
 ## WS-07 (14.10.2026) — модели и ноды серий пода
 Сводка с размерами — `docs/experiments/WS-07_models.md`. Размеры взяты из API HF (`lfs.size`) и Civitai (`sizeKB`).
 
