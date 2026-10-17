@@ -25,7 +25,8 @@ ARM = {"model": "m.safetensors", "loras": [{"name": "l.safetensors", "w": 1.5}],
 def test_frame_graph_links_and_output(gen, ins):
     labels = {"plate": 1, "sheet": 2, "outfit": 3, "pose": 4}
     txt = " ".join(f"<Picture {labels[k]}>" for k in ins)
-    g = G.frame_graph(gen, {k: f"{k}.png" for k in ins}, txt, 7, ARM)
+    g = G.frame_graph(gen, {k: f"{k}.png" for k in ins}, txt, 7, ARM,
+                      refmods=[{"mod": "test/m"}] if gen == "A_refmod" else None)
     assert not G.check_links(g)
     out = G.nid(g, G.OUT_RAW)
     assert g[G.nid(g, "KNOB seed")]["inputs"]["value"] == 7
@@ -134,7 +135,7 @@ def test_upscale_and_refmod_graphs():
     for meth in ("none", "rtx", "seedvr2_3b", "seedvr2_7b"):
         g = G.upscale_graph("v.mp4", meth, "x")
         assert not G.check_links(g) and "VHS_VideoCombine" in G.classes(g)
-    g = G.refmod_extract_graph(["a.png", "b.png"])
+    g = G.refmod_extract_graph(["a.png", "b.png"], mod=G.REFMOD)
     ex = [v for v in g.values() if v["class_type"] == "MiniMaxH3RefModExtract"][0]["inputs"]
     assert ex["extraction_preset"] == "identity_encode" and "refs_image.ref_image_1" in ex
     g = G.refmod_extract_graph(["a.png", "b.png", "c.png"], mod="ss340/face_n3", masks=True, max_tokens=4096)
@@ -155,6 +156,19 @@ def test_frame_refmod_slots():
     assert (ld["mod_1"], ld["copies_1"], ld["mod_2"], ld["strength_2"], ld["mod_3"]) == \
         ("ss340/a", 2, "ss340/b", 0.5, "(none)")
     assert ap["retention"] == 0.7 and not G.check_links(g)
+    assert ld["max_total_tokens"] == ap["max_total_tokens"] == 12288
+
+
+def test_refmod_no_silent_defaults():
+    import pytest
+    arm = {"model": "m.safetensors", "loras": []}
+    with pytest.raises(ValueError):          # без явного мода — ошибка, а не чужое лицо
+        G.frame_graph("A_refmod", {"plate": "p.png", "sheet": "s.png"}, "x", 1, arm)
+    with pytest.raises(ValueError):
+        G.frame_graph("A_refmod", {"plate": "p.png", "sheet": "s.png"}, "x", 1, arm,
+                      refmods=[{"mod": "a", "copies": 11}])
+    with pytest.raises(TypeError):           # имя мода обязательно: H3Mod перезаписывает файл
+        G.refmod_extract_graph(["a.png"])
 
 
 def test_fill_defaults_from_object_info():

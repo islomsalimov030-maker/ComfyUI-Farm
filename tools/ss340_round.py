@@ -132,6 +132,11 @@ def extract_graphs(cfg: dict, cli: Comfy | None) -> list[tuple[str, dict]]:
         for pose in (cfg["poses"] if "{pose}" in name else [None]):
             nm = name.format(pose=pose) if pose else name
             imgs = [Path(str(i).format(pose=pose)) for i in m["images"]] if pose else m["images"]
+            if m.get("masks"):     # LoadImage без альфы даёт пустую маску → после InvertMask маска молча не работает
+                from PIL import Image
+                bad = [i.name for i in imgs if "A" not in Image.open(i).getbands()]
+                if bad:
+                    raise ValueError(f"мод {nm}: masks=true, но без альфы: {bad}")
             up = [cli.upload(i, f"ss340/{nm}") if cli else i.name for i in imgs]
             res.append((nm, G.refmod_extract_graph(
                 up, mod=mod_path(cfg, nm), concept_type=m.get("concept_type", "identity"),

@@ -34,7 +34,7 @@ sys.path[:0] = [str(REPO), str(REPO / "tools")]
 
 FACE, BODY, PART, ZONE = (768, 768), (768, 1024), (512, 512), (1344, 768)
 IMG_EXT = (".png", ".jpg", ".jpeg", ".webp")
-MIN_SIDE = 140              # кроп части меньше — после апскейла до 512 мыло, а не референс
+MIN_SIDE = 256              # кроп части меньше — апскейл до 512 больше чем в 2 раза: мыло, а не референс
 # точки позы MediaPipe: кисть = запястье + мизинец + указательный + большой; стопа = щиколотка + пятка + носок;
 # limb — сегмент конечности (предплечье / голень) для нижней границы размера кропа
 AUTO = {"pose_hands": {"pts": [(15, 17, 19, 21), (16, 18, 20, 22)], "limb": [(13, 15), (14, 16)]},
@@ -44,6 +44,14 @@ AUTO = {"pose_hands": {"pts": [(15, 17, 19, 21), (16, 18, 20, 22)], "limb": [(13
 def tokens(size) -> int:
     """Токены одной картинки мода (Full Reference): (H/32) * (W/32); мод = сумма по стопке."""
     return (size[0] // 32) * (size[1] // 32)
+
+
+def check_size(size, where: str):
+    """Размер картинки мода: стороны кратны 32 (иначе H3Mod округлит и токены разойдутся с манифестом),
+    короткая ≥ 320 (минимум H3Mod) и ≤ 1024 (пресет identity_encode фиксирует 1024, крупнее — уменьшит сам)."""
+    w, h = size
+    if w % 32 or h % 32 or min(w, h) < 320 or min(w, h) > 1024:
+        raise ValueError(f"{where}: size {list(size)} — стороны кратны 32, короткая 320…1024")
 
 
 # --------------------------------------------------------------------------------------- геометрия
@@ -92,9 +100,14 @@ def _mp():
     return M
 
 
+def _bgr(img: Image.Image) -> np.ndarray:
+    """farm.qa.mp._mp_image ждёт BGR (OpenCV) и сам переводит в RGB — подаём BGR, иначе R и B переставлены."""
+    return np.ascontiguousarray(np.asarray(img.convert("RGB"))[:, :, ::-1])
+
+
 def face_box(img: Image.Image):
     M = _mp()
-    a = np.asarray(img.convert("RGB"))
+    a = _bgr(img)
     r = M._task("face_landmarker").detect(M._mp_image(a))
     if not r.face_landmarks:
         return None
@@ -103,12 +116,25 @@ def face_box(img: Image.Image):
 
 
 def pose_points(img: Image.Image):
+    """Самая крупная поза кадра (детектор ищет до 2: отражение в зеркале, второй человек) — [33, (x, y, vis)]."""
     M = _mp()
-    a = np.asarray(img.convert("RGB"))
+    a = _bgr(img)
     r = M._task("pose_landmarker").detect(M._mp_image(a))
     if not r.pose_landmarks:
         return None
-    return np.array([[q.x * a.shape[1], q.y * a.shape[0], q.visibility] for q in r.pose_landmarks[0]])
+    poses = [np.array([[q.x * a.shape[1], q.y * a.shape[0], q.visibility] for q in lm]) for lm in r.pose_landmarks]
+    area = lambda p: float(np.prod(np.ptp(p[p[:, 2] > 0.3][:, :2], axis=0))) if (p[:, 2] > 0.3).sum() > 2 else 0.0  # noqa: E731
+    return max(poses, key=area)
+
+
+def full_body_ok(pts, size, margin=0.015, vis=0.5) -> bool:
+    """Полный рост в кадре: нос, пятки и носки (0, 29–32) видимы и не ближе margin к краям."""
+    if pts is None:
+        return False
+    w, h = size
+    p = pts[[0, 29, 30, 31, 32]]
+    return bool((p[:, 2] >= vis).all() and (p[:, 0] > margin * w).all() and (p[:, 0] < (1 - margin) * w).all()
+                and (p[:, 1] > margin * h).all() and (p[:, 1] < (1 - margin) * h).all())
 
 
 # --------------------------------------------------------------------------------------- конфиг и файлы
@@ -197,14 +223,18 @@ def build_body(ctx: Ctx, cid: str, spec: dict, height_cm) -> int:
                           sheet.crop((round(x0 * k) + 3, 0, round(x1 * k) - 3, sheet.height))))
     for f in ctx.images(spec) if spec.get("dir") or spec.get("dirs") else []:
         items.append((f.stem, ImageOps.exif_transpose(Image.open(f)).convert("RGB")))
+    rejected = []
     for key, im in items:
-        if ctx.excluded(cid, "body_scale", key) or pose_points(im) is None:   # не человек в полный рост
+        if ctx.excluded(cid, "body_scale", key):
+            continue
+        if not full_body_ok(pose_points(im), im.size, margin=spec.get("margin", 0.015)):   # обрезан / не человек
+            rejected.append(key)
             continue
         fit_pad(im, BODY).save(d / f"{made:02d}_{key}.png")
         note.append(key)
         made += 1
     return manifest(d, BODY, kind="body_scale", character=cid, height_cm=height_cm, preset="identity_encode",
-                    concept_type="identity", mask="нет", sources=note,
+                    concept_type="identity", mask="нет", sources=note, rejected_not_full_body=rejected,
                     note="Масштаб задают плита + якоря карточки + рост в промпте; мод держит пропорции тела.")
 
 
@@ -241,11 +271,18 @@ def build_auto(ctx: Ctx, cid: str, cat: str, spec: dict) -> int:
                 excl += 1
                 continue
             boxes.append(box)
-            rgba(img, None, box, PART).convert("RGB").save(d / f"{made:02d}_{key}.png")
+            # маска части: эллипс по точкам части + конец сегмента конечности (без лица/одежды/фона кропа)
+            q = np.vstack([p[:, :2], pts[[l1], :2]])
+            pad = max(float(np.ptp(q, axis=0).max()) * 0.35, side * 0.08)
+            m = Image.new("L", img.size, 0)
+            ImageDraw.Draw(m).ellipse([q[:, 0].min() - pad, q[:, 1].min() - pad, q[:, 0].max() + pad,
+                                       q[:, 1].max() + pad], fill=255)
+            m = m.filter(ImageFilter.GaussianBlur(max(2, side * 0.03)))
+            rgba(img, m, box, PART).save(d / f"{made:02d}_{key}.png")
             used.append(f.name)
             made += 1
     return manifest(d, PART, kind="part", category=cat, character=cid, auto=spec["auto"], preset="identity_encode",
-                    concept_type="generic", desc_en=spec.get("desc_en"), mask="нет (плотный кроп)",
+                    concept_type="generic", desc_en=spec.get("desc_en"), mask="alpha: эллипс по точкам части",
                     sources=sorted(set(used)), skipped_small=small, skipped_dup=dup, skipped_excluded=excl,
                     use=spec.get("use", "5 / 10 / 20 кадров — кривая числа кадров; отбраковать глазами"))
 
@@ -254,24 +291,29 @@ def build_manual(ctx: Ctx, cid: str, cat: str, spec: dict) -> int:
     """Готовые картинки человека (части тела, приметы, что угодно): вписываются без кропа (fit) или
     центр-кропом (fit: crop); альфа-канал картинки сохраняется как маска мода."""
     size = tuple(spec.get("size", PART))
+    check_size(size, f"{cid}/{cat}")
     d = ctx.out / "characters" / cid / cat
     d.mkdir(parents=True, exist_ok=True)
-    used = []
+    used, alpha = [], []
     for f in ctx.images(spec):
         if ctx.excluded(cid, cat, f.stem):
             continue
         img = ImageOps.exif_transpose(Image.open(f))
-        img = img.convert("RGBA") if "A" in img.getbands() else img.convert("RGB")
+        has_a = "A" in img.getbands() or (img.mode == "P" and "transparency" in img.info)   # палитра + tRNS
+        img = img.convert("RGBA") if has_a else img.convert("RGB")
         if spec.get("fit", "pad") == "crop":
             img = ImageOps.fit(img, size, Image.LANCZOS)
         else:
             img = fit_pad(img, size)
         img.save(d / f"{len(used):02d}_{f.stem}.png")
         used.append(f.name)
-    masked = any(Image.open(p).mode == "RGBA" for p in d.glob("*.png"))
+        alpha.append(has_a)
+    if any(alpha) and not all(alpha):
+        raise ValueError(f"{cid}/{cat}: маска (альфа) есть не у всех картинок — "
+                         f"без альфы: {[u for u, a_ in zip(used, alpha) if not a_]}")
     return manifest(d, size, kind="manual", category=cat, character=cid, preset=spec.get("preset", "identity_encode"),
                     concept_type=spec.get("concept_type", "identity"), desc_en=spec.get("desc_en"),
-                    placement=spec.get("placement"), mask="alpha" if masked else "нет", sources=used,
+                    placement=spec.get("placement"), mask="alpha" if alpha and all(alpha) else "нет", sources=used,
                     use=spec.get("use", "мод категории + desc_en в промпте; проверка — есть / нет / где"))
 
 
@@ -287,18 +329,26 @@ def build_zones(ctx: Ctx, spec: dict) -> dict:
                     made[c["id"]] = f"нет файла {c['file']}"
                     continue
                 img = ImageOps.exif_transpose(Image.open(f)).convert("RGB")
-                im = ImageOps.contain(img, ZONE, Image.LANCZOS)
-                ox, oy = (ZONE[0] - im.width) // 2, (ZONE[1] - im.height) // 2
-                plate = Image.new("RGB", ZONE, img.getpixel((2, 2)))
-                plate.paste(im, (ox, oy))
-                tx = lambda x: (ox + x * im.width) / ZONE[0]       # noqa: E731
-                ty = lambda y: (oy + y * im.height) / ZONE[1]      # noqa: E731
+                # Мод зоны — одна картинка: общий холст не нужен. Только уменьшение до ZONE (мелкие плиты не
+                # растягиваем) и центр-подрезка до кратного 32 (сетка латента); без полей — поля стали бы
+                # содержимым мода.
+                im = img.copy()
+                im.thumbnail(ZONE, Image.LANCZOS)
+                cw, ch = im.width // 32 * 32, im.height // 32 * 32
+                if min(cw, ch) < 320:
+                    made[c["id"]] = f"плита {img.size} слишком мала (меньше 320 px после подрезки)"
+                    continue
+                ox, oy = (im.width - cw) // 2, (im.height - ch) // 2
+                plate = im.crop((ox, oy, ox + cw, oy + ch))
+                tx = lambda x: (x * im.width - ox) / cw       # noqa: E731
+                ty = lambda y: (y * im.height - oy) / ch      # noqa: E731
                 anchors = [a[:2] + [tx(a[2]), ty(a[3]), tx(a[4]), ty(a[5])] + a[6:] for a in c.get("anchors", [])]
                 slots = [s[:2] + [tx(s[2]), ty(s[3])] + s[4:] for s in c.get("slots", [])]
                 d = ctx.out / "locations" / c["id"]
                 d.mkdir(parents=True, exist_ok=True)
                 plate.save(d / "00_plate.png")
-                made[c["id"]] = manifest(d, ZONE, kind="zone", plate_id=c["id"], zone=c.get("zone"),
+                made[c["id"]] = manifest(d, (cw, ch), kind="zone", plate_id=c["id"], zone=c.get("zone"),
+                                         source_size=list(img.size), small_source=img.width < ZONE[0],
                                          desc_en=c.get("desc"), anchors=anchors, slots=slots,
                                          horizon=ty(c["hor"]) if c.get("hor") is not None else None,
                                          preset="identity_encode", concept_type="background", sources=[c["file"]],

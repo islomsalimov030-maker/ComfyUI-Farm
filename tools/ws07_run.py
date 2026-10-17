@@ -118,7 +118,8 @@ def frame_job_graph(cfg: dict, j: dict, uploaded: dict, model_files: set | None 
     elif tgt["has_pose"]:
         inp["pose"] = uploaded[f"{d}/{files['pose_photo']}"]
     prompt = (kit / "refs" / j["pose"] / f"prompt_{var}.txt").read_text(encoding="utf-8")
-    g = G.frame_graph(j["gen"], inp, prompt, j["seed"], _arm(cfg, j["arm"], model_files))
+    g = G.frame_graph(j["gen"], inp, prompt, j["seed"], _arm(cfg, j["arm"], model_files),
+                      refmods=[{"mod": G.REFMOD}] if j["gen"] == "A_refmod" else None)   # s4: мод серии — явно
     g[G.nid(g, G.OUT_RAW)]["inputs"]["filename_prefix"] = f"ws07/{j['series']}/{j['id']}"
     return g
 
@@ -304,7 +305,8 @@ def main() -> int:
     if a.cmd == "refmod":
         imgs = [client.upload_image(Path(cfg["kit"]) / "refs" / n, subfolder="ws07")
                 for n in ("idcrop.png", "face_ref.png")]
-        pid = client.submit(G.refmod_extract_graph(imgs), prompt_id=str(uuid.uuid4()))
+        pid = client.submit(G.refmod_extract_graph(imgs, mod=G.REFMOD, description="character identity (WS-07 s4)"),
+                            prompt_id=str(uuid.uuid4()))
         t0 = time.time()
         e = client.wait(pid, 1800)
         print(f"RefMod {G.REFMOD}: {time.time() - t0:.0f} с;", json.dumps(e.get("outputs"), ensure_ascii=False)[:400])

@@ -114,10 +114,12 @@ def fill_defaults(g: dict, object_info: dict) -> list[str]:
 # --------------------------------------------------------------------------------------- кадр
 def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs: Optional[dict] = None,
                 t1_vae: str = "minimax_h3_t1_image_vae_step1597.safetensors", clip: Optional[str] = None,
-                refmods: Optional[list[dict]] = None, retention: float = 1.0) -> dict:
+                refmods: Optional[list[dict]] = None, retention: float = 1.0,
+                max_total_tokens: int = 12288) -> dict:
     """inputs: {plate, sheet, outfit?, pose?} — имена файлов в ComfyUI/input; prompt — с метками движка
     (1 плита, 2 лист, 3 одежда, 4 поза); arm: {model, loras: [{name, w}], knobs?}.
-    A_refmod: refmods = [{mod, strength?, copies?}] (до 8, имена в models/refmods), по умолчанию — мод лица WS-07."""
+    A_refmod: refmods = [{mod, strength?, copies?}] (1–8, имена в models/refmods) — обязательно, умолчаний нет
+    (чужой мод не должен подставиться молча). max_total_tokens — лимит всех модов на шаг (0 = без лимита)."""
     if gen not in GENS:
         raise ValueError(f"генератор {gen}: нужно {GENS}")
     p, api = P.load(ENGINE)
@@ -135,17 +137,23 @@ def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs
         return g
     if gen == "A_refmod":   # лист остаётся <Picture 2>; RefMod лица дописывается в minimax_refs условия
         prep_id = nid(g, T["prep"])
-        slots = list(refmods or [{"mod": REFMOD}])
+        slots = list(refmods or [])
         if not 1 <= len(slots) <= 8:
-            raise ValueError(f"RefMod: 1–8 модов, дано {len(slots)}")
+            raise ValueError(f"A_refmod: нужно 1–8 модов (refmods), дано {len(slots)}")
+        for s_ in slots:
+            if not 0 <= float(s_.get("strength", 1.0)) <= 1 or not 1 <= int(s_.get("copies", 1)) <= 10:
+                raise ValueError(f"RefMod {s_.get('mod')}: strength 0–1, copies 1–10")
+        if not 0 <= float(retention) <= 1:
+            raise ValueError(f"retention {retention}: 0–1")
         slots += [{"mod": "(none)"}] * (8 - len(slots))
         mods = add(g, "MiniMaxH3RefModsLoader", "w7 · RefMod загрузка", show_info=False,
+                   max_total_tokens=int(max_total_tokens),
                    **{k: v for i, s in enumerate(slots, 1)
                       for k, v in ((f"mod_{i}", s["mod"]), (f"strength_{i}", float(s.get("strength", 1.0))),
                                    (f"copies_{i}", int(s.get("copies", 1))))})
         app = add(g, "MiniMaxH3RefModApply", "w7 · RefMod → условие", conditioning=[prep_id, 0], mods=[mods, 0],
                   override=False, retention=float(retention), curve_direction="constant", scramble_seed=-1,
-                  curve_shape="linear", curve_value=1.0)
+                  curve_shape="linear", curve_value=1.0, max_total_tokens=int(max_total_tokens))
         g[nid(g, T["neg"])]["inputs"]["conditioning"] = [app, 0]
         for t in ("p1", "p2"):
             g[nid(g, T[t])]["inputs"]["positive"] = [app, 0]
@@ -194,12 +202,13 @@ def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs
     return prune(g, [OUT_RAW])
 
 
-def refmod_extract_graph(images: list[str], vae: str = "minimax_h3_video_vae_fp16.safetensors",
-                         mod: str = REFMOD, concept_type: str = "identity", preset: str = "identity_encode",
+def refmod_extract_graph(images: list[str], mod: str, vae: str = "minimax_h3_video_vae_fp16.safetensors",
+                         concept_type: str = "identity", preset: str = "identity_encode",
                          ref_resolution: int = 1024, max_tokens: int = 0, masks: bool = False,
-                         description: str = "Stacy identity (WS-07)") -> dict:
+                         description: str = "") -> dict:
     """RefMod из картинок (≤ 16, один аспект — холст задаёт первая). Пресет автора для лица — identity_encode
-    (Full Reference, без уточнения). mod = '<подпапка>/<имя>' → models/refmods/<подпапка>/<имя>.safetensors.
+    (Full Reference, без уточнения; ⚠ этот пресет сам ставит ref_resolution 1024 — значение аргумента для него не
+    действует). mod = '<подпапка>/<имя>' — обязателен: H3Mod перезаписывает файл с тем же именем.
     masks=True: маска = альфа-канал каждой картинки (LoadImage, выход 1) → mask_list, фон вне маски размыт
     (background_retention 0). max_tokens 0 = без лимита; переполнение — ошибка, а не молчаливая обрезка."""
     if not 1 <= len(images) <= 16:
