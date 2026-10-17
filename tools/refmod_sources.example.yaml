@@ -1,0 +1,31 @@
+# Схема sources.yaml для tools/refmod_build.py. Рабочий файл держим ВНЕ репо (C:/stacy-lora/refmod_inputs/),
+# конкретику (персонажи, категории, описания примет) ведёт человек. Пути — относительно src или абсолютные.
+src: C:/data/refs                    # корень исходников
+
+characters:
+  char_a:                            # id как в справочнике «Персонажи» (WS-03): [a-z0-9_-]
+    height_cm: 170                   # → манифест body_scale, промпт роста; масштаб держат якоря плиты
+    face:                            # кропы лица 768² + маска лицо+волосы (MediaPipe)
+      dir: char_a/faces
+      skip_regex: "_r\\d+$"          # дубли
+      limit: 10
+    body:                            # полный рост, вписывается в 3:4 без растяжения
+      dir: char_a/fullbody           # готовые кадры в полный рост…
+      # sheet: char_a/sheet.png      # …или панели листа: границы X в пикселях исходника
+      # sheet_width: 2232
+      # panels: [[576, 990], [990, 1404]]
+    categories:                      # любые категории = отдельные моды; имена задаёт человек
+      hands:
+        auto: pose_hands             # кропы по точкам позы из кадров (pose_hands | pose_feet)
+        dirs: [char_a/frames]
+        limit: 20
+      mark_example:                  # готовые кропы человека; альфа PNG = маска мода
+        dir: char_a/marks/example
+        size: [512, 512]
+        fit: pad                     # pad — вписать без кропа; crop — центр-кроп
+        desc_en: "a small birthmark on the left shoulder"   # уходит в промпт
+        placement: left shoulder
+
+locations:
+  images_dir: Locations              # файлы плит
+  cards: ["cards/plates_*.yaml"]     # карточки WS-03: id, desc, anchors, slots, hor
