@@ -209,8 +209,10 @@ def refmod_extract_graph(images: list[str], vae: str = "minimax_h3_video_vae_fp1
     loads = [add(g, "LoadImage", f"w7 · ref {i}", image=im) for i, im in enumerate(images)]
     extra: dict = {}
     if masks:   # маски одного размера (как и картинки мода); BatchMasksNode — ядро ComfyUI (autogrow mask0..)
+        # LoadImage отдаёт маску = 1 − альфа, а RefMod ждёт 1 = оставить → InvertMask (иначе размоется субъект)
         batch = add(g, "BatchMasksNode", "w7 · маски", **{f"masks.mask{i}": [ld, 1] for i, ld in enumerate(loads)})
-        extra["mask_list"] = [add(g, "MiniMaxH3RefModMaskList", "w7 · mask_list", masks=[batch, 0]), 0]
+        keep = add(g, "InvertMask", "w7 · маска: 1 = субъект", mask=[batch, 0])
+        extra["mask_list"] = [add(g, "MiniMaxH3RefModMaskList", "w7 · mask_list", masks=[keep, 0]), 0]
     sub, name = mod.rsplit("/", 1) if "/" in mod else ("", mod)
     add(g, "MiniMaxH3RefModExtract", "OUT refmod", name=name, subfolder=sub, mode="Full Reference",
         concept_type=concept_type, extraction_preset=preset, vae=[v, 0], ref_resolution=ref_resolution,

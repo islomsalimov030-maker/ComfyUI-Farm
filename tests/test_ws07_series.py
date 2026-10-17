@@ -141,6 +141,7 @@ def test_upscale_and_refmod_graphs():
     ex = [v for v in g.values() if v["class_type"] == "MiniMaxH3RefModExtract"][0]["inputs"]
     assert (ex["subfolder"], ex["name"], ex["budget_policy"]) == ("ss340", "face_n3", "error")
     assert "mask_list" in ex and not G.check_links(g)
+    assert any(v["class_type"] == "InvertMask" for v in g.values())
     mb = [v for v in g.values() if v["class_type"] == "BatchMasksNode"][0]["inputs"]
     assert [k for k in mb] == ["masks.mask0", "masks.mask1", "masks.mask2"]
 
