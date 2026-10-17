@@ -6,6 +6,10 @@ mod_prefix: ss340                # моды → models/refmods/<mod_prefix>/<и�
 est_frame_s: 130
 timeout_s: 900
 
+refine:                          # необязательно: доработка готового кадра (тело + лицо), одинаковая для всех
+  graph: refs/refine_api.json    # API-граф с 1 LoadImage и 1 SaveImage
+  # seeds: {"<id узла>": 123}    # подмена сидов; без неё — сиды из графа
+
 arm:                             # рука движка frame_h3@1: модель + LoRA + ручки KNOB
   model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
   loras: [{name: some_lora.safetensors, w: 1.0}]

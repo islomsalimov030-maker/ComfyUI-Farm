@@ -6,7 +6,10 @@ WS-07 `A_refmod` / база `A`) → контакт-листы. Конфиг р�
     python tools/ss340_round.py check   <round.yaml>          # /object_info: классы, файлы моделей (без очереди)
     python tools/ss340_round.py extract <round.yaml>          # моды → models/refmods/<prefix>/
     python tools/ss340_round.py run     <round.yaml> [--limit N]
-    python tools/ss340_round.py sheet   <round.yaml>          # контакт-листы по позам/сидам
+    python tools/ss340_round.py sheet   <round.yaml> [--refined]   # контакт-листы по позам/сидам
+
+refine (необязательно): {graph: API-граф доработки готового кадра, seeds: {узел: сид}} — каждый сырой кадр
+дополнительно проходит через неё (одинаково для всех вариантов) → <вариант>__<сид>__refined.png.
 
 COMFY_URL / COMFY_USER / COMFY_PASS — из окружения (Basic auth студии, если задан пользователь). Результаты —
 `<out>/<round>/`: jobs.jsonl (время, prompt_id), PNG кадров, контакт-листы. Повторный run пропускает готовые.
@@ -160,6 +163,24 @@ def frame_graph(cfg: dict, j: dict, files: dict) -> dict:
     return g
 
 
+def refine_graph(cfg: dict, image: str, prefix: str) -> dict:
+    """Доработка готового кадра — API-граф из конфига (`refine.graph`, например из метаданных одобренного кадра):
+    подменяются вход (LoadImage), сиды (`refine.seeds`: {id узла: сид}) и путь сохранения (SaveImage)."""
+    r = cfg["refine"]
+    g = json.loads(p(cfg, r["graph"]).read_text(encoding="utf-8"))
+    loads = [k for k, v in g.items() if v["class_type"] == "LoadImage"]
+    saves = [k for k, v in g.items() if v["class_type"] == "SaveImage"]
+    if len(loads) != 1 or len(saves) != 1:
+        raise ValueError(f"доработка: нужен ровно 1 LoadImage и 1 SaveImage, есть {len(loads)} / {len(saves)}")
+    g[loads[0]]["inputs"]["image"] = image
+    g[saves[0]]["inputs"]["filename_prefix"] = prefix
+    for nid, seed in (r.get("seeds") or {}).items():
+        ins = g[str(nid)]["inputs"]
+        key = next(k for k in ("seed", "noise_seed") if k in ins)
+        ins[key] = int(seed)
+    return g
+
+
 def upload_inputs(cfg: dict, cli: Comfy | None) -> dict:
     files = {"sheet": cli.upload(p(cfg, cfg["sheet"]), "ss340/kit") if cli else "sheet.png"}
     for pose, d in cfg["kit_poses"].items():
@@ -239,15 +260,30 @@ def cmd_run(cfg, cli, limit: int):
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_bytes(cli.view(f))
             saved.append(str(dst))
-        rec = dict(j, prompt_id=pid, sec=round(time.time() - t0), files=saved)
+        rsec = None
+        if cfg.get("refine") and imgs:     # та же доработка для всех вариантов — сравнение на финальной стадии
+            t1 = time.time()
+            try:
+                raw_name = cli.upload(Path(saved[0]), f"ss340/{cfg['round']}/raw")
+                g2 = refine_graph(cfg, raw_name, f"ss340/{cfg['round']}/{j['id']}__refined")
+                h2 = cli.wait(cli.submit(g2), cfg.get("timeout_s", 900))
+                for f in [f for o in h2["outputs"].values() for f in o.get("images", [])][:1]:
+                    dst = out / j["pose"] / f"{j['variant']}__{j['seed']}__refined.png"
+                    dst.write_bytes(cli.view(f))
+                    saved.append(str(dst))
+                rsec = round(time.time() - t1)
+            except Exception as e:  # noqa: BLE001 — сырой кадр уже сохранён
+                print(f"    доработка {j['id']}: ОШИБКА {str(e)[:300]}", flush=True)
+        rec = dict(j, prompt_id=pid, sec=round(time.time() - t0), refine_sec=rsec, files=saved)
         with open(log, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
         print(f"[{i}/{len(todo)}] {j['id']}: {rec['sec']} с", flush=True)
 
 
-def cmd_sheet(cfg):
+def cmd_sheet(cfg, refined: bool = False):
     from PIL import Image, ImageDraw
     out = Path(cfg["out"]) / cfg["round"]
+    suffix = "__refined" if refined else ""
     vids = [v["id"] for v in cfg["variants"]]
     for pose in cfg["poses"]:
         seeds = cfg["seeds"][pose]
@@ -257,14 +293,14 @@ def cmd_sheet(cfg):
         for x, v in enumerate(vids):
             D.text((x * cw + 6, 4), v, fill="black")
             for y, seed in enumerate(seeds):
-                f = out / pose / f"{v}__{seed}.png"
+                f = out / pose / f"{v}__{seed}{suffix}.png"
                 if f.exists():
                     im = Image.open(f).convert("RGB")
                     im.thumbnail((cw, ch))
                     S.paste(im, (x * cw, 22 + y * (ch + 22)))
                 else:
                     D.text((x * cw + 6, 22 + y * (ch + 22) + ch // 2), "нет", fill="red")
-        dst = out / f"sheet_{pose}.jpg"
+        dst = out / f"sheet_{pose}{suffix}.jpg"
         S.save(dst, quality=88)
         print(dst)
 
@@ -274,13 +310,14 @@ def main() -> int:
     ap.add_argument("cmd", choices=["plan", "check", "extract", "run", "sheet"])
     ap.add_argument("config")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--refined", action="store_true", help="sheet: кадры после доработки")
     ap.add_argument("--url", default=os.environ.get("COMFY_URL", "http://127.0.0.1:8188"))
     a = ap.parse_args()
     cfg = load(a.config)
     if a.cmd == "plan":
         return cmd_plan(cfg) or 0
     if a.cmd == "sheet":
-        return cmd_sheet(cfg) or 0
+        return cmd_sheet(cfg, a.refined) or 0
     cli = Comfy(a.url)
     if a.cmd == "check":
         return cmd_check(cfg, cli)
