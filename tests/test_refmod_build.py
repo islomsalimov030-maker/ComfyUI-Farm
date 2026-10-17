@@ -56,7 +56,9 @@ def test_full_body_check():
     assert B.full_body_ok(pts, (100, 200))
     pts[31, 1] = 199.5                       # носок у самого края — обрезан
     assert not B.full_body_ok(pts, (100, 200))
-    pts[31, 1], pts[30, 2] = 190, 0.1        # пятка не видна
+    pts[31, 1], pts[30, 2] = 190, 0.1        # одна пятка закрыта (вид сбоку) — ещё полный рост
+    assert B.full_body_ok(pts, (100, 200))
+    pts[29:33, 2] = 0.1                      # ни одной стопы не видно — обрезан
     assert not B.full_body_ok(pts, (100, 200))
 
 

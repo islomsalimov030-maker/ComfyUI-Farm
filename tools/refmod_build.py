@@ -27,7 +27,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-from PIL import Image, ImageDraw, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "tools")]
@@ -128,13 +128,16 @@ def pose_points(img: Image.Image):
 
 
 def full_body_ok(pts, size, margin=0.015, vis=0.5) -> bool:
-    """Полный рост в кадре: нос, пятки и носки (0, 29–32) видимы и не ближе margin к краям."""
+    """Полный рост в кадре: нос виден, видна хотя бы одна стопа (пятка или носок из 29–32: на виде сбоку и сзади
+    вторая нога закрыта, её точки с низкой уверенностью — это ракурс, а не обрез), и ни одна точка головы/стоп
+    не выходит за поле margin у краёв кадра."""
     if pts is None:
         return False
     w, h = size
     p = pts[[0, 29, 30, 31, 32]]
-    return bool((p[:, 2] >= vis).all() and (p[:, 0] > margin * w).all() and (p[:, 0] < (1 - margin) * w).all()
-                and (p[:, 1] > margin * h).all() and (p[:, 1] < (1 - margin) * h).all())
+    inside = ((p[:, 0] > margin * w) & (p[:, 0] < (1 - margin) * w)
+              & (p[:, 1] > margin * h) & (p[:, 1] < (1 - margin) * h))
+    return bool(p[0, 2] >= vis and (p[1:, 2] >= vis).any() and inside.all())
 
 
 # --------------------------------------------------------------------------------------- конфиг и файлы
@@ -147,7 +150,13 @@ class Ctx:
         return q if q.is_absolute() else self.src / q
 
     def images(self, spec: dict) -> list[Path]:
-        """dir | dirs + glob (по умолчанию все картинки) + skip_regex — по имени файла без расширения."""
+        """files (явный список, порядок сохраняется: первая картинка задаёт холст мода) | dir | dirs + glob
+        (по умолчанию все картинки) + skip_regex — по имени файла без расширения."""
+        if spec.get("files"):
+            missing = [f for f in spec["files"] if not self.path(f).is_file()]
+            if missing:
+                raise FileNotFoundError(f"нет файлов: {missing}")
+            return [self.path(f) for f in spec["files"]]
         dirs = spec.get("dirs") or [spec["dir"]]
         skip = re.compile(spec["skip_regex"]) if spec.get("skip_regex") else None
         out = []
@@ -171,8 +180,14 @@ def load_sources(path: Path) -> dict:
                 raise ValueError(f"{cid}: категория «{cat}» — [a-z0-9_-], не face/body_scale")
             if spec.get("auto") and spec["auto"] not in AUTO:
                 raise ValueError(f"{cid}/{cat}: auto={spec['auto']}, есть {sorted(AUTO)}")
-            if not spec.get("auto") and not spec.get("dir"):
-                raise ValueError(f"{cid}/{cat}: нужен dir (готовые картинки) или auto")
+            if not spec.get("auto") and not (spec.get("dir") or spec.get("files")):
+                raise ValueError(f"{cid}/{cat}: нужен dir / files (готовые картинки) или auto")
+        bodies = ch.get("bodies") or {}
+        for name in bodies:
+            if not re.fullmatch(r"[a-z0-9_-]+", name):
+                raise ValueError(f"{cid}: набор тела «{name}» — [a-z0-9_-]")
+        if ch.get("body") and bodies:
+            raise ValueError(f"{cid}: задайте body (один набор) или bodies (несколько), не оба")
     return cfg
 
 
@@ -200,18 +215,31 @@ def build_face(ctx: Ctx, cid: str, spec: dict) -> int:
             continue
         side = max(b[2] - b[0], b[3] - b[1]) * 1.9
         box = square_box((b[0] + b[2]) / 2, (b[1] + b[3]) / 2 - (b[3] - b[1]) * 0.1, side, *img.size)
+        m = ellipse_mask(img.size, b)
+        if spec.get("clean_bg"):
+            # Маска RefMod фон только размывает, а не убирает: одежда и фон протекают в кадр (раунд A — воротник).
+            # Поэтому реально заменяем всё вне маски лица+волос и ниже подбородка нейтральным серым.
+            chin = float(b[3] + (b[3] - b[1]) * spec.get("chin_pad", 0.06))
+            cut = Image.new("L", img.size, 255)
+            ImageDraw.Draw(cut).rectangle([0, chin, img.size[0], img.size[1]], fill=0)
+            cut = cut.filter(ImageFilter.GaussianBlur(float(max(2, (b[3] - b[1]) * 0.03))))
+            keep = ImageChops.multiply(m, cut)
+            grey = Image.new("RGB", img.size, tuple(spec.get("bg_rgb", (128, 128, 128))))
+            img = Image.composite(img, grey, keep)
+            m = keep
         d.mkdir(parents=True, exist_ok=True)
-        rgba(img, ellipse_mask(img.size, b), box, FACE).save(d / f"{len(picks):02d}_{f.stem}.png")
+        rgba(img, m, box, FACE).save(d / f"{len(picks):02d}_{f.stem}.png")
         picks.append(f.name)
     return manifest(d, FACE, kind="face", character=cid, preset="identity_encode", concept_type="identity",
-                    mask="alpha: лицо+волосы", sources=picks, skipped_no_face=skipped,
+                    mask="alpha: лицо+волосы" + (", фон и одежда → серый" if spec.get("clean_bg") else ""),
+                    sources=picks, skipped_no_face=skipped,
                     use="1 / 5 / 10 первых — серия r1 (кривая числа кадров)")
 
 
-def build_body(ctx: Ctx, cid: str, spec: dict, height_cm) -> int:
-    """Полный рост: либо готовые кадры (`dir`), либо панели листа (`sheet` + `panels` — границы в пикселях
+def build_body(ctx: Ctx, cid: str, spec: dict, height_cm, folder: str = "body_scale") -> int:
+    """Полный рост: готовые кадры (`files` / `dir`) и/или панели листа (`sheet` + `panels` — границы в пикселях
     исходника). Вписывается без растяжения, без маски и без кропа по позе (режет волосы, искажает пропорции)."""
-    d = ctx.out / "characters" / cid / "body_scale"
+    d = ctx.out / "characters" / cid / folder
     d.mkdir(parents=True, exist_ok=True)
     made, note = 0, []
     items: list[tuple[str, Image.Image]] = []
@@ -221,11 +249,11 @@ def build_body(ctx: Ctx, cid: str, spec: dict, height_cm) -> int:
         for i, (x0, x1) in enumerate(spec["panels"]):
             items.append((f"{Path(spec['sheet']).stem}_p{i}",
                           sheet.crop((round(x0 * k) + 3, 0, round(x1 * k) - 3, sheet.height))))
-    for f in ctx.images(spec) if spec.get("dir") or spec.get("dirs") else []:
+    for f in ctx.images(spec) if spec.get("files") or spec.get("dir") or spec.get("dirs") else []:
         items.append((f.stem, ImageOps.exif_transpose(Image.open(f)).convert("RGB")))
     rejected = []
     for key, im in items:
-        if ctx.excluded(cid, "body_scale", key):
+        if ctx.excluded(cid, folder, key):
             continue
         if not full_body_ok(pose_points(im), im.size, margin=spec.get("margin", 0.015)):   # обрезан / не человек
             rejected.append(key)
@@ -365,6 +393,9 @@ def build(cfg: dict, ctx: Ctx, only: set[str] | None = None) -> dict:
             r["face"] = build_face(ctx, cid, ch["face"])
         if ch.get("body") and want("body"):
             r["body_scale"] = build_body(ctx, cid, ch["body"], ch.get("height_cm"))
+        for name, spec in (ch.get("bodies") or {}).items():           # несколько наборов тела — для сравнения
+            if want("body") or want(name):
+                r[name] = build_body(ctx, cid, spec, ch.get("height_cm"), folder=name)
         for cat, spec in (ch.get("categories") or {}).items():
             if want(cat) or want("categories"):
                 r[cat] = build_auto(ctx, cid, cat, spec) if spec.get("auto") else build_manual(ctx, cid, cat, spec)

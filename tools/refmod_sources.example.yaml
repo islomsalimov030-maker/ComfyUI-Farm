@@ -9,6 +9,7 @@ characters:
       dir: char_a/faces
       skip_regex: "_r\\d+$"          # дубли
       limit: 10
+    # bodies: {body_core: {files: [...]}, body_all: {...}} — несколько наборов тела для сравнения (вместо body)
     body:                            # полный рост, вписывается в 3:4 без растяжения
       dir: char_a/fullbody           # готовые кадры в полный рост…
       # sheet: char_a/sheet.png      # …или панели листа: границы X в пикселях исходника
