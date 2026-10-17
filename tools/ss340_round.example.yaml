@@ -1,0 +1,28 @@
+# Схема конфига раунда для tools/ss340_round.py. Рабочие конфиги — вне репо (пути к медиа, сиды).
+round: round_x
+src: C:/data                     # корень относительных путей
+out: C:/data/runs                # → <out>/<round>/<поза>/<вариант>__<сид>.png + jobs.jsonl + sheet_<поза>.jpg
+mod_prefix: ss340                # моды → models/refmods/<mod_prefix>/<имя>
+est_frame_s: 130
+timeout_s: 900
+
+arm:                             # рука движка frame_h3@1: модель + LoRA + ручки KNOB
+  model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+  loras: [{name: some_lora.safetensors, w: 1.0}]
+  knobs: {pass1_steps: 8}
+
+sheet: refs/sheet.jpg            # <Picture 2>
+kit_poses:                       # по позе: плита <Picture 1>, одежда <Picture 3>?, поза <Picture 4>?, промпт
+  PoseA: {plate: refs/PoseA/plate.png, prompt: refs/PoseA/prompt.txt}
+
+poses: [PoseA]
+seeds: {PoseA: [1, 2]}
+
+mods:                            # dir + take (первые N по имени) или images; {pose} — мод на каждую позу
+  face_n5: {dir: refmods/char_a/face, take: 5, masks: true, ref_resolution: 768}
+  "zone_{pose}": {images: ["zones/{pose}/00_plate.png"], concept_type: background, ref_resolution: 768}
+
+variants:                        # base без модов = генератор A; с модами = A_refmod (до 8 модов, retention)
+  - {id: base}
+  - {id: face_n5, refmods: [{mod: face_n5, strength: 1.0, copies: 1}]}
+  - {id: zone_r04, refmods: [{mod: "zone_{pose}"}], retention: 0.4}
