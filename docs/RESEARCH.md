@@ -130,6 +130,7 @@
 - Формат квантования beta5 int8 — `_quantization_metadata` в заголовке (int8_tensorwise + convrot), не `.comfy_quant` у тензоров, как у Singularity / Comfy-Org. ComfyUI `79be670` переводит его сам (`comfy/utils.py: convert_old_quants`) → штатный UNETLoader.
 - ⚠ 10Eros Max (TenStrip): кроме H3 Community License, по карточке действуют лицензии доноров — LTX 2.3, Wan 2.2, Krea 2. Для прода проверить LTX и Krea на некоммерческие ограничения.
 - Manager на сервере студии: нода не из Registry → `update` с `version: nightly` падает (`KeyError comfyui-stacyloop`), `git_url` — «Already exists». Работает `POST /v2/manager/queue/batch` с `update: [{id: ComfyUI-StacyLoop, version: unknown, files: [<git-URL>]}]`; новая версия грузится после перезапуска ComfyUI. Модели на сервер — промптом `AssetDownloader` (comfy-asset-downloader), ~40 МиБ/с.
+- 17.10: фронтенд ComfyUI 1.53.6 восстанавливает `widgets_values` узла **по позиции**; если у ноды добавились входы в середине, старые графы «съезжают» (на StacyPanel: steps NaN, shift 1.0). Лечится миграцией в `onConfigure` JS-расширения (StacyLoop `095b77d`); новые входы лучше добавлять в конец `INPUT_TYPES`.
 
 ## WS-07 (14.10.2026) — модели и ноды серий пода
 Сводка с размерами — `docs/experiments/WS-07_models.md`. Размеры взяты из API HF (`lfs.size`) и Civitai (`sizeKB`).
