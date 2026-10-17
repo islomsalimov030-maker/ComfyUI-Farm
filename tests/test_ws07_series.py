@@ -137,6 +137,23 @@ def test_upscale_and_refmod_graphs():
     g = G.refmod_extract_graph(["a.png", "b.png"])
     ex = [v for v in g.values() if v["class_type"] == "MiniMaxH3RefModExtract"][0]["inputs"]
     assert ex["extraction_preset"] == "identity_encode" and "refs_image.ref_image_1" in ex
+    g = G.refmod_extract_graph(["a.png", "b.png", "c.png"], mod="ss340/face_n3", masks=True, max_tokens=4096)
+    ex = [v for v in g.values() if v["class_type"] == "MiniMaxH3RefModExtract"][0]["inputs"]
+    assert (ex["subfolder"], ex["name"], ex["budget_policy"]) == ("ss340", "face_n3", "error")
+    assert "mask_list" in ex and not G.check_links(g)
+    mb = [v for v in g.values() if v["class_type"] == "BatchMasksNode"][0]["inputs"]
+    assert [k for k in mb] == ["masks.mask0", "masks.mask1", "masks.mask2"]
+
+
+def test_frame_refmod_slots():
+    arm = {"model": "m.safetensors", "loras": []}
+    g = G.frame_graph("A_refmod", {"plate": "p.png", "sheet": "s.png"}, "<Picture 1> <Picture 2>", 1, arm,
+                      refmods=[{"mod": "ss340/a", "copies": 2}, {"mod": "ss340/b", "strength": 0.5}], retention=0.7)
+    ld = [v for v in g.values() if v["class_type"] == "MiniMaxH3RefModsLoader"][0]["inputs"]
+    ap = [v for v in g.values() if v["class_type"] == "MiniMaxH3RefModApply"][0]["inputs"]
+    assert (ld["mod_1"], ld["copies_1"], ld["mod_2"], ld["strength_2"], ld["mod_3"]) == \
+        ("ss340/a", 2, "ss340/b", 0.5, "(none)")
+    assert ap["retention"] == 0.7 and not G.check_links(g)
 
 
 def test_fill_defaults_from_object_info():
