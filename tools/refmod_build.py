@@ -151,7 +151,7 @@ def pose_seg(img: Image.Image):
     area = lambda p: float(np.prod(np.ptp(p[p[:, 2] > 0.3][:, :2], axis=0))) if (p[:, 2] > 0.3).sum() > 2 else 0.0  # noqa: E731
     i = max(range(len(poses)), key=lambda k: area(poses[k]))
     seg = r.segmentation_masks[i].numpy_view() if r.segmentation_masks else None
-    return poses[i], (None if seg is None else np.asarray(seg, dtype=np.float32).reshape(a.shape[:2]))
+    return poses[i], (None if seg is None else np.array(seg, dtype=np.float32, copy=True).reshape(a.shape[:2]))   # копия: numpy_view живёт, пока жив результат MediaPipe
 
 
 def full_body_ok(pts, size, margin=0.015, vis=0.5) -> bool:
@@ -446,6 +446,10 @@ def build_outfit(ctx: Ctx, oid: str, spec: dict) -> int:
             out, info = outfit_crop(img, pts, seg, spec)
             if out is None:
                 rejected[f.name] = info
+                continue
+            cover = float((np.asarray(out.getchannel("A")) > 127).mean())
+            if cover < spec.get("min_cover", 0.05):                     # битая/пустая маска — не мод, а серый лист
+                rejected[f.name] = f"маска почти пуста ({cover:.3f})"
                 continue
             if face_box(out.convert("RGB")) is not None:
                 rejected[f.name] = "в кропе видно лицо"
