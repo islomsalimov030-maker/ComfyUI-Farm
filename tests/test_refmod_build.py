@@ -2,6 +2,7 @@
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 import yaml
 from PIL import Image
@@ -97,3 +98,44 @@ def test_zone_no_padding_no_upscale(tmp_path):
     x0, y0, x1, y1 = m["anchors"][0][2:6]
     assert (x0, y0) == pytest.approx((0, 0)) and (x1, y1) == pytest.approx((1, 1))
     assert m["slots"][0][2] == pytest.approx(0.5) and m["horizon"] == pytest.approx(0.5)
+
+
+def _pose(w, h, sh_y, feet_y, vis_feet=1.0):
+    p = np.zeros((33, 3))
+    p[:, 2] = 0.9
+    p[0] = [w / 2, sh_y - 80, 0.9]
+    p[11], p[12] = [w / 2 - 60, sh_y, 0.95], [w / 2 + 60, sh_y, 0.95]
+    p[23], p[24] = [w / 2 - 40, sh_y + 200, 0.9], [w / 2 + 40, sh_y + 200, 0.9]
+    p[25], p[26] = [w / 2 - 40, sh_y + 350, 0.9], [w / 2 + 40, sh_y + 350, 0.9]
+    for i in range(27, 33):
+        p[i] = [w / 2 + (-40 if i % 2 else 40), feet_y, vis_feet]
+    return p
+
+
+def test_outfit_crop_from_neck_down_grey_bg():
+    w, h = 600, 1000
+    img = Image.new("RGB", (w, h), (10, 200, 10))                 # зелёный фон
+    seg = np.zeros((h, w), np.float32)
+    seg[100:950, 220:380] = 1.0                                   # силуэт, голова 100–220
+    out, info = B.outfit_crop(img, _pose(w, h, 250, 920), seg, {})
+    assert out.size == B.BODY and out.mode == "RGBA" and info["length"] == "full"
+    assert info["box"][1] == int(250 - 0.12 * 120)                # верх — у шеи, головы нет
+    a = np.asarray(out)
+    bg = a[a[:, :, 3] == 0][:, :3]
+    dev = np.abs(bg.astype(int) - 128).max(axis=1)
+    assert bg.size and (dev > 1).mean() < 0.001 and dev.max() < 30    # фон и поля → серый (кроме кромки ресемплинга)
+    out2, info2 = B.outfit_crop(img, _pose(w, h, 250, 920, vis_feet=0.1), seg, {})
+    assert info2["length"] == "to_knees"
+    bad = _pose(w, h, 250, 920)
+    bad[[11, 12], 2] = 0.1
+    assert B.outfit_crop(img, bad, seg, {}) == (None, "плечи не видны")
+
+
+def test_outfit_requires_front_and_back(tmp_path):
+    p = tmp_path / "s.yaml"
+    p.write_text(yaml.safe_dump({"outfits": {"o1": {"views": {"front": {"dir": "x"}}}}}), encoding="utf-8")
+    with pytest.raises(ValueError, match="back"):
+        B.load_sources(p)
+    p.write_text(yaml.safe_dump({"outfits": {"o1": {"views": {"front": {"dir": "x"}, "back": {"dir": "y"}}}}}),
+                 encoding="utf-8")
+    assert B.load_sources(p)["outfits"]["o1"]

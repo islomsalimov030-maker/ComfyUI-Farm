@@ -13,6 +13,8 @@
                                    auto: pose_hands | pose_feet — кропы по точкам позы из указанных кадров;
                                    иначе — готовые картинки человека из `dir` (альфа сохраняется как маска)
   locations/<loc>/<zone>/        16:9 1344x768, плита вписана целиком; якоря и слоты карточки пересчитаны
+  outfits/<id>/                  3:4 768x1024, одежда ОТ ШЕИ ВНИЗ (лица и волос на голове нет), фон → серый,
+                                   альфа = силуэт (сегментация позы); ракурсы front + back обязательны, front первым
 Картинки готовятся здесь, чтобы холст мода (задаёт первая картинка) не обрезал остальные.
 Медиа в репо не кладём. Маски: альфа PNG (255 = субъект); в графе извлечения — InvertMask.
 Отбраковка глазами: файл exclude (строки «<персонаж>/<категория>/<имя исходника>[_L|_R]»).
@@ -127,6 +129,31 @@ def pose_points(img: Image.Image):
     return max(poses, key=area)
 
 
+_seg = None
+
+
+def pose_seg(img: Image.Image):
+    """Самая крупная поза + её маска силуэта (float 0..1, размер кадра). Отдельный экземпляр PoseLandmarker
+    с output_segmentation_masks — общий из farm.qa.mp (QA) не трогаем."""
+    global _seg
+    M = _mp()
+    if _seg is None:
+        from mediapipe.tasks import python as mpt
+        from mediapipe.tasks.python import vision as v
+        _seg = v.PoseLandmarker.create_from_options(v.PoseLandmarkerOptions(
+            base_options=mpt.BaseOptions(model_asset_buffer=M.model_path("pose_landmarker").read_bytes()),
+            num_poses=2, min_pose_detection_confidence=0.3, output_segmentation_masks=True))
+    a = _bgr(img)
+    r = _seg.detect(M._mp_image(a))
+    if not r.pose_landmarks:
+        return None, None
+    poses = [np.array([[q.x * a.shape[1], q.y * a.shape[0], q.visibility] for q in lm]) for lm in r.pose_landmarks]
+    area = lambda p: float(np.prod(np.ptp(p[p[:, 2] > 0.3][:, :2], axis=0))) if (p[:, 2] > 0.3).sum() > 2 else 0.0  # noqa: E731
+    i = max(range(len(poses)), key=lambda k: area(poses[k]))
+    seg = r.segmentation_masks[i].numpy_view() if r.segmentation_masks else None
+    return poses[i], (None if seg is None else np.asarray(seg, dtype=np.float32).reshape(a.shape[:2]))
+
+
 def full_body_ok(pts, size, margin=0.015, vis=0.5) -> bool:
     """Полный рост в кадре: нос виден, видна хотя бы одна стопа (пятка или носок из 29–32: на виде сбоку и сзади
     вторая нога закрыта, её точки с низкой уверенностью — это ракурс, а не обрез), и ни одна точка головы/стоп
@@ -138,6 +165,52 @@ def full_body_ok(pts, size, margin=0.015, vis=0.5) -> bool:
     inside = ((p[:, 0] > margin * w) & (p[:, 0] < (1 - margin) * w)
               & (p[:, 1] > margin * h) & (p[:, 1] < (1 - margin) * h))
     return bool(p[0, 2] >= vis and (p[1:, 2] >= vis).any() and inside.all())
+
+
+def outfit_crop(img: Image.Image, pts, seg, spec: dict):
+    """Кроп одежды от шеи вниз: верх — линия плеч минус neck_pad·ширина плеч (воротник остаётся, голова нет),
+    низ — самая низкая видимая точка стоп/лодыжек (или колен/бёдер) + запас; по X — силуэт в этой полосе.
+    Фон вне силуэта → серый, альфа = силуэт. Возвращает (RGBA 768x1024, info) или (None, причина)."""
+    vis = spec.get("vis", 0.5)
+    w, h = img.size
+    sh = pts[[11, 12]]
+    if (sh[:, 2] < vis).any():
+        return None, "плечи не видны"
+    if (pts[[23, 24], 2] < vis).all():
+        return None, "бёдра не видны"
+    sw = abs(sh[0, 0] - sh[1, 0])
+    top = max(0.0, float(sh[:, 1].min() - spec.get("neck_pad", 0.12) * max(sw, 0.05 * h)))
+    low = next((g for g in ([27, 28, 29, 30, 31, 32], [25, 26], [23, 24]) if (pts[g, 2] >= vis).any()), [23, 24])
+    length = {27: "full", 25: "to_knees", 23: "to_hips"}[low[0]]
+    bottom = min(float(h), float(pts[low][pts[low][:, 2] >= vis][:, 1].max() + spec.get("foot_pad", 0.03) * h))
+    m = (seg > spec.get("seg_thr", 0.5)) if seg is not None else None
+    if m is not None:
+        band = m[int(top):int(bottom)]
+        cols = np.where(band.any(axis=0))[0]
+        if cols.size == 0:
+            return None, "силуэт пуст"
+        x0, x1 = float(cols.min()), float(cols.max())
+    else:
+        xs = pts[pts[:, 2] >= vis][:, 0]
+        x0, x1 = float(xs.min()), float(xs.max())
+    pad = spec.get("side_pad", 0.06) * (bottom - top)
+    box = (max(0, int(x0 - pad)), int(top), min(w, int(x1 + pad + 1)), int(bottom))
+    rgb = img.convert("RGB")
+    grey = tuple(spec.get("bg_rgb", (128, 128, 128)))
+    if m is not None:
+        alpha = Image.fromarray((np.clip(seg, 0, 1) * 255).astype(np.uint8), "L")
+        alpha = alpha.filter(ImageFilter.GaussianBlur(spec.get("feather", 1.5)))
+    else:
+        alpha = Image.new("L", img.size, 255)
+    cut = Image.new("L", img.size, 255)                     # всё выше шеи — вне маски (силуэт головы и волос тоже)
+    ImageDraw.Draw(cut).rectangle([0, 0, w, top], fill=0)
+    alpha = ImageChops.multiply(alpha, cut)
+    rgb = Image.composite(rgb, Image.new("RGB", img.size, grey), alpha)
+    out = fit_pad(rgb.crop(box), BODY, fill=grey).convert("RGBA")
+    a = Image.new("L", BODY, 0)
+    a.paste(fit_pad(alpha.crop(box).convert("RGB"), BODY, fill=(0, 0, 0)).convert("L"))
+    out.putalpha(a)
+    return out, {"length": length, "box": list(box)}
 
 
 # --------------------------------------------------------------------------------------- конфиг и файлы
@@ -188,6 +261,14 @@ def load_sources(path: Path) -> dict:
                 raise ValueError(f"{cid}: набор тела «{name}» — [a-z0-9_-]")
         if ch.get("body") and bodies:
             raise ValueError(f"{cid}: задайте body (один набор) или bodies (несколько), не оба")
+    for oid, o in (cfg.get("outfits") or {}).items():
+        if not re.fullmatch(r"[a-z0-9_-]+", oid):
+            raise ValueError(f"одежда «{oid}»: только [a-z0-9_-]")
+        views = o.get("views") or {}
+        need = o.get("require_views", ["front", "back"])
+        miss = [v for v in need if v not in views]
+        if miss:
+            raise ValueError(f"одежда {oid}: нет ракурсов {miss} (нужны {need}: views.<ракурс> = dir/files)")
     return cfg
 
 
@@ -345,6 +426,48 @@ def build_manual(ctx: Ctx, cid: str, cat: str, spec: dict) -> int:
                     use=spec.get("use", "мод категории + desc_en в промпте; проверка — есть / нет / где"))
 
 
+def build_outfit(ctx: Ctx, oid: str, spec: dict) -> int:
+    """Мод одежды — отдельный слот библиотеки (не привязан к персонажу): кропы от шеи вниз, лица нет; ракурсы из
+    `views` (front первым — задаёт холст). Проверки: в кропе не найдено лицо; ракурс сверен с детектором лица на
+    исходнике (front — лицо есть, back — нет), расхождение — в манифест, не отказ."""
+    d = ctx.out / "outfits" / oid
+    order = sorted(spec["views"], key=lambda v: {"front": 0, "back": 1}.get(v, 2))
+    used, rejected, mismatch, lengths = [], {}, [], {}
+    per_view: dict[str, int] = {}
+    for view in order:
+        for f in ctx.images(spec["views"][view]):
+            if ctx.excluded("outfits", oid, f.stem):
+                continue
+            img = ImageOps.exif_transpose(Image.open(f)).convert("RGB")
+            pts, seg = pose_seg(img)
+            if pts is None:
+                rejected[f.name] = "нет позы"
+                continue
+            out, info = outfit_crop(img, pts, seg, spec)
+            if out is None:
+                rejected[f.name] = info
+                continue
+            if face_box(out.convert("RGB")) is not None:
+                rejected[f.name] = "в кропе видно лицо"
+                continue
+            has_face = face_box(img) is not None
+            if (view == "front" and not has_face) or (view == "back" and has_face):
+                mismatch.append(f"{view}: {f.name}")
+            d.mkdir(parents=True, exist_ok=True)
+            out.save(d / f"{len(used):02d}_{view}_{f.stem}.png")
+            used.append(f"{view}: {f.name}")
+            lengths[info["length"]] = lengths.get(info["length"], 0) + 1
+            per_view[view] = per_view.get(view, 0) + 1
+    miss = [v for v in spec.get("require_views", ["front", "back"]) if not per_view.get(v)]
+    if miss:
+        raise ValueError(f"одежда {oid}: после проверок не осталось ракурсов {miss}; отказы: {rejected}")
+    return manifest(d, BODY, kind="outfit", outfit=oid, views=per_view, length=lengths,
+                    preset=spec.get("preset", "identity_encode"), concept_type=spec.get("concept_type", "identity"),
+                    desc_en=spec.get("desc_en"), mask="alpha: силуэт от шеи вниз, фон → серый",
+                    sources=used, rejected=rejected, view_mismatch=mismatch,
+                    use="слот одежды + desc_en в промпте; проверка — тело/лицо её не перебивают")
+
+
 def build_zones(ctx: Ctx, spec: dict) -> dict:
     """Зоны = карточки плит WS-03: id `локация/зона`, описание, якоря известной высоты и слоты — масштаб персонажа
     задают они (переносятся в манифест под вписанную плиту), мод держит вид зоны."""
@@ -399,6 +522,9 @@ def build(cfg: dict, ctx: Ctx, only: set[str] | None = None) -> dict:
         for cat, spec in (ch.get("categories") or {}).items():
             if want(cat) or want("categories"):
                 r[cat] = build_auto(ctx, cid, cat, spec) if spec.get("auto") else build_manual(ctx, cid, cat, spec)
+    for oid, spec in (cfg.get("outfits") or {}).items():
+        if want("outfits") or want(oid):
+            report.setdefault("outfits", {})[oid] = build_outfit(ctx, oid, spec)
     if cfg.get("locations") and want("zones"):
         report["zones"] = build_zones(ctx, cfg["locations"])
     return report
@@ -409,7 +535,7 @@ def main() -> int:
     ap.add_argument("--sources", required=True, help="sources.yaml вне репо (схема — refmod_sources.example.yaml)")
     ap.add_argument("--out", required=True, help="новая папка (существующую не трогаем)")
     ap.add_argument("--exclude", default=None, help="по умолчанию — exclude.txt рядом с sources.yaml")
-    ap.add_argument("--only", default="", help="face,body,zones,categories или имена категорий")
+    ap.add_argument("--only", default="", help="face,body,zones,categories,outfits или имена категорий/одежды")
     a = ap.parse_args()
     src_cfg = Path(a.sources)
     cfg = load_sources(src_cfg)

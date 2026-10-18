@@ -28,6 +28,16 @@ characters:
         desc_en: "a small birthmark on the left shoulder"   # уходит в промпт
         placement: left shoulder
 
+outfits:                             # слот одежды библиотеки — не привязан к персонажу; id как в справочнике WS-03
+  outfit_example:
+    desc_en: "a white crop top and light denim shorts"   # уходит в промпт
+    views:                           # front + back обязательны (require_views), front задаёт холст мода
+      front: {dir: outfits/outfit_example/front}
+      back: {dir: outfits/outfit_example/back}
+      # side: {files: [...]}
+    # neck_pad: 0.12                 # верх кропа = плечи − 0.12·ширина плеч: воротник есть, лица нет
+    # concept_type: identity         # сверить перечень с /object_info H3Mod на студии
+
 locations:
   images_dir: Locations              # файлы плит
   cards: ["cards/plates_*.yaml"]     # карточки WS-03: id, desc, anchors, slots, hor
