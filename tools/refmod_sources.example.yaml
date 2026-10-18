@@ -36,7 +36,7 @@ outfits:                             # слот одежды библиотек�
       back: {dir: outfits/outfit_example/back}
       # side: {files: [...]}
     # neck_pad: 0.12                 # верх кропа = плечи − 0.12·ширина плеч: воротник есть, лица нет
-    # concept_type: identity         # сверить перечень с /object_info H3Mod на студии
+    # concept_type: clothing         # H3Mod: generic|identity|pose_motion|clothing|background|… (по умолчанию clothing)
 
 locations:
   images_dir: Locations              # файлы плит

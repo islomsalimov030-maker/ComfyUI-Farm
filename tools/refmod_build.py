@@ -428,8 +428,8 @@ def build_manual(ctx: Ctx, cid: str, cat: str, spec: dict) -> int:
 
 def build_outfit(ctx: Ctx, oid: str, spec: dict) -> int:
     """Мод одежды — отдельный слот библиотеки (не привязан к персонажу): кропы от шеи вниз, лица нет; ракурсы из
-    `views` (front первым — задаёт холст). Проверки: в кропе не найдено лицо; ракурс сверен с детектором лица на
-    исходнике (front — лицо есть, back — нет), расхождение — в манифест, не отказ."""
+    `views` (front первым — задаёт холст). Проверки: в кропе не найдено лицо; ракурс сверен с порядком плеч позы
+    (детектор лица мелкие лица в полном росте не видит), расхождение — в манифест, не отказ."""
     d = ctx.out / "outfits" / oid
     order = sorted(spec["views"], key=lambda v: {"front": 0, "back": 1}.get(v, 2))
     used, rejected, mismatch, lengths = [], {}, [], {}
@@ -450,8 +450,8 @@ def build_outfit(ctx: Ctx, oid: str, spec: dict) -> int:
             if face_box(out.convert("RGB")) is not None:
                 rejected[f.name] = "в кропе видно лицо"
                 continue
-            has_face = face_box(img) is not None
-            if (view == "front" and not has_face) or (view == "back" and has_face):
+            facing = "front" if pts[11, 0] > pts[12, 0] else "back"     # левое плечо справа в кадре — лицом к нам
+            if view in ("front", "back") and facing != view:
                 mismatch.append(f"{view}: {f.name}")
             d.mkdir(parents=True, exist_ok=True)
             out.save(d / f"{len(used):02d}_{view}_{f.stem}.png")
@@ -462,7 +462,7 @@ def build_outfit(ctx: Ctx, oid: str, spec: dict) -> int:
     if miss:
         raise ValueError(f"одежда {oid}: после проверок не осталось ракурсов {miss}; отказы: {rejected}")
     return manifest(d, BODY, kind="outfit", outfit=oid, views=per_view, length=lengths,
-                    preset=spec.get("preset", "identity_encode"), concept_type=spec.get("concept_type", "identity"),
+                    preset=spec.get("preset", "identity_encode"), concept_type=spec.get("concept_type", "clothing"),
                     desc_en=spec.get("desc_en"), mask="alpha: силуэт от шеи вниз, фон → серый",
                     sources=used, rejected=rejected, view_mismatch=mismatch,
                     use="слот одежды + desc_en в промпте; проверка — тело/лицо её не перебивают")

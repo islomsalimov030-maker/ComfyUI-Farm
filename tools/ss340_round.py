@@ -8,6 +8,9 @@ WS-07 `A_refmod` / база `A`) → контакт-листы. Конфиг р�
     python tools/ss340_round.py run     <round.yaml> [--limit N]
     python tools/ss340_round.py sheet   <round.yaml> [--refined]   # контакт-листы по позам/сидам
 
+Мод с existing: true — уже лежит на сервере, не извлекается и не грузит картинки (библиотека модов).
+Вариант: poses / seeds (свои позы и сиды), prompt_sub: [[было, стало]] (замена в промпте позы — слот одежды).
+kit_poses.<поза>.target — эталон масштаба из targets.json кита (поза-копия с другим промптом, напр. Standing-2d).
 refine (необязательно): {graph: API-граф доработки готового кадра, seeds: {узел: сид}} — каждый сырой кадр
 дополнительно проходит через неё (одинаково для всех вариантов) → <вариант>__<сид>__refined.png.
 
@@ -103,6 +106,8 @@ def mods(cfg: dict) -> dict:
     по имени), take = первые N."""
     out = {}
     for name, m in (cfg.get("mods") or {}).items():
+        if m.get("existing"):           # мод уже в библиотеке сервера (models/refmods/<prefix>/<имя>) — без картинок
+            continue
         if m.get("images"):
             imgs = [p(cfg, i) for i in m["images"]]
         else:
@@ -116,11 +121,12 @@ def mods(cfg: dict) -> dict:
 def jobs(cfg: dict) -> list[dict]:
     out = []
     for v in cfg["variants"]:
-        for pose in cfg["poses"]:
-            for seed in cfg["seeds"][pose]:
+        for pose in v.get("poses", cfg["poses"]):            # вариант может ограничить позы…
+            for seed in (v.get("seeds") or cfg["seeds"])[pose]:   # …и задать свои сиды (A/A: та же база, другие сиды)
                 refm = [dict(s, mod=s["mod"].format(pose=pose)) for s in v.get("refmods", [])]
                 out.append({"id": f"{v['id']}__{pose}__{seed}", "variant": v["id"], "pose": pose, "seed": seed,
-                            "refmods": refm, "retention": v.get("retention", 1.0)})
+                            "refmods": refm, "retention": v.get("retention", 1.0),
+                            "prompt_sub": v.get("prompt_sub") or []})
     return out
 
 
@@ -155,6 +161,12 @@ def frame_graph(cfg: dict, j: dict, files: dict) -> dict:
         if pose.get(k):
             inp[k] = files[f"{j['pose']}/{k}"]
     prompt = p(cfg, pose["prompt"]).read_text(encoding="utf-8")
+    subs = j.get("prompt_sub") or []                # слот одежды: описание одежды вместо одежды листа/<Picture 3>
+    hit = [a for a, _ in subs if a in prompt]
+    if subs and not hit:
+        raise ValueError(f"{j['id']}: в промпте позы нет ни одной строки prompt_sub")
+    for a, b in subs:                               # пары по разным позам: применяются те, что нашлись
+        prompt = prompt.replace(a, b)
     gen = "A_refmod" if j["refmods"] else "A"
     g = G.frame_graph(gen, inp, prompt, j["seed"], cfg["arm"], cfg.get("knobs"),
                       refmods=[dict(s, mod=mod_path(cfg, s["mod"])) for s in j["refmods"]] or None,
@@ -284,9 +296,10 @@ def cmd_sheet(cfg, refined: bool = False):
     from PIL import Image, ImageDraw
     out = Path(cfg["out"]) / cfg["round"]
     suffix = "__refined" if refined else ""
-    vids = [v["id"] for v in cfg["variants"]]
-    for pose in cfg["poses"]:
-        seeds = cfg["seeds"][pose]
+    js = jobs(cfg)
+    for pose in dict.fromkeys(j["pose"] for j in js):
+        vids = list(dict.fromkeys(j["variant"] for j in js if j["pose"] == pose))
+        seeds = list(dict.fromkeys(j["seed"] for j in js if j["pose"] == pose))
         cw, ch = 480, 270
         S = Image.new("RGB", (cw * len(vids), (ch + 22) * len(seeds) + 22), "white")
         D = ImageDraw.Draw(S)

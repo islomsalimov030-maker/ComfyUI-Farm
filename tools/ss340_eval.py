@@ -45,7 +45,7 @@ def main() -> int:
         f = sdir / j["pose"] / f"{j['variant']}__{j['seed']}{suffix}.png"
         if not f.is_file():
             continue
-        m = E.evaluate(f, dict(j, variant="fixe"), targets[j["pose"]], th, str(R.p(cfg, cfg["face_dir"])), cache)
+        m = E.evaluate(f, dict(j, variant="fixe"), targets[cfg["kit_poses"].get(j["pose"], {}).get("target", j["pose"])], th, str(R.p(cfg, cfg["face_dir"])), cache)
         rows.append({**{k: j[k] for k in ("id", "variant", "pose", "seed", "sec")}, **m})
         print(f"{j['id']}: scale {m.get('scale_ratio')} face {m.get('face_id')} hard {m.get('hard_fail')}", flush=True)
     (sdir / f"eval{suffix}.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
