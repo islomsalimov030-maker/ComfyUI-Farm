@@ -29,6 +29,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("config")
     ap.add_argument("--age", default="none", choices=["none", "mivolo"])
+    ap.add_argument("--refined", action="store_true", help="оценивать кадры после доработки (__refined.png)")
     a = ap.parse_args()
     cfg = R.load(a.config)
     sdir = Path(cfg["out"]) / cfg["round"]
@@ -39,18 +40,19 @@ def main() -> int:
     cache = sdir / "_cache"
     cache.mkdir(exist_ok=True)
     rows = []
+    suffix = "__refined" if a.refined else ""
     for j in E.load_jobs(sdir):
-        f = E.local_file(sdir, j)
-        if f is None:
+        f = sdir / j["pose"] / f"{j['variant']}__{j['seed']}{suffix}.png"
+        if not f.is_file():
             continue
         m = E.evaluate(f, dict(j, variant="fixe"), targets[j["pose"]], th, str(R.p(cfg, cfg["face_dir"])), cache)
         rows.append({**{k: j[k] for k in ("id", "variant", "pose", "seed", "sec")}, **m})
         print(f"{j['id']}: scale {m.get('scale_ratio')} face {m.get('face_id')} hard {m.get('hard_fail')}", flush=True)
-    (sdir / "eval.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
+    (sdir / f"eval{suffix}.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
     by = defaultdict(list)
     for r in rows:
         by[r["variant"]].append(r)
-    lines = [f"# {cfg['round']} — метрики (подсказка; решение по контакт-листам)", "",
+    lines = [f"# {cfg['round']}{' (после доработки)' if a.refined else ''} — метрики (подсказка; решение по контакт-листам)", "",
              "| вариант | кадров | масштаб (медиана, 1 = как v2) | ошибка масштаба | лицо AuraFace | без hard-отказа | время, с |",
              "|---|---|---|---|---|---|---|"]
     for v in [x["id"] for x in cfg["variants"]]:
