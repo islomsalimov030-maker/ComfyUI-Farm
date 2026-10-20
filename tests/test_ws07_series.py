@@ -26,7 +26,7 @@ def test_frame_graph_links_and_output(gen, ins):
     labels = {"plate": 1, "sheet": 2, "outfit": 3, "pose": 4}
     txt = " ".join(f"<Picture {labels[k]}>" for k in ins)
     g = G.frame_graph(gen, {k: f"{k}.png" for k in ins}, txt, 7, ARM,
-                      refmods=[{"mod": "test/m"}] if gen == "A_refmod" else None)
+                      refmods=[{"mod": "test/m"}] if gen.endswith("_refmod") else None)
     assert not G.check_links(g)
     out = G.nid(g, G.OUT_RAW)
     assert g[G.nid(g, "KNOB seed")]["inputs"]["value"] == 7
@@ -45,6 +45,30 @@ def test_frame_graph_links_and_output(gen, ins):
     if gen == "A_p2lo":
         assert g[G.nid(g, "KNOB pass2_steps")]["inputs"]["value"] == 3
     assert g[out]["class_type"] == "SaveImage"
+
+
+@pytest.mark.parametrize("gen", ["A_refmod", "T_refmod", "G_refmod"])
+def test_frame_graph_round_d_no_sheet(gen):
+    """SS-340 раунд D: без листа, свой холст; T2I/grounding — без картинок, латент от H3TextToImagePrepare."""
+    ins = {"plate": "plate.png"} if gen == "A_refmod" else {}
+    g = G.frame_graph(gen, ins, "x", 7, ARM, refmods=[{"mod": "test/a"}, {"mod": "test/b", "strength": 0.7}],
+                      canvas=(1088, 1824), max_total_tokens=16384)
+    assert not G.check_links(g)
+    loads = [v["inputs"]["image"] for v in g.values() if v["class_type"] == "LoadImage"]
+    assert loads == (["plate.png"] if gen == "A_refmod" else [])
+    cls = G.classes(g)
+    if gen == "A_refmod":
+        prep = g[G.nid(g, G.T["prep"])]["inputs"]
+        assert "reference_image_2" not in prep and (prep["width"], prep["height"]) == (1088, 1824)
+    else:
+        assert "H3ReferenceEditPrepare" not in cls and "H3TextToImagePrepare" in cls
+        t2i = next(k for k, v in g.items() if v["class_type"] == "H3TextToImagePrepare")
+        assert (g[t2i]["inputs"]["width"], g[t2i]["inputs"]["height"]) == (1088, 1824)
+        assert g[G.nid(g, G.T["p1"])]["inputs"]["latent_image"] == [t2i, 1]
+        assert ("H3RefModsToVideo" in cls) == (gen == "G_refmod")
+        assert ("MiniMaxH3RefModApply" in cls) == (gen == "T_refmod")
+    with pytest.raises(ValueError):
+        G.frame_graph(gen, ins, "x", 7, ARM, refmods=[{"mod": "test/a"}], canvas=(1000, 1824))
 
 
 def test_renumber_rejects_unconnected_label():

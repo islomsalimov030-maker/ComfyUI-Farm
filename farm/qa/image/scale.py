@@ -51,6 +51,18 @@ def frac_at(y: float, levels: list[tuple[float, float]]) -> Optional[float]:
     return float(f0 + (y - y0) * (f1 - f0) / (y1 - y0))
 
 
+def expected_height(card: Optional[dict], feet_y: float, height_cm: float) -> Optional[float]:
+    """Ожидаемый рост стоя в долях высоты кадра, если стопы на высоте feet_y (доли): плоский пол и камера
+    на уровне горизонта — (feet_y − horizon_y) · рост / camera_height_cm (те же поля карточки, что считает WS-03).
+    В отличие от check() не требует якоря на уровне стоп: работает на любой глубине пола. None — нет полей."""
+    if not card:
+        return None
+    hor, cam = card.get("horizon_y"), card.get("camera_height_cm")
+    if hor is None or not cam or feet_y <= float(hor) + 0.02:
+        return None
+    return (feet_y - float(hor)) * float(height_cm) / float(cam)
+
+
 def _card(ctx: QAContext) -> Optional[dict]:
     if (ctx.extra or {}).get("plate_card"):
         return ctx.extra["plate_card"]

@@ -18,6 +18,13 @@ arm:                             # рука движка frame_h3@1: модел�
 sheet: refs/sheet.jpg            # <Picture 2>
 kit_poses:                       # по позе: плита <Picture 1>, одежда <Picture 3>?, поза <Picture 4>?, промпт
   PoseA: {plate: refs/PoseA/plate.png, prompt: refs/PoseA/prompt.txt}
+  # масштаб (s2_scale): плита с силуэтом из ss340_scale_kit.py; эталон рамки и карточка — для ss340_eval
+  PoseA_sil: {plate: kit_s2/s2A/plate_silhouette.png, prompt: kit_s2/s2A/prompt_silhouette.txt,
+              target_json: kit_s2/s2A/target.json, card: kit_s2/s2A/card.json}
+
+height_cm: 162                   # ss340_eval: рост для scale_abs и scale@1 (справочника в оценке нет)
+checks: [scale, face_detect, sharp]   # ss340_eval: только эти проверки QA (необязательно)
+report_by_pose: true             # ss340_eval: строки отчёта по (вариант, поза)
 
 poses: [PoseA]
 seeds: {PoseA: [1, 2]}

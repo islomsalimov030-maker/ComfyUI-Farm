@@ -200,6 +200,9 @@ def lint(text: str, stage: str, ctx: Optional[dict] = None) -> list[LintIssue]:
         must.update(LOOP_MUST)
     elif mode == "transition":
         must.update(TRANS_MUST)
+    conn = (ctx or {}).get("connected")
+    if stage != "video" and conn is not None and "<Picture 2>" not in conn:
+        must["SINGLE_PHOTO"] = "One single photograph."     # кадр без листа (SS-340 раунд D): строки про лист нет
     low = text.lower()
     for code, s in must.items():
         ok = re.search(s[3:], text, re.I) if s.startswith("re:") else s.lower() in low

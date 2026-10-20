@@ -55,7 +55,9 @@ def local_file(sdir: Path, j: dict) -> Path | None:
     return None
 
 
-def evaluate(img_path: Path, j: dict, tgt: dict, th: dict, face_dir: str, cache: Path) -> dict:
+def evaluate(img_path: Path, j: dict, tgt: dict, th: dict, face_dir: str, cache: Path,
+             extra: dict | None = None) -> dict:
+    """extra — в QAContext.extra (например plate_card для scale@1)."""
     import cv2
     img = L.read_bgr(img_path)
     if j["variant"] == "wide":
@@ -71,7 +73,7 @@ def evaluate(img_path: Path, j: dict, tgt: dict, th: dict, face_dir: str, cache:
     shot = {"shot_id": j["pose"], "character": "stacy", "pose_ru": POSE_RU[j["pose"].split("-")[0]],
             "plate": SHOT_PLATE.get(j["pose"]), "extra_json": {}}
     ctx = QAContext(shot=shot, stage="frame", profile={"name": "sfw_base"}, attempt={}, thresholds=th,
-                    refs={"face_dir": face_dir})
+                    refs={"face_dir": face_dir}, extra=extra or {})
     res = registry.run_stage("frame", Asset(j["id"], "-", "frame", str(img_path), j["id"], w, h), ctx)
     chk = {r.name: {"value": round(float(r.value), 4), "passed": r.passed, "severity": r.severity,
                     "fail_code": r.fail_code} for r in res}

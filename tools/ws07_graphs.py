@@ -39,7 +39,7 @@ T = {  # заголовки узлов движка (frame_h3@1.api.json)
     "sheet": "IN sheet · лист персонажа <Picture 2>", "outfit": "IN outfit · одежда <Picture 3> (необязательно)",
     "pose": "IN pose · поза <Picture 4> (необязательно)",
 }
-GENS = ("A", "A_p2lo", "A_t1", "A_refmod", "B", "B_t1", "C", "C_t1")
+GENS = ("A", "A_p2lo", "A_t1", "A_refmod", "T_refmod", "G_refmod", "B", "B_t1", "C", "C_t1")
 REFMOD = "ws07/stacy_id"     # имя мода в models/refmods после refmod_extract_graph
 SINGLE_PROFILE = "single image | 1 frame (image VAE)"
 MM_PROFILE = {"C": "Quality | native 5 frames", "C_t1": "Low VRAM | true T=1"}
@@ -115,11 +115,14 @@ def fill_defaults(g: dict, object_info: dict) -> list[str]:
 def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs: Optional[dict] = None,
                 t1_vae: str = "minimax_h3_t1_image_vae_step1597.safetensors", clip: Optional[str] = None,
                 refmods: Optional[list[dict]] = None, retention: float = 1.0,
-                max_total_tokens: int = 12288) -> dict:
+                max_total_tokens: int = 12288, canvas: Optional[tuple[int, int]] = None) -> dict:
     """inputs: {plate, sheet, outfit?, pose?} — имена файлов в ComfyUI/input; prompt — с метками движка
     (1 плита, 2 лист, 3 одежда, 4 поза); arm: {model, loras: [{name, w}], knobs?}.
     A_refmod: refmods = [{mod, strength?, copies?}] (1–8, имена в models/refmods) — обязательно, умолчаний нет
-    (чужой мод не должен подставиться молча). max_total_tokens — лимит всех модов на шаг (0 = без лимита)."""
+    (чужой мод не должен подставиться молча). max_total_tokens — лимит всех модов на шаг (0 = без лимита).
+    Раунд D (SS-340 §10): sheet необязателен (без листа связь <Picture 2> снимается); canvas=(w, h) — холст кадра
+    вместо 16:9 (кратно 32; для плиты — её аспект). T_refmod — T2I без картинок: `H3TextToImagePrepare` → Apply;
+    G_refmod — grounding (H1): условие `H3RefModsToVideo` (моды видит Qwen, stack_pictures all), латент — от T2I."""
     if gen not in GENS:
         raise ValueError(f"генератор {gen}: нужно {GENS}")
     p, api = P.load(ENGINE)
@@ -133,10 +136,18 @@ def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs
         g[nid(g, f"KNOB {name}")]["inputs"]["value"] = val
     if clip:
         g[nid(g, T["clip"])]["inputs"]["clip_name"] = clip
+    prep_id = nid(g, T["prep"])
+    if not inputs.get("sheet"):          # раунд D: без листа персонажа
+        g[prep_id]["inputs"].pop("reference_image_2", None)
+        g = prune(g, [OUT_RAW])
+    if canvas:
+        w, h = (int(v) for v in canvas)
+        if w % 32 or h % 32:
+            raise ValueError(f"холст {w}x{h}: нужно кратно 32")
+        g[prep_id]["inputs"].update(width=w, height=h)
     if gen in ("A", "A_p2lo"):
         return g
-    if gen == "A_refmod":   # лист остаётся <Picture 2>; RefMod лица дописывается в minimax_refs условия
-        prep_id = nid(g, T["prep"])
+    if gen in ("A_refmod", "T_refmod", "G_refmod"):   # лист (если есть) остаётся <Picture 2>; моды → minimax_refs
         slots = list(refmods or [])
         if not 1 <= len(slots) <= 8:
             raise ValueError(f"A_refmod: нужно 1–8 модов (refmods), дано {len(slots)}")
@@ -151,12 +162,27 @@ def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs
                    **{k: v for i, s in enumerate(slots, 1)
                       for k, v in ((f"mod_{i}", s["mod"]), (f"strength_{i}", float(s.get("strength", 1.0))),
                                    (f"copies_{i}", int(s.get("copies", 1))))})
-        app = add(g, "MiniMaxH3RefModApply", "w7 · RefMod → условие", conditioning=[prep_id, 0], mods=[mods, 0],
-                  override=False, retention=float(retention), curve_direction="constant", scramble_seed=-1,
-                  curve_shape="linear", curve_value=1.0, max_total_tokens=int(max_total_tokens))
+        pi = g[prep_id]["inputs"]
+        cond_src, lat = [prep_id, 0], None
+        if gen != "A_refmod":
+            t2i = add(g, "H3TextToImagePrepare", "w7 · H3TextToImagePrepare (T2I)", clip=pi["clip"],
+                      prompt=pi["edit_instruction"], width=pi["width"], height=pi["height"],
+                      quality_profile=pi["quality_profile"], optimize_for_still=True)
+            cond_src, lat = [t2i, 0], [t2i, 1]
+        if gen == "G_refmod":
+            app = add(g, "H3RefModsToVideo", "w7 · RefMods → Qwen (grounding)", clip=pi["clip"],
+                      prompt=pi["edit_instruction"], width=pi["width"], height=pi["height"], length=5,
+                      ref_image_size="match", stack_pictures="all", video_vae=pi["vae"], mods=[mods, 0])
+        else:
+            app = add(g, "MiniMaxH3RefModApply", "w7 · RefMod → условие", conditioning=cond_src, mods=[mods, 0],
+                      override=False, retention=float(retention), curve_direction="constant", scramble_seed=-1,
+                      curve_shape="linear", curve_value=1.0, max_total_tokens=int(max_total_tokens))
         g[nid(g, T["neg"])]["inputs"]["conditioning"] = [app, 0]
         for t in ("p1", "p2"):
             g[nid(g, T[t])]["inputs"]["positive"] = [app, 0]
+        if lat:
+            g[nid(g, T["p1"])]["inputs"]["latent_image"] = lat
+            return prune(g, [OUT_RAW])     # плита и её ресайз уходят из графа
         return g
     if gen == "A_t1":
         g[nid(g, T["prep"])]["inputs"]["quality_profile"] = SINGLE_PROFILE
