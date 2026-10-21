@@ -23,7 +23,7 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "tools"))
+sys.path[:0] = [str(REPO), str(REPO / "tools")]
 
 BASE = "C:/stacy-lora/refmod_inputs/round_456.yaml"
 DST = "C:/stacy-lora/refmod_inputs/round_456f4.yaml"
@@ -47,8 +47,49 @@ SOLO = ("The photograph shows exactly one single person: <Subject 1> alone, no o
         "reflection or copy of her anywhere in the frame.")
 
 
+# ревизия ракурсов 22.10: сцена → (исходник локации, зона карточки) — плита = ПОЛНЫЙ кадр исходника.
+# S1/S2 — кропы ванной были 47–49 % ширины (×2 апскейл на 4 Мп, H3 перестраивал комнату);
+# S4 (гостиная, стеллаж) и L5 (пол гостиной) были вырезаны не из той комнаты (спальня / ванная)
+REPLATE = {
+    "S1_vanity": ("loc_bath_0.png", "bath_vanity"),
+    "S2_tub": ("loc_bath_0.png", "bath_tub"),
+    "S4_bookshelf": ("loc_living_0.png", "sofa"),
+    "L5_floor": ("loc_living_0.png", "sofa"),
+}
+
+
+def replate(src: Path, scene: str, fn: str, zone: str) -> None:
+    """Плита сцены = полный кадр исходника; карточка зоны пересчитана в доли полного кадра.
+    Старые плита/карточка — в *_crop_v1 (один раз)."""
+    import json
+    import shutil
+    from PIL import Image
+    import ss456_kit as K
+    from ss340_scale_kit import card_from_draft
+    d = src / "_claude/ss456/kit_d169" / scene
+    for f in ("plate.png", "card.json"):
+        bak = d / f.replace(".", "_crop_v1.", 1)
+        if not bak.exists() and (d / f).exists():
+            shutil.copy2(d / f, bak)
+    im = Image.open(src / "refmod_inputs/ss456/confluence" / fn).convert("RGB")
+    im.save(d / "plate.png")
+    W, H = im.size
+    cards = {c["id"].split("/")[-1]: c for c in yaml.safe_load(
+        (src / "_claude/ss456/plates_samantha_loft.yaml").read_text(encoding="utf-8"))}
+    raw = cards.get(zone)
+    if raw:
+        zx, zy, zw, zh = K.WIDE[zone][1]
+        card = card_from_draft(raw)
+        card["camera_height_cm"] = float(raw["cam"])
+        card = K.card_to_crop(card, lambda u, v: (round((zx + u * zw) / W, 4), round((zy + v * zh) / H, 4)))
+        (d / "card.json").write_text(json.dumps(card, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(scene, "← полный кадр", fn, im.size, "карточка", "да" if raw else "нет")
+
+
 def main() -> int:
     cfg = yaml.safe_load(Path(BASE).read_text(encoding="utf-8"))
+    for scene, (fn, zone) in REPLATE.items():
+        replate(Path(cfg["src"]), scene, fn, zone)
     out = copy.deepcopy(cfg)
     out.update(round="round_456f4", est_frame_s=220)
     out["arm"]["knobs"] = {**out["arm"].get("knobs", {}), "megapixels": 4.0}
