@@ -1,5 +1,6 @@
-"""SS-456 twopass: посадка вырезанного силуэта по слоту карточки (низ маски на пол, таз на сиденье),
-масштаб черновик→плита, гейт совпадения сцены, возврат мебели перед слотом."""
+"""SS-456 twopass: посадка вырезанного силуэта ТОЖДЕСТВЕННЫМ переносом долей кадра из черновика
+(якорь: низ маски / таз сидя), масштаб на глубине её опоры, гейт совпадения сцены,
+возврат мебели перед персонажем по его позиции."""
 from __future__ import annotations
 
 import sys
@@ -60,6 +61,60 @@ def test_seat_point():
     assert T.seat_point(card, (0.4, 0.9))[1] == 42.0
 
 
+def test_plan_anchor_mask_bottom_and_hip():
+    mb = np.zeros((100, 200), bool)
+    mb[20:70, 80:120] = True
+    p = _pose()
+    p[[23, 24]] = [[0.45, 0.55, 1.0], [0.55, 0.65, 1.0]]
+    assert T.plan_anchor("стоя", mb, p) == (pytest.approx(0.5, abs=0.005), pytest.approx(0.69))
+    assert T.plan_anchor("лежа", mb, p) == (pytest.approx(0.5, abs=0.005), pytest.approx(0.69))
+    assert T.plan_anchor("сидя", mb, p) == (pytest.approx(0.5), pytest.approx(0.6))  # таз
+
+
+def test_plan_k_standing_by_draft_feet():
+    p = _pose(feet_y=0.8, nose_y=0.13)          # рамка тела 0.11..0.8, стопы черновика на 0.8
+    mb = np.zeros((100, 200), bool)
+    k = T.plan_k(p, [0.4, 0.11, 0.6, 0.8], mb, CARD, "стоя", {"top_cm": 230.0}, (0.5, 0.8), 45.0, 16 / 9)
+    assert k == pytest.approx(1.0, abs=0.01)    # eh = (0.8−0.5)·230/100 = 0.69 = рамка черновика
+
+
+def test_plan_k_squat_uses_pose_target():
+    p = _pose(feet_y=0.8, nose_y=0.13 + 90 * 0.003)      # присед: рамка 0.38..0.8 (0.42 кадра)
+    mb = np.zeros((100, 200), bool)
+    k = T.plan_k(p, [0.4, 0.38, 0.6, 0.8], mb, CARD, "присед", {"top_cm": 133.4},
+                 (0.5, 0.8), 45.0, 16 / 9)
+    assert k == pytest.approx(133.4 * 0.003 / 0.42, abs=0.005)   # цель приседа, НЕ рост 230
+
+
+def test_plan_k_sitting_from_own_floor():
+    p = _pose(feet_y=0.9)
+    p[[23, 24], 1] = 0.6                        # таз 0.6; пол под ним (через горизонт) 0.6818
+    p[0] = [0.5, 0.4026, 1.0]                   # макушка 0.3826
+    p[[7, 8]] = [[0.49, 0.4026, 1.0], [0.51, 0.4026, 1.0]]
+    k = T.plan_k(p, None, np.zeros((100, 200), bool), CARD, "сидя", {"top_cm": 164.6}, (0.5, 0.6), 45.0, 16 / 9)
+    assert k == pytest.approx(1.0, abs=0.01)    # торс 0.2174 кадра = 119.6 см при s на её полу
+
+
+def test_plan_k_lying_by_own_low_point():
+    p = np.zeros((33, 3), np.float32)
+    p[0] = [0.3, 0.6, 1.0]
+    p[31] = [0.3 + 0.225 / 2, 0.6, 1.0]         # длина тела 0.225 при aspect 2
+    mb = np.zeros((100, 200), bool)
+    mb[60:71, 80:120] = True                    # её низ на 0.70 → поверхность s = 0.002/см
+    k = T.plan_k(p, None, mb, CARD, "лежа", {"top_cm": 225.0}, (0.5, 0.7), 45.0, 2.0)
+    assert k == pytest.approx(2.0)              # 225 см × 0.002 / 0.225
+
+
+def test_mask_span_main_axis():
+    mb = np.zeros((100, 200), bool)
+    mb[40:60, 40:161] = True                                   # полоса 120×20 → длина 1.2 кадра
+    assert T.mask_span(mb) == pytest.approx(1.2, abs=0.01)
+    mb2 = np.zeros((100, 200), bool)
+    for i in range(100):                                       # диагональ 45°: катеты 1.0 и 1.0
+        mb2[i, 50 + i:52 + i] = True
+    assert T.mask_span(mb2) == pytest.approx(2 ** 0.5, abs=0.02)
+
+
 def test_clip_k_limits_head():
     k, top, clipped = T.clip_k(1.4, 0.9, 0.9, 0.3)
     assert k == 1.4 and top == pytest.approx(0.06) and not clipped
@@ -67,39 +122,41 @@ def test_clip_k_limits_head():
     assert clipped2 and top2 == pytest.approx(0.02) and k2 == pytest.approx(0.88 / 0.6)
 
 
-def _body(tmp_path, monkeypatch):
+def _body(tmp_path):
     draft = tmp_path / "draft.png"                                       # черновик 100×200, тело 30..70 × 20..190
     Image.new("RGB", (100, 200), (30, 30, 30)).save(draft)
     mask = Image.new("L", (100, 200), 0)
     mask.paste(255, (30, 20, 70, 190))
-    monkeypatch.setattr(T, "person_mask", lambda cli, png, cache: mask)
-    return draft
+    return draft, np.asarray(mask) > 127
 
 
-def test_cut_places_bottom_on_slot(tmp_path, monkeypatch):
-    draft = _body(tmp_path, monkeypatch)
+def test_cut_identical_transfer(tmp_path):
+    draft, mb = _body(tmp_path)                                          # низ маски (0.5, 0.95)
     plate = Image.new("RGB", (200, 400), (200, 180, 160))                # плита вдвое крупнее черновика
-    out, rep = T.cut_silhouette(None, draft, plate, 1.0, (0.5, 0.4), {"anchors": []}, (0.5, 0.9), None)
+    out, rep = T.cut_silhouette(draft, mb, plate, 1.0, (0.5, 0.95), {"anchors": []})
     a = np.asarray(out)
     grey = (np.abs(a.astype(int) - 128).max(2) == 0)
     ys = np.where(grey.any(1))[0]
-    assert ys.max() == pytest.approx(0.9 * 400, abs=2)                   # низ тела — на пол слота
+    assert ys.max() == pytest.approx(0.95 * 400, abs=2)                  # низ тела — та же доля кадра
+    assert ys.min() == pytest.approx(0.10 * 400, abs=2)                  # верх — та же доля кадра
     assert ys.max() - ys.min() == pytest.approx(170 * 2, abs=4)          # высота = кроп × масштаб плиты
-    assert rep["bottom_dy"] == pytest.approx(0, abs=0.01)
-    assert rep["top_y"] > 0
+    assert rep["anchor"] == [0.5, 0.95]
 
 
-def test_cut_seat_anchor_and_furniture_in_front(tmp_path, monkeypatch):
-    draft = _body(tmp_path, monkeypatch)
+def test_cut_furniture_in_front_by_anchor(tmp_path):
+    draft, mb = _body(tmp_path)
     plate = Image.new("RGB", (200, 400), (200, 180, 160))
     card = {"anchors": [{"name": "desk", "top_cm": 75.0, "bbox": [0.4, 0.7, 0.65, 0.95]}]}
-    out, rep = T.cut_silhouette(None, draft, plate, 1.0, (0.5, 0.4), card, (0.5, 0.9), (0.5, 0.6))
+    out, rep = T.cut_silhouette(draft, mb, plate, 1.0, (0.5, 0.4), card)  # сидя: якорь — таз (0.5, 0.4)
     a = np.asarray(out).astype(int)
-    desk = a[290:370, 90:125]                                            # внутри якоря мебели перед слотом
+    desk = a[290:370, 90:125]                                            # внутри якоря мебели перед ней
     assert (np.abs(desk - (200, 180, 160)).max(2) == 0).mean() > 0.99    # мебель вернулась поверх силуэта
     grey = (np.abs(a - 128).max(2) == 0)
-    assert grey[230:260, 60:80].any()                                    # корпус выше мебели — серый
-    assert rep["slot"] == [0.5, 0.9]
+    assert grey[100:160, 60:80].any()                                    # корпус выше мебели — серый
+    card["anchors"][0]["bbox"] = [0.7, 0.7, 0.9, 0.95]                   # мебель вне её x — не возвращать
+    out2, _ = T.cut_silhouette(draft, mb, plate, 1.0, (0.5, 0.4), card)
+    a2 = np.asarray(out2).astype(int)
+    assert (np.abs(a2[290:370, 90:125] - 128).max(2) == 0).all()         # тело там серое
 
 
 def test_kind_and_scenes():

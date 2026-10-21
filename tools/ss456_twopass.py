@@ -9,15 +9,17 @@
     (python tools/ss340_round.py run <round_456f.yaml>)
     python tools/ss456_twopass.py eval <round_456d.yaml[,more] > <round_456f.yaml>
 
-Посадка (фикс 21.10 «силуэт в случайном месте»): вырезанное тело ставится на СЛОТ чистой плиты из
-карточки кита (target.json: feet), не в доли кадра черновика. Классы поз (target.json cls):
-- стоя/присед — низ МАСКИ → пол слота; k = ожидаемая высота рамки на слоте / рамка черновика;
-- сидя — таз (неподвижен при ×k) → сиденье над слотом (якорь 'seat', иначе 45 см); k от карточки:
-  макушка приходит в expected_top_y (кость-метрика не используется);
-- лежа — слот лежит НА ПОВЕРХНОСТИ (кровать/пол): низ маски → поверхность; k = длина тела цели /
-  длина тела черновика (максимальное расстояние точек позы).
-Гейт совпадения сцены (ORB+RANSAC черновик↔плита) отбраковывает черновики, где H3 перестроил комнату, —
-нужен другой сид. Мебель карточки перед слотом (низ ниже опоры, < 140 см) возвращается поверх силуэта.
+Посадка (ревизия пользователя 21.10): место персонажа — из ЧЕРНОВИКА, куда его ставит генератор по
+смыслу сцены; посадка по карточным слотам («на глаз») была ошибкой. Гейт совпадения сцены (ORB+RANSAC
+черновик↔плита) гарантирует кадрирование черновика = плите, поэтому якорь (низ маски / таз сидя)
+переносится ТОЖДЕСТВЕННО — та же доля кадра. Слот карточки — только отчёт-отклонение.
+Масштаб ×k — на глубине ЕЁ опоры (не слота), классы поз (target.json cls):
+- стоя/присед — expected_height(карточка, стопы черновика, ЦЕЛЬ top_cm) / рамка черновика:
+  у стоя цель = рост 230, у приседа — высота приседа (~133);
+- сидя — пол под её тазом (проекция через горизонт), торс до цели top_cm, без кость-метрики;
+- лежа — поверхность под её нижней точкой (низ маски); k = длина цели / длина нос→щиколотка.
+Мебель карточки перед ПЕРСОНАЖЕМ (по его позиции, не по слоту; низ ниже опоры, < 140 см)
+возвращается поверх силуэта.
 
 Автоприёмка (решение пользователя 21.10): допуск ±15 % от цели (target.json top_cm) — achieved()
 пересчитывает кадр в см по карточке: стоя/присед высота рамки на глубине стоп, сидя макушка над полом
@@ -181,43 +183,63 @@ def head_top(p: np.ndarray, aspect: float) -> float | None:
     return float(p[0, 1]) - L.head_radius(p, aspect)
 
 
-def plan_scaling(draft_png: Path, card: dict, kind: str, slot: tuple[float, float],
-                 dst: tuple[float, float], tgt: dict):
-    """Поза черновика → (p, k, pivot, hip, box). k: стоя/присед — рост на СЛОТЕ / рамка черновика;
-    сидя — макушка черновика приходит в expected_top_y карточки (кость-метрика не используется);
-    лежа — длина тела цели (top_cm) на глубине поверхности / длина тела черновика."""
-    img = L.read_bgr(draft_png)
-    h, w = img.shape[:2]
-    aspect = w / h
-    p = L.pose33(img)
-    if p is None:
-        raise RuntimeError(f"{draft_png.name}: поза не найдена")
-    box = L.body_box(p, aspect)
-    hip_xy = (float((p[23, 0] + p[24, 0]) / 2), float((p[23, 1] + p[24, 1]) / 2))
+def mask_span(mb: np.ndarray) -> float:
+    """Протяжённость тела по МАСКЕ вдоль главной оси (доли высоты кадра): фолбэк длины лежа,
+    когда поза не даёт щиколоток (L2 «скрестив ноги» — колени/лодыжки перекрыты)."""
+    ys, xs = np.where(mb)
+    pts = np.stack([xs / mb.shape[0], ys / mb.shape[0]], 1)     # сразу в долях ВЫСОТЫ (x/w·aspect)
+    c = pts - pts.mean(0)
+    _, _, v = np.linalg.svd(c, full_matrices=False)
+    proj = c @ v[0]                                        # проекции на главную ось тела
+    return float(proj.max() - proj.min())
+
+
+def plan_anchor(kind: str, mb: np.ndarray, p: np.ndarray) -> tuple[float, float]:
+    """Якорь посадки в ДОЛЯХ кадра черновика: сидя — таз (неподвижен при ×k), иначе низ МАСКИ
+    (контакт с опорой). Гейт сцены гарантирует кадрирование черновика = плите, поэтому якорь
+    переносится в плиту тождественно; слот карточки местом больше не является."""
     if kind == "сидя":
-        top = tgt.get("expected_top_y")
-        if not top or box is None:
-            raise RuntimeError(f"{draft_png.name}: нет expected_top_y или рамки тела")
-        k = (dst[1] - float(top)) / (hip_xy[1] - box[1])
-        pivot = hip_xy
+        return (float((p[23, 0] + p[24, 0]) / 2), float((p[23, 1] + p[24, 1]) / 2))
+    return mask_bottom(mb)
+
+
+def plan_k(p: np.ndarray, box, mb: np.ndarray, card: dict, kind: str, tgt: dict,
+           anchor: tuple[float, float], seat_cm: float, aspect: float) -> float:
+    """Масштаб ×k на глубине ЕЁ опоры, не слота. стоя/присед — expected_height по стопам ЧЕРНОВИКА
+    с ЦЕЛЬЮ top_cm (рост стоя / высота приседа) / рамка черновика; сидя — пол под её тазом
+    (проекция через горизонт), торс до цели top_cm, кость-метрика не используется; лежа —
+    поверхность под низом её маски, k = длина цели (top_cm) / длина тела нос→щиколотка
+    (фолбэк — протяжённость маски)."""
+    hor, cam = float(card["horizon_y"]), float(card["camera_height_cm"])
+    if kind == "сидя":
+        top = head_top(p, aspect)
+        if top is None and box is None:
+            raise RuntimeError("сидя: голова не найдена для масштаба")
+        r = seat_cm / cam
+        if r >= 1 or anchor[1] <= hor:                     # пол под тазом через горизонт
+            raise RuntimeError("сидя: пол под тазом не определяется")
+        ground = (anchor[1] - hor * r) / (1 - r)
+        if ground <= hor + 0.02:
+            raise RuntimeError("сидя: пол под тазом за горизонтом")
+        s = (ground - hor) / cam                           # px/см на глубине ПОЛА под её тазом
+        k = float(tgt["top_cm"] - seat_cm) * s / (anchor[1] - (top if top is not None else box[1]))
     elif kind == "лежа":
-        length = body_length(p, aspect)
+        length = body_length(p, aspect) or mask_span(mb)   # щиколотки перекрыты — длина по маске
         if not length:
-            raise RuntimeError(f"{draft_png.name}: длина тела не измерена")
-        s = (slot[1] - float(card["horizon_y"])) / float(card["camera_height_cm"])
+            raise RuntimeError("лежа: длина тела не измерена")
+        s = (anchor[1] - hor) / cam                        # поверхность под её нижней точкой
         k = float(tgt["top_cm"]) * s / length
-        pivot = hip_xy
     else:
-        feet = [p[i] for i in (27, 28, 31, 32) if p[i, 2] >= L.MIN_VIS]
-        if not feet or box is None:
-            raise RuntimeError(f"{draft_png.name}: стопы не видны")
-        fx = float(np.mean([q[0] for q in feet]))
-        eh = expected_height(card, slot[1], H_CM)
+        if box is None:
+            raise RuntimeError("стоя: нет рамки тела")
+        feet = [p[i, 1] for i in (27, 28, 31, 32) if p[i, 2] >= L.MIN_VIS]
+        # цель ПОЗЫ (top_cm): у стоя это рост 230, у приседа — высота приседа (~133); делить полный
+        # рост на рамку приседа нельзя — перекос ×230/133 (C4/C5 «267 из 133» в наборе 21.10)
+        eh = expected_height(card, float(np.mean(feet)), float(tgt["top_cm"])) if feet else None
         if not eh:
-            raise RuntimeError(f"{draft_png.name}: карточка не даёт рост на глубине слота")
+            raise RuntimeError("стоя: карточка не даёт рост на глубине стоп черновика")
         k = eh / (box[3] - box[1])
-        pivot = (fx, float(np.mean([q[1] for q in feet])))
-    return p, float(k), pivot, hip_xy, box
+    return float(k)
 
 
 def clip_k(k: float, anchor_y: float, dst_y: float, box_top: float) -> tuple[float, float, bool]:
@@ -243,47 +265,37 @@ def person_mask(cli, png: Path, cache: Path) -> Image.Image:
     return Image.open(c).convert("L")
 
 
-def cut_silhouette(cli, draft_png: Path, plate: Image.Image, k: float, hip_xy, card: dict,
-                   slot: tuple[float, float], seat: tuple[float, float] | None):
-    """Силуэт = вырезанное тело черновика (маска SAM3) серым ×k на чистую плиту ПО СЛОТУ: стоя/присед/лежа
-    низ маски → опора слота (пол/поверхность), сидя таз → сиденье. Мебель карточки перед слотом
-    возвращается поверх. → (плита с силуэтом, отчёт: посадка, контакты, выход за кадр)."""
-    m = person_mask(cli, draft_png, draft_png.parent / "_masks")
+def cut_silhouette(draft_png: Path, mb: np.ndarray, plate: Image.Image, k: float,
+                   anchor: tuple[float, float], card: dict):
+    """Силуэт = вырезанное тело черновика (маска SAM3) серым ×k на чистую плиту ТОЖДЕСТВЕННЫМ
+    переносом долей кадра: якорь (низ маски / таз сидя) → та же доля плиты — гейт сцены уже
+    гарантирует совпадение кадрирований. Мебель карточки ПЕРЕД персонажем (по его позиции)
+    возвращается поверх. → (плита с силуэтом, отчёт)."""
     W0, H0 = Image.open(draft_png).size
-    mb = np.asarray(m.resize((W0, H0), Image.NEAREST)) > 127
-    if not mb.any():
-        raise RuntimeError(f"{draft_png.name}: маска пуста")
     ys, xs = np.where(mb)
     x0, y0, x1, y1 = int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
     plate = plate.convert("RGB")
     W, H = plate.size
     cut = Image.open(draft_png).convert("RGB").crop((x0, y0, x1, y1))
     cmask = Image.fromarray((mb[y0:y1, x0:x1] * 255).astype(np.uint8)).convert("L")
-    # px черновика → px плиты: ×k (рост) и ×W/W0 (черновик 1344 → финал 2336); без пересчёта в плиту
-    # кроп вставлялся в ~1.7 раза меньше и «висел в воздухе» (дефект 21.10)
+    # px черновика → px плиты: ×k (рост) и ×W/W0 (черновик 1344 → финал 2336); якорь — в ту же долю
     sx, sy = k * W / W0, k * H / H0
     nw, nh = round(cut.width * sx), round(cut.height * sy)
     cut = cut.resize((nw, nh), Image.LANCZOS)
     cmask = cmask.resize((nw, nh), Image.LANCZOS)
     sil = Image.composite(Image.new("RGB", cut.size, (128, 128, 128)),
                           Image.new("RGB", cut.size, (0, 0, 0)), cmask)
-    bx, by = mask_bottom(mb)
-    bmy = by * H0                             # низ маски в px черновика
-    if seat:                                  # сидя: таз (неподвижен при ×k вокруг себя) → сиденье
-        ax, ay, tx, ty = hip_xy[0] * W0, hip_xy[1] * H0, seat[0] * W, seat[1] * H
-    else:                                     # стоя/присед/лежа: низ маски → опора слота
-        ax, ay, tx, ty = bx * W0, bmy, slot[0] * W, slot[1] * H
-    dx, dy = tx - (ax - x0) * sx, ty - (ay - y0) * sy
+    ax, ay = anchor[0] * W0, anchor[1] * H0               # якорь в px черновика → та же доля плиты
+    dx, dy = anchor[0] * W - (ax - x0) * sx, anchor[1] * H - (ay - y0) * sy
     out = plate.copy()
     out.paste(sil, (round(dx), round(dy)), cmask)
-    for a in card.get("anchors", []):         # мебель перед слотом — поверх силуэта (персонаж за ней)
+    for a in card.get("anchors", []):         # мебель перед ПЕРСОНАЖЕМ — поверх силуэта (он за ней)
         a_x0, a_y0, a_x1, a_y1 = a["bbox"]
-        if a_y1 > slot[1] and a_x0 < slot[0] < a_x1 and float(a["top_cm"]) < 140:
+        if a_y1 > anchor[1] and a_x0 < anchor[0] < a_x1 and float(a["top_cm"]) < 140:
             box = (int(a_x0 * W), int(a_y0 * H), int(a_x1 * W), int(a_y1 * H))
             out.paste(plate.crop(box), box[:2])
-    rep = {"slot": [round(slot[0], 4), round(slot[1], 4)], "low": [round(bx, 3), round(by, 3)],
+    rep = {"anchor": [round(anchor[0], 3), round(anchor[1], 3)],
            "top_y": round(dy / H, 3), "mask_top": round(y0 / H0, 4), "w_frac": round(nw / W, 3),
-           "bottom_dy": round((dy + (bmy - y0) * sy) / H - slot[1], 3),   # контакт низа с опорой слота
            "out_x": round(min(dx, W - (dx + nw)) / W, 3)}                 # запас до края кадра (− = вылез)
     return out, rep
 
@@ -339,39 +351,46 @@ def cmd_build(a) -> int:
             draft_png = Path(dj[jid]["files"][0])
             shift = scene_shift(draft_png, plate)
             if not shift["ok"]:
-                # H3 перестроил сцену — посадка по карточке невозможна; другой сид/черновик, не перенос точки
+                # H3 перестроил сцену — доли кадра черновика не переносимы; другой сид/черновик
                 rejected.append(pose)
                 meta[pose] = {"rejected": shift}
                 print(f"!! {pose}: сцена черновика не совпала с плитой — пропуск", shift, flush=True)
                 continue
-            p, k, pivot, hip_xy, box = plan_scaling(draft_png, card, kind, slot, seat or slot, tgt)
-            k *= a.boost
-            if kind == "сидя":                 # голени ×k не должны уйти за низ кадра (сиденье фиксировано)
+            img = L.read_bgr(draft_png)
+            h0, w0 = img.shape[:2]
+            p = L.pose33(img)
+            if p is None:
+                raise RuntimeError(f"{draft_png.name}: поза не найдена")
+            box = L.body_box(p, w0 / h0)
+            m = person_mask(cli, draft_png, draft_png.parent / "_masks")
+            mb = np.asarray(m.resize((w0, h0), Image.NEAREST)) > 127
+            if not mb.any():
+                raise RuntimeError(f"{draft_png.name}: маска пуста")
+            anchor = plan_anchor(kind, mb, p)
+            k = plan_k(p, box, mb, card, kind, tgt, anchor, seat_cm, w0 / h0) * a.boost
+            if kind == "сидя":                 # голени ×k не должны уйти за низ кадра (таз фиксирован)
                 feet_y = max((p[i, 1] for i in (27, 28, 31, 32) if p[i, 2] >= L.MIN_VIS), default=None)
-                if feet_y and feet_y > hip_xy[1]:
-                    k = min(k, (0.99 - seat[1]) / (feet_y - hip_xy[1]))
+                if feet_y and feet_y > anchor[1]:
+                    k = min(k, (0.99 - anchor[1]) / (feet_y - anchor[1]))
             if kind == "лежа":                 # верх головы не над опорой — клип по краям не считаем
                 top_y, clipped = None, False
             else:
-                k, top_y, clipped = clip_k(k, pivot[1], (seat or slot)[1], box[1])
+                k, top_y, clipped = clip_k(k, anchor[1], anchor[1], box[1])
             if a.shape == "cut":           # 21.10: рисованный силуэт ломал телосложение (раздутые бёдра) —
-                sil, rep = cut_silhouette(cli, draft_png, plate, k, hip_xy,   # тело берём из черновика
-                                          card, slot, seat)
+                sil, rep = cut_silhouette(draft_png, mb, plate, k, anchor, card)  # тело из черновика
                 if kind != "лежа" and rep["top_y"] < 0.01:   # маска (волосы) выше рамки позы — переделать
-                    k = clip_k_mask(k, pivot[1], (seat or slot)[1], rep["mask_top"])
-                    sil, rep = cut_silhouette(cli, draft_png, plate, k, hip_xy, card, slot, seat)
+                    k = clip_k_mask(k, anchor[1], anchor[1], rep["mask_top"])
+                    sil, rep = cut_silhouette(draft_png, mb, plate, k, anchor, card)
                     clipped = True
                 if rep["out_x"] < -0.04:                       # тело шире кадра — урезать до 94 % ширины
                     k = clip_k_width(k, rep["w_frac"])
-                    sil, rep = cut_silhouette(cli, draft_png, plate, k, hip_xy, card, slot, seat)
+                    sil, rep = cut_silhouette(draft_png, mb, plate, k, anchor, card)
                     clipped = True
-                rep.update(kind=kind, k=round(k, 3), clipped=clipped, shift=shift)
+                rep.update(kind=kind, k=round(k, 3), clipped=clipped, shift=shift,
+                           dev=[round(anchor[0] - slot[0], 3),        # отклонение от слота — только отчёт
+                                round(anchor[1] - (seat or slot)[1], 3)])
             else:
-                q = transform(p, k, pivot, seat[:2] if seat else slot)
-                if kind == "сидя":         # стопы — на пол слота (голени к полу плиты)
-                    floor = max(q[i][1] for i in (27, 28, 31, 32))
-                    for i in (27, 28, 31, 32):
-                        q[i][1] += slot[1] - floor
+                q = transform(p, k, anchor, anchor)
                 sil = draw_silhouette(plate, q)
                 rep = {"kind": kind, "k": round(k, 3), "top_y": top_y and round(float(top_y), 3),
                        "clipped": clipped, "shift": shift, "slot": [round(slot[0], 4), round(slot[1], 4)]}
@@ -468,7 +487,8 @@ def achieved(p: np.ndarray, box, card: dict, kind: str, slot: tuple[float, float
         length = body_length(p, aspect)
         if length is None:
             return None
-        s = (slot[1] - hor) / cam                   # глубина поверхности слота — опора лежа
+        pts = [float(p[i, 1]) for i in (0, 27, 28, 31, 32) if vis(i)]   # точки длины: нос и щиколотки
+        s = (max(pts) - hor) / cam                  # глубина ЕЁ опоры — низ тела на поверхности
         cm = length / s
     tol = TOL_FRAC * top_cm
     return {"cm": round(cm, 1), "target": top_cm, "tol": round(tol, 1),
@@ -498,6 +518,7 @@ def cmd_eval(a) -> int:
         box = L.body_box(p, w / h) if p is not None else None
         r = {"id": j["id"], "round": Path(fin).parent.parent.name, "scene": scene,
              "seed": j["seed"] % 1000, "build": build.get(j["pose"])}
+        bld = build.get(j["pose"]) or {}
         card = json.loads((seed_dir / "card.json").read_text(encoding="utf-8"))
         tgt = json.loads((seed_dir / "target.json").read_text(encoding="utf-8"))
         kind = kind_of(str(tgt.get("cls", "")))
@@ -507,11 +528,13 @@ def cmd_eval(a) -> int:
         bd = L.body_box(pd, w / h) if pd is not None else None
         if box is not None and bd is not None:
             r["h_ratio_final"] = round(float((box[3] - box[1]) / (bd[3] - bd[1])), 3)
-        if p is not None:                                  # контакт финала с опорой слота + автоприёмка
+        if p is not None:                                  # посадка финала + автоприёмка
             feet = [p[i, 1] for i in (27, 28, 31, 32) if p[i, 2] >= L.MIN_VIS]
             low = float(np.mean(feet)) if feet else (box[3] if box else None)
             if low is not None:
-                r["contact_dy"] = round(low - slot[1], 3)              # низ тела vs опора слота
+                r["contact_dy"] = round(low - slot[1], 3)              # vs слот карточки (отчёт-отклонение)
+                if bld.get("anchor"):
+                    r["anchor_dy"] = round(low - bld["anchor"][1], 3)  # vs посадка силуэта (авторитет)
             if kind == "сидя":
                 hp = [p[i, 1] for i in (23, 24) if p[i, 2] >= L.MIN_VIS]
                 if hp:
