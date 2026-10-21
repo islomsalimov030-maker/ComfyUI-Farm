@@ -87,8 +87,19 @@ class Comfy:
         raise TimeoutError(f"{pid}: дольше {timeout_s} с")
 
     def view(self, f: dict) -> bytes:
-        return self.http.get("/view", params={"filename": f["filename"], "subfolder": f.get("subfolder", ""),
-                                              "type": f.get("type", "output")}).content
+        """Скачивание кадра: студия под нагрузкой отдаёт 3 Мп PNG дольше 120 с (ReadTimeout 22.10) —
+        3 попытки с таймаутом 600 с, кадр на сервере уже готов."""
+        import httpx
+        params = {"filename": f["filename"], "subfolder": f.get("subfolder", ""), "type": f.get("type", "output")}
+        for attempt in range(3):
+            try:
+                r = self.http.get("/view", params=params, timeout=600)
+                r.raise_for_status()
+                return r.content
+            except (httpx.TimeoutException, httpx.TransportError):
+                if attempt == 2:
+                    raise
+                time.sleep(10)
 
 
 # --------------------------------------------------------------------------------------- конфиг
