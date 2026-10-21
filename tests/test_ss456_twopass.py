@@ -100,3 +100,58 @@ def test_cut_seat_anchor_and_furniture_in_front(tmp_path, monkeypatch):
     grey = (np.abs(a - 128).max(2) == 0)
     assert grey[230:260, 60:80].any()                                    # корпус выше мебели — серый
     assert rep["slot"] == [0.5, 0.9]
+
+
+def test_kind_and_scenes():
+    assert T.kind_of("стоя") == "стоя" and T.kind_of("на корточках") == "присед"
+    assert T.kind_of("сидя") == "сидя" and T.kind_of("лежа") == "лежа"
+    cfg = {"kit_poses": {"A_plate": {}, "A_head": {}, "B_plate": {}},
+           "variants": [{"id": "plate_A"}, {"id": "head_A"}, {"id": "x_B"}]}
+    assert T.scenes_of(cfg) == ["A"]                                     # B без варианта plate_B
+
+
+def _pose(feet_y=0.8, nose_y=None):
+    p = np.zeros((33, 3), np.float32)
+    p[:, 2] = 1.0
+    p[[27, 28, 31, 32], 1] = feet_y
+    p[[23, 24], 1] = 0.5
+    p[[11, 12], 1] = 0.2
+    if nose_y is not None:                        # голова: нос между ушей на уровне носа → радиус 0.02
+        p[0] = [0.5, nose_y, 1.0]
+        p[[7, 8]] = [[0.49, nose_y, 1.0], [0.51, nose_y, 1.0]]
+    return p
+
+
+CARD = {"horizon_y": 0.5, "camera_height_cm": 100.0}
+
+
+def test_achieved_standing_squat():
+    p = _pose(feet_y=0.8, nose_y=0.13)             # макушка 0.11 → (0.8−0.11)/0.003 = 230 см
+    r = T.achieved(p, [0.4, 0.11, 0.6, 0.8], CARD, "стоя", (0.5, 0.8), 230.0, 45.0, 16 / 9)
+    assert r["cm"] == pytest.approx(230, abs=0.5) and r["ok"]
+    assert T.head_top(p, 16 / 9) == pytest.approx(0.11, abs=1e-3)      # нос − радиус (уши на уровне носа)
+    p2 = _pose(feet_y=0.8, nose_y=0.13 - 70 * 0.003)                   # 300 см
+    r2 = T.achieved(p2, [0.4, 0.0, 0.6, 0.8], CARD, "стоя", (0.5, 0.8), 230.0, 45.0, 16 / 9)
+    assert not r2["ok"] and r2["cm"] == pytest.approx(300, abs=1)
+    p3 = _pose(feet_y=0.8, nose_y=0.13 + 96.6 * 0.003)                 # присед 133.4 см
+    r3 = T.achieved(p3, [0.4, 0.4, 0.6, 0.8], CARD, "присед", (0.5, 0.8), 133.4, 45.0, 16 / 9)
+    assert r3["cm"] == pytest.approx(133.4, abs=1) and r3["ok"] and r3["soft"]
+
+
+def test_achieved_sitting_through_seat():
+    p = _pose(feet_y=0.9)
+    p[[23, 24], 1] = 0.6                                                 # таз; пол под ним 0.6818
+    p[0] = [0.5, 0.4026, 1.0]                                            # макушка 0.3826
+    p[[7, 8]] = [[0.49, 0.4026, 1.0], [0.51, 0.4026, 1.0]]
+    r = T.achieved(p, [0.4, 0.3826, 0.6, 0.9], CARD, "сидя", (0.5, 0.78), 164.6, 45.0, 16 / 9)
+    assert r["cm"] == pytest.approx(164.6, abs=1) and r["ok"] and not r.get("soft")
+
+
+def test_achieved_lying_by_body_length():
+    p = np.zeros((33, 3), np.float32)
+    p[0] = [0.3, 0.6, 1.0]                                               # голова
+    p[31] = [0.3 + 0.225 / (16 / 9), 0.6, 1.0]                           # стопа: длина = 225 см
+    p[[23, 24]] = [0.4, 0.6, 1.0]
+    r = T.achieved(p, None, CARD, "лежа", (0.5, 0.6), 225.0, 45.0, 16 / 9)
+    assert r["cm"] == pytest.approx(225, abs=1.5) and r["ok"]
+    assert T.body_length(p, 16 / 9) == pytest.approx(0.225, abs=1e-3)

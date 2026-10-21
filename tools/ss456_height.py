@@ -32,7 +32,8 @@ from farm.prompts.lint import errors, lint  # noqa: E402
 GREY = (128, 128, 128)
 PIC1 = ("<Picture 1> is the empty room that the image is built on: its layout, camera position, framing and light "
         "are kept exactly.")
-SIL_DEF = {"стоя": "where she stands", "сидя": "where she sits", "присед": "where she crouches"}
+SIL_DEF = {"стоя": "where she stands", "сидя": "where she sits", "присед": "where she crouches",
+           "лежа": "where she lies"}
 SIL_RULE = ("She takes the exact place of the flat grey silhouette in <Picture 1>, same position and same height, "
             "facing the camera, her body covering it completely; no grey silhouette remains in the photograph.")
 # сцены теста: класс позы, точка опоры (стопы, доли кадра плиты), высота сиденья
@@ -70,6 +71,16 @@ def silhouette(plate: Image.Image, card: dict, feet: tuple[float, float], height
         top, sh, hip = 0.58 * h, 0.47 * h, 0.28 * h
         d.polygon([(fx - dx(60), y(0)), (fx + dx(60), y(0)), (fx + dx(75), y(hip)), (fx - dx(75), y(hip))], fill=GREY)
         d.polygon([(fx - dx(40), y(hip)), (fx + dx(40), y(hip)), (fx + dx(42), y(sh)), (fx - dx(42), y(sh))], fill=GREY)
+    elif cls == "лежа":         # фолбэк для зон, где H3 перестраивает сцену: место + длина тела, поза — текстом
+        d.polygon([(fx - dx(h), y(0)), (fx - dx(h), y(28)), (fx + dx(h), y(28)),
+                   (fx + dx(h), y(0))], fill=GREY)
+        d.ellipse([fx - dx(h) - dx(12), y(28), fx - dx(h) + dx(12), y(0)], fill=GREY)          # голова слева
+        for an in card.get("anchors", []):         # невысокая мебель поверх
+            x0, y0, x1, y1 = an["bbox"]
+            if y1 > feet[1] and x0 < feet[0] < x1 and float(an["top_cm"]) < 0.6 * h:
+                box = (int(x0 * W), int(y0 * H), int(x1 * W), int(y1 * H))
+                im.paste(plate.convert("RGB").crop(box), box[:2])
+        return im, round(float(y(28) / H), 4), s
     else:
         raise ValueError(f"класс позы {cls}")
     shoulders = sh

@@ -56,22 +56,97 @@ SCENES = {
                 "a light smile."),
         anchor=("Scale anchor: sitting upright, her shoulders rise well above the back of the sofa and her head "
                 "is high against the brick wall.")),
-    "S3_kitchen": dict(zone="kitchen", slot=None, cls="стоя", top_cm=HEIGHT, outfit="samantha_athleisure",
+    "S3_kitchen": dict(zone="kitchen", slot="A", cls="стоя", top_cm=HEIGHT, outfit="samantha_athleisure",
         where="standing at the kitchen counter",
         action=("She stands at the black stone counter by the espresso machine, her back three-quarters to the "
                 "camera, making coffee with both hands, her head turned over her right shoulder toward the "
                 "camera with a confident look."),
         anchor=("Scale anchor: the black stone counter reaches her upper thighs and the bottom of the glass "
                 "upper cabinets is at the level of her chest; her head is close to the top of the range hood.")),
+    # полный набор «Дом» (15 SFW сцен, SS-456): добавлены 21.10, лежа-4 (NSFW) не генерируется
+    "S1_vanity": dict(zone="bath_vanity", slot="A", cls="стоя", top_cm=HEIGHT, outfit=None,
+        where="standing at the bathroom vanity",
+        action=("She stands at the vanity with the round mirror, seen from the back and slightly to the side, "
+                "her left hand on her hip, her head turned so that her face is visible in the mirror, with a "
+                "calm confident look."),
+        anchor=("Scale anchor: the vanity counter with the basin reaches her hip line and the bottom edge of "
+                "the round mirror is level with her chin.")),
+    "S2_tub": dict(zone="bath_tub", slot="A", cls="стоя", top_cm=HEIGHT, outfit=None,
+        where="standing by the bathtub",
+        action=("She stands by the freestanding bathtub with a white towel around her neck, seen from the "
+                "front and slightly to the side, holding both ends of the towel in her hands, with a relaxed "
+                "confident look."),
+        anchor=("Scale anchor: the rim of the bathtub is just above her knees and the top of the glass shower "
+                "partition rises past her shoulders.")),
+    "S4_bookshelf": dict(zone="bookshelf", slot="A", cls="стоя", top_cm=HEIGHT, outfit=None,
+        where="standing at the tall bookshelf",
+        action=("She stands at the dark wooden bookshelf, seen from the back and slightly to the side, "
+                "reaching up with her right hand to a book on a high shelf, her head tilted up."),
+        anchor=("Scale anchor: the shelf she reaches for is just above the top of her head and the low "
+                "console beside her reaches her hips.")),
+    "L1_bed": dict(zone="bed", slot="A", cls="лежа", top_cm=220.0, outfit=None,
+        where="lying on her side on the bed",
+        action=("She lies on her side on the bed, propped up on her left elbow, holding an open book in her "
+                "right hand, her legs relaxed, looking at the camera with a soft smile."),
+        anchor=("Scale anchor: the bed is short for her — her feet reach past the foot of the mattress and "
+                "the headboard barely rises above her shoulder.")),
+    "L2_mat": dict(zone="floor_mat", slot="A", cls="лежа", top_cm=135.0, outfit=None,
+        where="doing slow crunches on the exercise mat",
+        action=("She lies on her back on the exercise mat, her knees bent, her hands behind her head, "
+                "raising her shoulders in a slow controlled crunch, her face tense with effort."),
+        anchor=("Scale anchor: her bent knees rise high above the mat and her head lies well beyond its far "
+                "edge; the mat looks small under her long frame.")),
+    "L3_sofa": dict(zone="sofa", slot="C", cls="лежа", top_cm=205.0, outfit=None,
+        where="lying on her side on the sofa",
+        action=("She lies on her side along the velvet sofa, her head resting on her left hand, her legs "
+                "slightly bent, looking at the camera with a relaxed smile."),
+        anchor=("Scale anchor: she is too long for the sofa — her feet hang over its armrest, and the "
+                "backrest is lower than her shoulder when she props herself up.")),
+    "L5_floor": dict(zone="living_floor", slot="A", cls="лежа", top_cm=225.0, outfit=None,
+        where="holding a plank on the runner rug",
+        action=("She holds a straight-arm plank on the runner rug, her body one long line from head to "
+                "heels, seen from the side, her face calm and focused."),
+        anchor=("Scale anchor: in the plank her body stretches far beyond the cushions on the rug and her "
+                "shoulder blades rise above the seat of any chair nearby.")),
+    "C1_sofa": dict(zone="sofa", slot="B", cls="сидя", top_cm=45 + 0.52 * HEIGHT, outfit=None,
+        where="sitting on the right side of the velvet sofa",
+        action=("She sits on the right side of the velvet sofa, her right leg tucked under her, her left "
+                "foot on the floor, her hands resting in her lap, looking slightly aside and then at the "
+                "camera with a light smile."),
+        anchor=("Scale anchor: sitting upright, her shoulders rise well above the back of the sofa and her "
+                "tucked knee comes up to her chest.")),
+    "C2_bedside": dict(zone="bed_side", slot="A", cls="сидя", top_cm=50 + 0.52 * HEIGHT, outfit=None,
+        where="sitting on the edge of the bed",
+        action=("She sits on the edge of the bed, leaning forward a little, polishing a chrome dumbbell "
+                "with a cloth in her right hand, the dumbbell resting on her left knee, looking at the "
+                "camera with a concentrated look."),
+        anchor=("Scale anchor: sitting on the edge, her knees are well above the level of the nightstand "
+                "and the top of her head is high above the headboard.")),
+    "C5_greenhouse": dict(zone="greenhouse_wide", slot="A", cls="на корточках", top_cm=0.58 * HEIGHT,
+        outfit=None,
+        where="crouching at the plant shelves, her back to the camera",
+        action=("She crouches at the low shelf with the plant pots, her back to the camera, misting the "
+                "leaves with a spray bottle in her right hand, her heels flat on the floor."),
+        anchor=("Scale anchor: even crouching, her back rises above the shelf boards beside her and the "
+                "shelf tops end far below her standing height.")),
 }
 
 # 16:9 (решение 19.10): зона → (исходник локации 16:9 в refmod_inputs/ss456/confluence, рамка зоны в px исходника).
-# Рамки — cv2.matchTemplate плиты зоны по исходникам (0.84–1.0), power_rack — кроп из refmod.yaml зоны.
+# Рамки — cv2.matchTemplate плиты зоны по исходникам (bed/bed_side/floor_mat — 1.0; bookshelf/living_floor —
+# совпадение по мебели глазами, 21.10), power_rack — кроп из refmod.yaml зоны.
 WIDE = {
     "greenhouse_desk": ("loc_greenhouse_0.png", (607, 104, 1516, 1444)),
+    "greenhouse_wide": ("loc_greenhouse_0.png", (0, 0, 2752, 1548)),
     "sofa": ("loc_living_0.png", (919, 126, 1156, 1422)),
     "kitchen": ("loc_living_0.png", (0, 74, 1078, 1474)),
     "power_rack": ("loc_bedroom_2.png", (980, 124, 388, 644)),
+    "bath_vanity": ("loc_bath_0.png", (80, 380, 1000, 760)),     # дальний вид: 230 см стоя не влезает в кроп tbl
+    "bath_tub": ("loc_bath_0.png", (1180, 430, 560, 720)),
+    "bookshelf": ("loc_bedroom_0.png", (1930, 470, 822, 730)),
+    "bed": ("loc_bedroom_2.png", (0, 128, 588, 640)),
+    "bed_side": ("loc_bedroom_1.png", (4, 28, 648, 736)),
+    "floor_mat": ("loc_bedroom_2.png", (416, 168, 704, 596)),
+    "living_floor": ("loc_bath_0.png", (1347, 690, 1070, 670)),  # выше: горизонт bath_0 должен быть в кадре
 }
 
 
