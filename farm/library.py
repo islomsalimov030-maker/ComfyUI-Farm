@@ -27,7 +27,7 @@ log = logging.getLogger("farm.library")
 PKG_DIR = Path(__file__).resolve().parent
 SCHEMA_PATH = PKG_DIR / "sheet_schema.yaml"
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp")
-LIBS = ("characters", "plates", "outfits", "objects", "profiles")
+LIBS = ("characters", "plates", "zones", "outfits", "objects", "profiles")
 
 _POSES = {"стоя": "standing", "standing": "standing", "stand": "standing",
           "сидя": "sitting", "sitting": "sitting", "sit": "sitting",
@@ -252,8 +252,15 @@ class Library:
         return r["path"] if r else None
 
     # --- контракт воркера --------------------------------------------------------------
+    def zone(self, id_):
+        return self.get("zones", id_)
+
     def zone_sheet(self, zone: str) -> Optional[Path]:
         """refs/zones/<зона>/sheet.* — лист ракурсов (собирает tools/farm_prepare_refs.py из views/)."""
+        if "zones" in self.schema["libraries"] and self.get("zones", zone):
+            f = self.file("zones", zone, "sheet")
+            if f:
+                return f
         d = self.refs / "zones" / str(zone).lower().replace("/", "_")
         hits = sorted(d.glob("sheet.*")) if d.is_dir() else []
         return hits[0] if hits else None

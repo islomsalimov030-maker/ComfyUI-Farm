@@ -374,7 +374,7 @@ def validate_row(raw: dict, row: int, lib: Library, active_profiles: Optional[se
     k = str(g("kind")).strip().lower()
     kinds = {**LISTS["kind"], "video": "video", "frame": "frame", "фото": "frame", "картинка": "frame"}
     if not k:
-        rc.err("E_REQUIRED", "kind", "заполните: видео или кадр")
+        n["kind"] = "video"                 # v2: колонки «Тип» может не быть — по умолчанию видео
     elif k not in kinds:
         rc.err("E_KIND", "kind", f"«{k}»: нужно «видео» или «кадр»")
     else:
@@ -389,8 +389,14 @@ def validate_row(raw: dict, row: int, lib: Library, active_profiles: Optional[se
         n["character"] = _ref(rc, "character", lib, "characters", ch, "персонажа")
 
     pl = str(g("plate")).strip().lower().replace(" ", "")
+    zn = str(g("zone")).strip().lower().replace(" ", "")
+    n["plate"] = n["zone"] = None
+    if zn:                                   # v2: зона (location sheet) вместо плиты
+        n["zone"] = _ref(rc, "zone", lib, "zones", zn, "зоны")
+        n["location"] = zn.split("_")[0]
     if not pl:
-        rc.err("E_REQUIRED", "plate", "заполните (вид локация/зона)")
+        if not zn:
+            rc.err("E_REQUIRED", "zone", "заполните «Зона» (или «Локация / плита» для таблицы v1)")
     elif not re.fullmatch(LIM["plate_id_re"], pl):
         rc.err("E_PLATE_FORMAT", "plate", f"«{g('plate')}»: нужен вид локация/зона латиницей, например apartment/sofa")
     else:
@@ -402,7 +408,8 @@ def validate_row(raw: dict, row: int, lib: Library, active_profiles: Optional[se
         n["outfit"] = _ref(rc, "outfit", lib, "outfits", of, "наряда")
     else:
         n["outfit"] = None
-        rc.warn("W_OUTFIT_EMPTY", "outfit", "наряд не указан")
+        if not n.get("zone"):                # v2: пустой наряд = базовый наряд, это не ошибка
+            rc.warn("W_OUTFIT_EMPTY", "outfit", "наряд не указан")
 
     objs = []
     for o in split_ids(g("objects")):
@@ -410,6 +417,17 @@ def validate_row(raw: dict, row: int, lib: Library, active_profiles: Optional[se
         if v:
             objs.append(v)
     n["objects"] = objs
+
+    # v2: класс позы, план, лицо в кадре
+    pc = str(g("pose_class")).strip().lower()
+    n["pose_class"] = LISTS.get("pose_class", {}).get(pc) if pc else None
+    if pc and n["pose_class"] is None:
+        rc.err("E_POSE_CLASS", "pose_class", f"«{pc}»: нужно стоя / сидя / присед / лежа")
+    pln = str(g("plan")).strip().lower()
+    n["plan"] = LISTS.get("plan", {}).get(pln) if pln else None
+    if pln and n["plan"] is None:
+        rc.warn("W_PLAN", "plan", f"«{pln}»: ожидается общий / средний / крупный — будет авто")
+    n["face_in_frame"] = str(g("face_in_frame")).strip().lower() or None
 
     # тексты
     for key in ("framing", "pose", "action", "focus", "amplitude", "base", "emotion", "note"):
@@ -559,6 +577,14 @@ def _cycles(graph: dict[str, set]) -> list[list[str]]:
 
 def _check_files(rc: RowCheck, lib: Library) -> None:
     n = rc.norm
+    if n.get("zone"):                        # v2: лист ракурсов зоны + эталон лица для QA видео; моды — по папкам
+        need = [("zone", "zones", n["zone"], "sheet", "листа ракурсов зоны (tools/farm_prepare_refs.py)")]
+        if n.get("kind") == "video":
+            need.append(("character", "characters", n.get("character"), "face", "эталона лица"))
+        for key, libname, id_, fkey, what in need:
+            if id_ and lib.file(libname, id_, fkey) is None:
+                rc.err("E_FILE_MISSING", key, f"нет файла {what}: {lib.expected_file(libname, id_, fkey)}")
+        return
     need = [("plate", "plates", n.get("plate"), "plate", "плиты")]
     if n.get("kind") == "video" and not n.get("start_from"):
         need.append(("character", "characters", n.get("character"), "sheet", "листа персонажа"))
@@ -587,7 +613,8 @@ def _local_path(home: Path, v: str) -> Optional[Path]:
 
 # ======================================================================== строка → шот
 def row_hash(n: dict) -> str:
-    keys = ("profile", "kind", "character", "plate", "outfit", "objects", "framing", "pose", "action",
+    keys = ("profile", "kind", "character", "plate", "zone", "pose_class", "plan", "face_in_frame",
+            "outfit", "objects", "framing", "pose", "action",
             "focus", "amplitude", "base", "emotion", "loop", "duration", "start_from", "end_with",
             "depends", "pose_ref", "motion_ref")
     blob = json.dumps({k: n.get(k) for k in keys}, ensure_ascii=False, sort_keys=True)
@@ -600,7 +627,7 @@ def to_shot(rc: RowCheck, pose_ref: Optional[str] = None, motion_ref: Optional[s
     lo, hi = LIM["priority"]
     return {
         "shot_id": n["id"], "sheet_row": rc.row, "profile": n["profile"], "kind": n["kind"],
-        "character": n["character"], "location": n["location"], "plate": n["plate"],
+        "character": n["character"], "location": n.get("location"), "plate": n.get("plate") or n.get("zone"),
         "outfit": n.get("outfit"), "objects_json": n.get("objects") or [],
         "pose_ru": n["pose"], "action_ru": n.get("action") or None,
         "loop": (int(bool(n["loop"])) if n.get("loop") is not None else None),
@@ -614,6 +641,8 @@ def to_shot(rc: RowCheck, pose_ref: Optional[str] = None, motion_ref: Optional[s
             "amplitude_ru": n.get("amplitude") or None, "base_ru": n.get("base") or None,
             "emotion_ru": n.get("emotion") or None, "mood": n.get("mood") or None,
             "start_from": n.get("start_from"), "end_with": n.get("end_with"),
+            "zone": n.get("zone"), "pose_class": n.get("pose_class"), "plan": n.get("plan"),
+            "face_in_frame": n.get("face_in_frame"),
             "row_hash": row_hash(n),
         },
     }
@@ -661,7 +690,13 @@ class Sheets:
     def read_library(self) -> Library:
         data = {}
         for lib, spec in SCHEMA["libraries"].items():
-            rows = read_rows(self.backend.read(spec["sheet"]), spec["columns"], spec["sheet"])
+            try:
+                values = self.backend.read(spec["sheet"])
+            except SheetError:
+                if not spec.get("optional"):
+                    raise
+                values = []                  # v2-лист (Зоны) в таблице v1 — пустой справочник
+            rows = read_rows(values, spec["columns"], spec["sheet"]) if values else []
             ents = {}
             for _, r in rows:
                 id_ = str(r.get("id") or "").strip().lower()
@@ -678,7 +713,7 @@ class Sheets:
         out = []
         for name, spec in SCHEMA["libraries"].items():
             pat = LIM["plate_id_re"] if name == "plates" else LIM["lib_id_re"]
-            for id_, r in lib.data[name].items():
+            for id_, r in lib.data.get(name, {}).items():
                 if not re.fullmatch(pat, id_):
                     out.append(f"{spec['sheet']}: ID «{id_}» — только латиница, цифры, _ и -"
                                + (" (вид локация/зона)" if name == "plates" else ""))
@@ -831,7 +866,7 @@ class Sheets:
     def _localize_library(self, lib: Library, rep: dict) -> None:
         for name, spec in SCHEMA["libraries"].items():
             fkeys = [c["key"] for c in spec["columns"] if c.get("file")]
-            for id_, r in lib.data[name].items():
+            for id_, r in lib.data.get(name, {}).items():
                 for k in fkeys:
                     v = str(r.get(k) or "")
                     if v.startswith("http"):

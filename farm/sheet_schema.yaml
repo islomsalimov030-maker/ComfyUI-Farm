@@ -2,7 +2,7 @@
 # Единый источник: читает farm/sheets.py (валидатор, синхронизация) и tools/build_sheet_template.py
 # (генерирует Apps Script tools/sheet_template.gs). Колонки находятся по заголовку, не по позиции:
 # порядок можно менять, лишние колонки игнорируются. Ключ (key) — имя поля в коде.
-version: 1
+version: 2   # v2 (WS-10, 23.10): зоны (location sheet), класс позы, план, лицо в кадре; плита необязательна
 title: "Ферма — сцены"
 
 limits:
@@ -19,6 +19,8 @@ limits:
 lists:
   kind: {видео: video, кадр: frame}
   yesno: {да: true, нет: false}
+  pose_class: {стоя: standing, сидя: sitting, присед: crouching, лежа: lying}
+  plan: {общий: wide, средний: medium, крупный: close}
   mood: [neutral, happy, frowny, shy, playful, sad, surprised]   # строгой проверки нет — можно дописать свой
 
 scenes:
@@ -37,12 +39,17 @@ scenes:
        note: "1 — срочно, 2 — обычно (по умолчанию), 3 — когда будет время."}
     - {key: profile, header: Профиль, width: 95, required: true, type: ref, ref: profiles,
        note: "Режим фермы: модель, LoRA, пороги. Список — лист «Профили»."}
-    - {key: kind, header: Тип, width: 65, required: true, type: list, list: kind,
+    - {key: kind, header: Тип, width: 65, type: list, list: kind,
        note: "видео — кадр + зацикленное видео; кадр — только картинка."}
     - {key: character, header: Персонаж, width: 95, required: true, type: ref, ref: characters,
        note: "ID с листа «Персонажи»."}
-    - {key: plate, header: Локация / плита, width: 150, required: true, type: ref, ref: plates,
+    - {key: plate, header: Локация / плита, width: 150, type: ref, ref: plates,
        note: "ID плиты с листа «Локации» вида локация/зона, например apartment/sofa."}
+    - {key: zone, header: Зона, width: 150, type: ref, ref: zones,
+       note: "v2: комната из листа «Зоны» (location sheet). Ракурс H3 выбирает сам. Вместо «Локация / плита»."}
+    - {key: pose_class, header: Класс позы, width: 85, type: list, list: pose_class}
+    - {key: plan, header: План, width: 80, type: list, list: plan, note: "Пусто — авто по позе"}
+    - {key: face_in_frame, header: Лицо в кадре, width: 85, note: "да / нет / в конце / в зеркале"}
     - {key: outfit, header: Наряд, width: 110, type: ref, ref: outfits,
        note: "ID с листа «Наряды». Пусто можно, но без рефа одежды хуже держатся фон и лицо."}
     - {key: objects, header: Объекты, width: 140, type: refs, ref: objects,
@@ -104,10 +111,14 @@ libraries:
       - {key: refmod, header: RefMod, width: 160, file: true, default: "refmod.safetensors"}
       - {key: height_cm, header: "Рост, см", width: 70, type: number, note: "Для проверки масштаба."}
       - {key: desc_en, header: Описание (EN), width: 260, note: "Внешность коротко по-английски, для промпта."}
+      - {key: hair_en, header: Волосы (EN), width: 200, note: "Для промпта прохода лица (frame_ls)."}
+      - {key: face_dir, header: Папка лица, width: 160, note: "refs/characters/<ID>/face — мод лица"}
+      - {key: body_dir, header: Папка тела, width: 160, note: "refs/characters/<ID>/body — мод тела"}
       - {key: note, header: Примечание, width: 200}
   plates:
     sheet: Локации
     dir: locations
+    optional: true                 # v2: плиты не нужны (зоны)
     columns:
       - {key: id, header: ID плиты, width: 160, required: true, note: "локация/зона: apartment/sofa"}
       - {key: zone_ru, header: Зона, width: 180, note: "По-русски: «розовый бархатный диван»."}
@@ -125,6 +136,19 @@ libraries:
       - {key: ambience_en, header: Звук фона (EN), width: 160}
       - {key: desc_en, header: Описание (EN), width: 240}
       - {key: note, header: Примечание, width: 200}
+  zones:                         # v2: комната = location sheet из 2–6 ракурсов (tools/farm_prepare_refs.py)
+    sheet: Зоны
+    dir: zones
+    optional: true                 # листа может не быть (таблица v1)
+    columns:
+      - {key: id, header: ID, width: 150, required: true, note: "комната: apartment_living"}
+      - {key: location, header: Локация, width: 140}
+      - {key: desc_en, header: Описание (EN), width: 300, note: "Уходит в промпт"}
+      - {key: light, header: Свет, width: 140}
+      - {key: views, header: Папка ракурсов, width: 200, note: "refs/zones/<ID>/views"}
+      - {key: count, header: Ракурсов, width: 70, type: number}
+      - {key: sheet, header: Лист ракурсов (файл), width: 160, file: true, default: "sheet.*", note: "Пусто → refs/zones/<ID>/sheet.*"}
+      - {key: note, header: Примечание, width: 200}
   outfits:
     sheet: Наряды
     dir: outfits
@@ -132,6 +156,7 @@ libraries:
       - {key: id, header: ID, width: 120, required: true}
       - {key: name, header: Название, width: 160}
       - {key: flatlay, header: Раскладка (файл), width: 160, file: true, default: "flatlay.*", note: "<Picture 3>: одежда без человека."}
+      - {key: folder, header: Папка, width: 180, note: "v2: refs/outfits/<ID> — мод наряда (спереди + сзади)"}
       - {key: refmod, header: RefMod, width: 140, file: true, default: "refmod.safetensors"}
       - {key: desc_en, header: Описание (EN), width: 260}
       - {key: note, header: Примечание, width: 200}

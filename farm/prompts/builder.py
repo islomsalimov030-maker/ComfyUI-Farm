@@ -199,6 +199,8 @@ def llm_input(stage: str, shot: dict, lib: Any, mode: str, end_s: float, flags: 
               hints: list, comment: Optional[str]) -> dict:
     extra, objects = _shot_view(shot)
     plate = _get(lib, "plate", shot.get("plate"))
+    if extra.get("zone"):                     # v2: описание комнаты из листа «Зоны»
+        plate = _get(lib, "zone", extra["zone"]) or plate
     outfit = _get(lib, "outfit", shot.get("outfit"))
     d = {
         "pose_ru": shot.get("pose_ru") or "",
@@ -336,7 +338,9 @@ def render(stage: str, template: str, fields: dict, v: dict, cfg: dict) -> str:
                                                              fields.get("scale_anchor") or "")),
             extra_rules=_dedupe(v["extra_rules"]),
             char_desc=v.get("char_desc", ""), framing_share=v.get("framing_share", ""))
-        if v.get("is_ls") and not fields.get("framing_en"):
+        if v.get("is_ls") and v.get("plan_opening"):
+            data["opening"] = v["plan_opening"]
+        elif v.get("is_ls") and not fields.get("framing_en"):
             data["opening"] = "A frontal full-body shot"
     text = _env.get_template(f"{template}.j2").render(**data)
     return _tidy(text)
@@ -429,6 +433,8 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
     # справочники → то, что пишет код
     char = _get(lib, "character", shot.get("character"))
     plate = _get(lib, "plate", shot.get("plate"))
+    if extra.get("zone"):                     # v2: описание комнаты из листа «Зоны»
+        plate = _get(lib, "zone", extra["zone"]) or plate
     outfit = _get(lib, "outfit", shot.get("outfit"))
     try:
         card = lib.plate_card(shot.get("plate")) if lib is not None and hasattr(lib, "plate_card") else None
@@ -436,7 +442,8 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
         card = None
     trigger = (char.get("lora_trigger") or "").strip() or cfg["defaults"]["trigger"]
     height = float(char.get("height_cm") or cfg["defaults"]["height_cm"])
-    pclass = pose_class(shot.get("pose_ru"))
+    pclass = {"crouching": "sitting"}.get(extra.get("pose_class"), extra.get("pose_class")) or pose_class(shot.get("pose_ru"))
+    plan = extra.get("plan")                  # v2: wide | medium | close | None
     o_desc = _lc(outfit.get("desc_en") or "")
     is_ls = stage == "frame" and template.startswith("frame_ls")
     if is_ls:   # frame_ls (WS-10): наряд — мод + описание, без мода — базовый наряд текстом
@@ -462,7 +469,8 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
          "scale_line": (scale_line_ls if is_ls else scale_line)(
              pclass if pclass in ("sitting", "lying") else "standing", height),
          "char_desc": _char_desc(char, height), "hair_en": _lc(char.get("hair_en") or ""),
-         "framing_share": cfg["defaults"]["framing_share"].get(pclass, "") if is_ls else "", "is_ls": is_ls,
+         "framing_share": cfg["defaults"]["framing_share"].get(pclass, "") if is_ls and plan in (None, "wide") else "",
+         "plan_opening": cfg["defaults"].get("plan_opening", {}).get(plan or "", "") if is_ls else "", "is_ls": is_ls,
          "scale_anchor": anchor["text"] if anchor else None}
     flags = {"has_video": has_video, "has_pose": has_pose, "end_pose_ru": _end_pose_ru(shot, extra, lib)}
     rest_verb = cfg["defaults"]["rest_verb"].get(

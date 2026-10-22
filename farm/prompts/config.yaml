@@ -103,6 +103,10 @@ defaults:
   rest_verb: {standing: stands, sitting: sits, lying: lies, other: stays}
   frame_template: frame_ref_v1
   base_outfit_en: "a fitted grey sports crop top and white cotton shorts, barefoot"   # frame_ls: наряд не указан
+  plan_opening:                      # frame_ls: «План» из таблицы v2
+    wide: "A frontal full-body shot"
+    medium: "A medium shot from the waist up"
+    close: "A close-up shot of her head and shoulders"
   framing_share:                     # frame_ls: доля кадра (H3 иначе ставит стоящую во весь кадр)
     standing: "the camera a few metres away so that she occupies only about half of the frame height, with plenty of the room around her"
   video_template: video_loop_ref_v1

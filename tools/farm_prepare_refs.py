@@ -60,6 +60,15 @@ def main() -> int:
             build_sheet(views, out)
             print(f"лист {z.name}: {len(views)} ракурсов → {out}")
 
+    for c in sorted((refs / "characters").glob("*/")):   # эталон лица для QA видео: первый кроп мода лица
+        if images(c / "face") and not any((c / f"face{e}").exists() for e in IMG):
+            from PIL import Image
+            im = Image.open(images(c / "face")[0])
+            if im.mode == "RGBA":
+                bg = Image.new("RGB", im.size, (128, 128, 128)); bg.paste(im, mask=im.split()[3]); im = bg
+            im.convert("RGB").save(c / "face.png")
+            print(f"эталон лица {c.name}: face.png")
+
     jobs = []   # (имя мода, картинки, concept_type)
     for c in sorted((refs / "characters").glob("*/")):
         for part in ("face", "body"):
