@@ -65,6 +65,10 @@ def build(v2: dict) -> dict:
     for n in g.values():
         if n["class_type"] == "SAM3Segment":
             n["inputs"].setdefault("model_name", "sam3")
+    ml = g[ren["ml"]]["inputs"]           # все 8 слотов загрузчика обязательны (ComfyUI валидирует)
+    for i in range(1, 9):
+        ml.setdefault(f"mod_{i}", "(none)"); ml.setdefault(f"strength_{i}", 1.0); ml.setdefault(f"copies_{i}", 1)
+    ml.setdefault("show_info", False); ml.setdefault("max_total_tokens", 16384)
     g[ren["ml"]]["_meta"]["title"] = T_IN_FMOD
     g[ren["11190:11117"]]["_meta"]["title"] = T_IN_FPROMPT
     g[ren["f85:lat"]]["_meta"]["title"] = T_FACE_D
