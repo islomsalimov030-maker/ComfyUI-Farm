@@ -560,7 +560,7 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
         if params is None or name in (params.get("inputs") or {}):
             inputs[name] = ftxt
             issues += [LintIssue(i.code, f"[{name}] {i.msg}", i.severity)
-                       for i in lint(ftxt, stage, {"kind": "face", "trigger": trigger})]
+                       for i in lint(ftxt, stage, {"kind": "face", "trigger": None if v.get("is_ls") else trigger})]
     return PromptResult(text=text, fields_json={"fields": fields, "inputs": inputs, "meta": meta,
                                                 "llm_input": linp},
                         lint=issues, template_ver=template)

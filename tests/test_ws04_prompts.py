@@ -410,3 +410,19 @@ def test_worker_passes_params_and_lint_error_stops_gpu(make_worker):
     sh = w.db.shot("W-1")
     assert sh["state"] == S.NEEDS_HUMAN and "PROMPT_LINT" in sh["last_error"]
     assert w.db.all("SELECT * FROM attempts WHERE shot_id='W-1'") == []
+
+
+def test_frame_ls_prompt_v2(env, monkeypatch):
+    """WS-10: таблица v2 (зона, класс позы, план) + шаблон frame_ls_v1 — промпт без <Picture 2>/триггера, проходит линтер."""
+    lib, shots, F = env
+    fake = FakeOllama([json.dumps(F["SIT-08"]["frame"])])
+    prof, _ = _install(fake, monkeypatch)
+    prof = {**prof, "frame": {**prof["frame"], "workflow": "frame_ls@1", "prompt_template": "frame_ls_v1"}}
+    lib.data.setdefault("zones", {})["apartment_living"] = {"id": "apartment_living", "desc_en": "a lilac living room"}
+    shot = {**shots["SIT-08"], "extra_json": {**(shots["SIT-08"].get("extra_json") or {}), "zone": "apartment_living",
+                                              "pose_class": "sitting", "plan": "medium"}}
+    r = build("frame", shot, lib, prof, ctx={"no_cache": True})
+    assert not errors(r.lint), [(i.code, i.msg) for i in r.lint]
+    assert "<Picture 2>" not in r.text and "St4cy_H3" not in r.text
+    assert "location sheet" in r.text and "a lilac living room" in r.text and "A medium shot" in r.text
+    assert r.fields_json["inputs"]["face_prompt"].startswith("A tight close-up portrait")
