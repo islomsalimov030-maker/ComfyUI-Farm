@@ -106,3 +106,16 @@ def scale_line(pose: str, char_cm: float) -> str:
     return (f"True-to-life scale: the woman is an average adult (about {h} cm tall) and is sized by the "
             f"real-world objects in <Picture 1> — doors, windows, furniture, mats and floor tiles keep their "
             f"true size, {where}, and she is never enlarged to fill the frame.")
+
+
+def scale_line_ls(pose: str, char_cm: float) -> str:
+    """frame_ls (WS-10): плиты нет — масштаб по мебели комнаты; рост словами (миниатюрная / средняя / очень высокая)."""
+    h = int(round(char_cm))
+    who = ("a petite woman" if h <= 165 else "an exceptionally tall woman" if h >= 185 else "an average adult woman")
+    where = {"sitting": "her body is sized to the furniture she sits on",
+             "lying": "her body length matches the furniture under her"}.get(
+        pose, "her height matches the perspective of the spot where she stands, her feet on the floor")
+    tail = ", and she is never shrunk to an average height" if h >= 185 else ""
+    return (f"True-to-life scale: she is {who}, about {h} cm tall, sized by the real furniture of the room — "
+            f"doors, tables, beds and sofas keep their true size, {where}, she is never enlarged to fill the frame"
+            f"{tail}.")

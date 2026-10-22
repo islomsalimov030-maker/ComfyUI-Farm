@@ -1,0 +1,19 @@
+subject_definitions:
+<Subject 1> is {{ char_desc }}. Her face, hair, skin tone and body proportions come from her character reference; she is {{ outfit_clause }}.
+<Subject 2> is {{ location_en }}, the room shown in <Picture 1>, a location sheet with several camera views of the same room.
+
+summary:
+[reference generation] The target is one single static image, a photorealistic photograph of <Subject 1> {{ summary_pose }} in <Subject 2>.
+
+retention_analysis:
+<Subject 1>: fully_preserved - her face, hair, skin tone, body proportions and clothes are retained.
+<Subject 2>: fully_preserved - the room, furniture, light and colors are retained.
+
+detailed_description:
+The target is one single photorealistic photograph, a static image with {{ light_en }}, taken from one fixed position with no camera movement, no zoom and no pan. [Shot 1] {{ opening }}{% if framing_share %}, {{ framing_share }}{% endif %}: <Subject 1> is {{ placement }}, {{ pose }}. {{ expression }}. One single photograph. The room is exactly the room shown in the views of <Picture 1>: the same walls, furniture, layout, colors and light, seen from the camera angle that suits this shot; the photograph shows one single view of it, never several panels. {{ scale_line }}{% for r in extra_rules %} {{ r }}{% endfor %} She is {{ outfit_clause }}. Her face is sharp and natural, with detailed skin. The lighting is preserved unchanged. Colors and saturation stay unchanged from the reference image.
+
+overall_soundscape:
+N/A
+
+non_diegetic_music:
+N/A

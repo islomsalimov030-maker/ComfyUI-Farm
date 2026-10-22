@@ -31,7 +31,7 @@ from . import schema as S
 from .config import PKG, load_config
 from .lint import LABEL_RE, errors, lint
 from .llm import CallStats, LLMInvalid, LLMUnavailable, OllamaClient, fix_request
-from .scale import anchor_from_card, scale_line
+from .scale import anchor_from_card, scale_line, scale_line_ls
 from .timing import TimingError, actual_seconds, fmt, schedule
 
 log = logging.getLogger("farm.prompts")
@@ -334,7 +334,10 @@ def render(stage: str, template: str, fields: dict, v: dict, cfg: dict) -> str:
             expression=_cap(fields["expression"]), scale_line=v["scale_line"],
             scale_anchor=v.get("scale_anchor") or _lc(re.sub(r"(?i)^scale anchor:\s*", "",
                                                              fields.get("scale_anchor") or "")),
-            extra_rules=_dedupe(v["extra_rules"]))
+            extra_rules=_dedupe(v["extra_rules"]),
+            char_desc=v.get("char_desc", ""), framing_share=v.get("framing_share", ""))
+        if v.get("is_ls") and not fields.get("framing_en"):
+            data["opening"] = "A frontal full-body shot"
     text = _env.get_template(f"{template}.j2").render(**data)
     return _tidy(text)
 
@@ -364,8 +367,19 @@ def face_prompt(stage: str, v: dict, fields: dict) -> tuple[str, str]:
             trigger=v["trigger"], face_expression=_lc(fields.get("face_expression") or "natural relaxed expression"),
             light_en=v["light_en"])
         return "face_prompt", _tidy(txt).strip()
+    if v.get("is_ls"):
+        txt = _env.get_template("face_frame_ls_v1.j2").render(
+            hair_en=v.get("hair_en", ""), expression=_cap(fields.get("expression") or "a calm natural look"))
+        return "face_prompt", _tidy(txt).strip()
     txt = _env.get_template("face_frame_v1.j2").render(trigger=v["trigger"])
     return "face_prompt_h3", _tidy(txt).strip()
+
+
+def _char_desc(char: dict, height: float) -> str:
+    d = _lc(" ".join((char.get("desc_en") or "").split()))
+    if d:
+        return d if d.startswith(("a ", "an ")) else f"a {d}"
+    return f"a young woman, about {int(round(height))} cm tall"
 
 
 # ====================================================================== build
@@ -424,7 +438,10 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
     height = float(char.get("height_cm") or cfg["defaults"]["height_cm"])
     pclass = pose_class(shot.get("pose_ru"))
     o_desc = _lc(outfit.get("desc_en") or "")
-    if stage == "frame":
+    is_ls = stage == "frame" and template.startswith("frame_ls")
+    if is_ls:   # frame_ls (WS-10): наряд — мод + описание, без мода — базовый наряд текстом
+        outfit_clause = f"wearing {o_desc or cfg['defaults']['base_outfit_en']}"
+    elif stage == "frame":
         outfit_clause = ("wearing exactly the outfit shown in <Picture 3>" + (f", {o_desc}" if o_desc else "")
                          if has_outfit else "wearing exactly the clothes shown in <Picture 2>")
     else:
@@ -442,7 +459,10 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
          "has_video": has_video, "has_pose": has_pose, "has_outfit": has_outfit, "end_s": end_s,
          "extra_rules": obj_rules + rep_extra,
          "ambience": _lc((card or {}).get("ambience_en") or plate.get("ambience_en") or ""),
-         "scale_line": scale_line(pclass if pclass in ("sitting", "lying") else "standing", height),
+         "scale_line": (scale_line_ls if is_ls else scale_line)(
+             pclass if pclass in ("sitting", "lying") else "standing", height),
+         "char_desc": _char_desc(char, height), "hair_en": _lc(char.get("hair_en") or ""),
+         "framing_share": cfg["defaults"]["framing_share"].get(pclass, "") if is_ls else "", "is_ls": is_ls,
          "scale_anchor": anchor["text"] if anchor else None}
     flags = {"has_video": has_video, "has_pose": has_pose, "end_pose_ru": _end_pose_ru(shot, extra, lib)}
     rest_verb = cfg["defaults"]["rest_verb"].get(
@@ -450,7 +470,7 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
 
     linp = llm_input(stage, shot, lib, mode or "", end_s, flags, hints, ctx.get("comment"))
     lint_ctx = {"template": template, "mode": mode, "connected": connected, "end_s": round(end_s, 2),
-                "trigger": trigger}
+                "trigger": None if is_ls else trigger}
     meta = {"builder": BUILDER_VER, "schema": S.SCHEMA_VER, "template": template, "mode": mode,
             "end_s": round(end_s, 3), "workflow": workflow,
             "connected": sorted(connected) if connected is not None else None,

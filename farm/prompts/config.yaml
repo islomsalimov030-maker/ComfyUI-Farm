@@ -102,6 +102,9 @@ defaults:
   light_en: "the soft natural light of the room"
   rest_verb: {standing: stands, sitting: sits, lying: lies, other: stays}
   frame_template: frame_ref_v1
+  base_outfit_en: "a fitted grey sports crop top and white cotton shorts, barefoot"   # frame_ls: наряд не указан
+  framing_share:                     # frame_ls: доля кадра (H3 иначе ставит стоящую во весь кадр)
+    standing: "the camera a few metres away so that she occupies only about half of the frame height, with plenty of the room around her"
   video_template: video_loop_ref_v1
   transition_template: video_transition_ref_v1
   system_prompt: sfw_v1              # farm/prompts/system/<имя>_<frame|video>.md; профиль может подменить

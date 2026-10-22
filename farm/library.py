@@ -252,6 +252,12 @@ class Library:
         return r["path"] if r else None
 
     # --- контракт воркера --------------------------------------------------------------
+    def zone_sheet(self, zone: str) -> Optional[Path]:
+        """refs/zones/<зона>/sheet.* — лист ракурсов (собирает tools/farm_prepare_refs.py из views/)."""
+        d = self.refs / "zones" / str(zone).lower().replace("/", "_")
+        hits = sorted(d.glob("sheet.*")) if d.is_dir() else []
+        return hits[0] if hits else None
+
     def resolve_inputs(self, shot: dict, stage: str) -> dict:
         extra = shot.get("extra_json") or {}
         if isinstance(extra, str):
@@ -290,12 +296,27 @@ class Library:
                     out["loop"] = False
                 else:
                     log.warning("шот %s: нет кадра у %s для end_frame", shot.get("shot_id"), ew)
+        if stage == "frame":   # frame_ls@1 (WS-10, 23.10): лист ракурсов зоны + имена RefMod по соглашению
+            zone = extra.get("zone") or pl
+            if zone:
+                put("location_sheet", self.zone_sheet(zone))
+            if ch:
+                out["char_face_mod"] = out["face_mod"] = mod_name("char", ch, "face")
+                out["char_body_mod"] = mod_name("char", ch, "body")
+            if of:
+                out["outfit_mod"] = mod_name("outfit", of)
         # RefMod (H3Mod) — для будущих движков; воркер отбросит, если входа нет в params.yaml
         put("character_refmod", self.file("characters", ch, "refmod"))
         put("plate_refmod", self.file("plates", pl, "refmod"))
         if of:
             put("outfit_refmod", self.file("outfits", of, "refmod"))
         return out
+
+
+def mod_name(kind: str, id_: str, part: str = "") -> str:
+    """Имя RefMod в ComfyUI models/refmods: farm/<персонаж>_<face|body>, farm/out_<наряд> (CONTRACTS v0.9)."""
+    i = str(id_).lower().replace("/", "_")
+    return f"farm/{i}_{part}" if kind == "char" else f"farm/out_{i}"
 
 
 # --- единственный экземпляр для воркера ------------------------------------------------
