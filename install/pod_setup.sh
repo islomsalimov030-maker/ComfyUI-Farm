@@ -183,6 +183,11 @@ install_nodes() {
 # окажутся две сборки cv2, перезаписывающие друг друга. Поэтому ставим их --no-deps, а зависимости — явно.
 install_qa_deps() {
   log "Пакеты проверок качества (venv ComfyUI)"
+  # MediaPipe Tasks грузит libEGL.so.1 — в образе RunPod её нет (apt вне /workspace: ставим на каждом новом поде)
+  if ! ldconfig -p | grep -q "libEGL.so.1"; then
+    (apt-get install -y -q libegl1 libgles2 >>"$LOG" 2>&1 || { apt-get update -q >>"$LOG" 2>&1 && \
+      apt-get install -y -q libegl1 libgles2 >>"$LOG" 2>&1; }) && echo "  + libegl1 libgles2 (apt)" || warn "libEGL для MediaPipe"
+  fi
   local before; before=$("$CPY" -m pip freeze 2>/dev/null | md5sum)
   "$CPY" -c "import cv2" 2>/dev/null || cpip opencv-python-headless || warn "opencv"
   # onnxruntime-gpu тоже даёт модуль onnxruntime — второй пакет ставить нельзя

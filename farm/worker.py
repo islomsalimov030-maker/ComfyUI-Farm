@@ -509,10 +509,12 @@ class Worker:
         a = Asset(**{k: asset.get(k) for k in ("asset_id", "attempt_id", "kind", "path", "sha256",
                                                "w", "h", "frames")})
         results = self.plugins.qa.run_stage(stage, a, ctx)
-        rows, wsum, psum, codes, hard_ok = [], 0.0, 0.0, [], True
+        rows, wsum, psum, codes, hard_ok, tech = [], 0.0, 0.0, [], True, []
         for r in results:
             sev = _get(r, "severity", "hard")
             passed = bool(_get(r, "passed"))
+            if _get(r, "fail_code") == "TECH" and "error" in (_get(r, "evidence") or {}):
+                tech.append(_get(r, "name"))   # проверка упала (не «не прошла») — WS-10: не пропускать молча
             w = SEV_WEIGHT.get(sev, 0.0)
             wsum += w
             psum += w if passed else 0.0
@@ -524,6 +526,9 @@ class Worker:
                          _get(r, "fail_code"), dumps(_get(r, "evidence") or {}),
                          str(_get(r, "checker_ver", "0")), asset["asset_id"], now()))
         score = psum / wsum if wsum else 1.0
+        if tech:
+            hard_ok = False
+            codes.append("QA_TECH")
         with self.db.tx():
             self.db.execute("DELETE FROM checks WHERE asset_id=?", (asset["asset_id"],))
             for row in rows:
@@ -564,6 +569,10 @@ class Worker:
             for code in c.get("fail_codes_json") or []:
                 if code not in codes:
                     codes.append(code)
+        if "QA_TECH" in codes:
+            # проверки упали из-за среды (библиотека, модель) — ретрай генерации не поможет, сразу к человеку
+            self._to_human(shot, "QA_TECH: проверки качества упали, см. checks.evidence_json", expect=qa_state)
+            return True
         worst = max(cands, key=lambda c: (c.get("qa_score") or 0, c["asset_id"])) if cands else None
         route_code, route = self._route(codes or ["TECH"])
         if (route.get("action") == "post_fix" and stage == "video" and worst is not None

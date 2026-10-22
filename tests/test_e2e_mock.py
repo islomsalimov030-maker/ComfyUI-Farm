@@ -173,3 +173,22 @@ def test_prompt_fields_reach_qa(make_worker):
     assert ("frame", {"pose": "frame pose"}) in qa.seen and ("video", {"pose": "video pose"}) in qa.seen
     at = w.db.one("SELECT params_json FROM attempts WHERE shot_id='F1' AND stage='frame'")
     assert at["params_json"]["_fields"] == {"pose": "frame pose"}
+
+
+def test_crashed_check_goes_to_human_not_pass(make_worker):
+    """WS-10: проверка упала с исключением (TECH + evidence.error) — кадр не проходит молча, шот → needs_human."""
+    from farm.contracts import CheckResult
+
+    class CrashQA(ScriptedQA):
+        def run_stage(self, stage, asset, ctx):
+            super().run_stage(stage, asset, ctx)
+            return [CheckResult("main", 0.95, True, "hard"),
+                    CheckResult("face_id", 0.0, False, "info", "TECH", {"error": "OSError: libEGL.so.1"})]
+
+    w = make_worker(qa=CrashQA())
+    add_shot(w.db, "T1")
+    w.run_until_idle()
+    shot = w.db.shot("T1")
+    assert shot["state"] == "needs_human"
+    assert "QA_TECH" in w.db.one("SELECT reason FROM events WHERE shot_id='T1' ORDER BY ts DESC LIMIT 1")["reason"]
+    assert w.db.one("SELECT COUNT(*) c FROM attempts WHERE shot_id='T1' AND stage='frame'")["c"] >= 1
