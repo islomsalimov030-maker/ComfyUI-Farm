@@ -116,6 +116,10 @@ def check_fields(stage: str, data: Any, mode: str = "loop") -> list[str]:
         return errs
     phases = data["phases"]
     if mode == "loop":
+        # WS-10 (22.10): qwen3-vl:8b в ~40 % петель пишет последний шаг-возврат как "move" (текст — возврат в
+        # стартовую позу). Ярлык чиним кодом, без лишнего круга LLM; текст по-прежнему проверяет линтер.
+        if len(phases) >= 2 and phases[-1]["kind"] == "move" and not any(p["kind"] == "return" for p in phases):
+            phases[-1]["kind"] = "return"
         if phases[-1]["kind"] != "return":
             errs.append("$.phases: в петле последняя фаза — return (возврат в стартовую позу)")
         if sum(1 for p in phases if p["kind"] == "return") > 1:

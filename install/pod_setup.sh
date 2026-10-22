@@ -361,13 +361,13 @@ restart_comfy() {
     # та же команда, что в bootstrap.sh работодателя
     tmux new-session -d -s comfy -c "$COMFY" bash -c \
       "source $WS/env.sh; $CPY main.py --listen 127.0.0.1 --port 8188 --enable-manager 2>&1 | tee -a $WS/logs/comfy.log"
-    for _ in $(seq 1 60); do
+    for _ in $(seq 1 240); do   # на сетевом томе (MooseFS) старт ComfyUI 10–13 мин (WS-10, 22.10)
       code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8188/system_stats || true)
       [ "$code" = 200 ] && break
       sleep 5
     done
     echo "  перезапущен: HTTP ${code:-000}"
-    [ "${code:-}" = 200 ] || warn "ComfyUI не поднялся за 5 мин — $WS/logs/comfy.log"
+    [ "${code:-}" = 200 ] || warn "ComfyUI не поднялся за 20 мин — $WS/logs/comfy.log"
     local errs
     errs=$(tail -n +"$start" $WS/logs/comfy.log | grep -E "IMPORT FAILED|Cannot import" | tail -10)
     [ -n "$errs" ] && { echo "$errs" | sed 's/^/  ! /'; FAIL=1; }

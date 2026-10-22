@@ -1,0 +1,31 @@
+# sfw_base — первый сквозной прогон WS-10 (черновик 22.10, ассистент; утверждает пользователь)
+# Рука кадра = эталон WS-01/WS-07 base_t8_L15 (ref2va офиц. + turbo 8 + LoRA Стейси 1.5).
+# Лицо Z выключено: детектор face_yolov8m — AGPL; лицо держит проход H3 (SAM3 + stacy_h3_face_v1).
+# ⚠ LoRA Stacy_v1_z-image-base-prose_3500 всё равно должна лежать в models/loras: ComfyUI валидирует узел и при face_z=false.
+# Видео = рука SS-456 (ref2va офиц. + turbo 8 в слоте ARM lora, face_pass off; личность — ключевой кадр).
+name: sfw_base
+content_scope: sfw
+llm: {prompt_model: qwen3-vl:8b-instruct, judge_model: qwen3-vl:8b-instruct, keep_alive: 0}
+frame:
+  workflow: frame_h3@1
+  arms:
+    - id: base_t8_L15
+      model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+      loras:
+        - {name: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, w: 1.0}
+        - {name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}
+      sampler: {pass1_steps: 8, face_z: false, face_h3: true}
+  seeds_per_try: 2
+  prompt_template: frame_ref_v1
+video:
+  workflow: video_h3_loop@1
+  arms:
+    - id: ref2va_t8
+      model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+      loras:
+        - {name: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, w: 1.0}
+      sampler: {face_pass: "off", loop: true}
+  seeds_per_try: 1
+  prompt_template: video_loop_ref_v1
+qa: {thresholds_file: qa/thresholds_sfw_base.yaml}
+retries: {frame: 3, video: 3}

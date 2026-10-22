@@ -859,7 +859,8 @@
    "invert_output": false,
    "unload_model": false,
    "background": "Alpha",
-   "background_color": "#222222"
+   "background_color": "#222222",
+   "model_name": "sam3"
   },
   "_meta": {
    "title": "faceH3 · SAM3 face"

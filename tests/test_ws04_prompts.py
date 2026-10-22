@@ -256,7 +256,11 @@ def test_fields_schema(env):
         assert check_fields("video", d["video"], mode) == [], sid
         assert check_fields("frame", d["frame"]) == [], sid
     v = dict(F["SIT-08"]["video"])
-    assert any("return" in e for e in check_fields("video", {**v, "phases": v["phases"][:-1]}, "loop"))
+    hold = {"kind": "hold", "text": "she holds the pose for a moment", "sec": 1.0}
+    assert any("return" in e for e in check_fields("video", {**v, "phases": v["phases"][:-1] + [hold]}, "loop"))
+    # WS-10: последний шаг-возврат с ярлыком "move" чинится кодом (без круга LLM)
+    moved = [dict(p) for p in v["phases"][:-1]] + [{**v["phases"][-1], "kind": "move"}]
+    assert check_fields("video", {**v, "phases": moved}, "loop") == [] and moved[-1]["kind"] == "return"
     assert any("лишнее" in e for e in check_fields("video", {**v, "camera": "pan"}, "loop"))
     assert check_fields("video", {**v, "phases": [{"kind": "jump", "text": "x" * 10, "sec": 1}]}, "loop")
 

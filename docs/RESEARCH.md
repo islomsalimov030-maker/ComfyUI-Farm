@@ -206,3 +206,11 @@
 - RefModApply работает и с fl2va (`H3TextToImagePrepare` → Apply → fl2va), не только ref2va.
 - Дисперсия лапласиана ранжирует резкость лица неверно (растёт от контраста/артефактов) — для решений нужны кропы ×4 и AuraFace.
 - Z-image turbo без LoRA, denoise 0.3 по телу (SAM3 «woman») сглаживает мышцы/кожу — резкость тела −30 %.
+
+## WS-10 (22.10.2026) — первый день фермы на поде
+- Сетевой том RunPod (MooseFS) медленный на мелкие файлы: pip в venv — десятки минут (MiVOLO ~25 мин), старт ComfyUI 10–13 мин, холодная загрузка энкодера H3 25 ГБ ~2.5 мин. chmod на томе игнорируется (всегда 666/777).
+- ComfyUI валидирует все узлы, достижимые от выходов, включая ленивые ветки: выключенный KNOB (face_z=false) не освобождает от наличия файла LoRA в списке.
+- ComfyUI-RMBG a66a5e6: у `SAM3Segment` новый обязательный вход `model_name` (sam3 | sam3.1_multiplex_fp16); графы, собранные на старой версии, падают на валидации.
+- env.sh пода ставит `HF_HUB_ENABLE_HF_TRANSFER=1`; в venv без `hf_transfer` скачивание с HF падает, transformers сообщает «Unrecognized model».
+- qwen3-vl:8b-instruct (schema): в ~40 % петель последний шаг-возврат помечен `move`; ярлык чинится кодом (WS-04 eval 99.2 % с 1-й попытки).
+- StacyLoop: в отчёте модель подписана «Singularity» при `model_10eros=false` независимо от реального `unet_name`; в репо StacyLoop закоммичен `__pycache__/*.pyc` — мешает `git merge` на поде.

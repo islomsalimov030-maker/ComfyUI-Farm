@@ -19,6 +19,12 @@ REVISION = os.environ.get("MIVOLO_REVISION", "53393526c220e34cdd7b722b36d22b6f9e
 
 
 def main() -> None:
+    # env.sh пода включает HF_HUB_ENABLE_HF_TRANSFER=1, а в venv MiVOLO пакета hf_transfer нет —
+    # скачивание падает, и transformers сообщает «Unrecognized model» (WS-10, 22.10).
+    try:
+        import hf_transfer  # noqa: F401
+    except ImportError:
+        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
     import cv2
     import numpy as np
     import torch
