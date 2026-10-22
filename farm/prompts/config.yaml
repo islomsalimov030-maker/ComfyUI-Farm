@@ -34,7 +34,7 @@ patterns:
     STUDIO: 'studio'                                     # правило пользователя: никакого «studio»
     CAMERA_MOVE: '\b(pan|pans|panning|zoom|zooms|zooming|dolly|dollies|trucking|tracking shot|orbit|orbits|orbiting|crane shot|handheld|push-in|pull-back|camera (pushes|pulls) (in|back)|camera (moves|tilts|arcs|follows|rotates|shakes|turns|pans|zooms|drifts|circles))\b|\b(tilt|arc) shot\b'
     SLOWMO_WORD: 'slow[- ]motion'                        # разрешено только в обязательной строке
-    LIGHT_CHANGE: '\b(lights? (dims?|brightens?|flickers?|changes?|goes out)|turns (on|off) the light|sunset|sunrise|getting darker|darkens)\b'
+    LIGHT_CHANGE: '\b(lights? (dims?|brightens?|flickers?|changes?|goes out)|turns (on|off) the light|the sun (sets|rises|goes down|comes up)|sunset (begins|falls|fades)|getting darker|darkens)\b'  # «sunset light» в описании плиты — статичный свет, не смена (WS-10)
     WRONG_TRIGGER: '\bStacy_v1\b'                        # триггер Z-image, не H3
   banned_loop_error:                                     # только в петлях
     DIRECTED_MOVE: '\b(walks?|walking|steps? (forward|back|toward|towards|closer|away)|approach(es|ing)? the camera|(moves|comes|leans|walks) (toward|towards|closer to) the camera|leaves the frame|exits the frame)\b'
