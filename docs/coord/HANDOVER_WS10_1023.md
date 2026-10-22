@@ -18,6 +18,26 @@
 - Стоящая крупно → в промпт строка доли кадра («about half of the frame height») — слушается не всегда → нужна проверка доли + ретрай.
 - Telegram-бот не нужен — ревью вручную (`tools/farm_review.py` + контакт-листы).
 
+## Обновление 23.10 05:00 — сделано после первой версии передачи
+- Под перезапущен (Stop → Start), ферма на поде = ветка `ws10-pod-1022` (git reset --hard на коммит ветки), libEGL доставлен,
+  openpyxl в venv ComfyUI.
+- **Саманта, раунд t2i_sam (location sheet, 4 сцены × 2 сида + лицо 0.85/0.75):** готово, лист
+  `http://localhost:8888/files/workspace/farm_in/sam.jpg` — лофт узнаётся, наряды из модов держатся.
+- **Тест движка frame_ls@1** (Стейси SIT-01): кадр + проход лица работают (`ComfyUI/output/farm/frame_00017_.png`).
+- **Таблица v2 в коде:** `farm/sheet_schema.yaml` v2 (лист «Зоны», колонки Зона / Класс позы / План / Лицо в кадре; «Тип» и
+  «Локации» необязательны, по умолчанию видео), `farm/sheets.py` (зона вместо плиты, файлы: лист ракурсов + эталон лица),
+  library `zone()`, сборщик: план → начало кадра (`defaults.plan_opening`), класс позы из таблицы, описание комнаты из «Зоны»,
+  промпт лица frame_ls без триггера. Тест `test_frame_ls_prompt_v2`. Всего тестов 256.
+- **`profiles/sfw_base.yaml` переведён на frame_ls@1** (arm ref2va + turbo 8, без LoRA, `frame_ls_v1`, 2 сида) + видео ref2va + turbo.
+- **refs v2 на поде разложены:** `refs/characters/{stacy,samantha}/{face,body}` (+ face.png эталон), `refs/outfits/{outfit_pink,
+  samantha_athleisure,samantha_arena}`, `refs/zones/{apartment_living,apartment_bedroom,apartment_bathroom,loft_living,loft_bedroom,
+  loft_bath,loft_greenhouse}/views` → листы `sheet.png`; моды извлечены (`farm/stacy_*`, `farm/samantha_*`, `farm/out_*`).
+- **Тестовая таблица:** `/workspace/farm_in/table_v2_10.xlsx` (= `farm_table_v2_ready_10.xlsx`, с листом «Профили»),
+  `farm.yaml: sheets.xlsx` → ферма читает и пишет статусы в этот файл, Google-таблицу не трогает. `check --files` 10/10.
+- Первый запуск 10 строк упал на линтере промпта лица (триггер LoRA) → исправлено, БД старых попыток:
+  `db/farm_v1_1022.sqlite`, `db/farm_v2try1.sqlite`. Дальше — свежая БД, `farm.sheets sync` → `bash /workspace/farm_in/start2.sh`
+  (старт sfw_base с фильтром 10 ID). Статус: `python /workspace/farm_in/st.py`, события `ev.py N`, ревью `tools/farm_review.py`.
+
 ## Что сделано (код, всё в ветке)
 - Движок кадра **`workflows/frame_ls@1`** (api + params), сборщик `tools/build_frame_ls.py <v2_refine_api.json>`
   (`v2_refine_api.json` — `C:\stacy-lora\_claude\ss340\` и `/workspace/farm_in/` на поде). Проход лица: H3 fl2va + мод лица,
@@ -58,18 +78,16 @@
 - После Stop/Start слетает всё вне /workspace: снова `bootstrap.sh`, `apt-get install -y libegl1 libgles2` (или pod_setup из ws10-pod-1022).
 - Медленный сетевой том: старт ComfyUI 7–13 мин, pip — десятки минут. Кадр 3 Мп ≈ 50–57 с, проход лица ≈ 25 с, видео 5 с ≈ 2–5 мин.
 
-## Дальше (по порядку)
-1. Под: `cd /workspace/ComfyUI/custom_nodes/ComfyUI-Farm && git stash && git fetch && git checkout ws10-pod-1022 && git stash drop`;
-   `apt-get install -y libegl1 libgles2`; проверить `runs/t2i_sam` (Саманта) и тест frame_ls (`ComfyUI/output/farm/frame_*`) → показать.
-2. Разложить refs по соглашению v2: `refs/characters/{stacy,samantha}/{face,body}`, `refs/outfits/{outfit_pink,samantha_athleisure,samantha_arena}`,
-   `refs/zones/<зона>/views` (зоны из таблицы v2) → `tools/farm_prepare_refs.py`.
-3. `profiles/sfw_base.yaml` → frame: `frame_ls@1`, arm ref2va + turbo 8 (без LoRA), `prompt_template: frame_ls_v1`, `seeds_per_try: 2`;
-   video: `video_h3_loop@1`, arm ref2va + turbo 8, face_pass off.
-4. `sheet_schema` v2 (зоны, класс позы, план, лицо в кадре; справочники без LoRA/листа) + library/sheets; проверка на
-   `farm_table_v2_ready_10.xlsx` (`python -m farm.sheets check --xlsx`).
-5. Прогон 10 строк через ферму (кадр + видео) → контакт-лист → ревью пользователя → правки → 10 строк каждой таблицы пользователя.
-6. QA: проверка доли кадра (рост/высота фигуры) с ретраем; калибровка порогов на поде; MediaPipe работает после libEGL.
-7. Документация трёх воркфлоу.
+## Дальше (по порядку) — шаги 1–4 первой версии сделаны (см. «Обновление 23.10 05:00»)
+1. Если под перезапускался: `bootstrap.sh`, `apt-get install -y libegl1 libgles2`, `pip install openpyxl` (venv ComfyUI).
+2. Прогон 10 строк `table_v2_10.xlsx` через ферму (кадр + видео): идёт/запущен 23.10 ~05:00 — проверить `st.py`, `ev.py`,
+   `tools/farm_review.py list` и `sheet` → контакт-лист пользователю (ссылкой `http://localhost:8888/files/...`).
+3. Ревью пользователя → правки (промпты, доля кадра, пороги QA) → 10 строк каждой таблицы пользователя (SFW — ассистент,
+   NSFW — команда той же командой) → все таблицы.
+4. QA: проверка доли кадра (рост/высота фигуры) с ретраем; калибровка порогов; дыра «needs_human без ассета» (перезапуск шота).
+5. Google-таблица v2: перевести `tools/sheet_template.gs`/`build_sheet_template.py` на схему v2, затем `farm.yaml` → spreadsheet_id
+   вместо xlsx.
+6. Документация трёх воркфлоу (автоматика на поде, ручные фото и видео для сервера студии).
 
 ## Открыто / флаги
 - Лицензии: SAM3 (Meta SAM License, веса скачались с зеркала 1038lab), face_yolov8m/Impact-Subpack (AGPL) — не в пути frame_ls,
