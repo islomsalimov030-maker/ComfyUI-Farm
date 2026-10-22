@@ -1,0 +1,27 @@
+# Карта параметров движка кадра frame_ls@1 (CONTRACTS §6). Собран tools/build_frame_ls.py.
+workflow: frame_ls@1
+api: frame_ls@1.api.json
+inputs:
+  location_sheet: {title: "IN location_sheet · лист ракурсов зоны <Picture 1>", input: image, type: image, required: true}
+  prompt:      {title: "IN prompt · промпт кадра (ref-edit)", input: value, type: string}
+  seed:        {title: "KNOB seed", input: value, type: int}
+  char_face_mod: {title: "IN mods · моды персонажа (лицо, тело) и наряда", input: mod_1, type: string, required: true}
+  char_body_mod: {title: "IN mods · моды персонажа (лицо, тело) и наряда", input: mod_2, type: string, optional: true, if_missing: "(none)"}
+  outfit_mod:  {title: "IN mods · моды персонажа (лицо, тело) и наряда", input: mod_3, type: string, optional: true, if_missing: "(none)"}
+  face_mod:    {title: "IN face_mod · мод лица для прохода лица", input: mod_1, type: string, required: true}
+  face_prompt: {title: "IN face_prompt · промпт прохода лица", input: prompt, type: string}
+  face_seed:   {title: "KNOB face_seed", input: noise_seed, type: int}
+arm:
+  model: {title: "ARM model · модель H3", input: model_name, type: file, folder: diffusion_models,
+          default: minimax_h3_ref2va_pruned_int8_convrot.safetensors}
+  loras: {title: "ARM loras · LoRA руки", type: lora_stack}
+knobs:
+  pass1_steps:  {title: "KNOB pass1_steps", input: value, type: int, range: [6, 16], default: 8}
+  face_denoise: {title: "KNOB face_denoise", input: denoise, type: float, range: [0.65, 0.9], default: 0.85}
+fixed: {}
+outputs:
+  frame:     {title: "OUT frame · итоговый кадр", kind: image, main: true}
+  frame_raw: {title: "OUT raw · кадр до доработки лица", kind: image}
+notes:
+  - "3 Мп 2336×1312, ref2va + turbo 8; локация — location sheet <Picture 1>, персонаж/наряд — RefMod (без LoRA и листа)."
+  - "Проход лица: H3 fl2va + мод лица, SAM3 face (Meta SAM License), кроп 1 Мп, denoise 0.85 (SS-456: AuraFace 0.68 → 0.83)."
