@@ -190,9 +190,9 @@ def frame_graph(cfg: dict, j: dict, files: dict) -> dict:
     for a, b in subs:                               # пары по разным позам: применяются те, что нашлись
         prompt = prompt.replace(a, b)
     gen = j.get("gen") or ("A_refmod" if j["refmods"] else "A")
-    if gen in ("T_refmod", "G_refmod") and "plate" in inp:
+    if gen in ("T_refmod", "G_refmod", "TE_refmod") and "plate" in inp:
         raise ValueError(f"{j['id']}: {gen} — без картинок, а у позы есть плита")
-    if gen not in ("T_refmod", "G_refmod") and "plate" not in inp:
+    if gen not in ("T_refmod", "G_refmod", "TE_refmod") and "plate" not in inp:
         raise ValueError(f"{j['id']}: {gen} — нужна плита")
     g = G.frame_graph(gen, inp, prompt, j["seed"], cfg["arm"], cfg.get("knobs"),
                       refmods=[dict(s, mod=mod_path(cfg, s["mod"])) for s in j["refmods"]] or None,
