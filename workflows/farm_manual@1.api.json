@@ -2705,112 +2705,6 @@
    "role": "video1:engine"
   }
  },
- "P7": {
-  "class_type": "LoadImage",
-  "inputs": {
-   "image": "stacy_kf_Sitting-8.png"
-  },
-  "_meta": {
-   "title": "IN keyframe · ключевой кадр (первый = последний)",
-   "role": "facepass:in"
-  }
- },
- "P1:23": {
-  "class_type": "UNETLoader",
-  "inputs": {
-   "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
-   "weight_dtype": "default"
-  },
-  "_meta": {
-   "title": "ARM model · H3 ref2va",
-   "role": "facepass:arm"
-  }
- },
- "P1:24": {
-  "class_type": "LoraLoaderModelOnly",
-  "inputs": {
-   "model": [
-    "P1:23",
-    0
-   ],
-   "strength_model": [
-    "P1:89",
-    25
-   ],
-   "lora_name": "stacy_h3_A_stills_000001750.safetensors"
-  },
-  "_meta": {
-   "title": "ARM lora · LoRA персонажа (сила = PANEL char_lora)",
-   "role": "facepass:arm"
-  }
- },
- "P1:25": {
-  "class_type": "MiniMaxH3SigmaShift",
-  "inputs": {
-   "model": [
-    "P1:24",
-    0
-   ],
-   "shift_video": [
-    "PP",
-    0
-   ],
-   "shift_audio": 3
-  },
-  "_meta": {
-   "title": "shift",
-   "role": "facepass:engine"
-  }
- },
- "P1:26": {
-  "class_type": "ModelAttentionBackend",
-  "inputs": {
-   "model": [
-    "P1:25",
-    0
-   ],
-   "attention": "comfy kitchen attention"
-  },
-  "_meta": {
-   "title": "attention",
-   "role": "facepass:engine"
-  }
- },
- "P1:33": {
-  "class_type": "StacyFitFrame",
-  "inputs": {
-   "images": [
-    "P7",
-    0
-   ],
-   "width": 1344,
-   "height": 768,
-   "method": "lanczos",
-   "anchor_y": 0.5
-  },
-  "_meta": {
-   "title": "keyframe 1344x768",
-   "role": "facepass:engine"
-  }
- },
- "P1:89": {
-  "class_type": "StacySettings",
-  "inputs": {
-   "settings": [
-    "P11",
-    0
-   ],
-   "probe_image": [
-    "P1:33",
-    0
-   ],
-   "branch": "generate"
-  },
-  "_meta": {
-   "title": "пульт → значения (+ AUTO по ключевому кадру)",
-   "role": "facepass:engine"
-  }
- },
  "P11": {
   "class_type": "StacyPanel",
   "inputs": {
@@ -3182,8 +3076,8 @@
   "class_type": "BasicGuider",
   "inputs": {
    "model": [
-    "P1:26",
-    0
+    "P2:108",
+    2
    ],
    "conditioning": [
     "P2:105",

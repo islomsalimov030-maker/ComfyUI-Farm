@@ -255,7 +255,7 @@ def facepass_block(g: dict) -> None:
     ui = json.loads((WF / "video_h3_loop@1.ui.json").read_text(encoding="utf-8"))
     api = K.to_api(ui)
     K.bypass(api, K.by_title(api, "ПРЕВЬЮ (генерация / face pass видео)"), "model")
-    K.bypass(api, K.by_title(api, "модель активного режима → превью"), "generate_model")
+    K.bypass(api, K.by_title(api, "модель активного режима → превью"), "face_pass_video_model")  # сэмплер лица = fl2va+turbo+LoRA лица (как в UI при mode=False)
     api = K.prune(api, ["ИТОГ face pass готового видео", "ОТЧЁТ face pass видео"])
     e = prefixed(api, "P")
     g.update(e)

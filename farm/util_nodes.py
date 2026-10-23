@@ -450,8 +450,15 @@ class FarmPanelFacepass:
 
     @classmethod
     def INPUT_TYPES(cls):
-        req = {"video": ("STRING", {"default": "stacy_fp", "tooltip": "Видео или папка с видео: путь от "
-                                    "ComfyUI/input (stacy_fp) или абсолютный."}),
+        d = _in_dir()
+        files = []
+        if d.is_dir():
+            files = sorted(str(f.relative_to(d)).replace(os.sep, "/") for f in d.rglob("*")
+                           if f.suffix.lower() in VIDEO_EXT and "_facepass" not in f.stem)
+        req = {"upload": (["(none)"] + files, {"video_upload": True, "tooltip": "Загрузить одно видео (кнопка ниже). "
+                                                 "(none) — взять видео или папку из поля video."}),
+               "video": ("STRING", {"default": "stacy_fp", "tooltip": "Если upload = (none): видео или папка с видео "
+                                    "(путь от ComfyUI/input, например stacy_fp, или абсолютный)."}),
                "index": ("INT", {"default": 0, "min": 0, "max": 9999, "control_after_generate": "fixed",
                                  "tooltip": "Номер видео в папке (0 — первое). При 0 и «всю папку» — все по очереди."}),
                "whole_folder": ("BOOLEAN", {"default": True, "tooltip": "Папка: один Queue — все видео."}),
@@ -466,8 +473,20 @@ class FarmPanelFacepass:
             req[k] = (t, o)
         return {"required": req, "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}}
 
-    def run(self, video, index, whole_folder, face_prompt, prompt=None, unique_id=None, **kw):
-        vids = list_videos(video)
+    @classmethod
+    def VALIDATE_INPUTS(cls, upload=None, **kw):
+        return True   # только что загруженный файл ещё не в списке
+
+    @classmethod
+    def IS_CHANGED(cls, upload="(none)", video="", index=0, **kw):
+        try:
+            v = list_videos(upload if upload and upload != "(none)" else video)
+            return f"{v[min(index, len(v) - 1)]}:{v[min(index, len(v) - 1)].stat().st_mtime}:{len(v)}"
+        except Exception:   # noqa: BLE001
+            return f"{upload}|{video}|{index}"
+
+    def run(self, video, index, whole_folder, face_prompt, upload="(none)", prompt=None, unique_id=None, **kw):
+        vids = list_videos(upload if upload and upload != "(none)" else video)
         if index >= len(vids):
             raise IndexError(f"index {index}: в папке {len(vids)} видео (0…{len(vids) - 1})")
         if whole_folder and index == 0 and len(vids) > 1 and prompt:

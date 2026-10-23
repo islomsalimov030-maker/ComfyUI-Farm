@@ -51,7 +51,7 @@ def build() -> dict:
     P = lambda k: ["FP", keys.index(k)]  # noqa: E731
     w = {k: d for k, _, d, *_ in spec}
     from farm.util_nodes import FP_PROMPT
-    add(g, "FP", "NGFarmPanelFacepass", {"video": "stacy_fp", "index": 0, "whole_folder": True,
+    add(g, "FP", "NGFarmPanelFacepass", {"upload": "(none)", "video": "stacy_fp", "index": 0, "whole_folder": True,
                                          "face_prompt": FP_PROMPT, **w}, PANEL_TITLE, "facepass:knob")
 
     # главный пульт StacyPanel (внутри движка): режим — проход лица готового видео, значения — из пульта

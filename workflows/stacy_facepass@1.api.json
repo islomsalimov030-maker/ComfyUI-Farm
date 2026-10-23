@@ -737,6 +737,7 @@
  "FP": {
   "class_type": "NGFarmPanelFacepass",
   "inputs": {
+   "upload": "(none)",
    "video": "stacy_fp",
    "index": 0,
    "whole_folder": true,
