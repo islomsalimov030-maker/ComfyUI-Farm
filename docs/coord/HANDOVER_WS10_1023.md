@@ -107,3 +107,50 @@
 - Дыра оркестратора: шот в needs_human без ассета (ошибка линтера до генерации) нельзя перезапустить (STD-02).
 - В репо StacyLoop закоммичен `__pycache__/*.pyc` — ломает `git merge` на поде; отчёт StacyLoop подписывает модель «Singularity».
 - Нужны от пользователя: свои таблицы по образцу v2, 3–6 ракурсов для ванной Стейси и оранжереи Саманты, виды сзади нарядов Саманты.
+
+## Обновление 23.10 14:20 — передача в новый чат (до синка ~1 ч)
+
+**Состояние:**
+- Ветка `ws10-pod-1022` = `main` = `cc7aa45`.
+- Воркфлоу (один движок на блок, модели — включатели в пульте, считаются по очереди):
+  - `workflows/farm_auto@1.api.json` (139 нод);
+  - `workflows/farm_manual@1.api.json` (182 ноды).
+- Структура проверена по `/api/object_info` студии + `tools/farm_nodedefs.json`:
+  - все классы есть, обязательные входы на месте, типы связей совпадают;
+  - «лишние» входы VHS (pix_fmt/crf/…) и SAM3 `model_name` — динамические виджеты, не ошибка.
+
+**Студия (comfy.next-genium.com):**
+- Все пакеты нод стоят: KJNodes 1.5.0, H3-FaceRefine, MiniMax-H3-Image-Studio, h3_img2img_latent, Inpaint-CropAndStitch 3.0.12, MiniMaxH3Mod, Nvidia RTX nodes, RMBG 3.1.0, StacyLoop, VHS 1.7.9, rgthree, ComfyUI-Farm @cc7aa45.
+- Модели: ref2va, fl2va, 10Eros beta5, PinkCherry — на месте.
+- Новые ноды фермы (пульты, LocationPick, RefVideo) появятся **после Restart** (Manager → Restart; делает пользователь).
+- Обновление пакета через Manager: `POST /api/v2/manager/queue/batch` с телом `{batch_id, update:[{id:'ComfyUI-Farm', version:'unknown', files:['https://github.com/islomsalimov030-maker/ComfyUI-Farm'], ui_id}]}` → `POST /api/v2/manager/queue/start`.
+- На студии нет Ollama и `$FARM_HOME`, поэтому **farm_auto работает только на поде**. На студии показываем farm_manual.
+  - Моды Саманты на студии: `ss456/split_face`, `ss456/out_athleisure` (также `out_arena`, `char`).
+  - Локация на студии: `sofa.png`.
+  - Дефолты API указывают на `farm/samantha_*` и `location_sheet.png` — на студии выбрать вручную.
+
+**Под (RTX PRO 6000):**
+```
+ssh root@213.173.102.104 -p 16600 -i ~/.ssh/id_ed25519 -L 8188:localhost:8188 -L 8675:localhost:8675 -L 11434:localhost:11434 -L 8888:localhost:8888
+cd /workspace/ComfyUI/custom_nodes/ComfyUI-Farm && git fetch -q && git checkout -q ws10-pod-1022 && git pull -q && git log --oneline -1 && bash /workspace/farm_in/restart_comfy.sh
+```
+- После Stop/Start: `/workspace/bootstrap.sh`, `apt-get install -y libegl1 libgles2`, `pip install openpyxl`.
+
+**Как собрать UI-воркфлоу (группы, сабграфы, гайд):**
+1. Открыть ComfyUI.
+2. Вставить в консоль браузера `tools/farm_ui_console.js` — он регистрирует ноды и вызывает `farmBuild('farm_auto')` / `farmBuild('farm_manual')`.
+3. Воркфлоу сохраняются в Workflows. Скачать как `farm_auto_v4.json` / `farm_manual_v4.json`.
+
+**Документы для синка:**
+- Doc «Контент-ферма: воркфлоу farm_auto и farm_manual» (только устройство и скорость) — https://claude.ai/artifact/VfZMQvJfqK1BzQVcgGe27L
+- `docs/sync/farm_components.md` — модели, пакеты нод, лицензии.
+
+**Не сделано (дальше):**
+1. Замер 10-с видео на студии и на поде, 3 теста PinkCherry на студии (фото + видео).
+2. Видимая нода LLM в farm_auto (сейчас LLM внутри «Шот из таблицы»).
+3. Реф-фото в видео и реф позы в кадр.
+4. RefMod в генерации видео.
+5. Подсчёт людей по фигуре (QA).
+6. Кадры примера мода лица отдельными файлами.
+7. LICENSE в наших репо.
+8. Проверить лицензию текстового энкодера `qwen3vl_32b_h3_ultra_uncensored_heretic` и доноров 10Eros (LTX 2.3, Krea 2).
