@@ -122,10 +122,11 @@ class FarmZip:
                     "shot_id": ("STRING", {"forceInput": True})},
                 "optional": {
                     "image_1": ("IMAGE",), "image_2": ("IMAGE",), "image_3": ("IMAGE",),
-                    "video_1": ("VHS_FILENAMES",), "video_2": ("VHS_FILENAMES",), "video_3": ("VHS_FILENAMES",)}}
+                    "video_1": ("VHS_FILENAMES",), "video_2": ("VHS_FILENAMES",), "video_3": ("VHS_FILENAMES",),
+                    "tag": ("STRING", {"forceInput": True, "tooltip": "Метка модели в имени файла (из пульта)."})}}
 
-    def run(self, batch, shot_id, **kw):
-        tags = {"1": "ref2v", "2": "10eros", "3": "pinkcherry"}
+    def run(self, batch, shot_id, tag=None, **kw):
+        tags = {"1": tag or "ref2v", "2": "10eros", "3": "pinkcherry"}
         base = _out_dir() / "farm_zip"
         d = base / re.sub(r"[^\w.-]+", "_", batch.strip() or "batch")
         d.mkdir(parents=True, exist_ok=True)
@@ -267,54 +268,120 @@ NAMES = {"NGFarmFrameFromFolder": "Кадр из папки по ID (Next Genium
 
 
 # ---------------------------------------------------------------- пульты (23.10): все ручки блока в одной ноде
-def _panel(name, display, desc, spec):
-    """spec: [(ключ, тип, по умолчанию, мин, макс, шаг, подсказка)] → нода с виджетами и выходом на каждый."""
+# Модели — включатели в пульте. Один движок на блок: первая включённая модель считается в этом запуске,
+# остальные — отдельными запусками в очереди ComfyUI (по очереди, память освобождается между ними).
+FARM_MODELS = [  # метка, файл, turbo-LoRA (сила), шаги кадра, шаги видео
+    ("ref2v", "minimax_h3_ref2va_pruned_int8_convrot.safetensors", 1.0, 8, 8),
+    ("10Eros", "10Eros_Max_h3_hybrid_beta5_int8.safetensors", 0.0, 20, 20),
+    ("PinkCherry", "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors", 0.0, 20, 20),
+]
+
+
+def _model_list():
+    try:
+        import folder_paths
+        return folder_paths.get_filename_list("diffusion_models")
+    except Exception:   # noqa: BLE001
+        return [m[1] for m in FARM_MODELS]
+
+
+def _requeue(prompt: dict, my_id: str, labels: list[str]) -> None:
+    """Поставить в очередь копии запроса с другими моделями (все пульты фермы в копии — на эту модель)."""
+    import copy as _c
+    import urllib.request as _ur
+    try:
+        from comfy.cli_args import args
+        port = int(args.port)
+    except Exception:   # noqa: BLE001
+        port = 8188
+    for lab in labels:
+        pr = _c.deepcopy(prompt)
+        for n in pr.values():
+            if str(n.get("class_type", "")).startswith("NGFarmPanel"):
+                n["inputs"]["model_override"] = lab
+        try:
+            req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps({"prompt": pr}).encode(),
+                              {"Content-Type": "application/json"})
+            _ur.urlopen(req, timeout=30).read()
+        except Exception as e:   # noqa: BLE001
+            print(f"[farm] не удалось поставить запуск {lab}: {e}")
+
+
+def _panel(name, display, desc, spec, models=True):
+    keys = [k for k, *_ in spec]
+
     def INPUT_TYPES(cls):
         req = {}
+        if models:
+            for lab, *_ in FARM_MODELS:
+                req[f"use_{lab}"] = ("BOOLEAN", {"default": lab == "ref2v",
+                                                 "tooltip": f"Модель {lab}: вкл — своя версия результата. Несколько "
+                                                            "включённых считаются по очереди (отдельные запуски)."})
         for k, t, d, lo, hi, st, tip in spec:
             o = {"default": d, "min": lo, "max": hi, "step": st, "tooltip": tip}
             if t == "INT" and k.endswith("seed"):
                 o["control_after_generate"] = "fixed"
             req[k] = (t, o)
-        return {"required": req}
+        out = {"required": req}
+        if models:
+            out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."})}
+            out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}
+        return out
 
-    def run(self, **kw):
-        return tuple(kw[k] for k, *_ in spec)
+    def run(self, prompt=None, unique_id=None, model_override="", **kw):
+        vals = tuple(kw[k] for k in keys)
+        if not models:
+            return vals
+        on = [m for m in FARM_MODELS if kw.get(f"use_{m[0]}")]
+        if model_override:
+            cur = next(m for m in FARM_MODELS if m[0] == model_override)
+        else:
+            if not on:
+                raise ValueError("в пульте не включена ни одна модель")
+            cur = on[0]
+            # ставит в очередь остальные модели только «главный» пульт запроса (наименьший id)
+            panels = sorted(str(k) for k, n in (prompt or {}).items()
+                            if str(n.get("class_type", "")).startswith("NGFarmPanel"))
+            if prompt and panels and panels[0] == str(unique_id) and len(on) > 1:
+                _requeue(prompt, str(unique_id), [m[0] for m in on[1:]])
+        stage = 3 if "Video" in name else 2   # индекс шагов: 3 — кадр, 4 — видео в FARM_MODELS
+        steps = cur[4] if "Video" in name else cur[3]
+        return (cur[1], float(cur[2]), int(steps), cur[0]) + vals
 
-    return type(name, (), {"CATEGORY": "Next Genium/Farm", "FUNCTION": "run", "DESCRIPTION": desc,
-                           "RETURN_TYPES": tuple(t for _, t, *_ in spec),
-                           "RETURN_NAMES": tuple(k for k, *_ in spec),
-                           "INPUT_TYPES": classmethod(INPUT_TYPES), "run": run}), display
+    rt = (("MODEL_NAME", "FLOAT", "INT", "STRING") if models else ()) + tuple(t for _, t, *_ in spec)
+    rn = (("model_name", "turbo_lora", "steps", "model_label") if models else ()) + tuple(keys)
+    cls = type(name, (), {"CATEGORY": "Next Genium/Farm", "FUNCTION": "run", "DESCRIPTION": desc,
+                          "RETURN_TYPES": rt, "RETURN_NAMES": rn,
+                          "INPUT_TYPES": classmethod(INPUT_TYPES), "run": run})
+    if models:   # имя модели — тип-список файлов, чтобы подключаться к полю модели загрузчика
+        cls.RETURN_TYPES = (_model_list(),) + rt[1:]
+    return cls, display
 
 
 PHOTO_SPEC = [
     ("seed", "INT", 1, 0, 2**53, 1, "Сид кадра: другой сид — другой вариант кадра."),
     ("face_seed", "INT", 953552952704593, 0, 2**53, 1, "Сид прохода лица кадра."),
-    ("steps_ref2v", "INT", 8, 4, 40, 1, "Шаги кадра для ref2v (turbo-LoRA — 8)."),
-    ("steps_10eros", "INT", 20, 4, 40, 1, "Шаги кадра для 10Eros (без turbo — 20)."),
-    ("steps_pinkcherry", "INT", 20, 4, 40, 1, "Шаги кадра для PinkCherry (без turbo — 20)."),
     ("shift", "FLOAT", 12.0, 1.0, 20.0, 0.5, "Shift сэмплера H3 (по умолчанию 12)."),
     ("megapixels", "FLOAT", 2.0, 0.5, 8.0, 0.1, "Размер картинки локации на входе H3, Мп (больше — дольше)."),
     ("pass2_total", "INT", 40, 8, 80, 1, "Доработка кадра: всего шагов расписания."),
     ("pass2_steps", "INT", 8, 0, 40, 1, "Доработка кадра: сколько последних шагов делать (0 — без доработки)."),
-    ("face_denoise", "FLOAT", 0.85, 0.0, 1.0, 0.01, "Сила прохода лица кадра: 0.75–0.9; больше — лицо ближе к моду, но меньше от исходника."),
+    ("face_denoise", "FLOAT", 0.85, 0.0, 1.0, 0.01, "Сила прохода лица кадра: 0.75–0.9."),
 ]
 VIDEO_SPEC = [
-    ("steps_ref2v", "INT", 8, 4, 40, 1, "Шаги видео для ref2v (turbo-LoRA — 8)."),
-    ("steps_10eros", "INT", 20, 4, 40, 1, "Шаги видео для 10Eros (без turbo — 20)."),
-    ("steps_pinkcherry", "INT", 20, 4, 40, 1, "Шаги видео для PinkCherry (без turbo — 20)."),
     ("shift", "FLOAT", 12.0, 6.0, 16.0, 0.5, "Shift сэмплера видео (10–14)."),
-    ("color_lock", "FLOAT", -1.0, -1.0, 1.0, 0.05, "Фиксация цвета к ключевому кадру: -1 — авто, 0 — выкл, 1 — полностью."),
+    ("color_lock", "FLOAT", -1.0, -1.0, 1.0, 0.05, "Фиксация цвета к ключевому кадру: -1 — авто, 0 — выкл."),
     ("seam_crossfade", "INT", -1, -1, 16, 1, "Склейка шва петли, кадров: -1 — авто."),
     ("temporal_strength", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Стабилизатор дрожи всего кадра: 0 — выкл, 1 — полностью."),
     ("face_confidence", "FLOAT", -1.0, -1.0, 0.6, 0.05, "Порог детектора лица для прохода лица: -1 — авто."),
-    ("crop_factor", "FLOAT", 2.5, 1.8, 3.5, 0.1, "Запас кропа лица вокруг головы (больше — больше контекста)."),
+    ("crop_factor", "FLOAT", 2.5, 1.8, 3.5, 0.1, "Запас кропа лица вокруг головы."),
     ("large_face_mult", "FLOAT", 0.35, 0.1, 1.0, 0.05, "Ослабление прохода лица, когда лицо крупное."),
     ("face_lock", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Привязка лица к движению (flow-lock) — против дрожи лица."),
-    ("hand_strength", "FLOAT", 0.2, 0.0, 1.0, 0.05, "Сила прохода лица там, где у лица руки (меньше — руки не искажаются)."),
+    ("hand_strength", "FLOAT", 0.2, 0.0, 1.0, 0.05, "Сила прохода лица там, где у лица руки."),
 ]
-_PP, _PPN = _panel("FarmPanelPhoto", "ПУЛЬТ ФОТО (Next Genium)", "Все ручки блока фото в одной ноде.", PHOTO_SPEC)
-_PV, _PVN = _panel("FarmPanelVideo", "ПУЛЬТ ВИДЕО — доп. ручки (Next Genium)",
-                   "Ручки движка видео (PANEL — основные, здесь — тонкая настройка).", VIDEO_SPEC)
-NODES.update({"NGFarmPanelPhoto": _PP, "NGFarmPanelVideo": _PV})
-NAMES.update({"NGFarmPanelPhoto": _PPN, "NGFarmPanelVideo": _PVN})
+_PP, _PPN = _panel("FarmPanelPhoto", "ПУЛЬТ ФОТО (Next Genium)", "Модели и все ручки блока фото.", PHOTO_SPEC)
+_PV, _PVN = _panel("FarmPanelVideo", "ПУЛЬТ ВИДЕО — модели и тонкая настройка (Next Genium)",
+                   "Модели и ручки движка видео (PANEL — основные).", VIDEO_SPEC)
+_PF, _PFN = _panel("FarmPanelFace", "ПУЛЬТ ПРОХОДА ЛИЦА (Next Genium)", "Ручки прохода лица готового видео.",
+                   VIDEO_SPEC, models=False)
+NODES.update({"NGFarmPanelPhoto": _PP, "NGFarmPanelVideo": _PV, "NGFarmPanelFace": _PF})
+NAMES.update({"NGFarmPanelPhoto": _PPN, "NGFarmPanelVideo": _PVN, "NGFarmPanelFace": _PFN})

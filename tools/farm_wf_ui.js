@@ -38,7 +38,7 @@ window.farmBuild = async (name, opts = {}) => {
   const engineRoles = [...new Set(Object.values(role).filter((r) => r.endsWith(":engine") && !r.startsWith("mask")))];
   const nice = (r) => {
     const m = r.match(/^(photo|video)(\d)/);
-    if (m) return `${m[1] === "photo" ? "ДВИЖОК ФОТО" : "ДВИЖОК ВИДЕО"} · ${MODELS[+m[2] - 1]} (двойной клик — внутрь)`;
+    if (m) return `${m[1] === "photo" ? "ДВИЖОК ФОТО" : "ДВИЖОК ВИДЕО"} (двойной клик — внутрь)`;
     if (r.startsWith("facepass")) return "ДВИЖОК ПРОХОДА ЛИЦА готового видео (двойной клик — внутрь)";
     return r;
   };
@@ -80,18 +80,12 @@ window.farmBuild = async (name, opts = {}) => {
   col("ФОТО · входы и пульт (общие для всех моделей)",
       (r) => r === "photo:in" || r === "photo1:in" || r === "photo1:knob" || r === "photo:names" || r === "mask" || r === "mask:sub", "#2f7d4a", 520);
   const muted = [];
-  MODELS.forEach((m, i) => {
-    const l = col(`ФОТО · модель ${m}`, (r) => new RegExp(`^photo${i + 1}:(arm|sub|out)$`).test(r) || (i > 0 && r === `photo${i + 1}:knob`), "#5b3a6e");
-    if (i > 0) muted.push(...l);
-  });
+  col("ФОТО · движок (модели включаются в ПУЛЬТЕ ФОТО, считаются по очереди)", (r) => /^photo1:(arm|sub|out)$/.test(r), "#5b3a6e");
   if (isAuto) col("ZIP фото", (r) => r === "photo:zip", "#444");
   if (isAuto) col("ПЕРЕКЛЮЧАТЕЛЬ: видео из свежих фото (за один запуск) / из папки готовых кадров", (r) => r === "switch", "#8a5a00", 560);
   col("ВИДЕО · входы и пульт (общие для всех моделей)",
       (r) => r === "video:in" || r === "video1:in" || r === "video:panel" || r === "video1:panel" || r === "video1:knob" || r === "video:names", "#2f7d4a", 520);
-  MODELS.forEach((m, i) => {
-    const l = col(`ВИДЕО · модель ${m}`, (r) => new RegExp(`^video${i + 1}:(arm|sub|out)$`).test(r) || (i > 0 && r === `video${i + 1}:knob`), "#5b3a6e");
-    if (i > 0) muted.push(...l);
-  });
+  col("ВИДЕО · движок (модели включаются в ПУЛЬТЕ ВИДЕО, считаются по очереди)", (r) => /^video1:(arm|sub|out)$/.test(r), "#5b3a6e");
   if (isAuto) col("ZIP видео", (r) => r === "video:zip", "#444");
   if (!isAuto) muted.push(...col("ПРОХОД ЛИЦА ГОТОВОГО ВИДЕО — отдельно (включать, когда хватает памяти)", (r) => r.startsWith("facepass"), "#6e2e2e", 560));
   for (const n of muted) n.mode = 2;   // выключено (mute): не выполняется и память не занимает
@@ -111,7 +105,7 @@ window.farmBuild = async (name, opts = {}) => {
     const sw = LG.createNode("Fast Groups Muter (rgthree)");
     sw.title = "ВКЛ/ВЫКЛ блоков и моделей (выключенные не грузят модели)";
     sw.pos = [0, -420]; g.add(sw);
-    sw.properties = { ...(sw.properties || {}), matchTitle: "^(ФОТО · модель|ВИДЕО · модель|ПРОХОД ЛИЦА|ZIP|ПЕРЕКЛЮЧАТЕЛЬ)", sort: "position" };
+    sw.properties = { ...(sw.properties || {}), matchTitle: "^(ФОТО|ВИДЕО|ПРОХОД ЛИЦА|ZIP|ПЕРЕКЛЮЧАТЕЛЬ|ЛОКАЦИИ)", sort: "position" };
   } catch (e) { console.warn("rgthree muter", e); }
   g.setDirtyCanvas?.(true, true);
 

@@ -120,33 +120,52 @@ STEP_KEY = {"ref2v": "steps_ref2v", "10Eros": "steps_10eros", "PinkCherry": "ste
 
 
 def panelize(g: dict, prefix: str, cls: str, nid: str, title: str, role: str, labels=None) -> None:
-    """KNOB-ноды блока (prefix F/V/P) → один пульт: примитивы заменяются выходами пульта, у RandomNoise /
-    H3LatentFromImage виджет подключается к пульту (сами ноды уходят в движок)."""
+    """KNOB-ноды блока (prefix F/V/P) → один пульт. Пульт фото/видео ещё выбирает модель: выходы
+    0 model_name → загрузчик модели, 1 turbo_lora → сила turbo-LoRA, 2 steps → шаги, 3 model_label → имена файлов."""
     import importlib
     sys.path.insert(0, str(ROOT))
     un = importlib.import_module("farm.util_nodes")
     spec = un.PHOTO_SPEC if cls == "NGFarmPanelPhoto" else un.VIDEO_SPEC
+    models = cls != "NGFarmPanelFace"
+    off = 4 if models else 0
     keys = [k for k, *_ in spec]
-    add(g, nid, cls, {k: d for k, _, d, *_ in spec}, title, role)
+    w = {k: d for k, _, d, *_ in spec}
+    if models:
+        w.update({f"use_{m[0]}": m[0] == "ref2v" for m in MODELS})
+    add(g, nid, cls, w, title, role)
     for k in [k for k in g if k.startswith(prefix)]:
         n = g.get(k)
         if n is None:
             continue
-        t = title_of = n["_meta"].get("title", "")
+        t = n["_meta"].get("title", "")
+        if models and t.startswith("ARM model"):
+            n["inputs"]["model_name" if "model_name" in n["inputs"] else "unet_name"] = [nid, 0]
+            n["_meta"]["title"] = "ARM model · из пульта"
+            continue
+        if models and t.startswith("ARM lora"):
+            if n["class_type"] == "Power Lora Loader (rgthree)":
+                n["class_type"] = "LoraLoaderModelOnly"
+                n["inputs"] = {"model": n["inputs"]["model"], "lora_name": F_TURBO, "strength_model": [nid, 1]}
+            else:
+                n["inputs"]["strength_model"] = [nid, 1]
+                n["inputs"]["lora_name"] = F_TURBO
+            n["_meta"]["title"] = "ARM lora · turbo (сила из пульта: ref2v 1, остальные 0)"
+            continue
         if not t.startswith("KNOB"):
             continue
         name = t.split(" ", 1)[1].split(" ")[0]
         if name in ("pass1_steps", "steps"):
-            inst = int(k[1]) if k[1].isdigit() else 1
-            name = STEP_KEY[(labels or MODELS)[inst - 1][0]]
+            if models:
+                relink(g, k, [nid, 2])
+            continue
         if name not in keys:
             continue
-        idx = keys.index(name)
+        idx = keys.index(name) + off
         if n["class_type"].startswith("Primitive"):
             relink(g, k, [nid, idx])
         else:
-            w = "noise_seed" if n["class_type"] == "RandomNoise" else "denoise"
-            n["inputs"][w] = [nid, idx]
+            ww = "noise_seed" if n["class_type"] == "RandomNoise" else "denoise"
+            n["inputs"][ww] = [nid, idx]
             n["_meta"]["role"] = n["_meta"]["role"].replace(":knob", ":engine")
             n["_meta"]["title"] = t.replace("KNOB ", "")
 
@@ -270,7 +289,7 @@ def build_auto() -> dict:
     t = lambda i: [T, i]
     add(g, "info", "PreviewAny", {"source": t(11)}, "ТАБЛИЦА · что взято из строки", "table")
 
-    ph = photo_instances(g)
+    ph = photo_instances(g, MODELS[:1])
     f0, fp = ph[0], ph[0]["fp"]
     F = lambda key: f0["p"] + tid(f0["base"], key)
     # необязательные картинки локаций: Load Image с именем файла = ID зоны → берётся вместо локации из таблицы
@@ -288,9 +307,9 @@ def build_auto() -> dict:
     g[F(fp["inputs"]["face_prompt"]["title"])]["inputs"]["prompt"] = t(4)
     for r in ph:
         nm = name_concat(g, f"name_{r['p']}", "farm_auto/", t(10), "photo:names")
-        g[r["out"]]["inputs"]["filename_prefix"] = [name_concat(g, f"name2_{r['p']}", [nm, 0], f"_{r['label']}",
+        g[r["out"]]["inputs"]["filename_prefix"] = [name_concat(g, f"name2_{r['p']}", [nm, 0], ["NAMEP", 0],
                                                                 "photo:names"), 0]
-    add(g, "Zp", "NGFarmZip", {"batch": "photo", "shot_id": t(10),
+    add(g, "Zp", "NGFarmZip", {"batch": "photo", "shot_id": t(10), "tag": ["PF", 3],
                                **{f"image_{i}": r["img"] for i, r in enumerate(ph, 1)}},
         "ZIP фото · ссылка на скачивание", "photo:zip")
 
@@ -301,7 +320,7 @@ def build_auto() -> dict:
                                      **{f"new_{i}": r["img"] for i, r in enumerate(ph, 1)}},
         "ПЕРЕКЛЮЧАТЕЛЬ · видео из свежих фото (за один запуск) / из папки", "switch")
 
-    vi = video_instances(g, face_pass="auto")
+    vi = video_instances(g, face_pass="auto", n_models=MODELS[:1])
     v0, vp = vi[0], vi[0]["vp"]
     V = lambda key: v0["p"] + tid(v0["base"], key)
     relink(g, V(vp["inputs"]["keyframe"]["title"]), ["PK", 0])
@@ -320,20 +339,22 @@ def build_auto() -> dict:
     pan["duration_sec"], pan["loop"] = t(8), t(9)
     for r in vi:
         nm = name_concat(g, f"name_{r['p']}", "farm_auto/", t(10), "video:names")
-        g[r["out"]]["inputs"]["filename_prefix"] = [name_concat(g, f"name2_{r['p']}", [nm, 0], f"_{r['label']}",
+        g[r["out"]]["inputs"]["filename_prefix"] = [name_concat(g, f"name2_{r['p']}", [nm, 0], ["NAMEV", 0],
                                                                 "video:names"), 0]
-    add(g, "Zv", "NGFarmZip", {"batch": "video", "shot_id": t(10),
+    add(g, "Zv", "NGFarmZip", {"batch": "video", "shot_id": t(10), "tag": ["PV", 3],
                                **{f"video_{i}": [r["out"], 0] for i, r in enumerate(vi, 1)}},
         "ZIP видео · ссылка на скачивание", "video:zip")
     panelize(g, "F", "NGFarmPanelPhoto", "PF", "ПУЛЬТ ФОТО — все ручки блока (наведите на поле — подсказка)", "photo1:knob")
     panelize(g, "V", "NGFarmPanelVideo", "PV", "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)", "video1:knob")
+    name_concat(g, "NAMEP", "_", ["PF", 3], "photo:names")
+    name_concat(g, "NAMEV", "_", ["PV", 3], "video:names")
     label_knobs(g)
     return g
 
 
 def build_manual() -> dict:
     g: dict = {}
-    ph = photo_instances(g)
+    ph = photo_instances(g, MODELS[:1])
     f0, fp = ph[0], ph[0]["fp"]
     F = lambda key: f0["p"] + tid(f0["base"], key)
     loc = F(fp["inputs"]["location_sheet"]["title"])
@@ -378,7 +399,7 @@ def build_manual() -> dict:
         g[r["out"]]["inputs"]["images"] = [f"{p}_sw", 0]
         g[r["out"]]["inputs"]["filename_prefix"] = f"farm_manual/photo_{r['label']}"
 
-    vi = video_instances(g, face_pass="off")
+    vi = video_instances(g, face_pass="off", n_models=MODELS[:1])
     v0, vp = vi[0], vi[0]["vp"]
     V = lambda key: v0["p"] + tid(v0["base"], key)
     for key, ru in (("keyframe", "ВИДЕО · ключевой кадр (первый = последний)"),
@@ -395,7 +416,11 @@ def build_manual() -> dict:
     facepass_block(g)
     panelize(g, "F", "NGFarmPanelPhoto", "PF", "ПУЛЬТ ФОТО — все ручки блока (наведите на поле — подсказка)", "photo1:knob")
     panelize(g, "V", "NGFarmPanelVideo", "PV", "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)", "video1:knob")
-    panelize(g, "P", "NGFarmPanelVideo", "PP", "ПУЛЬТ ПРОХОДА ЛИЦА — тонкая настройка", "facepass:knob")
+    panelize(g, "P", "NGFarmPanelFace", "PP", "ПУЛЬТ ПРОХОДА ЛИЦА — тонкая настройка", "facepass:knob")
+    for r in ph:
+        g[r["out"]]["inputs"]["filename_prefix"] = [name_concat(g, "NAMEP", "farm_manual/photo_", ["PF", 3], "photo:names"), 0]
+    for r in vi:
+        g[r["out"]]["inputs"]["filename_prefix"] = [name_concat(g, "NAMEV", "farm_manual/video_", ["PV", 3], "video:names"), 0]
     label_knobs(g)
     return g
 
