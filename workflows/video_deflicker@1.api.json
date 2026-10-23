@@ -1,0 +1,70 @@
+{
+ "IN": {
+  "class_type": "StacyVideoInput",
+  "inputs": {
+   "video": "(none)"
+  },
+  "_meta": {
+   "title": "ВИДЕО — загрузить кнопкой (choose video to upload)",
+   "role": "deflicker:in"
+  }
+ },
+ "ST": {
+  "class_type": "StacyTemporalStabilize",
+  "inputs": {
+   "images": [
+    "IN",
+    0
+   ],
+   "strength": 1.0,
+   "radius": 2,
+   "threshold": 4.0,
+   "loop": true,
+   "motion_compensation": true,
+   "keep_sharpness": true
+  },
+  "_meta": {
+   "title": "АНТИ-ДРОЖЬ — strength 1; сильнее: radius 3, threshold 6; петля фермы — loop вкл",
+   "role": "deflicker:knob"
+  }
+ },
+ "OUT": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "images": [
+    "ST",
+    0
+   ],
+   "frame_rate": [
+    "IN",
+    2
+   ],
+   "loop_count": 0,
+   "filename_prefix": "deflicker/deflicker",
+   "format": "video/h264-mp4",
+   "pix_fmt": "yuv420p",
+   "crf": 12,
+   "save_metadata": false,
+   "trim_to_audio": false,
+   "pingpong": false,
+   "save_output": true
+  },
+  "_meta": {
+   "title": "ИТОГ — output/deflicker/deflicker_NNNNN.mp4",
+   "role": "deflicker:out"
+  }
+ },
+ "REP": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "ST",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "ОТЧЁТ стабилизатора",
+   "role": "deflicker:out"
+  }
+ }
+}
