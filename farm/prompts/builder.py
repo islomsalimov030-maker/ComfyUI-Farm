@@ -450,7 +450,8 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
         card = lib.plate_card(shot.get("plate")) if lib is not None and hasattr(lib, "plate_card") else None
     except Exception:
         card = None
-    trigger = (char.get("lora_trigger") or "").strip() or cfg["defaults"]["trigger"]
+    use_lora = bool(profile.get("character_lora", True))   # 23.10: без LoRA персонажа — без триггера в промптах
+    trigger = ((char.get("lora_trigger") or "").strip() or cfg["defaults"]["trigger"]) if use_lora else ""
     height = float(char.get("height_cm") or cfg["defaults"]["height_cm"])
     pclass = {"crouching": "sitting"}.get(extra.get("pose_class"), extra.get("pose_class")) or pose_class(shot.get("pose_ru"))
     plan = extra.get("plan")                  # v2: wide | medium | close | None
@@ -489,7 +490,7 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
 
     linp = llm_input(stage, shot, lib, mode or "", end_s, flags, hints, ctx.get("comment"))
     lint_ctx = {"template": template, "mode": mode, "connected": connected, "end_s": round(end_s, 2),
-                "trigger": None if is_ls else trigger}
+                "trigger": None if (is_ls or not trigger) else trigger}
     meta = {"builder": BUILDER_VER, "schema": S.SCHEMA_VER, "template": template, "mode": mode,
             "end_s": round(end_s, 3), "workflow": workflow,
             "connected": sorted(connected) if connected is not None else None,
@@ -571,7 +572,7 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
         if params is None or name in (params.get("inputs") or {}):
             inputs[name] = ftxt
             issues += [LintIssue(i.code, f"[{name}] {i.msg}", i.severity)
-                       for i in lint(ftxt, stage, {"kind": "face", "trigger": None if v.get("is_ls") else trigger})]
+                       for i in lint(ftxt, stage, {"kind": "face", "trigger": None if (v.get("is_ls") or not trigger) else trigger})]
     return PromptResult(text=text, fields_json={"fields": fields, "inputs": inputs, "meta": meta,
                                                 "llm_input": linp},
                         lint=issues, template_ver=template)

@@ -2,6 +2,7 @@
 # без LoRA и листа персонажа, 3 Мп, проход лица H3 с модом лица; видео video_h3_loop@1 — ref2va + turbo 8.
 name: sfw_base
 content_scope: sfw
+character_lora: false        # 23.10: LoRA персонажей нет — триггер в промпты не идёт
 llm: {prompt_model: qwen3-vl:8b-instruct, judge_model: qwen3-vl:8b-instruct, keep_alive: 0}
 frame:
   workflow: frame_ls@1
@@ -20,7 +21,7 @@ video:
       model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
       loras:
         - {name: minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors, w: 1.0}
-      sampler: {face_pass: "off", loop: true}
+      sampler: {face_pass: auto, face_lora: 0.0, loop: true}   # 23.10: проход лица ВКЛ (flow-lock + анти-дрожь) без LoRA лица
   seeds_per_try: 1
   prompt_template: video_loop_ref_v1
 qa: {thresholds_file: qa/thresholds_sfw_base.yaml}

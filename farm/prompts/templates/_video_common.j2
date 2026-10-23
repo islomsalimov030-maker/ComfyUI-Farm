@@ -1,6 +1,6 @@
 {#- общие куски видео-шаблонов; обязательные строки живут здесь, не в LLM -#}
 {% macro subjects() -%}
-<Subject 1> is {{ trigger }}, the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, {{ outfit_clause }}.
+<Subject 1> is {% if trigger %}{{ trigger }}, {% endif %}the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, {{ outfit_clause }}.
 <Subject 2> is {{ location_en }} in <Picture 1>.
 <Picture 2> is a close-up identity reference of the face of <Subject 1>.
 {%- endmacro %}
