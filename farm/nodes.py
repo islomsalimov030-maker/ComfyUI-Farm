@@ -35,6 +35,8 @@ class FarmControl:
 
 from .shot_node import FarmShotFromTable  # noqa: E402
 
-NODE_CLASS_MAPPINGS = {"NGFarmControl": FarmControl, "NGFarmShotFromTable": FarmShotFromTable}
+from .util_nodes import NAMES as _UN, NODES as _U  # noqa: E402
+
+NODE_CLASS_MAPPINGS = {"NGFarmControl": FarmControl, "NGFarmShotFromTable": FarmShotFromTable, **_U}
 NODE_DISPLAY_NAME_MAPPINGS = {"NGFarmControl": "Farm Control (Next Genium)",
-                              "NGFarmShotFromTable": "Шот из таблицы (Next Genium)"}
+                              "NGFarmShotFromTable": "Шот из таблицы (Next Genium)", **_UN}
