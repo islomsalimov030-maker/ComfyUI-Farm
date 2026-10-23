@@ -695,8 +695,8 @@
  "FP": {
   "class_type": "NGFarmPanelFacepass",
   "inputs": {
-   "upload": "(none)",
-   "video": "stacy_fp",
+   "video": "(none)",
+   "folder": "stacy_fp",
    "index": 0,
    "whole_folder": true,
    "face_prompt": "St4cy_H3, a close-up of the face of the same young woman, her expression and head movement kept exactly as in the source video, natural skin texture, sharp focus on the eyes, every movement at natural real-time speed, never in slow motion. One continuous shot with no cuts. Filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.",

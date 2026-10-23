@@ -505,10 +505,11 @@ class FarmPanelFacepass:
         files = _video_files()
         mods = _mod_names()
         dm = next((m for m in FACE_MOD_FALLBACK if m in mods), mods[0])
-        req = {"upload": (["(none)"] + files, {"video_upload": True, "tooltip": "Загрузить одно видео (кнопка ниже). "
-                                                 "(none) — взять видео или папку из поля video."}),
-               "video": ("STRING", {"default": "stacy_fp", "tooltip": "Если upload = (none): видео или папка с видео "
-                                    "(путь от ComfyUI/input, например stacy_fp, или абсолютный)."}),
+        # имя "video" обязательно: кнопка загрузки фронтенда ищет комбо по имени, "upload" ломало создание ноды
+        req = {"video": (["(none)"] + files, {"video_upload": True, "tooltip": "Загрузить одно видео (кнопка ниже). "
+                                                "(none) — взять видео или папку из поля folder."}),
+               "folder": ("STRING", {"default": "stacy_fp", "tooltip": "Если video = (none): папка с видео или файл "
+                                     "(путь от ComfyUI/input, например stacy_fp, или абсолютный)."}),
                "index": ("INT", {"default": 0, "min": 0, "max": 9999, "control_after_generate": "fixed",
                                  "tooltip": "Номер видео в папке (0 — первое). При 0 и «всю папку» — все по очереди."}),
                "whole_folder": ("BOOLEAN", {"default": True, "tooltip": "Папка: один Queue — все видео."}),
@@ -526,21 +527,21 @@ class FarmPanelFacepass:
         return {"required": req, "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}}
 
     @classmethod
-    def VALIDATE_INPUTS(cls, upload=None, **kw):
+    def VALIDATE_INPUTS(cls, video=None, **kw):
         return True   # только что загруженный файл ещё не в списке
 
     @classmethod
-    def IS_CHANGED(cls, upload="(none)", video="", index=0, **kw):
+    def IS_CHANGED(cls, video="(none)", folder="", index=0, **kw):
         try:
-            v = list_videos(upload if upload and upload != "(none)" else video)
+            v = list_videos(video if video and video != "(none)" else folder)
             return f"{v[min(index, len(v) - 1)]}:{v[min(index, len(v) - 1)].stat().st_mtime}:{len(v)}"
         except Exception:   # noqa: BLE001
-            return f"{upload}|{video}|{index}"
+            return f"{video}|{folder}|{index}"
 
-    def run(self, video, index, whole_folder, face_prompt, upload="(none)", face_mod_name="farm/stacy_face",
+    def run(self, folder, index, whole_folder, face_prompt, video="(none)", face_mod_name="farm/stacy_face",
             prompt=None, unique_id=None, **kw):
         mod = pick_mod(face_mod_name, _mod_names())
-        vids = list_videos(upload if upload and upload != "(none)" else video)
+        vids = list_videos(video if video and video != "(none)" else folder)
         if index >= len(vids):
             raise IndexError(f"index {index}: в папке {len(vids)} видео (0…{len(vids) - 1})")
         if whole_folder and index == 0 and len(vids) > 1 and prompt:
