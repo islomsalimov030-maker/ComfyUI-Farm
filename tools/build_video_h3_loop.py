@@ -170,7 +170,7 @@ def build(src, outdir):
     api = K.to_api(ui)
     K.bypass(api, K.by_title(api, "ПРЕВЬЮ (генерация / face pass видео)"), "model")
     K.bypass(api, K.by_title(api, "модель активного режима → превью"), "generate_model")
-    api = K.prune(api, [TITLES[10], TITLES[9], TITLES[16], TITLES[17]])
+    api = K.prune(api, [TITLES[10], TITLES[16], TITLES[17]])   # 23.10: OUT raw (9) не сохраняем
     errs = K.check_api(api)
     assert not errs, errs
     K.dump(api, os.path.join(outdir, "video_h3_loop@1.api.json"))

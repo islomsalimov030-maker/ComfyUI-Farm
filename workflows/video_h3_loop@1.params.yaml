@@ -54,7 +54,6 @@ fixed:             # не трогать оркестратором
 
 outputs:
   video_fullhd: {title: "OUT video · итог FullHD 24 fps", kind: video}   # history: gifs[0] (VHS)
-  video_raw:    {title: "OUT raw · 1344x768", kind: video}
   last_frame:   {title: "OUT last_frame · последний кадр", kind: image}
   report:       {title: "OUT report · отчёт генерации", kind: text}
 

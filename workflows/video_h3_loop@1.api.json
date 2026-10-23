@@ -1466,28 +1466,6 @@
    "title": "режим: генерация (отчёт)"
   }
  },
- "9": {
-  "class_type": "VHS_VideoCombine",
-  "inputs": {
-   "images": [
-    "1:91",
-    0
-   ],
-   "frame_rate": 24,
-   "loop_count": 0,
-   "filename_prefix": "stacy_h3/Stacy_raw",
-   "format": "video/h264-mp4",
-   "pix_fmt": "yuv420p",
-   "crf": 12,
-   "save_metadata": true,
-   "trim_to_audio": false,
-   "pingpong": false,
-   "save_output": true
-  },
-  "_meta": {
-   "title": "OUT raw · 1344x768"
-  }
- },
  "10": {
   "class_type": "VHS_VideoCombine",
   "inputs": {

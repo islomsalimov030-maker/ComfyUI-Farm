@@ -331,19 +331,6 @@
    "title": "gen · выбор кадра"
   }
  },
- "87": {
-  "class_type": "SaveImage",
-  "inputs": {
-   "images": [
-    "84:12",
-    0
-   ],
-   "filename_prefix": "farm/frame_raw"
-  },
-  "_meta": {
-   "title": "OUT raw · кадр до доработки лица"
-  }
- },
  "w7_1": {
   "class_type": "MiniMaxH3RefModsLoader",
   "inputs": {

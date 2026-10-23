@@ -6,7 +6,7 @@
     MiniMaxH3ReferenceToVideo; ракурс H3 выбирает сам по промпту (генератор LS_refmod, tools/ws07_graphs.py);
   • персонаж и наряд — RefMod (лицо, тело, наряд — до 3 модов) через MiniMaxH3RefModApply;
   • проход лица H3 (fl2va, SAM3 face → кроп 1 Мп, denoise 0.85, мод лица вместо LoRA; ss456_sharp.refine_graph).
-Выходы: `OUT frame` (итог), `OUT raw` (до прохода лица). Кадр без лица (SAM3 не нашёл) — проход лица пропускается.
+Выходы: `OUT frame` (итог с проходом лица; raw не сохраняется с 23.10). Кадр без лица (SAM3 не нашёл) — проход лица пропускается.
 
     python tools/build_frame_ls.py <v2_refine_api.json>     # → workflows/frame_ls@1.api.json (+ params.yaml рядом)
 """
@@ -76,7 +76,7 @@ def build(v2: dict) -> dict:
     sv = g[ren["f85:sv"]]
     sv["_meta"]["title"] = T_OUT
     sv["inputs"]["filename_prefix"] = "farm/frame"
-    g[raw_save]["inputs"]["filename_prefix"] = "farm/frame_raw"
+    del g[raw_save]   # 23.10: raw не сохраняем — в очереди ComfyUI и в results только итог с проходом лица
     return g
 
 
@@ -103,7 +103,6 @@ knobs:
 fixed: {{}}
 outputs:
   frame:     {{title: "{T_OUT}", kind: image, main: true}}
-  frame_raw: {{title: "{G.OUT_RAW}", kind: image}}
 notes:
   - "3 Мп 2336×1312, ref2va + turbo 8; локация — location sheet <Picture 1>, персонаж/наряд — RefMod (без LoRA и листа)."
   - "Проход лица: H3 fl2va + мод лица, SAM3 face (Meta SAM License), кроп 1 Мп, denoise 0.85 (SS-456: AuraFace 0.68 → 0.83)."

@@ -21,7 +21,6 @@ knobs:
 fixed: {}
 outputs:
   frame:     {title: "OUT frame · итоговый кадр", kind: image, main: true}
-  frame_raw: {title: "OUT raw · кадр до доработки лица", kind: image}
 notes:
   - "3 Мп 2336×1312, ref2va + turbo 8; локация — location sheet <Picture 1>, персонаж/наряд — RefMod (без LoRA и листа)."
   - "Проход лица: H3 fl2va + мод лица, SAM3 face (Meta SAM License), кроп 1 Мп, denoise 0.85 (SS-456: AuraFace 0.68 → 0.83)."
