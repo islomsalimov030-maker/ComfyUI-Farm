@@ -426,3 +426,28 @@ def test_frame_ls_prompt_v2(env, monkeypatch):
     assert "<Picture 2>" not in r.text and "St4cy_H3" not in r.text
     assert "location sheet" in r.text and "a lilac living room" in r.text and "A medium shot" in r.text
     assert r.fields_json["inputs"]["face_prompt"].startswith("A tight close-up portrait")
+
+
+def test_v21_character_variant(env, monkeypatch, tmp_path):
+    """v2.1: персонаж = персонаж + наряд. Вариант наследует поля базового, лицо — мод базового,
+    тело — мод варианта, наряд варианта уходит в промпт кадра frame_ls."""
+    from farm.library import Library
+    lib, shots, F = env
+    base = lib.data["characters"]["stacy"]
+    lib.data["characters"]["stacy_student"] = {"id": "stacy_student", "base": "stacy", "name": "",
+                                               "outfit_en": "a navy pleated skirt and a white blouse"}
+    v = lib.character("stacy_student")
+    assert v.get("desc_en") == base.get("desc_en") and v["outfit_en"].startswith("a navy")
+    assert Library.base_id(v) == "stacy"
+    lib.data.setdefault("zones", {})["apartment_living"] = {"id": "apartment_living", "desc_en": "a lilac living room"}
+    shot = {**shots["SIT-08"], "character": "stacy_student", "outfit": None,
+            "extra_json": {**(shots["SIT-08"].get("extra_json") or {}), "zone": "apartment_living", "pose_class": "sitting"}}
+    res = lib.resolve_inputs(shot, "frame")
+    assert res["face_mod"] == "farm/stacy_face" and res["char_body_mod"] == "farm/stacy_student_body"
+    assert "outfit_mod" not in res
+    fake = FakeOllama([json.dumps(F["SIT-08"]["frame"])])
+    prof, _ = _install(fake, monkeypatch)
+    prof = {**prof, "frame": {**prof["frame"], "workflow": "frame_ls@1", "prompt_template": "frame_ls_v1"}}
+    r = build("frame", shot, lib, prof, ctx={"no_cache": True})
+    assert not errors(r.lint), [(i.code, i.msg) for i in r.lint]
+    assert "navy pleated skirt" in r.text

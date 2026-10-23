@@ -144,7 +144,20 @@ class Library:
     def get(self, lib: str, id_: Optional[str]) -> Optional[dict]:
         if not id_:
             return None
-        return self.data.get(lib, {}).get(str(id_).strip().lower())
+        row = self.data.get(lib, {}).get(str(id_).strip().lower())
+        if lib == "characters" and row:   # v2.1: вариант «персонаж + наряд» наследует пустые поля базового
+            b = self.base_id(row)
+            base = self.data[lib].get(b) if b != row["id"] else None
+            if base:
+                row = {**base, **{k: v for k, v in row.items() if v not in (None, "")}}
+        return row
+
+    @staticmethod
+    def base_id(row: Optional[dict]) -> Optional[str]:
+        """ID базового персонажа варианта (stacy_student → stacy); у базового — свой ID."""
+        if not row:
+            return None
+        return str(row.get("base") or row.get("id") or "").strip().lower() or None
 
     def character(self, id_):
         return self.get("characters", id_)
@@ -195,6 +208,9 @@ class Library:
         for c in cands:
             if c.is_file():
                 return c
+        b = self.base_id(row) if lib == "characters" else None
+        if b and b != row["id"] and not cell:   # v2.1: файл варианта по соглашению → файл базового
+            return self.file(lib, b, key)
         return None
 
     def expected_file(self, lib: str, id_: str, key: str) -> str:
@@ -307,8 +323,9 @@ class Library:
             zone = extra.get("zone") or pl
             if zone:
                 put("location_sheet", self.zone_sheet(zone))
-            if ch:
-                out["char_face_mod"] = out["face_mod"] = mod_name("char", ch, "face")
+            if ch:   # v2.1: лицо — мод базового персонажа, тело — мод варианта (персонаж в наряде)
+                person = self.base_id(self.character(ch)) or ch
+                out["char_face_mod"] = out["face_mod"] = mod_name("char", person, "face")
                 out["char_body_mod"] = mod_name("char", ch, "body")
             if of:
                 out["outfit_mod"] = mod_name("outfit", of)
@@ -321,7 +338,9 @@ class Library:
 
 
 def mod_name(kind: str, id_: str, part: str = "") -> str:
-    """Имя RefMod в ComfyUI models/refmods: farm/<персонаж>_<face|body>, farm/out_<наряд> (CONTRACTS v0.9)."""
+    """Имя RefMod в ComfyUI models/refmods: farm/<персонаж>_<face|body>, farm/out_<наряд> (CONTRACTS v0.9).
+    v2.1: тело — вариант «персонаж + наряд» (farm/stacy_student_body), лицо — базовый (farm/stacy_face);
+    отдельный мод наряда (out_*) — устарел, остаётся для старых таблиц."""
     i = str(id_).lower().replace("/", "_")
     return f"farm/{i}_{part}" if kind == "char" else f"farm/out_{i}"
 

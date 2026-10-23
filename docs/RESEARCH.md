@@ -214,3 +214,9 @@
 - env.sh пода ставит `HF_HUB_ENABLE_HF_TRANSFER=1`; в venv без `hf_transfer` скачивание с HF падает, transformers сообщает «Unrecognized model».
 - qwen3-vl:8b-instruct (schema): в ~40 % петель последний шаг-возврат помечен `move`; ярлык чинится кодом (WS-04 eval 99.2 % с 1-й попытки).
 - StacyLoop: в отчёте модель подписана «Singularity» при `model_10eros=false` независимо от реального `unet_name`; в репо StacyLoop закоммичен `__pycache__/*.pyc` — мешает `git merge` на поде.
+
+## 23.10 · Лицензии лица и глубины (WS-10)
+- InsightFace: веса buffalo_l/antelopev2 — некоммерческие, но коммерческая лицензия продаётся (цена по запросу) — [insightface.ai](https://www.insightface.ai/services/models-commercial-licensing). Нам не нужна: прод — MediaPipe + AuraFace-v1 + MiVOLO v2.
+- Depth Anything 3: Small, Base, Mono-Large, Metric-Large — Apache-2.0; Large, Giant, Nested (и 1.1) — CC-BY-NC-4.0 по README ([GitHub](https://github.com/ByteDance-Seed/Depth-Anything-3)); карточка HF DA3-LARGE-1.1 пишет apache-2.0 — расхождение, считаем NC.
+- Сравнение на 3 кадрах фермы — `docs/qa/WS-10_license_swap_1023.md`: AuraFace ≈ buffalo_l по своему сходству, зазор до чужого меньше на 0.05–0.12; V2-Small ↔ V2-Large ρ 0.92–0.99; DA3-Mono-Large ↔ V2-Large |ρ| 0.84–0.97, резче фигура.
+

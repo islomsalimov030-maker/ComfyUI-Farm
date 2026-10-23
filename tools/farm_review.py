@@ -5,6 +5,7 @@
     python tools/farm_review.py sheet out.jpg [--all]     # контакт-лист текущих кадров (или всех кандидатов)
     python tools/farm_review.py accept STD-01 frame       # вердикт по текущему кадру/видео шота
     python tools/farm_review.py redo STD-01 video "рука уходит за край кадра"
+    python tools/farm_review.py restart SAM-S3 [SAM-S6 ...]  # needs_human без ассета (ошибка до генерации) → заново
 
 Вердикт пишется так же, как из бота (`bot.store.FarmStore.record`): воркер подхватит его на следующем тике
 (CONTRACTS §4: accept / redo / redo_comment). Ревьюер по умолчанию — `cli`.
@@ -83,9 +84,26 @@ def cmd_verdict(db: DB, verdict: str, sid: str, stage: str, comment: str, review
     return 0 if ok else 1
 
 
+def cmd_restart(db: DB, ids: list[str]) -> int:
+    """Закрывает дыру STD-02: шот в needs_human без ассета (линтер/подготовка упали до генерации) не принимает
+    вердикт — переводим его в генерацию напрямую. Есть кадр — в video_gen, нет — в frame_gen."""
+    from farm import states as S
+    bad = 0
+    for sid in ids:
+        s = db.shot(sid)
+        if not s:
+            print(f"{sid}: нет такого шота"); bad += 1; continue
+        if s["state"] != S.NEEDS_HUMAN:
+            print(f"{sid}: состояние {s['state']} — restart только из needs_human (иначе redo)"); bad += 1; continue
+        dst = S.VIDEO_GEN if s.get("frame_asset_id") else S.FRAME_GEN
+        S.transition(db, sid, dst, "перезапуск человеком (restart)", expect=S.NEEDS_HUMAN, last_error=None, stage_try=0)
+        print(f"{sid}: → {dst}")
+    return 1 if bad else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["list", "sheet", "accept", "redo"])
+    ap.add_argument("cmd", choices=["list", "sheet", "accept", "redo", "restart"])
     ap.add_argument("args", nargs="*")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--reviewer", default="cli")
@@ -95,6 +113,8 @@ def main() -> int:
         return cmd_list(db)
     if a.cmd == "sheet":
         return cmd_sheet(db, a.args[0] if a.args else "review_sheet.jpg", a.all)
+    if a.cmd == "restart":
+        return cmd_restart(db, a.args)
     if len(a.args) < 2 or a.args[1] not in ("frame", "video"):
         ap.error("нужно: <shot_id> frame|video [комментарий]")
     return cmd_verdict(db, a.cmd, a.args[0], a.args[1], " ".join(a.args[2:]), a.reviewer)

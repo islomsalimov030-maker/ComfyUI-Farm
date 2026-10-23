@@ -2,7 +2,7 @@
 # Единый источник: читает farm/sheets.py (валидатор, синхронизация) и tools/build_sheet_template.py
 # (генерирует Apps Script tools/sheet_template.gs). Колонки находятся по заголовку, не по позиции:
 # порядок можно менять, лишние колонки игнорируются. Ключ (key) — имя поля в коде.
-version: 2   # v2 (WS-10, 23.10): зоны (location sheet), класс позы, план, лицо в кадре; плита необязательна
+version: 2.1   # v2.1 (23.10): персонаж = персонаж + наряд, секси-вариант = отдельный шот; v2 (WS-10, 23.10): зоны (location sheet), класс позы, план, лицо в кадре; плита необязательна
 title: "Ферма — сцены"
 
 limits:
@@ -42,7 +42,7 @@ scenes:
     - {key: kind, header: Тип, width: 65, type: list, list: kind,
        note: "видео — кадр + зацикленное видео; кадр — только картинка."}
     - {key: character, header: Персонаж, width: 95, required: true, type: ref, ref: characters,
-       note: "ID с листа «Персонажи»."}
+       note: "ID с листа «Персонажи» — персонаж сразу с нарядом (v2.1): stacy_student, samantha_arena. Без наряда — stacy (базовый наряд)."}
     - {key: plate, header: Локация / плита, width: 150, type: ref, ref: plates,
        note: "ID плиты с листа «Локации» вида локация/зона, например apartment/sofa."}
     - {key: zone, header: Зона, width: 150, type: ref, ref: zones,
@@ -51,7 +51,7 @@ scenes:
     - {key: plan, header: План, width: 80, type: list, list: plan, note: "Пусто — авто по позе"}
     - {key: face_in_frame, header: Лицо в кадре, width: 85, note: "да / нет / в конце / в зеркале"}
     - {key: outfit, header: Наряд, width: 110, type: ref, ref: outfits,
-       note: "ID с листа «Наряды». Пусто можно, но без рефа одежды хуже держатся фон и лицо."}
+       note: "Устарело с v2.1: наряд входит в персонажа (мод персонажа в наряде). Оставлено для старых таблиц — оставляйте пусто."}
     - {key: objects, header: Объекты, width: 140, type: refs, ref: objects,
        note: "ID с листа «Объекты» через запятую: stool, yoga_mat. Важные для масштаба предметы — сюда."}
     - {key: framing, header: Ракурс и кадр, width: 200,
@@ -103,6 +103,10 @@ libraries:
     columns:
       - {key: id, header: ID, width: 90, required: true, note: "латиница в нижнем регистре: stacy"}
       - {key: name, header: Имя, width: 110}
+      - {key: base, header: Базовый персонаж, width: 110,
+         note: "v2.1: для варианта с нарядом — ID базового (stacy). Пустые поля варианта (лицо, рост, описание) берутся у базового; мод лица — базового, мод тела — варианта."}
+      - {key: outfit_ru, header: Наряд, width: 160, note: "v2.1: наряд варианта по-русски (для людей и конвертера таблиц)."}
+      - {key: outfit_en, header: Наряд (EN), width: 220, note: "v2.1: наряд варианта по-английски — уходит в промпт кадра."}
       - {key: lora_trigger, header: Триггер LoRA, width: 110}
       - {key: lora, header: LoRA (файл), width: 220, note: "Имя файла в /workspace/models/loras. Рука профиля важнее — это справка для сборщика промптов."}
       - {key: lora_w, header: Сила LoRA, width: 75, type: number}

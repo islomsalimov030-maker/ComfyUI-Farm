@@ -444,7 +444,7 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
     height = float(char.get("height_cm") or cfg["defaults"]["height_cm"])
     pclass = {"crouching": "sitting"}.get(extra.get("pose_class"), extra.get("pose_class")) or pose_class(shot.get("pose_ru"))
     plan = extra.get("plan")                  # v2: wide | medium | close | None
-    o_desc = _lc(outfit.get("desc_en") or "")
+    o_desc = _lc(outfit.get("desc_en") or char.get("outfit_en") or "")   # v2.1: наряд — в варианте персонажа
     is_ls = stage == "frame" and template.startswith("frame_ls")
     if is_ls:   # frame_ls (WS-10): наряд — мод + описание, без мода — базовый наряд текстом
         outfit_clause = f"wearing {o_desc or cfg['defaults']['base_outfit_en']}"
