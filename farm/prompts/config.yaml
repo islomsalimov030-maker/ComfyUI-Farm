@@ -102,7 +102,7 @@ defaults:
   light_en: "the soft natural light of the room"
   rest_verb: {standing: stands, sitting: sits, lying: lies, other: stays}
   frame_template: frame_ref_v1
-  base_outfit_en: "a fitted grey sports crop top and white cotton shorts, barefoot"   # frame_ls: наряд не указан
+  base_outfit_en: "a fitted grey sports crop top and white cotton shorts, barefoot"   # устарело 23.10: наряд — в моде персонажа
   plan_opening:                      # frame_ls: «План» из таблицы v2
     wide: "A frontal full-body shot"
     medium: "A medium shot from the waist up"

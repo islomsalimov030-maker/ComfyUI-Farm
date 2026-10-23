@@ -42,7 +42,7 @@ scenes:
     - {key: kind, header: Тип, width: 65, type: list, list: kind,
        note: "видео — кадр + зацикленное видео; кадр — только картинка."}
     - {key: character, header: Персонаж, width: 95, required: true, type: ref, ref: characters,
-       note: "ID с листа «Персонажи» — персонаж сразу с нарядом (v2.1): stacy_student, samantha_arena. Без наряда — stacy (базовый наряд)."}
+       note: "ID с листа «Персонажи» — персонаж сразу с нарядом (v2.1): stacy_student, samantha_arena. Каждый ID — персонаж уже в наряде (мод тела снят в этом наряде)."}
     - {key: plate, header: Локация / плита, width: 150, type: ref, ref: plates,
        note: "ID плиты с листа «Локации» вида локация/зона, например apartment/sofa."}
     - {key: zone, header: Зона, width: 150, type: ref, ref: zones,

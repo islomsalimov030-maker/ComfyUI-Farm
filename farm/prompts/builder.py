@@ -458,7 +458,9 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
     o_desc = _lc(outfit.get("desc_en") or char.get("outfit_en") or "")   # v2.1: наряд — в варианте персонажа
     is_ls = stage == "frame" and template.startswith("frame_ls")
     if is_ls:   # frame_ls (WS-10): наряд — мод + описание, без мода — базовый наряд текстом
-        outfit_clause = f"wearing {o_desc or cfg['defaults']['base_outfit_en']}"
+        # 23.10: наряд всегда в моде персонажа (персонаж = персонаж в наряде) — базового наряда текстом больше нет
+        outfit_clause = (f"wearing {o_desc}, exactly as in her character reference" if o_desc
+                         else "wearing exactly the outfit from her character reference")
     elif stage == "frame":
         outfit_clause = ("wearing exactly the outfit shown in <Picture 3>" + (f", {o_desc}" if o_desc else "")
                          if has_outfit else "wearing exactly the clothes shown in <Picture 2>")
