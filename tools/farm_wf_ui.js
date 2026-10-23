@@ -22,8 +22,15 @@ window.farmBuild = async (name, opts = {}) => {
     api[idmap[k]] = n; role[idmap[k]] = n._meta?.role || "?";
   }
   await app.loadApiJson(api, name);
+  const N = keys.length;
+  for (let i = 0; i < 100 && (app.graph._nodes?.length || 0) < N; i++) await new Promise((r) => setTimeout(r, 200));
   const g = app.graph;
-  const R = (n) => role[String(n.id)] || "?";
+  // роли по порядку создания нод (id после загрузки не совпадают с ключами API), сверка по заголовкам
+  const byNode = new Map();
+  const titles = keys.map((k) => api[idmap[k]]._meta?.title || "");
+  const ordered = g._nodes.slice(-N);
+  ordered.forEach((n, i) => { if ((n.title || "") === titles[i] || !titles[i]) byNode.set(n, role[idmap[keys[i]]]); });
+  const R = (n) => byNode.get(n) || role["sub:" + n.id] || "?";
   const nodes = (pred) => g._nodes.filter((n) => pred(R(n), n));
 
   // сабграфы движков
@@ -42,11 +49,11 @@ window.farmBuild = async (name, opts = {}) => {
     const node = res.node || res;
     node.title = nice(r);
     if (res.subgraph) res.subgraph.name = nice(r);
-    role[String(node.id)] = r.replace(":engine", ":sub");
+    role["sub:" + node.id] = r.replace(":engine", ":sub");
     sg[r] = node;
   }
   const mk = nodes((x) => x === "mask:engine");
-  if (mk.length) { const res = g.convertToSubgraph(new Set(mk)); const nd = res.node || res; nd.title = "маска: подготовка"; role[String(nd.id)] = "mask:sub"; }
+  if (mk.length) { const res = g.convertToSubgraph(new Set(mk)); const nd = res.node || res; nd.title = "маска: подготовка"; role["sub:" + nd.id] = "mask:sub"; }
 
   // раскладка и группы
   let X = 0;
@@ -102,5 +109,5 @@ window.farmBuild = async (name, opts = {}) => {
   const r = await fetch(`/api/userdata/workflows%2F${encodeURIComponent(name)}.json?overwrite=true`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wf),
   });
-  return { save: r.status, nodes: g._nodes.length, subgraphs: (wf.definitions?.subgraphs || []).length, groups: groups.length };
+  return { save: r.status, mapped: byNode.size, nodes: g._nodes.length, subgraphs: (wf.definitions?.subgraphs || []).length, groups: groups.length };
 };
