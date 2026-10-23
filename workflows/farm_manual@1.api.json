@@ -1,0 +1,8487 @@
+{
+ "F155": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "location_sheet.png"
+  },
+  "_meta": {
+   "title": "ФОТО · локация или лист ракурсов <Picture 1>",
+   "role": "photo:in"
+  }
+ },
+ "F159": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": ""
+  },
+  "_meta": {
+   "title": "ФОТО · промпт кадра (H3)",
+   "role": "photo:in"
+  }
+ },
+ "F162": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "ARM model · ref2v",
+   "role": "photo1:arm"
+  }
+ },
+ "F163": {
+  "class_type": "Power Lora Loader (rgthree)",
+  "inputs": {
+   "model": [
+    "F162",
+    0
+   ],
+   "divider": {},
+   "PowerLoraLoaderHeaderWidget": {
+    "type": "PowerLoraLoaderHeaderWidget"
+   },
+   "divider#1": {},
+   "➕ Add Lora": "",
+   "lora_1": {
+    "on": true,
+    "lora": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+    "strength": 1.0
+   }
+  },
+  "_meta": {
+   "title": "ARM loras · LoRA руки",
+   "role": "photo1:arm"
+  }
+ },
+ "F165": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 1
+  },
+  "_meta": {
+   "title": "KNOB seed · сид кадра (другой сид = другой вариант)",
+   "role": "photo1:knob"
+  }
+ },
+ "F166": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2.0
+  },
+  "_meta": {
+   "title": "KNOB megapixels · размер картинки локации на входе H3, Мп",
+   "role": "photo1:knob"
+  }
+ },
+ "F168": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  },
+  "_meta": {
+   "title": "KNOB pass1_steps · шаги кадра (turbo 8, без turbo 20)",
+   "role": "photo1:knob"
+  }
+ },
+ "F169": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 40
+  },
+  "_meta": {
+   "title": "KNOB pass2_total · шаги доработки — всего",
+   "role": "photo1:knob"
+  }
+ },
+ "F170": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  },
+  "_meta": {
+   "title": "KNOB pass2_steps · шаги доработки — сколько делать",
+   "role": "photo1:knob"
+  }
+ },
+ "F171": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 12.0
+  },
+  "_meta": {
+   "title": "KNOB shift · shift (10–14, по умолчанию 12)",
+   "role": "photo1:knob"
+  }
+ },
+ "F184:1": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "gen · Qwen3-VL",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "gen · H3 video VAE",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:3": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "F163",
+    0
+   ],
+   "shift_video": [
+    "F171",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "gen · shift",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:4": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "M_pic",
+    0
+   ],
+   "megapixels": [
+    "F166",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "gen · плита → мегапиксели",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:5": {
+  "class_type": "RegexReplace",
+  "inputs": {
+   "string": [
+    "F159",
+    0
+   ],
+   "regex_pattern": "\\bimage\\s*([1-9])\\b",
+   "replace": "<Picture \\1>",
+   "case_insensitive": true,
+   "multiline": false,
+   "dotall": false,
+   "count": 0
+  },
+  "_meta": {
+   "title": "gen · Image N → <Picture N>",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:7": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "F1w7_4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · пустой negative",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:8": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "F169",
+    0
+   ],
+   "values.b": [
+    "F170",
+    0
+   ],
+   "expression": "a - b"
+  },
+  "_meta": {
+   "title": "gen · старт 2-го прохода = total - steps",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:9": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "F184:3",
+    0
+   ],
+   "positive": [
+    "F1w7_4",
+    0
+   ],
+   "negative": [
+    "F184:7",
+    0
+   ],
+   "latent_image": [
+    "F1w7_3",
+    1
+   ],
+   "noise_seed": [
+    "F165",
+    0
+   ],
+   "steps": [
+    "F168",
+    0
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "start_at_step": 0,
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 1",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:10": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "F184:3",
+    0
+   ],
+   "positive": [
+    "F1w7_4",
+    0
+   ],
+   "negative": [
+    "F184:7",
+    0
+   ],
+   "latent_image": [
+    "F184:9",
+    0
+   ],
+   "noise_seed": [
+    "F165",
+    0
+   ],
+   "steps": [
+    "F169",
+    0
+   ],
+   "start_at_step": [
+    "F184:8",
+    1
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 2",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:11": {
+  "class_type": "H3ImageDecode",
+  "inputs": {
+   "samples": [
+    "F184:10",
+    0
+   ],
+   "vae": [
+    "F184:2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · decode",
+   "role": "photo1:engine"
+  }
+ },
+ "F184:12": {
+  "class_type": "H3ImageFrameSelector",
+  "inputs": {
+   "frames": [
+    "F184:11",
+    0
+   ],
+   "recommended_index": [
+    "F184:11",
+    3
+   ],
+   "strategy": "decode_recommended",
+   "manual_index": 0,
+   "skip_first_frames": 0,
+   "candidate_start": 0,
+   "candidate_end": 1,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false
+  },
+  "_meta": {
+   "title": "gen · выбор кадра",
+   "role": "photo1:engine"
+  }
+ },
+ "F1w7_1": {
+  "class_type": "MiniMaxH3RefModsLoader",
+  "inputs": {
+   "show_info": false,
+   "max_total_tokens": 16384,
+   "mod_1": "farm/samantha_face",
+   "strength_1": 1.0,
+   "copies_1": 1,
+   "mod_2": "farm/samantha_athleisure_body",
+   "strength_2": 1.0,
+   "copies_2": 1,
+   "mod_3": "(none)",
+   "strength_3": 1.0,
+   "copies_3": 1,
+   "mod_4": "(none)",
+   "strength_4": 1.0,
+   "copies_4": 1,
+   "mod_5": "(none)",
+   "strength_5": 1.0,
+   "copies_5": 1,
+   "mod_6": "(none)",
+   "strength_6": 1.0,
+   "copies_6": 1,
+   "mod_7": "(none)",
+   "strength_7": 1.0,
+   "copies_7": 1,
+   "mod_8": "(none)",
+   "strength_8": 1.0,
+   "copies_8": 1
+  },
+  "_meta": {
+   "title": "ФОТО · моды: 1 — лицо, 2 — персонаж в наряде",
+   "role": "photo:in"
+  }
+ },
+ "F1w7_2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "w7 · H3 audio VAE",
+   "role": "photo1:engine"
+  }
+ },
+ "F1w7_3": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "F184:1",
+    0
+   ],
+   "vae": [
+    "F184:2",
+    0
+   ],
+   "audio_vae": [
+    "F1w7_2",
+    0
+   ],
+   "prompt": [
+    "F184:5",
+    0
+   ],
+   "width": 2336,
+   "height": 1312,
+   "length": 5,
+   "ref_image_size": "match",
+   "ref_images.ref_image_0": [
+    "F184:4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "w7 · location sheet → условие",
+   "role": "photo1:engine"
+  }
+ },
+ "F1w7_4": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "F1w7_3",
+    0
+   ],
+   "mods": [
+    "F1w7_1",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0,
+   "max_total_tokens": 16384
+  },
+  "_meta": {
+   "title": "w7 · RefMod → условие",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11105": {
+  "inputs": {
+   "model_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "class_type": "DiffusionModelLoaderKJ",
+  "_meta": {
+   "title": "11190:11105",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11106": {
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "11190:11106",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11107": {
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "11190:11107",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11108": {
+  "inputs": {
+   "shift_video": 12.0,
+   "shift_audio": 3.0,
+   "model": [
+    "F1fp_11190:11105",
+    0
+   ]
+  },
+  "class_type": "MiniMaxH3SigmaShift",
+  "_meta": {
+   "title": "11190:11108",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11128": {
+  "inputs": {
+   "prompt": "face",
+   "output_mode": "Merged",
+   "confidence_threshold": 0.5,
+   "max_segments": 1,
+   "segment_pick": 0,
+   "mask_blur": 0,
+   "mask_offset": 0,
+   "device": "Auto",
+   "invert_output": false,
+   "unload_model": false,
+   "background": "Alpha",
+   "background_color": "#222222",
+   "image": [
+    "F184:12",
+    0
+   ],
+   "model_name": "sam3"
+  },
+  "class_type": "SAM3Segment",
+  "_meta": {
+   "title": "11190:11128",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11127": {
+  "inputs": {
+   "expand": 12,
+   "tapered_corners": true,
+   "mask": [
+    "F1fp_11190:11128",
+    1
+   ]
+  },
+  "class_type": "GrowMask",
+  "_meta": {
+   "title": "11190:11127",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11114": {
+  "inputs": {
+   "downscale_algorithm": "lanczos",
+   "upscale_algorithm": "lanczos",
+   "preresize": false,
+   "preresize_mode": "ensure minimum and maximum resolution",
+   "preresize_min_width": 1024,
+   "preresize_min_height": 1024,
+   "preresize_max_width": 1024,
+   "preresize_max_height": 1024,
+   "mask_fill_holes": true,
+   "mask_expand_pixels": 0,
+   "mask_invert": false,
+   "mask_blend_pixels": 40,
+   "mask_hipass_filter": 0.0,
+   "extend_for_outpainting": false,
+   "extend_up_factor": 1.0,
+   "extend_down_factor": 1.0,
+   "extend_left_factor": 1.0,
+   "extend_right_factor": 1.0,
+   "context_from_mask_extend_factor": 1.6,
+   "output_resize_to_target_size": false,
+   "output_target_width": 1024,
+   "output_target_height": 1024,
+   "output_padding": "16",
+   "device_mode": "gpu (much faster)",
+   "image": [
+    "F184:12",
+    0
+   ],
+   "mask": [
+    "F1fp_11190:11127",
+    0
+   ]
+  },
+  "class_type": "InpaintCropImproved",
+  "_meta": {
+   "title": "11190:11114",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11115": {
+  "inputs": {
+   "upscale_method": "lanczos",
+   "megapixels": 1.0,
+   "resolution_steps": 32,
+   "image": [
+    "F1fp_11190:11114",
+    1
+   ]
+  },
+  "class_type": "ImageScaleToTotalPixels",
+  "_meta": {
+   "title": "11190:11115",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11116": {
+  "inputs": {
+   "image": [
+    "F1fp_11190:11115",
+    0
+   ]
+  },
+  "class_type": "GetImageSize",
+  "_meta": {
+   "title": "11190:11116",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11117": {
+  "inputs": {
+   "prompt": [
+    "fp_text",
+    0
+   ],
+   "width": [
+    "F1fp_11190:11116",
+    0
+   ],
+   "height": [
+    "F1fp_11190:11116",
+    1
+   ],
+   "quality_profile": "recommended | 5 frames",
+   "optimize_for_still": true,
+   "clip": [
+    "F1fp_11190:11106",
+    0
+   ]
+  },
+  "class_type": "H3TextToImagePrepare",
+  "_meta": {
+   "title": "IN face_prompt · промпт прохода лица",
+   "role": "photo1:in"
+  }
+ },
+ "F1fp_11190:11119": {
+  "inputs": {
+   "noise_seed": 953552952704593
+  },
+  "class_type": "RandomNoise",
+  "_meta": {
+   "title": "KNOB face_seed · сид прохода лица кадра",
+   "role": "photo1:knob"
+  }
+ },
+ "F1fp_11190:11120": {
+  "inputs": {
+   "model": [
+    "F1fp_11190:11108",
+    0
+   ],
+   "conditioning": [
+    "F1fp_ma",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "11190:11120",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_11190:11121": {
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "11190:11121",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_ml": {
+  "class_type": "MiniMaxH3RefModsLoader",
+  "inputs": {
+   "mod_1": "farm/samantha_face",
+   "strength_1": 1.0,
+   "copies_1": 1,
+   "mod_2": "(none)",
+   "strength_2": 1.0,
+   "copies_2": 1,
+   "mod_3": "(none)",
+   "strength_3": 1.0,
+   "copies_3": 1,
+   "mod_4": "(none)",
+   "strength_4": 1.0,
+   "copies_4": 1,
+   "mod_5": "(none)",
+   "strength_5": 1.0,
+   "copies_5": 1,
+   "mod_6": "(none)",
+   "strength_6": 1.0,
+   "copies_6": 1,
+   "mod_7": "(none)",
+   "strength_7": 1.0,
+   "copies_7": 1,
+   "mod_8": "(none)",
+   "strength_8": 1.0,
+   "copies_8": 1,
+   "show_info": false,
+   "max_total_tokens": 16384
+  },
+  "_meta": {
+   "title": "ФОТО · мод лица для прохода лица",
+   "role": "photo:in"
+  }
+ },
+ "F1fp_ma": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "F1fp_11190:11117",
+    0
+   ],
+   "mods": [
+    "F1fp_ml",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0
+  },
+  "_meta": {
+   "title": "ma",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_shm": {
+  "class_type": "GrowMaskWithBlur",
+  "inputs": {
+   "expand": 0,
+   "incremental_expandrate": 0.0,
+   "tapered_corners": true,
+   "flip_input": false,
+   "blur_radius": 20.0,
+   "lerp_alpha": 1.0,
+   "decay_factor": 1.0,
+   "fill_holes": false,
+   "mask": [
+    "F1fp_11190:11128",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "shm",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:lat": {
+  "inputs": {
+   "steps": 10,
+   "scheduler": "simple",
+   "denoise": 0.85,
+   "h3_latent": [
+    "F1fp_11190:11117",
+    1
+   ],
+   "vae": [
+    "F1fp_11190:11107",
+    0
+   ],
+   "image": [
+    "F1fp_11190:11115",
+    0
+   ],
+   "model": [
+    "F1fp_11190:11108",
+    0
+   ]
+  },
+  "class_type": "H3LatentFromImage",
+  "_meta": {
+   "title": "KNOB face_denoise · сила прохода лица кадра (0.75–0.9)",
+   "role": "photo1:knob"
+  }
+ },
+ "F1fp_f85:smp": {
+  "inputs": {
+   "noise": [
+    "F1fp_11190:11119",
+    0
+   ],
+   "guider": [
+    "F1fp_11190:11120",
+    0
+   ],
+   "sampler": [
+    "F1fp_11190:11121",
+    0
+   ],
+   "sigmas": [
+    "F1fp_f85:lat",
+    1
+   ],
+   "latent_image": [
+    "F1fp_f85:lat",
+    0
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "f85:smp",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:dec": {
+  "inputs": {
+   "samples": [
+    "F1fp_f85:smp",
+    0
+   ],
+   "vae": [
+    "F1fp_11190:11107",
+    0
+   ]
+  },
+  "class_type": "H3ImageDecode",
+  "_meta": {
+   "title": "f85:dec",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:sel": {
+  "inputs": {
+   "strategy": "manual_index",
+   "manual_index": 2,
+   "skip_first_frames": 0,
+   "candidate_start": 0.0,
+   "candidate_end": 1.0,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false,
+   "frames": [
+    "F1fp_f85:dec",
+    0
+   ],
+   "recommended_index": [
+    "F1fp_f85:dec",
+    3
+   ]
+  },
+  "class_type": "H3ImageFrameSelector",
+  "_meta": {
+   "title": "f85:sel",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:cm": {
+  "inputs": {
+   "method": "mkl",
+   "strength": 0.95,
+   "multithread": true,
+   "image_ref": [
+    "F1fp_11190:11115",
+    0
+   ],
+   "image_target": [
+    "F1fp_f85:sel",
+    0
+   ]
+  },
+  "class_type": "ColorMatch",
+  "_meta": {
+   "title": "f85:cm",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:st": {
+  "inputs": {
+   "stitcher": [
+    "F1fp_11190:11114",
+    0
+   ],
+   "inpainted_image": [
+    "F1fp_f85:cm",
+    0
+   ]
+  },
+  "class_type": "InpaintStitchImproved",
+  "_meta": {
+   "title": "f85:st",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:shp": {
+  "class_type": "ImageSharpen",
+  "inputs": {
+   "image": [
+    "F1fp_f85:st",
+    0
+   ],
+   "sharpen_radius": 1,
+   "sigma": 1.0,
+   "alpha": 0.1
+  },
+  "_meta": {
+   "title": "f85:shp",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:shc": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "destination": [
+    "F1fp_f85:st",
+    0
+   ],
+   "source": [
+    "F1fp_f85:shp",
+    0
+   ],
+   "mask": [
+    "F1fp_shm",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "f85:shc",
+   "role": "photo1:engine"
+  }
+ },
+ "F1fp_f85:sv": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "F1_sw",
+    0
+   ],
+   "filename_prefix": "farm_manual/photo_ref2v"
+  },
+  "_meta": {
+   "title": "ИТОГ фото · ref2v",
+   "role": "photo1:out"
+  }
+ },
+ "F262": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "10Eros_Max_h3_hybrid_beta5_int8.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "ARM model · 10Eros",
+   "role": "photo2:arm"
+  }
+ },
+ "F263": {
+  "class_type": "Power Lora Loader (rgthree)",
+  "inputs": {
+   "model": [
+    "F262",
+    0
+   ],
+   "divider": {},
+   "PowerLoraLoaderHeaderWidget": {
+    "type": "PowerLoraLoaderHeaderWidget"
+   },
+   "divider#1": {},
+   "➕ Add Lora": "",
+   "lora_1": {
+    "on": false,
+    "lora": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+    "strength": 1.0
+   }
+  },
+  "_meta": {
+   "title": "ARM loras · LoRA руки",
+   "role": "photo2:arm"
+  }
+ },
+ "F268": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 20
+  },
+  "_meta": {
+   "title": "KNOB pass1_steps · шаги кадра (turbo 8, без turbo 20)",
+   "role": "photo2:knob"
+  }
+ },
+ "F284:1": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "gen · Qwen3-VL",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "gen · H3 video VAE",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:3": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "F263",
+    0
+   ],
+   "shift_video": [
+    "F171",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "gen · shift",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:4": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "M_pic",
+    0
+   ],
+   "megapixels": [
+    "F166",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "gen · плита → мегапиксели",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:5": {
+  "class_type": "RegexReplace",
+  "inputs": {
+   "string": [
+    "F159",
+    0
+   ],
+   "regex_pattern": "\\bimage\\s*([1-9])\\b",
+   "replace": "<Picture \\1>",
+   "case_insensitive": true,
+   "multiline": false,
+   "dotall": false,
+   "count": 0
+  },
+  "_meta": {
+   "title": "gen · Image N → <Picture N>",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:7": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "F2w7_4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · пустой negative",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:8": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "F169",
+    0
+   ],
+   "values.b": [
+    "F170",
+    0
+   ],
+   "expression": "a - b"
+  },
+  "_meta": {
+   "title": "gen · старт 2-го прохода = total - steps",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:9": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "F284:3",
+    0
+   ],
+   "positive": [
+    "F2w7_4",
+    0
+   ],
+   "negative": [
+    "F284:7",
+    0
+   ],
+   "latent_image": [
+    "F2w7_3",
+    1
+   ],
+   "noise_seed": [
+    "F165",
+    0
+   ],
+   "steps": [
+    "F268",
+    0
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "start_at_step": 0,
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 1",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:10": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "F284:3",
+    0
+   ],
+   "positive": [
+    "F2w7_4",
+    0
+   ],
+   "negative": [
+    "F284:7",
+    0
+   ],
+   "latent_image": [
+    "F284:9",
+    0
+   ],
+   "noise_seed": [
+    "F165",
+    0
+   ],
+   "steps": [
+    "F169",
+    0
+   ],
+   "start_at_step": [
+    "F284:8",
+    1
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 2",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:11": {
+  "class_type": "H3ImageDecode",
+  "inputs": {
+   "samples": [
+    "F284:10",
+    0
+   ],
+   "vae": [
+    "F284:2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · decode",
+   "role": "photo2:engine"
+  }
+ },
+ "F284:12": {
+  "class_type": "H3ImageFrameSelector",
+  "inputs": {
+   "frames": [
+    "F284:11",
+    0
+   ],
+   "recommended_index": [
+    "F284:11",
+    3
+   ],
+   "strategy": "decode_recommended",
+   "manual_index": 0,
+   "skip_first_frames": 0,
+   "candidate_start": 0,
+   "candidate_end": 1,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false
+  },
+  "_meta": {
+   "title": "gen · выбор кадра",
+   "role": "photo2:engine"
+  }
+ },
+ "F2w7_2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "w7 · H3 audio VAE",
+   "role": "photo2:engine"
+  }
+ },
+ "F2w7_3": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "F284:1",
+    0
+   ],
+   "vae": [
+    "F284:2",
+    0
+   ],
+   "audio_vae": [
+    "F2w7_2",
+    0
+   ],
+   "prompt": [
+    "F284:5",
+    0
+   ],
+   "width": 2336,
+   "height": 1312,
+   "length": 5,
+   "ref_image_size": "match",
+   "ref_images.ref_image_0": [
+    "F284:4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "w7 · location sheet → условие",
+   "role": "photo2:engine"
+  }
+ },
+ "F2w7_4": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "F2w7_3",
+    0
+   ],
+   "mods": [
+    "F1w7_1",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0,
+   "max_total_tokens": 16384
+  },
+  "_meta": {
+   "title": "w7 · RefMod → условие",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11105": {
+  "inputs": {
+   "model_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "class_type": "DiffusionModelLoaderKJ",
+  "_meta": {
+   "title": "11190:11105",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11106": {
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "11190:11106",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11107": {
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "11190:11107",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11108": {
+  "inputs": {
+   "shift_video": 12.0,
+   "shift_audio": 3.0,
+   "model": [
+    "F2fp_11190:11105",
+    0
+   ]
+  },
+  "class_type": "MiniMaxH3SigmaShift",
+  "_meta": {
+   "title": "11190:11108",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11128": {
+  "inputs": {
+   "prompt": "face",
+   "output_mode": "Merged",
+   "confidence_threshold": 0.5,
+   "max_segments": 1,
+   "segment_pick": 0,
+   "mask_blur": 0,
+   "mask_offset": 0,
+   "device": "Auto",
+   "invert_output": false,
+   "unload_model": false,
+   "background": "Alpha",
+   "background_color": "#222222",
+   "image": [
+    "F284:12",
+    0
+   ],
+   "model_name": "sam3"
+  },
+  "class_type": "SAM3Segment",
+  "_meta": {
+   "title": "11190:11128",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11127": {
+  "inputs": {
+   "expand": 12,
+   "tapered_corners": true,
+   "mask": [
+    "F2fp_11190:11128",
+    1
+   ]
+  },
+  "class_type": "GrowMask",
+  "_meta": {
+   "title": "11190:11127",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11114": {
+  "inputs": {
+   "downscale_algorithm": "lanczos",
+   "upscale_algorithm": "lanczos",
+   "preresize": false,
+   "preresize_mode": "ensure minimum and maximum resolution",
+   "preresize_min_width": 1024,
+   "preresize_min_height": 1024,
+   "preresize_max_width": 1024,
+   "preresize_max_height": 1024,
+   "mask_fill_holes": true,
+   "mask_expand_pixels": 0,
+   "mask_invert": false,
+   "mask_blend_pixels": 40,
+   "mask_hipass_filter": 0.0,
+   "extend_for_outpainting": false,
+   "extend_up_factor": 1.0,
+   "extend_down_factor": 1.0,
+   "extend_left_factor": 1.0,
+   "extend_right_factor": 1.0,
+   "context_from_mask_extend_factor": 1.6,
+   "output_resize_to_target_size": false,
+   "output_target_width": 1024,
+   "output_target_height": 1024,
+   "output_padding": "16",
+   "device_mode": "gpu (much faster)",
+   "image": [
+    "F284:12",
+    0
+   ],
+   "mask": [
+    "F2fp_11190:11127",
+    0
+   ]
+  },
+  "class_type": "InpaintCropImproved",
+  "_meta": {
+   "title": "11190:11114",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11115": {
+  "inputs": {
+   "upscale_method": "lanczos",
+   "megapixels": 1.0,
+   "resolution_steps": 32,
+   "image": [
+    "F2fp_11190:11114",
+    1
+   ]
+  },
+  "class_type": "ImageScaleToTotalPixels",
+  "_meta": {
+   "title": "11190:11115",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11116": {
+  "inputs": {
+   "image": [
+    "F2fp_11190:11115",
+    0
+   ]
+  },
+  "class_type": "GetImageSize",
+  "_meta": {
+   "title": "11190:11116",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11120": {
+  "inputs": {
+   "model": [
+    "F2fp_11190:11108",
+    0
+   ],
+   "conditioning": [
+    "F2fp_ma",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "11190:11120",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_11190:11121": {
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "11190:11121",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_ma": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "F1fp_11190:11117",
+    0
+   ],
+   "mods": [
+    "F1fp_ml",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0
+  },
+  "_meta": {
+   "title": "ma",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_shm": {
+  "class_type": "GrowMaskWithBlur",
+  "inputs": {
+   "expand": 0,
+   "incremental_expandrate": 0.0,
+   "tapered_corners": true,
+   "flip_input": false,
+   "blur_radius": 20.0,
+   "lerp_alpha": 1.0,
+   "decay_factor": 1.0,
+   "fill_holes": false,
+   "mask": [
+    "F2fp_11190:11128",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "shm",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:smp": {
+  "inputs": {
+   "noise": [
+    "F1fp_11190:11119",
+    0
+   ],
+   "guider": [
+    "F2fp_11190:11120",
+    0
+   ],
+   "sampler": [
+    "F2fp_11190:11121",
+    0
+   ],
+   "sigmas": [
+    "F1fp_f85:lat",
+    1
+   ],
+   "latent_image": [
+    "F1fp_f85:lat",
+    0
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "f85:smp",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:dec": {
+  "inputs": {
+   "samples": [
+    "F2fp_f85:smp",
+    0
+   ],
+   "vae": [
+    "F2fp_11190:11107",
+    0
+   ]
+  },
+  "class_type": "H3ImageDecode",
+  "_meta": {
+   "title": "f85:dec",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:sel": {
+  "inputs": {
+   "strategy": "manual_index",
+   "manual_index": 2,
+   "skip_first_frames": 0,
+   "candidate_start": 0.0,
+   "candidate_end": 1.0,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false,
+   "frames": [
+    "F2fp_f85:dec",
+    0
+   ],
+   "recommended_index": [
+    "F2fp_f85:dec",
+    3
+   ]
+  },
+  "class_type": "H3ImageFrameSelector",
+  "_meta": {
+   "title": "f85:sel",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:cm": {
+  "inputs": {
+   "method": "mkl",
+   "strength": 0.95,
+   "multithread": true,
+   "image_ref": [
+    "F2fp_11190:11115",
+    0
+   ],
+   "image_target": [
+    "F2fp_f85:sel",
+    0
+   ]
+  },
+  "class_type": "ColorMatch",
+  "_meta": {
+   "title": "f85:cm",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:st": {
+  "inputs": {
+   "stitcher": [
+    "F2fp_11190:11114",
+    0
+   ],
+   "inpainted_image": [
+    "F2fp_f85:cm",
+    0
+   ]
+  },
+  "class_type": "InpaintStitchImproved",
+  "_meta": {
+   "title": "f85:st",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:shp": {
+  "class_type": "ImageSharpen",
+  "inputs": {
+   "image": [
+    "F2fp_f85:st",
+    0
+   ],
+   "sharpen_radius": 1,
+   "sigma": 1.0,
+   "alpha": 0.1
+  },
+  "_meta": {
+   "title": "f85:shp",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:shc": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "destination": [
+    "F2fp_f85:st",
+    0
+   ],
+   "source": [
+    "F2fp_f85:shp",
+    0
+   ],
+   "mask": [
+    "F2fp_shm",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "f85:shc",
+   "role": "photo2:engine"
+  }
+ },
+ "F2fp_f85:sv": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "F2_sw",
+    0
+   ],
+   "filename_prefix": "farm_manual/photo_10Eros"
+  },
+  "_meta": {
+   "title": "ИТОГ фото · 10Eros",
+   "role": "photo2:out"
+  }
+ },
+ "F362": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "ARM model · PinkCherry",
+   "role": "photo3:arm"
+  }
+ },
+ "F363": {
+  "class_type": "Power Lora Loader (rgthree)",
+  "inputs": {
+   "model": [
+    "F362",
+    0
+   ],
+   "divider": {},
+   "PowerLoraLoaderHeaderWidget": {
+    "type": "PowerLoraLoaderHeaderWidget"
+   },
+   "divider#1": {},
+   "➕ Add Lora": "",
+   "lora_1": {
+    "on": false,
+    "lora": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+    "strength": 1.0
+   }
+  },
+  "_meta": {
+   "title": "ARM loras · LoRA руки",
+   "role": "photo3:arm"
+  }
+ },
+ "F368": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 20
+  },
+  "_meta": {
+   "title": "KNOB pass1_steps · шаги кадра (turbo 8, без turbo 20)",
+   "role": "photo3:knob"
+  }
+ },
+ "F384:1": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "gen · Qwen3-VL",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "gen · H3 video VAE",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:3": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "F363",
+    0
+   ],
+   "shift_video": [
+    "F171",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "gen · shift",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:4": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "M_pic",
+    0
+   ],
+   "megapixels": [
+    "F166",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "gen · плита → мегапиксели",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:5": {
+  "class_type": "RegexReplace",
+  "inputs": {
+   "string": [
+    "F159",
+    0
+   ],
+   "regex_pattern": "\\bimage\\s*([1-9])\\b",
+   "replace": "<Picture \\1>",
+   "case_insensitive": true,
+   "multiline": false,
+   "dotall": false,
+   "count": 0
+  },
+  "_meta": {
+   "title": "gen · Image N → <Picture N>",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:7": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "F3w7_4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · пустой negative",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:8": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "F169",
+    0
+   ],
+   "values.b": [
+    "F170",
+    0
+   ],
+   "expression": "a - b"
+  },
+  "_meta": {
+   "title": "gen · старт 2-го прохода = total - steps",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:9": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "F384:3",
+    0
+   ],
+   "positive": [
+    "F3w7_4",
+    0
+   ],
+   "negative": [
+    "F384:7",
+    0
+   ],
+   "latent_image": [
+    "F3w7_3",
+    1
+   ],
+   "noise_seed": [
+    "F165",
+    0
+   ],
+   "steps": [
+    "F368",
+    0
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "start_at_step": 0,
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 1",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:10": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "F384:3",
+    0
+   ],
+   "positive": [
+    "F3w7_4",
+    0
+   ],
+   "negative": [
+    "F384:7",
+    0
+   ],
+   "latent_image": [
+    "F384:9",
+    0
+   ],
+   "noise_seed": [
+    "F165",
+    0
+   ],
+   "steps": [
+    "F169",
+    0
+   ],
+   "start_at_step": [
+    "F384:8",
+    1
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "gen · sampler pass 2",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:11": {
+  "class_type": "H3ImageDecode",
+  "inputs": {
+   "samples": [
+    "F384:10",
+    0
+   ],
+   "vae": [
+    "F384:2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "gen · decode",
+   "role": "photo3:engine"
+  }
+ },
+ "F384:12": {
+  "class_type": "H3ImageFrameSelector",
+  "inputs": {
+   "frames": [
+    "F384:11",
+    0
+   ],
+   "recommended_index": [
+    "F384:11",
+    3
+   ],
+   "strategy": "decode_recommended",
+   "manual_index": 0,
+   "skip_first_frames": 0,
+   "candidate_start": 0,
+   "candidate_end": 1,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false
+  },
+  "_meta": {
+   "title": "gen · выбор кадра",
+   "role": "photo3:engine"
+  }
+ },
+ "F3w7_2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "w7 · H3 audio VAE",
+   "role": "photo3:engine"
+  }
+ },
+ "F3w7_3": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "F384:1",
+    0
+   ],
+   "vae": [
+    "F384:2",
+    0
+   ],
+   "audio_vae": [
+    "F3w7_2",
+    0
+   ],
+   "prompt": [
+    "F384:5",
+    0
+   ],
+   "width": 2336,
+   "height": 1312,
+   "length": 5,
+   "ref_image_size": "match",
+   "ref_images.ref_image_0": [
+    "F384:4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "w7 · location sheet → условие",
+   "role": "photo3:engine"
+  }
+ },
+ "F3w7_4": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "F3w7_3",
+    0
+   ],
+   "mods": [
+    "F1w7_1",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0,
+   "max_total_tokens": 16384
+  },
+  "_meta": {
+   "title": "w7 · RefMod → условие",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11105": {
+  "inputs": {
+   "model_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "class_type": "DiffusionModelLoaderKJ",
+  "_meta": {
+   "title": "11190:11105",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11106": {
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "11190:11106",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11107": {
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "11190:11107",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11108": {
+  "inputs": {
+   "shift_video": 12.0,
+   "shift_audio": 3.0,
+   "model": [
+    "F3fp_11190:11105",
+    0
+   ]
+  },
+  "class_type": "MiniMaxH3SigmaShift",
+  "_meta": {
+   "title": "11190:11108",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11128": {
+  "inputs": {
+   "prompt": "face",
+   "output_mode": "Merged",
+   "confidence_threshold": 0.5,
+   "max_segments": 1,
+   "segment_pick": 0,
+   "mask_blur": 0,
+   "mask_offset": 0,
+   "device": "Auto",
+   "invert_output": false,
+   "unload_model": false,
+   "background": "Alpha",
+   "background_color": "#222222",
+   "image": [
+    "F384:12",
+    0
+   ],
+   "model_name": "sam3"
+  },
+  "class_type": "SAM3Segment",
+  "_meta": {
+   "title": "11190:11128",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11127": {
+  "inputs": {
+   "expand": 12,
+   "tapered_corners": true,
+   "mask": [
+    "F3fp_11190:11128",
+    1
+   ]
+  },
+  "class_type": "GrowMask",
+  "_meta": {
+   "title": "11190:11127",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11114": {
+  "inputs": {
+   "downscale_algorithm": "lanczos",
+   "upscale_algorithm": "lanczos",
+   "preresize": false,
+   "preresize_mode": "ensure minimum and maximum resolution",
+   "preresize_min_width": 1024,
+   "preresize_min_height": 1024,
+   "preresize_max_width": 1024,
+   "preresize_max_height": 1024,
+   "mask_fill_holes": true,
+   "mask_expand_pixels": 0,
+   "mask_invert": false,
+   "mask_blend_pixels": 40,
+   "mask_hipass_filter": 0.0,
+   "extend_for_outpainting": false,
+   "extend_up_factor": 1.0,
+   "extend_down_factor": 1.0,
+   "extend_left_factor": 1.0,
+   "extend_right_factor": 1.0,
+   "context_from_mask_extend_factor": 1.6,
+   "output_resize_to_target_size": false,
+   "output_target_width": 1024,
+   "output_target_height": 1024,
+   "output_padding": "16",
+   "device_mode": "gpu (much faster)",
+   "image": [
+    "F384:12",
+    0
+   ],
+   "mask": [
+    "F3fp_11190:11127",
+    0
+   ]
+  },
+  "class_type": "InpaintCropImproved",
+  "_meta": {
+   "title": "11190:11114",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11115": {
+  "inputs": {
+   "upscale_method": "lanczos",
+   "megapixels": 1.0,
+   "resolution_steps": 32,
+   "image": [
+    "F3fp_11190:11114",
+    1
+   ]
+  },
+  "class_type": "ImageScaleToTotalPixels",
+  "_meta": {
+   "title": "11190:11115",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11116": {
+  "inputs": {
+   "image": [
+    "F3fp_11190:11115",
+    0
+   ]
+  },
+  "class_type": "GetImageSize",
+  "_meta": {
+   "title": "11190:11116",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11120": {
+  "inputs": {
+   "model": [
+    "F3fp_11190:11108",
+    0
+   ],
+   "conditioning": [
+    "F3fp_ma",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "11190:11120",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_11190:11121": {
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "11190:11121",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_ma": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "F1fp_11190:11117",
+    0
+   ],
+   "mods": [
+    "F1fp_ml",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0
+  },
+  "_meta": {
+   "title": "ma",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_shm": {
+  "class_type": "GrowMaskWithBlur",
+  "inputs": {
+   "expand": 0,
+   "incremental_expandrate": 0.0,
+   "tapered_corners": true,
+   "flip_input": false,
+   "blur_radius": 20.0,
+   "lerp_alpha": 1.0,
+   "decay_factor": 1.0,
+   "fill_holes": false,
+   "mask": [
+    "F3fp_11190:11128",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "shm",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:smp": {
+  "inputs": {
+   "noise": [
+    "F1fp_11190:11119",
+    0
+   ],
+   "guider": [
+    "F3fp_11190:11120",
+    0
+   ],
+   "sampler": [
+    "F3fp_11190:11121",
+    0
+   ],
+   "sigmas": [
+    "F1fp_f85:lat",
+    1
+   ],
+   "latent_image": [
+    "F1fp_f85:lat",
+    0
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "f85:smp",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:dec": {
+  "inputs": {
+   "samples": [
+    "F3fp_f85:smp",
+    0
+   ],
+   "vae": [
+    "F3fp_11190:11107",
+    0
+   ]
+  },
+  "class_type": "H3ImageDecode",
+  "_meta": {
+   "title": "f85:dec",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:sel": {
+  "inputs": {
+   "strategy": "manual_index",
+   "manual_index": 2,
+   "skip_first_frames": 0,
+   "candidate_start": 0.0,
+   "candidate_end": 1.0,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": false,
+   "frames": [
+    "F3fp_f85:dec",
+    0
+   ],
+   "recommended_index": [
+    "F3fp_f85:dec",
+    3
+   ]
+  },
+  "class_type": "H3ImageFrameSelector",
+  "_meta": {
+   "title": "f85:sel",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:cm": {
+  "inputs": {
+   "method": "mkl",
+   "strength": 0.95,
+   "multithread": true,
+   "image_ref": [
+    "F3fp_11190:11115",
+    0
+   ],
+   "image_target": [
+    "F3fp_f85:sel",
+    0
+   ]
+  },
+  "class_type": "ColorMatch",
+  "_meta": {
+   "title": "f85:cm",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:st": {
+  "inputs": {
+   "stitcher": [
+    "F3fp_11190:11114",
+    0
+   ],
+   "inpainted_image": [
+    "F3fp_f85:cm",
+    0
+   ]
+  },
+  "class_type": "InpaintStitchImproved",
+  "_meta": {
+   "title": "f85:st",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:shp": {
+  "class_type": "ImageSharpen",
+  "inputs": {
+   "image": [
+    "F3fp_f85:st",
+    0
+   ],
+   "sharpen_radius": 1,
+   "sigma": 1.0,
+   "alpha": 0.1
+  },
+  "_meta": {
+   "title": "f85:shp",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:shc": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "destination": [
+    "F3fp_f85:st",
+    0
+   ],
+   "source": [
+    "F3fp_f85:shp",
+    0
+   ],
+   "mask": [
+    "F3fp_shm",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "f85:shc",
+   "role": "photo3:engine"
+  }
+ },
+ "F3fp_f85:sv": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "F3_sw",
+    0
+   ],
+   "filename_prefix": "farm_manual/photo_PinkCherry"
+  },
+  "_meta": {
+   "title": "ИТОГ фото · PinkCherry",
+   "role": "photo3:out"
+  }
+ },
+ "fp_text": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "A tight close-up portrait of a woman, a calm natural look. Static camera. Lighting preserved unchanged. Colors and saturation unchanged."
+  },
+  "_meta": {
+   "title": "ФОТО · промпт прохода лица",
+   "role": "photo:in"
+  }
+ },
+ "M_on": {
+  "class_type": "PrimitiveBoolean",
+  "inputs": {
+   "value": false
+  },
+  "_meta": {
+   "title": "МАСКА ВКЛ · дорисовать только по маске",
+   "role": "mask"
+  }
+ },
+ "M_img": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "МАСКА · исходный кадр (правый клик → Open in MaskEditor)",
+   "role": "mask"
+  }
+ },
+ "M_pic": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "switch": [
+    "M_on",
+    0
+   ],
+   "on_false": [
+    "F155",
+    0
+   ],
+   "on_true": [
+    "M_img",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: <Picture 1> = исходный кадр",
+   "role": "mask:engine"
+  }
+ },
+ "M_grow": {
+  "class_type": "GrowMaskWithBlur",
+  "inputs": {
+   "mask": [
+    "M_img",
+    1
+   ],
+   "expand": 8,
+   "incremental_expandrate": 0.0,
+   "tapered_corners": true,
+   "flip_input": false,
+   "blur_radius": 12.0,
+   "lerp_alpha": 1.0,
+   "decay_factor": 1.0,
+   "fill_holes": false
+  },
+  "_meta": {
+   "title": "маска: растушёвка",
+   "role": "mask:engine"
+  }
+ },
+ "M_size": {
+  "class_type": "GetImageSize",
+  "inputs": {
+   "image": [
+    "M_img",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: размер исходника",
+   "role": "mask:engine"
+  }
+ },
+ "F1_sc": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "F1fp_f85:shc",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": [
+    "M_size",
+    0
+   ],
+   "height": [
+    "M_size",
+    1
+   ],
+   "crop": "disabled"
+  },
+  "_meta": {
+   "title": "маска: к размеру исходника · ref2v",
+   "role": "photo1:engine"
+  }
+ },
+ "F1_cm": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "M_img",
+    0
+   ],
+   "source": [
+    "F1_sc",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "mask": [
+    "M_grow",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: вклейка · ref2v",
+   "role": "photo1:engine"
+  }
+ },
+ "F1_sw": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "switch": [
+    "M_on",
+    0
+   ],
+   "on_false": [
+    "F1fp_f85:shc",
+    0
+   ],
+   "on_true": [
+    "F1_cm",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: итог · ref2v",
+   "role": "photo1:engine"
+  }
+ },
+ "F2_sc": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "F2fp_f85:shc",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": [
+    "M_size",
+    0
+   ],
+   "height": [
+    "M_size",
+    1
+   ],
+   "crop": "disabled"
+  },
+  "_meta": {
+   "title": "маска: к размеру исходника · 10Eros",
+   "role": "photo2:engine"
+  }
+ },
+ "F2_cm": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "M_img",
+    0
+   ],
+   "source": [
+    "F2_sc",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "mask": [
+    "M_grow",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: вклейка · 10Eros",
+   "role": "photo2:engine"
+  }
+ },
+ "F2_sw": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "switch": [
+    "M_on",
+    0
+   ],
+   "on_false": [
+    "F2fp_f85:shc",
+    0
+   ],
+   "on_true": [
+    "F2_cm",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: итог · 10Eros",
+   "role": "photo2:engine"
+  }
+ },
+ "F3_sc": {
+  "class_type": "ImageScale",
+  "inputs": {
+   "image": [
+    "F3fp_f85:shc",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "width": [
+    "M_size",
+    0
+   ],
+   "height": [
+    "M_size",
+    1
+   ],
+   "crop": "disabled"
+  },
+  "_meta": {
+   "title": "маска: к размеру исходника · PinkCherry",
+   "role": "photo3:engine"
+  }
+ },
+ "F3_cm": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "M_img",
+    0
+   ],
+   "source": [
+    "F3_sc",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false,
+   "mask": [
+    "M_grow",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: вклейка · PinkCherry",
+   "role": "photo3:engine"
+  }
+ },
+ "F3_sw": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "switch": [
+    "M_on",
+    0
+   ],
+   "on_false": [
+    "F3fp_f85:shc",
+    0
+   ],
+   "on_true": [
+    "F3_cm",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "маска: итог · PinkCherry",
+   "role": "photo3:engine"
+  }
+ },
+ "V17": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "stacy_kf_Sitting-8.png"
+  },
+  "_meta": {
+   "title": "ВИДЕО · ключевой кадр (первый = последний)",
+   "role": "video:in"
+  }
+ },
+ "V18": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "5.png"
+  },
+  "_meta": {
+   "title": "ВИДЕО · эталон лица <Picture 2>",
+   "role": "video:in"
+  }
+ },
+ "V11:23": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "ARM model · ref2v",
+   "role": "video1:arm"
+  }
+ },
+ "V11:24": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V11:23",
+    0
+   ],
+   "strength_model": 1.0,
+   "lora_name": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
+  },
+  "_meta": {
+   "title": "ARM lora · turbo 8 ВКЛ (ref2v)",
+   "role": "video1:arm"
+  }
+ },
+ "V11:25": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "V11:24",
+    0
+   ],
+   "shift_video": [
+    "V1131",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "shift",
+   "role": "video1:engine"
+  }
+ },
+ "V11:26": {
+  "class_type": "ModelAttentionBackend",
+  "inputs": {
+   "model": [
+    "V11:25",
+    0
+   ],
+   "attention": "comfy kitchen attention"
+  },
+  "_meta": {
+   "title": "attention",
+   "role": "video1:engine"
+  }
+ },
+ "V11:27": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Qwen3-VL",
+   "role": "video1:engine"
+  }
+ },
+ "V11:28": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "H3 video VAE",
+   "role": "video1:engine"
+  }
+ },
+ "V11:29": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "H3 audio VAE",
+   "role": "video1:engine"
+  }
+ },
+ "V11:30": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "H3 FL2VA (face)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:31": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V11:30",
+    0
+   ],
+   "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+   "strength_model": 1
+  },
+  "_meta": {
+   "title": "FL2V turbo 4-step",
+   "role": "video1:engine"
+  }
+ },
+ "V11:32": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V11:31",
+    0
+   ],
+   "strength_model": [
+    "V11:89",
+    12
+   ],
+   "lora_name": "stacy_h3_face_v1_000001800.safetensors"
+  },
+  "_meta": {
+   "title": "Stacy face LoRA",
+   "role": "video1:engine"
+  }
+ },
+ "V11:33": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V17",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "keyframe 1344x768",
+   "role": "video1:engine"
+  }
+ },
+ "V11:34": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V114",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "конечный кадр → 1344x768",
+   "role": "video1:engine"
+  }
+ },
+ "V11:35": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:34",
+    0
+   ],
+   "on_true": [
+    "V11:33",
+    0
+   ],
+   "switch": [
+    "V11:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "последний кадр = ключевой (петля) или конечный",
+   "role": "video1:engine"
+  }
+ },
+ "V11:36": {
+  "class_type": "StacyPromptRetime",
+  "inputs": {
+   "prompt": [
+    "V112",
+    0
+   ],
+   "seconds": [
+    "V11:89",
+    1
+   ],
+   "loop": [
+    "V11:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "промпт ← длительность и петля",
+   "role": "video1:engine"
+  }
+ },
+ "V11:37": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V11:27",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "audio_vae": [
+    "V11:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V11:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "prompt": [
+    "V11:36",
+    0
+   ],
+   "length": [
+    "V11:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning",
+   "role": "video1:engine"
+  }
+ },
+ "V11:38": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V11:27",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "audio_vae": [
+    "V11:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V11:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "V115",
+    0
+   ],
+   "prompt": [
+    "V11:36",
+    0
+   ],
+   "length": [
+    "V11:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Video 1>",
+   "role": "video1:engine"
+  }
+ },
+ "V11:39": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V11:27",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "audio_vae": [
+    "V11:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V11:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_images.ref_image_2": [
+    "V11:34",
+    0
+   ],
+   "prompt": [
+    "V11:36",
+    0
+   ],
+   "length": [
+    "V11:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Picture 3> (конечный кадр)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:40": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V11:27",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "audio_vae": [
+    "V11:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V11:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_images.ref_image_2": [
+    "V11:34",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "V115",
+    0
+   ],
+   "prompt": [
+    "V11:36",
+    0
+   ],
+   "length": [
+    "V11:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Picture 3> + <Video 1>",
+   "role": "video1:engine"
+  }
+ },
+ "V11:41": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:37",
+    0
+   ],
+   "on_true": [
+    "V11:39",
+    0
+   ],
+   "switch": [
+    "V11:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? conditioning (без видео)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:42": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:38",
+    0
+   ],
+   "on_true": [
+    "V11:40",
+    0
+   ],
+   "switch": [
+    "V11:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? conditioning (с видео)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:43": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:41",
+    0
+   ],
+   "on_true": [
+    "V11:42",
+    0
+   ],
+   "switch": [
+    "V115",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "видео-референс? conditioning",
+   "role": "video1:engine"
+  }
+ },
+ "V11:44": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:37",
+    1
+   ],
+   "on_true": [
+    "V11:39",
+    1
+   ],
+   "switch": [
+    "V11:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? latent (без видео)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:45": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:38",
+    1
+   ],
+   "on_true": [
+    "V11:40",
+    1
+   ],
+   "switch": [
+    "V11:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? latent (с видео)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:46": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:44",
+    0
+   ],
+   "on_true": [
+    "V11:45",
+    0
+   ],
+   "switch": [
+    "V115",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "видео-референс? latent",
+   "role": "video1:engine"
+  }
+ },
+ "V11:47": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "V11:43",
+    0
+   ],
+   "latent": [
+    "V11:46",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "image": [
+    "V11:33",
+    0
+   ],
+   "frame_idx": 0
+  },
+  "_meta": {
+   "title": "anchor frame 0",
+   "role": "video1:engine"
+  }
+ },
+ "V11:48": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "V11:47",
+    0
+   ],
+   "latent": [
+    "V11:46",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "image": [
+    "V11:35",
+    0
+   ],
+   "frame_idx": -1
+  },
+  "_meta": {
+   "title": "anchor last frame",
+   "role": "video1:engine"
+  }
+ },
+ "V11:49": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:47",
+    0
+   ],
+   "on_true": [
+    "V11:48",
+    0
+   ],
+   "switch": [
+    "V11:89",
+    23
+   ]
+  },
+  "_meta": {
+   "title": "якорь последнего кадра? (петля или конечный кадр)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:50": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "V11:26",
+    0
+   ],
+   "conditioning": [
+    "V11:49",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "guider (cfg 1)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:51": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "V11:89",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "seed",
+   "role": "video1:engine"
+  }
+ },
+ "V11:52": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "res_multistep"
+  },
+  "_meta": {
+   "title": "res_multistep",
+   "role": "video1:engine"
+  }
+ },
+ "V11:53": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "V11:26",
+    0
+   ],
+   "steps": [
+    "V1130",
+    0
+   ],
+   "scheduler": "simple",
+   "denoise": 1
+  },
+  "_meta": {
+   "title": "simple",
+   "role": "video1:engine"
+  }
+ },
+ "V11:54": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "V11:51",
+    0
+   ],
+   "guider": [
+    "V11:50",
+    0
+   ],
+   "sampler": [
+    "V11:52",
+    0
+   ],
+   "sigmas": [
+    "V11:53",
+    0
+   ],
+   "latent_image": [
+    "V11:46",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "sample",
+   "role": "video1:engine"
+  }
+ },
+ "V11:55": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "V11:54",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "decode",
+   "role": "video1:engine"
+  }
+ },
+ "V11:56": {
+  "class_type": "StacyFreeVRAM",
+  "inputs": {
+   "images": [
+    "V11:55",
+    0
+   ],
+   "enabled": [
+    "V11:89",
+    9
+   ]
+  },
+  "_meta": {
+   "title": "освободить VRAM (до цвета и апскейла)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:57": {
+  "class_type": "StacyColorLock",
+  "inputs": {
+   "image_target": [
+    "V11:56",
+    0
+   ],
+   "image_ref": [
+    "V11:33",
+    0
+   ],
+   "strength": [
+    "V1132",
+    0
+   ],
+   "chunk": 16
+  },
+  "_meta": {
+   "title": "цвет → как у ключевого кадра",
+   "role": "video1:engine"
+  }
+ },
+ "V11:58": {
+  "class_type": "StacyLoopSeam",
+  "inputs": {
+   "images": [
+    "V11:57",
+    0
+   ],
+   "prev_report": [
+    "V11:57",
+    1
+   ],
+   "crossfade": [
+    "V1133",
+    0
+   ],
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "loop seam",
+   "role": "video1:engine"
+  }
+ },
+ "V11:59": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:57",
+    0
+   ],
+   "on_true": [
+    "V11:58",
+    0
+   ],
+   "switch": [
+    "V11:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "петля? шов",
+   "role": "video1:engine"
+  }
+ },
+ "V11:60": {
+  "class_type": "StacyTemporalStabilize",
+  "inputs": {
+   "images": [
+    "V11:59",
+    0
+   ],
+   "loop": [
+    "V11:89",
+    4
+   ],
+   "strength": [
+    "V1134",
+    0
+   ],
+   "radius": 2,
+   "threshold": 4,
+   "motion_compensation": true,
+   "keep_sharpness": true
+  },
+  "_meta": {
+   "title": "анти-дрожь до RTX (выравнивание по движению)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:61": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "V11:59",
+    0
+   ],
+   "batch_index": 4095,
+   "length": 1
+  },
+  "_meta": {
+   "title": "последний кадр",
+   "role": "video1:engine"
+  }
+ },
+ "V11:62": {
+  "class_type": "RTXVideoSuperResolution",
+  "inputs": {
+   "images": [
+    "V11:60",
+    0
+   ],
+   "resize_type": "target dimensions",
+   "resize_type.width": 1920,
+   "resize_type.height": 1096,
+   "quality": "ULTRA"
+  },
+  "_meta": {
+   "title": "RTX VSR",
+   "role": "video1:engine"
+  }
+ },
+ "V11:63": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V11:62",
+    0
+   ],
+   "width": 1920,
+   "height": 1080,
+   "method": "bicubic",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "exact 1920x1080",
+   "role": "video1:engine"
+  }
+ },
+ "V11:64": {
+  "class_type": "StacyLoopExtend",
+  "inputs": {
+   "images": [
+    "V11:63",
+    0
+   ],
+   "is_loop": [
+    "V11:89",
+    4
+   ],
+   "min_extra": 24,
+   "h3_grid": true
+  },
+  "_meta": {
+   "title": "loop extend (+head, grid)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:65": {
+  "class_type": "StacyAutoConfidence",
+  "inputs": {
+   "images": [
+    "V11:64",
+    0
+   ],
+   "prev_report": [
+    "V11:89",
+    24
+   ],
+   "confidence": [
+    "V1135",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "порог детектора лица (AUTO)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:66": {
+  "class_type": "H3FaceTrackCrop",
+  "inputs": {
+   "images": [
+    "V11:64",
+    0
+   ],
+   "confidence": [
+    "V11:65",
+    0
+   ],
+   "crop_factor": [
+    "V1136",
+    0
+   ],
+   "detector": "face_yolov8m.pt",
+   "canvas_width": 768,
+   "canvas_height": 768,
+   "canvas_mode": "manual",
+   "smooth_window": 21,
+   "size_smooth_window": 51,
+   "smooth_method": "gaussian",
+   "size_mode": "per_frame",
+   "identity_track": false,
+   "identity_threshold": 0.28,
+   "select": "largest_face",
+   "fallback_detector": "none",
+   "fallback_head_frac": 0.5,
+   "select_index": 0,
+   "identity_model": "insightface",
+   "cut_detection": "none",
+   "cut_threshold": 3,
+   "absent_shots": "off",
+   "X": 0,
+   "Y": 0,
+   "frame_index": 0
+  },
+  "_meta": {
+   "title": "face track + crop",
+   "role": "video1:engine"
+  }
+ },
+ "V11:67": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V11:27",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ],
+   "audio_vae": [
+    "V11:29",
+    0
+   ],
+   "prompt": [
+    "V113",
+    0
+   ],
+   "width": [
+    "V11:66",
+    4
+   ],
+   "height": [
+    "V11:66",
+    5
+   ],
+   "length": [
+    "V11:66",
+    6
+   ],
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "face conditioning",
+   "role": "video1:engine"
+  }
+ },
+ "V11:68": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "V11:32",
+    0
+   ],
+   "denoise": [
+    "V11:89",
+    11
+   ],
+   "scheduler": "simple",
+   "steps": 4
+  },
+  "_meta": {
+   "title": "legacy denoise",
+   "role": "video1:engine"
+  }
+ },
+ "V11:69": {
+  "class_type": "H3InjectVideoLatent",
+  "inputs": {
+   "av_latent": [
+    "V11:67",
+    1
+   ],
+   "images": [
+    "V11:66",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "inject crops",
+   "role": "video1:engine"
+  }
+ },
+ "V11:70": {
+  "class_type": "H3PerFrameDenoise",
+  "inputs": {
+   "model": [
+    "V11:32",
+    0
+   ],
+   "av_latent": [
+    "V11:69",
+    0
+   ],
+   "transform": [
+    "V11:66",
+    1
+   ],
+   "denoise_multiplier_large_face": [
+    "V1137",
+    0
+   ],
+   "denoise_multiplier_small_face": 1,
+   "scale_mode": "absolute_px",
+   "face_px_small": 100,
+   "face_px_large": 300,
+   "gamma": 1,
+   "smooth_frames": 9
+  },
+  "_meta": {
+   "title": "per-frame denoise",
+   "role": "video1:engine"
+  }
+ },
+ "V11:71": {
+  "class_type": "StacyOcclusionDenoise",
+  "inputs": {
+   "av_latent": [
+    "V11:70",
+    0
+   ],
+   "crops": [
+    "V11:66",
+    0
+   ],
+   "hand_strength": [
+    "V1139",
+    0
+   ],
+   "hand_model": "hand_yolov8s.pt",
+   "confidence": 0.3,
+   "spread": 0.25,
+   "time_sigma": 2,
+   "expr_strength": 0.3,
+   "expr_frames": 6
+  },
+  "_meta": {
+   "title": "gentler under hands",
+   "role": "video1:engine"
+  }
+ },
+ "V11:72": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "V11:70",
+    2
+   ],
+   "conditioning": [
+    "V11:67",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face guider",
+   "role": "video1:engine"
+  }
+ },
+ "V11:73": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "V11:89",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "face seed",
+   "role": "video1:engine"
+  }
+ },
+ "V11:74": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "euler (face)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:75": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "V11:73",
+    0
+   ],
+   "guider": [
+    "V11:72",
+    0
+   ],
+   "sampler": [
+    "V11:74",
+    0
+   ],
+   "sigmas": [
+    "V11:68",
+    0
+   ],
+   "latent_image": [
+    "V11:71",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face sample",
+   "role": "video1:engine"
+  }
+ },
+ "V11:76": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "V11:75",
+    0
+   ],
+   "vae": [
+    "V11:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face decode",
+   "role": "video1:engine"
+  }
+ },
+ "V11:77": {
+  "class_type": "StacyFlowAlign",
+  "inputs": {
+   "original": [
+    "V11:66",
+    0
+   ],
+   "refined": [
+    "V11:76",
+    0
+   ],
+   "align": [
+    "V1138",
+    0
+   ],
+   "temporal": [
+    "V11:89",
+    15
+   ],
+   "align_blur": 0.02,
+   "flow_size": 384,
+   "temporal_mode": "ema",
+   "radius": 4
+  },
+  "_meta": {
+   "title": "lock face to source motion",
+   "role": "video1:engine"
+  }
+ },
+ "V11:78": {
+  "class_type": "H3FaceStitch",
+  "inputs": {
+   "base_images": [
+    "V11:64",
+    0
+   ],
+   "refined_crops": [
+    "V11:77",
+    0
+   ],
+   "transform": [
+    "V11:66",
+    1
+   ],
+   "feather": [
+    "V11:89",
+    17
+   ],
+   "paste_region": "face_only",
+   "mask_dilation": 24,
+   "colour_match": 1,
+   "blend": 1,
+   "undetected_frames": "fade_out",
+   "feather_scales_with_crop": false
+  },
+  "_meta": {
+   "title": "stitch face",
+   "role": "video1:engine"
+  }
+ },
+ "V11:79": {
+  "class_type": "StacyLoopFold",
+  "inputs": {
+   "images": [
+    "V11:78",
+    0
+   ],
+   "original_frames": [
+    "V11:64",
+    1
+   ],
+   "is_loop": [
+    "V11:89",
+    4
+   ],
+   "fade": 16,
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "loop fold",
+   "role": "video1:engine"
+  }
+ },
+ "V11:80": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:63",
+    0
+   ],
+   "on_true": [
+    "V11:79",
+    0
+   ],
+   "switch": [
+    "V11:89",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "face pass? итог",
+   "role": "video1:engine"
+  }
+ },
+ "V11:81": {
+  "class_type": "StacyReport",
+  "inputs": {
+   "face_pass": [
+    "V11:89",
+    10
+   ],
+   "loop": [
+    "V11:89",
+    4
+   ],
+   "seconds": [
+    "V11:89",
+    1
+   ],
+   "length": [
+    "V11:89",
+    0
+   ],
+   "face_track": [
+    "V11:66",
+    3
+   ],
+   "face_inject": [
+    "V11:69",
+    1
+   ],
+   "face_denoise": [
+    "V11:70",
+    1
+   ],
+   "hands": [
+    "V11:71",
+    1
+   ],
+   "face_lock": [
+    "V11:77",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "сводный отчёт",
+   "role": "video1:engine"
+  }
+ },
+ "V11:82": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V11:81",
+    0
+   ],
+   "string_b": [
+    "V11:60",
+    1
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "отчёт + анти-дрожь",
+   "role": "video1:engine"
+  }
+ },
+ "V11:83": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:57",
+    1
+   ],
+   "on_true": [
+    "V11:58",
+    2
+   ],
+   "switch": [
+    "V11:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "отчёт цвета/шва",
+   "role": "video1:engine"
+  }
+ },
+ "V11:84": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V11:89",
+    24
+   ],
+   "on_true": [
+    "V11:65",
+    1
+   ],
+   "switch": [
+    "V11:89",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "AUTO-отчёт (+порог детектора при face pass)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:85": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V11:84",
+    0
+   ],
+   "string_b": [
+    "V11:83",
+    0
+   ],
+   "delimiter": "\n"
+  },
+  "_meta": {
+   "title": "AUTO-настройки",
+   "role": "video1:engine"
+  }
+ },
+ "V11:86": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V11:85",
+    0
+   ],
+   "string_b": [
+    "V11:82",
+    0
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "AUTO + отчёт",
+   "role": "video1:engine"
+  }
+ },
+ "V11:87": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V11:36",
+    1
+   ],
+   "string_b": [
+    "V115",
+    1
+   ],
+   "delimiter": "\n"
+  },
+  "_meta": {
+   "title": "отчёт: тайминг промпта + видео-референс",
+   "role": "video1:engine"
+  }
+ },
+ "V11:88": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V11:87",
+    0
+   ],
+   "string_b": [
+    "V11:86",
+    0
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "отчёт + тайминг промпта",
+   "role": "video1:engine"
+  }
+ },
+ "V11:89": {
+  "class_type": "StacySettings",
+  "inputs": {
+   "settings": [
+    "V111",
+    0
+   ],
+   "probe_image": [
+    "V11:33",
+    0
+   ],
+   "branch": "generate"
+  },
+  "_meta": {
+   "title": "пульт → значения (+ AUTO по ключевому кадру)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:90": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V11:89",
+    20
+   ],
+   "value": [
+    "V11:80",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация",
+   "role": "video1:engine"
+  }
+ },
+ "V11:91": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V11:89",
+    20
+   ],
+   "value": [
+    "V11:59",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (raw)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:92": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V11:89",
+    20
+   ],
+   "value": [
+    "V11:61",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (кадр)",
+   "role": "video1:engine"
+  }
+ },
+ "V11:93": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V11:89",
+    20
+   ],
+   "value": [
+    "V11:88",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (отчёт)",
+   "role": "video1:engine"
+  }
+ },
+ "V110": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "images": [
+    "V11:90",
+    0
+   ],
+   "frame_rate": 24,
+   "loop_count": 0,
+   "filename_prefix": "farm_manual/video_ref2v",
+   "format": "video/h264-mp4",
+   "pix_fmt": "yuv420p",
+   "crf": 12,
+   "save_metadata": true,
+   "trim_to_audio": false,
+   "pingpong": false,
+   "save_output": true
+  },
+  "_meta": {
+   "title": "ИТОГ видео FullHD · ref2v",
+   "role": "video1:out"
+  }
+ },
+ "V111": {
+  "class_type": "StacyPanel",
+  "inputs": {
+   "mode": true,
+   "seed": 3875932223,
+   "duration_sec": 7,
+   "loop": true,
+   "end_frame": false,
+   "model_10eros": false,
+   "steps": 8,
+   "shift": 12.0,
+   "char_lora": 1.0,
+   "free_vram": "auto",
+   "face_pass": "off",
+   "face_denoise_auto": true,
+   "face_denoise": 0.3,
+   "face_lora": 0.0,
+   "face_lock_temporal": 0.8
+  },
+  "_meta": {
+   "title": "PANEL",
+   "role": "video:panel"
+  }
+ },
+ "V112": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": ""
+  },
+  "_meta": {
+   "title": "ВИДЕО · промпт видео (H3)",
+   "role": "video:in"
+  }
+ },
+ "V113": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "St4cy_H3, a close-up of the face of a young woman, warm natural smile, natural skin texture, sharp focus on the eyes, warm soft daylight from the window. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."
+  },
+  "_meta": {
+   "title": "ВИДЕО · промпт прохода лица",
+   "role": "video:in"
+  }
+ },
+ "V114": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "stacy_kf_Sitting-8.png"
+  },
+  "_meta": {
+   "title": "ВИДЕО · конечный кадр (только если петля ВЫКЛ)",
+   "role": "video:in"
+  }
+ },
+ "V115": {
+  "class_type": "StacyRefVideo",
+  "inputs": {
+   "settings": [
+    "V111",
+    0
+   ],
+   "prompt": [
+    "V112",
+    0
+   ],
+   "video": "(none)",
+   "start_sec": 0,
+   "length_sec": 0
+  },
+  "_meta": {
+   "title": "ВИДЕО · видео-референс движения (необязательно)",
+   "role": "video:in"
+  }
+ },
+ "V117": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "V11:93",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ОТЧЁТ видео · ref2v",
+   "role": "video1:engine"
+  }
+ },
+ "V1130": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  },
+  "_meta": {
+   "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
+   "role": "video1:knob"
+  }
+ },
+ "V1131": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 12.0
+  },
+  "_meta": {
+   "title": "KNOB shift · shift (10–14, по умолчанию 12)",
+   "role": "video1:knob"
+  }
+ },
+ "V1132": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": -1.0
+  },
+  "_meta": {
+   "title": "KNOB color_lock · фиксация цвета к кадру (-1 = авто)",
+   "role": "video1:knob"
+  }
+ },
+ "V1133": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": -1
+  },
+  "_meta": {
+   "title": "KNOB seam_crossfade · склейка шва петли, кадров (-1 = авто)",
+   "role": "video1:knob"
+  }
+ },
+ "V1134": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1.0
+  },
+  "_meta": {
+   "title": "KNOB temporal_strength · стабилизатор дрожи всего кадра (0–1)",
+   "role": "video1:knob"
+  }
+ },
+ "V1135": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": -1.0
+  },
+  "_meta": {
+   "title": "KNOB face_confidence · порог детектора лица (-1 = авто)",
+   "role": "video1:knob"
+  }
+ },
+ "V1136": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2.5
+  },
+  "_meta": {
+   "title": "KNOB crop_factor · запас кропа лица вокруг головы",
+   "role": "video1:knob"
+  }
+ },
+ "V1137": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.35
+  },
+  "_meta": {
+   "title": "KNOB large_face_mult · ослабление прохода для крупного лица",
+   "role": "video1:knob"
+  }
+ },
+ "V1138": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1.0
+  },
+  "_meta": {
+   "title": "KNOB face_lock · привязка лица к движению (flow-lock)",
+   "role": "video1:knob"
+  }
+ },
+ "V1139": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.2
+  },
+  "_meta": {
+   "title": "KNOB hand_strength · проход лица рядом с руками (0–1)",
+   "role": "video1:knob"
+  }
+ },
+ "V21:23": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "10Eros_Max_h3_hybrid_beta5_int8.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "ARM model · 10Eros",
+   "role": "video2:arm"
+  }
+ },
+ "V21:24": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V21:23",
+    0
+   ],
+   "strength_model": 0.0,
+   "lora_name": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
+  },
+  "_meta": {
+   "title": "ARM lora · turbo 8 ВЫКЛ (10Eros)",
+   "role": "video2:arm"
+  }
+ },
+ "V21:25": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "V21:24",
+    0
+   ],
+   "shift_video": [
+    "V1131",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "shift",
+   "role": "video2:engine"
+  }
+ },
+ "V21:26": {
+  "class_type": "ModelAttentionBackend",
+  "inputs": {
+   "model": [
+    "V21:25",
+    0
+   ],
+   "attention": "comfy kitchen attention"
+  },
+  "_meta": {
+   "title": "attention",
+   "role": "video2:engine"
+  }
+ },
+ "V21:27": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Qwen3-VL",
+   "role": "video2:engine"
+  }
+ },
+ "V21:28": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "H3 video VAE",
+   "role": "video2:engine"
+  }
+ },
+ "V21:29": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "H3 audio VAE",
+   "role": "video2:engine"
+  }
+ },
+ "V21:30": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "H3 FL2VA (face)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:31": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V21:30",
+    0
+   ],
+   "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+   "strength_model": 1
+  },
+  "_meta": {
+   "title": "FL2V turbo 4-step",
+   "role": "video2:engine"
+  }
+ },
+ "V21:32": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V21:31",
+    0
+   ],
+   "strength_model": [
+    "V21:89",
+    12
+   ],
+   "lora_name": "stacy_h3_face_v1_000001800.safetensors"
+  },
+  "_meta": {
+   "title": "Stacy face LoRA",
+   "role": "video2:engine"
+  }
+ },
+ "V21:33": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V17",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "keyframe 1344x768",
+   "role": "video2:engine"
+  }
+ },
+ "V21:34": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V114",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "конечный кадр → 1344x768",
+   "role": "video2:engine"
+  }
+ },
+ "V21:35": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:34",
+    0
+   ],
+   "on_true": [
+    "V21:33",
+    0
+   ],
+   "switch": [
+    "V21:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "последний кадр = ключевой (петля) или конечный",
+   "role": "video2:engine"
+  }
+ },
+ "V21:36": {
+  "class_type": "StacyPromptRetime",
+  "inputs": {
+   "prompt": [
+    "V112",
+    0
+   ],
+   "seconds": [
+    "V21:89",
+    1
+   ],
+   "loop": [
+    "V21:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "промпт ← длительность и петля",
+   "role": "video2:engine"
+  }
+ },
+ "V21:37": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V21:27",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "audio_vae": [
+    "V21:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V21:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "prompt": [
+    "V21:36",
+    0
+   ],
+   "length": [
+    "V21:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning",
+   "role": "video2:engine"
+  }
+ },
+ "V21:38": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V21:27",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "audio_vae": [
+    "V21:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V21:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "V115",
+    0
+   ],
+   "prompt": [
+    "V21:36",
+    0
+   ],
+   "length": [
+    "V21:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Video 1>",
+   "role": "video2:engine"
+  }
+ },
+ "V21:39": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V21:27",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "audio_vae": [
+    "V21:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V21:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_images.ref_image_2": [
+    "V21:34",
+    0
+   ],
+   "prompt": [
+    "V21:36",
+    0
+   ],
+   "length": [
+    "V21:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Picture 3> (конечный кадр)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:40": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V21:27",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "audio_vae": [
+    "V21:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V21:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_images.ref_image_2": [
+    "V21:34",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "V115",
+    0
+   ],
+   "prompt": [
+    "V21:36",
+    0
+   ],
+   "length": [
+    "V21:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Picture 3> + <Video 1>",
+   "role": "video2:engine"
+  }
+ },
+ "V21:41": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:37",
+    0
+   ],
+   "on_true": [
+    "V21:39",
+    0
+   ],
+   "switch": [
+    "V21:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? conditioning (без видео)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:42": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:38",
+    0
+   ],
+   "on_true": [
+    "V21:40",
+    0
+   ],
+   "switch": [
+    "V21:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? conditioning (с видео)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:43": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:41",
+    0
+   ],
+   "on_true": [
+    "V21:42",
+    0
+   ],
+   "switch": [
+    "V115",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "видео-референс? conditioning",
+   "role": "video2:engine"
+  }
+ },
+ "V21:44": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:37",
+    1
+   ],
+   "on_true": [
+    "V21:39",
+    1
+   ],
+   "switch": [
+    "V21:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? latent (без видео)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:45": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:38",
+    1
+   ],
+   "on_true": [
+    "V21:40",
+    1
+   ],
+   "switch": [
+    "V21:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? latent (с видео)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:46": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:44",
+    0
+   ],
+   "on_true": [
+    "V21:45",
+    0
+   ],
+   "switch": [
+    "V115",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "видео-референс? latent",
+   "role": "video2:engine"
+  }
+ },
+ "V21:47": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "V21:43",
+    0
+   ],
+   "latent": [
+    "V21:46",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "image": [
+    "V21:33",
+    0
+   ],
+   "frame_idx": 0
+  },
+  "_meta": {
+   "title": "anchor frame 0",
+   "role": "video2:engine"
+  }
+ },
+ "V21:48": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "V21:47",
+    0
+   ],
+   "latent": [
+    "V21:46",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "image": [
+    "V21:35",
+    0
+   ],
+   "frame_idx": -1
+  },
+  "_meta": {
+   "title": "anchor last frame",
+   "role": "video2:engine"
+  }
+ },
+ "V21:49": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:47",
+    0
+   ],
+   "on_true": [
+    "V21:48",
+    0
+   ],
+   "switch": [
+    "V21:89",
+    23
+   ]
+  },
+  "_meta": {
+   "title": "якорь последнего кадра? (петля или конечный кадр)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:50": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "V21:26",
+    0
+   ],
+   "conditioning": [
+    "V21:49",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "guider (cfg 1)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:51": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "V21:89",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "seed",
+   "role": "video2:engine"
+  }
+ },
+ "V21:52": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "res_multistep"
+  },
+  "_meta": {
+   "title": "res_multistep",
+   "role": "video2:engine"
+  }
+ },
+ "V21:53": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "V21:26",
+    0
+   ],
+   "steps": [
+    "V2130",
+    0
+   ],
+   "scheduler": "simple",
+   "denoise": 1
+  },
+  "_meta": {
+   "title": "simple",
+   "role": "video2:engine"
+  }
+ },
+ "V21:54": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "V21:51",
+    0
+   ],
+   "guider": [
+    "V21:50",
+    0
+   ],
+   "sampler": [
+    "V21:52",
+    0
+   ],
+   "sigmas": [
+    "V21:53",
+    0
+   ],
+   "latent_image": [
+    "V21:46",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "sample",
+   "role": "video2:engine"
+  }
+ },
+ "V21:55": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "V21:54",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "decode",
+   "role": "video2:engine"
+  }
+ },
+ "V21:56": {
+  "class_type": "StacyFreeVRAM",
+  "inputs": {
+   "images": [
+    "V21:55",
+    0
+   ],
+   "enabled": [
+    "V21:89",
+    9
+   ]
+  },
+  "_meta": {
+   "title": "освободить VRAM (до цвета и апскейла)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:57": {
+  "class_type": "StacyColorLock",
+  "inputs": {
+   "image_target": [
+    "V21:56",
+    0
+   ],
+   "image_ref": [
+    "V21:33",
+    0
+   ],
+   "strength": [
+    "V1132",
+    0
+   ],
+   "chunk": 16
+  },
+  "_meta": {
+   "title": "цвет → как у ключевого кадра",
+   "role": "video2:engine"
+  }
+ },
+ "V21:58": {
+  "class_type": "StacyLoopSeam",
+  "inputs": {
+   "images": [
+    "V21:57",
+    0
+   ],
+   "prev_report": [
+    "V21:57",
+    1
+   ],
+   "crossfade": [
+    "V1133",
+    0
+   ],
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "loop seam",
+   "role": "video2:engine"
+  }
+ },
+ "V21:59": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:57",
+    0
+   ],
+   "on_true": [
+    "V21:58",
+    0
+   ],
+   "switch": [
+    "V21:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "петля? шов",
+   "role": "video2:engine"
+  }
+ },
+ "V21:60": {
+  "class_type": "StacyTemporalStabilize",
+  "inputs": {
+   "images": [
+    "V21:59",
+    0
+   ],
+   "loop": [
+    "V21:89",
+    4
+   ],
+   "strength": [
+    "V1134",
+    0
+   ],
+   "radius": 2,
+   "threshold": 4,
+   "motion_compensation": true,
+   "keep_sharpness": true
+  },
+  "_meta": {
+   "title": "анти-дрожь до RTX (выравнивание по движению)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:61": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "V21:59",
+    0
+   ],
+   "batch_index": 4095,
+   "length": 1
+  },
+  "_meta": {
+   "title": "последний кадр",
+   "role": "video2:engine"
+  }
+ },
+ "V21:62": {
+  "class_type": "RTXVideoSuperResolution",
+  "inputs": {
+   "images": [
+    "V21:60",
+    0
+   ],
+   "resize_type": "target dimensions",
+   "resize_type.width": 1920,
+   "resize_type.height": 1096,
+   "quality": "ULTRA"
+  },
+  "_meta": {
+   "title": "RTX VSR",
+   "role": "video2:engine"
+  }
+ },
+ "V21:63": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V21:62",
+    0
+   ],
+   "width": 1920,
+   "height": 1080,
+   "method": "bicubic",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "exact 1920x1080",
+   "role": "video2:engine"
+  }
+ },
+ "V21:64": {
+  "class_type": "StacyLoopExtend",
+  "inputs": {
+   "images": [
+    "V21:63",
+    0
+   ],
+   "is_loop": [
+    "V21:89",
+    4
+   ],
+   "min_extra": 24,
+   "h3_grid": true
+  },
+  "_meta": {
+   "title": "loop extend (+head, grid)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:65": {
+  "class_type": "StacyAutoConfidence",
+  "inputs": {
+   "images": [
+    "V21:64",
+    0
+   ],
+   "prev_report": [
+    "V21:89",
+    24
+   ],
+   "confidence": [
+    "V1135",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "порог детектора лица (AUTO)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:66": {
+  "class_type": "H3FaceTrackCrop",
+  "inputs": {
+   "images": [
+    "V21:64",
+    0
+   ],
+   "confidence": [
+    "V21:65",
+    0
+   ],
+   "crop_factor": [
+    "V1136",
+    0
+   ],
+   "detector": "face_yolov8m.pt",
+   "canvas_width": 768,
+   "canvas_height": 768,
+   "canvas_mode": "manual",
+   "smooth_window": 21,
+   "size_smooth_window": 51,
+   "smooth_method": "gaussian",
+   "size_mode": "per_frame",
+   "identity_track": false,
+   "identity_threshold": 0.28,
+   "select": "largest_face",
+   "fallback_detector": "none",
+   "fallback_head_frac": 0.5,
+   "select_index": 0,
+   "identity_model": "insightface",
+   "cut_detection": "none",
+   "cut_threshold": 3,
+   "absent_shots": "off",
+   "X": 0,
+   "Y": 0,
+   "frame_index": 0
+  },
+  "_meta": {
+   "title": "face track + crop",
+   "role": "video2:engine"
+  }
+ },
+ "V21:67": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V21:27",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ],
+   "audio_vae": [
+    "V21:29",
+    0
+   ],
+   "prompt": [
+    "V113",
+    0
+   ],
+   "width": [
+    "V21:66",
+    4
+   ],
+   "height": [
+    "V21:66",
+    5
+   ],
+   "length": [
+    "V21:66",
+    6
+   ],
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "face conditioning",
+   "role": "video2:engine"
+  }
+ },
+ "V21:68": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "V21:32",
+    0
+   ],
+   "denoise": [
+    "V21:89",
+    11
+   ],
+   "scheduler": "simple",
+   "steps": 4
+  },
+  "_meta": {
+   "title": "legacy denoise",
+   "role": "video2:engine"
+  }
+ },
+ "V21:69": {
+  "class_type": "H3InjectVideoLatent",
+  "inputs": {
+   "av_latent": [
+    "V21:67",
+    1
+   ],
+   "images": [
+    "V21:66",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "inject crops",
+   "role": "video2:engine"
+  }
+ },
+ "V21:70": {
+  "class_type": "H3PerFrameDenoise",
+  "inputs": {
+   "model": [
+    "V21:32",
+    0
+   ],
+   "av_latent": [
+    "V21:69",
+    0
+   ],
+   "transform": [
+    "V21:66",
+    1
+   ],
+   "denoise_multiplier_large_face": [
+    "V1137",
+    0
+   ],
+   "denoise_multiplier_small_face": 1,
+   "scale_mode": "absolute_px",
+   "face_px_small": 100,
+   "face_px_large": 300,
+   "gamma": 1,
+   "smooth_frames": 9
+  },
+  "_meta": {
+   "title": "per-frame denoise",
+   "role": "video2:engine"
+  }
+ },
+ "V21:71": {
+  "class_type": "StacyOcclusionDenoise",
+  "inputs": {
+   "av_latent": [
+    "V21:70",
+    0
+   ],
+   "crops": [
+    "V21:66",
+    0
+   ],
+   "hand_strength": [
+    "V1139",
+    0
+   ],
+   "hand_model": "hand_yolov8s.pt",
+   "confidence": 0.3,
+   "spread": 0.25,
+   "time_sigma": 2,
+   "expr_strength": 0.3,
+   "expr_frames": 6
+  },
+  "_meta": {
+   "title": "gentler under hands",
+   "role": "video2:engine"
+  }
+ },
+ "V21:72": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "V21:70",
+    2
+   ],
+   "conditioning": [
+    "V21:67",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face guider",
+   "role": "video2:engine"
+  }
+ },
+ "V21:73": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "V21:89",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "face seed",
+   "role": "video2:engine"
+  }
+ },
+ "V21:74": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "euler (face)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:75": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "V21:73",
+    0
+   ],
+   "guider": [
+    "V21:72",
+    0
+   ],
+   "sampler": [
+    "V21:74",
+    0
+   ],
+   "sigmas": [
+    "V21:68",
+    0
+   ],
+   "latent_image": [
+    "V21:71",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face sample",
+   "role": "video2:engine"
+  }
+ },
+ "V21:76": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "V21:75",
+    0
+   ],
+   "vae": [
+    "V21:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face decode",
+   "role": "video2:engine"
+  }
+ },
+ "V21:77": {
+  "class_type": "StacyFlowAlign",
+  "inputs": {
+   "original": [
+    "V21:66",
+    0
+   ],
+   "refined": [
+    "V21:76",
+    0
+   ],
+   "align": [
+    "V1138",
+    0
+   ],
+   "temporal": [
+    "V21:89",
+    15
+   ],
+   "align_blur": 0.02,
+   "flow_size": 384,
+   "temporal_mode": "ema",
+   "radius": 4
+  },
+  "_meta": {
+   "title": "lock face to source motion",
+   "role": "video2:engine"
+  }
+ },
+ "V21:78": {
+  "class_type": "H3FaceStitch",
+  "inputs": {
+   "base_images": [
+    "V21:64",
+    0
+   ],
+   "refined_crops": [
+    "V21:77",
+    0
+   ],
+   "transform": [
+    "V21:66",
+    1
+   ],
+   "feather": [
+    "V21:89",
+    17
+   ],
+   "paste_region": "face_only",
+   "mask_dilation": 24,
+   "colour_match": 1,
+   "blend": 1,
+   "undetected_frames": "fade_out",
+   "feather_scales_with_crop": false
+  },
+  "_meta": {
+   "title": "stitch face",
+   "role": "video2:engine"
+  }
+ },
+ "V21:79": {
+  "class_type": "StacyLoopFold",
+  "inputs": {
+   "images": [
+    "V21:78",
+    0
+   ],
+   "original_frames": [
+    "V21:64",
+    1
+   ],
+   "is_loop": [
+    "V21:89",
+    4
+   ],
+   "fade": 16,
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "loop fold",
+   "role": "video2:engine"
+  }
+ },
+ "V21:80": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:63",
+    0
+   ],
+   "on_true": [
+    "V21:79",
+    0
+   ],
+   "switch": [
+    "V21:89",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "face pass? итог",
+   "role": "video2:engine"
+  }
+ },
+ "V21:81": {
+  "class_type": "StacyReport",
+  "inputs": {
+   "face_pass": [
+    "V21:89",
+    10
+   ],
+   "loop": [
+    "V21:89",
+    4
+   ],
+   "seconds": [
+    "V21:89",
+    1
+   ],
+   "length": [
+    "V21:89",
+    0
+   ],
+   "face_track": [
+    "V21:66",
+    3
+   ],
+   "face_inject": [
+    "V21:69",
+    1
+   ],
+   "face_denoise": [
+    "V21:70",
+    1
+   ],
+   "hands": [
+    "V21:71",
+    1
+   ],
+   "face_lock": [
+    "V21:77",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "сводный отчёт",
+   "role": "video2:engine"
+  }
+ },
+ "V21:82": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V21:81",
+    0
+   ],
+   "string_b": [
+    "V21:60",
+    1
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "отчёт + анти-дрожь",
+   "role": "video2:engine"
+  }
+ },
+ "V21:83": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:57",
+    1
+   ],
+   "on_true": [
+    "V21:58",
+    2
+   ],
+   "switch": [
+    "V21:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "отчёт цвета/шва",
+   "role": "video2:engine"
+  }
+ },
+ "V21:84": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V21:89",
+    24
+   ],
+   "on_true": [
+    "V21:65",
+    1
+   ],
+   "switch": [
+    "V21:89",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "AUTO-отчёт (+порог детектора при face pass)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:85": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V21:84",
+    0
+   ],
+   "string_b": [
+    "V21:83",
+    0
+   ],
+   "delimiter": "\n"
+  },
+  "_meta": {
+   "title": "AUTO-настройки",
+   "role": "video2:engine"
+  }
+ },
+ "V21:86": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V21:85",
+    0
+   ],
+   "string_b": [
+    "V21:82",
+    0
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "AUTO + отчёт",
+   "role": "video2:engine"
+  }
+ },
+ "V21:87": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V21:36",
+    1
+   ],
+   "string_b": [
+    "V115",
+    1
+   ],
+   "delimiter": "\n"
+  },
+  "_meta": {
+   "title": "отчёт: тайминг промпта + видео-референс",
+   "role": "video2:engine"
+  }
+ },
+ "V21:88": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V21:87",
+    0
+   ],
+   "string_b": [
+    "V21:86",
+    0
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "отчёт + тайминг промпта",
+   "role": "video2:engine"
+  }
+ },
+ "V21:89": {
+  "class_type": "StacySettings",
+  "inputs": {
+   "settings": [
+    "V111",
+    0
+   ],
+   "probe_image": [
+    "V21:33",
+    0
+   ],
+   "branch": "generate"
+  },
+  "_meta": {
+   "title": "пульт → значения (+ AUTO по ключевому кадру)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:90": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V21:89",
+    20
+   ],
+   "value": [
+    "V21:80",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация",
+   "role": "video2:engine"
+  }
+ },
+ "V21:91": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V21:89",
+    20
+   ],
+   "value": [
+    "V21:59",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (raw)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:92": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V21:89",
+    20
+   ],
+   "value": [
+    "V21:61",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (кадр)",
+   "role": "video2:engine"
+  }
+ },
+ "V21:93": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V21:89",
+    20
+   ],
+   "value": [
+    "V21:88",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (отчёт)",
+   "role": "video2:engine"
+  }
+ },
+ "V210": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "images": [
+    "V21:90",
+    0
+   ],
+   "frame_rate": 24,
+   "loop_count": 0,
+   "filename_prefix": "farm_manual/video_10Eros",
+   "format": "video/h264-mp4",
+   "pix_fmt": "yuv420p",
+   "crf": 12,
+   "save_metadata": true,
+   "trim_to_audio": false,
+   "pingpong": false,
+   "save_output": true
+  },
+  "_meta": {
+   "title": "ИТОГ видео FullHD · 10Eros",
+   "role": "video2:out"
+  }
+ },
+ "V217": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "V21:93",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ОТЧЁТ видео · 10Eros",
+   "role": "video2:engine"
+  }
+ },
+ "V2130": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 20
+  },
+  "_meta": {
+   "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
+   "role": "video2:knob"
+  }
+ },
+ "V31:23": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "ARM model · PinkCherry",
+   "role": "video3:arm"
+  }
+ },
+ "V31:24": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V31:23",
+    0
+   ],
+   "strength_model": 0.0,
+   "lora_name": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
+  },
+  "_meta": {
+   "title": "ARM lora · turbo 8 ВЫКЛ (PinkCherry)",
+   "role": "video3:arm"
+  }
+ },
+ "V31:25": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "V31:24",
+    0
+   ],
+   "shift_video": [
+    "V1131",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "shift",
+   "role": "video3:engine"
+  }
+ },
+ "V31:26": {
+  "class_type": "ModelAttentionBackend",
+  "inputs": {
+   "model": [
+    "V31:25",
+    0
+   ],
+   "attention": "comfy kitchen attention"
+  },
+  "_meta": {
+   "title": "attention",
+   "role": "video3:engine"
+  }
+ },
+ "V31:27": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Qwen3-VL",
+   "role": "video3:engine"
+  }
+ },
+ "V31:28": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "H3 video VAE",
+   "role": "video3:engine"
+  }
+ },
+ "V31:29": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "H3 audio VAE",
+   "role": "video3:engine"
+  }
+ },
+ "V31:30": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "H3 FL2VA (face)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:31": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V31:30",
+    0
+   ],
+   "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+   "strength_model": 1
+  },
+  "_meta": {
+   "title": "FL2V turbo 4-step",
+   "role": "video3:engine"
+  }
+ },
+ "V31:32": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "V31:31",
+    0
+   ],
+   "strength_model": [
+    "V31:89",
+    12
+   ],
+   "lora_name": "stacy_h3_face_v1_000001800.safetensors"
+  },
+  "_meta": {
+   "title": "Stacy face LoRA",
+   "role": "video3:engine"
+  }
+ },
+ "V31:33": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V17",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "keyframe 1344x768",
+   "role": "video3:engine"
+  }
+ },
+ "V31:34": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V114",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "конечный кадр → 1344x768",
+   "role": "video3:engine"
+  }
+ },
+ "V31:35": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:34",
+    0
+   ],
+   "on_true": [
+    "V31:33",
+    0
+   ],
+   "switch": [
+    "V31:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "последний кадр = ключевой (петля) или конечный",
+   "role": "video3:engine"
+  }
+ },
+ "V31:36": {
+  "class_type": "StacyPromptRetime",
+  "inputs": {
+   "prompt": [
+    "V112",
+    0
+   ],
+   "seconds": [
+    "V31:89",
+    1
+   ],
+   "loop": [
+    "V31:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "промпт ← длительность и петля",
+   "role": "video3:engine"
+  }
+ },
+ "V31:37": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V31:27",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "audio_vae": [
+    "V31:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V31:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "prompt": [
+    "V31:36",
+    0
+   ],
+   "length": [
+    "V31:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning",
+   "role": "video3:engine"
+  }
+ },
+ "V31:38": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V31:27",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "audio_vae": [
+    "V31:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V31:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "V115",
+    0
+   ],
+   "prompt": [
+    "V31:36",
+    0
+   ],
+   "length": [
+    "V31:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Video 1>",
+   "role": "video3:engine"
+  }
+ },
+ "V31:39": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V31:27",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "audio_vae": [
+    "V31:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V31:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_images.ref_image_2": [
+    "V31:34",
+    0
+   ],
+   "prompt": [
+    "V31:36",
+    0
+   ],
+   "length": [
+    "V31:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Picture 3> (конечный кадр)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:40": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V31:27",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "audio_vae": [
+    "V31:29",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "V31:33",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "V18",
+    0
+   ],
+   "ref_images.ref_image_2": [
+    "V31:34",
+    0
+   ],
+   "ref_videos.ref_video_0": [
+    "V115",
+    0
+   ],
+   "prompt": [
+    "V31:36",
+    0
+   ],
+   "length": [
+    "V31:89",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "ref2va conditioning + <Picture 3> + <Video 1>",
+   "role": "video3:engine"
+  }
+ },
+ "V31:41": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:37",
+    0
+   ],
+   "on_true": [
+    "V31:39",
+    0
+   ],
+   "switch": [
+    "V31:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? conditioning (без видео)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:42": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:38",
+    0
+   ],
+   "on_true": [
+    "V31:40",
+    0
+   ],
+   "switch": [
+    "V31:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? conditioning (с видео)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:43": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:41",
+    0
+   ],
+   "on_true": [
+    "V31:42",
+    0
+   ],
+   "switch": [
+    "V115",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "видео-референс? conditioning",
+   "role": "video3:engine"
+  }
+ },
+ "V31:44": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:37",
+    1
+   ],
+   "on_true": [
+    "V31:39",
+    1
+   ],
+   "switch": [
+    "V31:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? latent (без видео)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:45": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:38",
+    1
+   ],
+   "on_true": [
+    "V31:40",
+    1
+   ],
+   "switch": [
+    "V31:89",
+    26
+   ]
+  },
+  "_meta": {
+   "title": "конечный кадр <Picture 3>? latent (с видео)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:46": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:44",
+    0
+   ],
+   "on_true": [
+    "V31:45",
+    0
+   ],
+   "switch": [
+    "V115",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "видео-референс? latent",
+   "role": "video3:engine"
+  }
+ },
+ "V31:47": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "V31:43",
+    0
+   ],
+   "latent": [
+    "V31:46",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "image": [
+    "V31:33",
+    0
+   ],
+   "frame_idx": 0
+  },
+  "_meta": {
+   "title": "anchor frame 0",
+   "role": "video3:engine"
+  }
+ },
+ "V31:48": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "V31:47",
+    0
+   ],
+   "latent": [
+    "V31:46",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "image": [
+    "V31:35",
+    0
+   ],
+   "frame_idx": -1
+  },
+  "_meta": {
+   "title": "anchor last frame",
+   "role": "video3:engine"
+  }
+ },
+ "V31:49": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:47",
+    0
+   ],
+   "on_true": [
+    "V31:48",
+    0
+   ],
+   "switch": [
+    "V31:89",
+    23
+   ]
+  },
+  "_meta": {
+   "title": "якорь последнего кадра? (петля или конечный кадр)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:50": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "V31:26",
+    0
+   ],
+   "conditioning": [
+    "V31:49",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "guider (cfg 1)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:51": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "V31:89",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "seed",
+   "role": "video3:engine"
+  }
+ },
+ "V31:52": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "res_multistep"
+  },
+  "_meta": {
+   "title": "res_multistep",
+   "role": "video3:engine"
+  }
+ },
+ "V31:53": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "V31:26",
+    0
+   ],
+   "steps": [
+    "V3130",
+    0
+   ],
+   "scheduler": "simple",
+   "denoise": 1
+  },
+  "_meta": {
+   "title": "simple",
+   "role": "video3:engine"
+  }
+ },
+ "V31:54": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "V31:51",
+    0
+   ],
+   "guider": [
+    "V31:50",
+    0
+   ],
+   "sampler": [
+    "V31:52",
+    0
+   ],
+   "sigmas": [
+    "V31:53",
+    0
+   ],
+   "latent_image": [
+    "V31:46",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "sample",
+   "role": "video3:engine"
+  }
+ },
+ "V31:55": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "V31:54",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "decode",
+   "role": "video3:engine"
+  }
+ },
+ "V31:56": {
+  "class_type": "StacyFreeVRAM",
+  "inputs": {
+   "images": [
+    "V31:55",
+    0
+   ],
+   "enabled": [
+    "V31:89",
+    9
+   ]
+  },
+  "_meta": {
+   "title": "освободить VRAM (до цвета и апскейла)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:57": {
+  "class_type": "StacyColorLock",
+  "inputs": {
+   "image_target": [
+    "V31:56",
+    0
+   ],
+   "image_ref": [
+    "V31:33",
+    0
+   ],
+   "strength": [
+    "V1132",
+    0
+   ],
+   "chunk": 16
+  },
+  "_meta": {
+   "title": "цвет → как у ключевого кадра",
+   "role": "video3:engine"
+  }
+ },
+ "V31:58": {
+  "class_type": "StacyLoopSeam",
+  "inputs": {
+   "images": [
+    "V31:57",
+    0
+   ],
+   "prev_report": [
+    "V31:57",
+    1
+   ],
+   "crossfade": [
+    "V1133",
+    0
+   ],
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "loop seam",
+   "role": "video3:engine"
+  }
+ },
+ "V31:59": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:57",
+    0
+   ],
+   "on_true": [
+    "V31:58",
+    0
+   ],
+   "switch": [
+    "V31:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "петля? шов",
+   "role": "video3:engine"
+  }
+ },
+ "V31:60": {
+  "class_type": "StacyTemporalStabilize",
+  "inputs": {
+   "images": [
+    "V31:59",
+    0
+   ],
+   "loop": [
+    "V31:89",
+    4
+   ],
+   "strength": [
+    "V1134",
+    0
+   ],
+   "radius": 2,
+   "threshold": 4,
+   "motion_compensation": true,
+   "keep_sharpness": true
+  },
+  "_meta": {
+   "title": "анти-дрожь до RTX (выравнивание по движению)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:61": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "V31:59",
+    0
+   ],
+   "batch_index": 4095,
+   "length": 1
+  },
+  "_meta": {
+   "title": "последний кадр",
+   "role": "video3:engine"
+  }
+ },
+ "V31:62": {
+  "class_type": "RTXVideoSuperResolution",
+  "inputs": {
+   "images": [
+    "V31:60",
+    0
+   ],
+   "resize_type": "target dimensions",
+   "resize_type.width": 1920,
+   "resize_type.height": 1096,
+   "quality": "ULTRA"
+  },
+  "_meta": {
+   "title": "RTX VSR",
+   "role": "video3:engine"
+  }
+ },
+ "V31:63": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "V31:62",
+    0
+   ],
+   "width": 1920,
+   "height": 1080,
+   "method": "bicubic",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "exact 1920x1080",
+   "role": "video3:engine"
+  }
+ },
+ "V31:64": {
+  "class_type": "StacyLoopExtend",
+  "inputs": {
+   "images": [
+    "V31:63",
+    0
+   ],
+   "is_loop": [
+    "V31:89",
+    4
+   ],
+   "min_extra": 24,
+   "h3_grid": true
+  },
+  "_meta": {
+   "title": "loop extend (+head, grid)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:65": {
+  "class_type": "StacyAutoConfidence",
+  "inputs": {
+   "images": [
+    "V31:64",
+    0
+   ],
+   "prev_report": [
+    "V31:89",
+    24
+   ],
+   "confidence": [
+    "V1135",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "порог детектора лица (AUTO)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:66": {
+  "class_type": "H3FaceTrackCrop",
+  "inputs": {
+   "images": [
+    "V31:64",
+    0
+   ],
+   "confidence": [
+    "V31:65",
+    0
+   ],
+   "crop_factor": [
+    "V1136",
+    0
+   ],
+   "detector": "face_yolov8m.pt",
+   "canvas_width": 768,
+   "canvas_height": 768,
+   "canvas_mode": "manual",
+   "smooth_window": 21,
+   "size_smooth_window": 51,
+   "smooth_method": "gaussian",
+   "size_mode": "per_frame",
+   "identity_track": false,
+   "identity_threshold": 0.28,
+   "select": "largest_face",
+   "fallback_detector": "none",
+   "fallback_head_frac": 0.5,
+   "select_index": 0,
+   "identity_model": "insightface",
+   "cut_detection": "none",
+   "cut_threshold": 3,
+   "absent_shots": "off",
+   "X": 0,
+   "Y": 0,
+   "frame_index": 0
+  },
+  "_meta": {
+   "title": "face track + crop",
+   "role": "video3:engine"
+  }
+ },
+ "V31:67": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "V31:27",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ],
+   "audio_vae": [
+    "V31:29",
+    0
+   ],
+   "prompt": [
+    "V113",
+    0
+   ],
+   "width": [
+    "V31:66",
+    4
+   ],
+   "height": [
+    "V31:66",
+    5
+   ],
+   "length": [
+    "V31:66",
+    6
+   ],
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "face conditioning",
+   "role": "video3:engine"
+  }
+ },
+ "V31:68": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "V31:32",
+    0
+   ],
+   "denoise": [
+    "V31:89",
+    11
+   ],
+   "scheduler": "simple",
+   "steps": 4
+  },
+  "_meta": {
+   "title": "legacy denoise",
+   "role": "video3:engine"
+  }
+ },
+ "V31:69": {
+  "class_type": "H3InjectVideoLatent",
+  "inputs": {
+   "av_latent": [
+    "V31:67",
+    1
+   ],
+   "images": [
+    "V31:66",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "inject crops",
+   "role": "video3:engine"
+  }
+ },
+ "V31:70": {
+  "class_type": "H3PerFrameDenoise",
+  "inputs": {
+   "model": [
+    "V31:32",
+    0
+   ],
+   "av_latent": [
+    "V31:69",
+    0
+   ],
+   "transform": [
+    "V31:66",
+    1
+   ],
+   "denoise_multiplier_large_face": [
+    "V1137",
+    0
+   ],
+   "denoise_multiplier_small_face": 1,
+   "scale_mode": "absolute_px",
+   "face_px_small": 100,
+   "face_px_large": 300,
+   "gamma": 1,
+   "smooth_frames": 9
+  },
+  "_meta": {
+   "title": "per-frame denoise",
+   "role": "video3:engine"
+  }
+ },
+ "V31:71": {
+  "class_type": "StacyOcclusionDenoise",
+  "inputs": {
+   "av_latent": [
+    "V31:70",
+    0
+   ],
+   "crops": [
+    "V31:66",
+    0
+   ],
+   "hand_strength": [
+    "V1139",
+    0
+   ],
+   "hand_model": "hand_yolov8s.pt",
+   "confidence": 0.3,
+   "spread": 0.25,
+   "time_sigma": 2,
+   "expr_strength": 0.3,
+   "expr_frames": 6
+  },
+  "_meta": {
+   "title": "gentler under hands",
+   "role": "video3:engine"
+  }
+ },
+ "V31:72": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "V31:70",
+    2
+   ],
+   "conditioning": [
+    "V31:67",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face guider",
+   "role": "video3:engine"
+  }
+ },
+ "V31:73": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "V31:89",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "face seed",
+   "role": "video3:engine"
+  }
+ },
+ "V31:74": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "euler (face)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:75": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "V31:73",
+    0
+   ],
+   "guider": [
+    "V31:72",
+    0
+   ],
+   "sampler": [
+    "V31:74",
+    0
+   ],
+   "sigmas": [
+    "V31:68",
+    0
+   ],
+   "latent_image": [
+    "V31:71",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face sample",
+   "role": "video3:engine"
+  }
+ },
+ "V31:76": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "V31:75",
+    0
+   ],
+   "vae": [
+    "V31:28",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "face decode",
+   "role": "video3:engine"
+  }
+ },
+ "V31:77": {
+  "class_type": "StacyFlowAlign",
+  "inputs": {
+   "original": [
+    "V31:66",
+    0
+   ],
+   "refined": [
+    "V31:76",
+    0
+   ],
+   "align": [
+    "V1138",
+    0
+   ],
+   "temporal": [
+    "V31:89",
+    15
+   ],
+   "align_blur": 0.02,
+   "flow_size": 384,
+   "temporal_mode": "ema",
+   "radius": 4
+  },
+  "_meta": {
+   "title": "lock face to source motion",
+   "role": "video3:engine"
+  }
+ },
+ "V31:78": {
+  "class_type": "H3FaceStitch",
+  "inputs": {
+   "base_images": [
+    "V31:64",
+    0
+   ],
+   "refined_crops": [
+    "V31:77",
+    0
+   ],
+   "transform": [
+    "V31:66",
+    1
+   ],
+   "feather": [
+    "V31:89",
+    17
+   ],
+   "paste_region": "face_only",
+   "mask_dilation": 24,
+   "colour_match": 1,
+   "blend": 1,
+   "undetected_frames": "fade_out",
+   "feather_scales_with_crop": false
+  },
+  "_meta": {
+   "title": "stitch face",
+   "role": "video3:engine"
+  }
+ },
+ "V31:79": {
+  "class_type": "StacyLoopFold",
+  "inputs": {
+   "images": [
+    "V31:78",
+    0
+   ],
+   "original_frames": [
+    "V31:64",
+    1
+   ],
+   "is_loop": [
+    "V31:89",
+    4
+   ],
+   "fade": 16,
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "loop fold",
+   "role": "video3:engine"
+  }
+ },
+ "V31:80": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:63",
+    0
+   ],
+   "on_true": [
+    "V31:79",
+    0
+   ],
+   "switch": [
+    "V31:89",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "face pass? итог",
+   "role": "video3:engine"
+  }
+ },
+ "V31:81": {
+  "class_type": "StacyReport",
+  "inputs": {
+   "face_pass": [
+    "V31:89",
+    10
+   ],
+   "loop": [
+    "V31:89",
+    4
+   ],
+   "seconds": [
+    "V31:89",
+    1
+   ],
+   "length": [
+    "V31:89",
+    0
+   ],
+   "face_track": [
+    "V31:66",
+    3
+   ],
+   "face_inject": [
+    "V31:69",
+    1
+   ],
+   "face_denoise": [
+    "V31:70",
+    1
+   ],
+   "hands": [
+    "V31:71",
+    1
+   ],
+   "face_lock": [
+    "V31:77",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "сводный отчёт",
+   "role": "video3:engine"
+  }
+ },
+ "V31:82": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V31:81",
+    0
+   ],
+   "string_b": [
+    "V31:60",
+    1
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "отчёт + анти-дрожь",
+   "role": "video3:engine"
+  }
+ },
+ "V31:83": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:57",
+    1
+   ],
+   "on_true": [
+    "V31:58",
+    2
+   ],
+   "switch": [
+    "V31:89",
+    4
+   ]
+  },
+  "_meta": {
+   "title": "отчёт цвета/шва",
+   "role": "video3:engine"
+  }
+ },
+ "V31:84": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "on_false": [
+    "V31:89",
+    24
+   ],
+   "on_true": [
+    "V31:65",
+    1
+   ],
+   "switch": [
+    "V31:89",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "AUTO-отчёт (+порог детектора при face pass)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:85": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V31:84",
+    0
+   ],
+   "string_b": [
+    "V31:83",
+    0
+   ],
+   "delimiter": "\n"
+  },
+  "_meta": {
+   "title": "AUTO-настройки",
+   "role": "video3:engine"
+  }
+ },
+ "V31:86": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V31:85",
+    0
+   ],
+   "string_b": [
+    "V31:82",
+    0
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "AUTO + отчёт",
+   "role": "video3:engine"
+  }
+ },
+ "V31:87": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V31:36",
+    1
+   ],
+   "string_b": [
+    "V115",
+    1
+   ],
+   "delimiter": "\n"
+  },
+  "_meta": {
+   "title": "отчёт: тайминг промпта + видео-референс",
+   "role": "video3:engine"
+  }
+ },
+ "V31:88": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "V31:87",
+    0
+   ],
+   "string_b": [
+    "V31:86",
+    0
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "отчёт + тайминг промпта",
+   "role": "video3:engine"
+  }
+ },
+ "V31:89": {
+  "class_type": "StacySettings",
+  "inputs": {
+   "settings": [
+    "V111",
+    0
+   ],
+   "probe_image": [
+    "V31:33",
+    0
+   ],
+   "branch": "generate"
+  },
+  "_meta": {
+   "title": "пульт → значения (+ AUTO по ключевому кадру)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:90": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V31:89",
+    20
+   ],
+   "value": [
+    "V31:80",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация",
+   "role": "video3:engine"
+  }
+ },
+ "V31:91": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V31:89",
+    20
+   ],
+   "value": [
+    "V31:59",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (raw)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:92": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V31:89",
+    20
+   ],
+   "value": [
+    "V31:61",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (кадр)",
+   "role": "video3:engine"
+  }
+ },
+ "V31:93": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "V31:89",
+    20
+   ],
+   "value": [
+    "V31:88",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: генерация (отчёт)",
+   "role": "video3:engine"
+  }
+ },
+ "V310": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "images": [
+    "V31:90",
+    0
+   ],
+   "frame_rate": 24,
+   "loop_count": 0,
+   "filename_prefix": "farm_manual/video_PinkCherry",
+   "format": "video/h264-mp4",
+   "pix_fmt": "yuv420p",
+   "crf": 12,
+   "save_metadata": true,
+   "trim_to_audio": false,
+   "pingpong": false,
+   "save_output": true
+  },
+  "_meta": {
+   "title": "ИТОГ видео FullHD · PinkCherry",
+   "role": "video3:out"
+  }
+ },
+ "V317": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "V31:93",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ОТЧЁТ видео · PinkCherry",
+   "role": "video3:engine"
+  }
+ },
+ "V3130": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 20
+  },
+  "_meta": {
+   "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
+   "role": "video3:knob"
+  }
+ },
+ "P7": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "stacy_kf_Sitting-8.png"
+  },
+  "_meta": {
+   "title": "IN keyframe · ключевой кадр (первый = последний)",
+   "role": "facepass:in"
+  }
+ },
+ "P1:23": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "ARM model · H3 ref2va",
+   "role": "facepass:arm"
+  }
+ },
+ "P1:24": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "P1:23",
+    0
+   ],
+   "strength_model": [
+    "P1:89",
+    25
+   ],
+   "lora_name": "stacy_h3_A_stills_000001750.safetensors"
+  },
+  "_meta": {
+   "title": "ARM lora · LoRA персонажа (сила = PANEL char_lora)",
+   "role": "facepass:arm"
+  }
+ },
+ "P1:25": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "P1:24",
+    0
+   ],
+   "shift_video": [
+    "P131",
+    0
+   ],
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "shift",
+   "role": "facepass:engine"
+  }
+ },
+ "P1:26": {
+  "class_type": "ModelAttentionBackend",
+  "inputs": {
+   "model": [
+    "P1:25",
+    0
+   ],
+   "attention": "comfy kitchen attention"
+  },
+  "_meta": {
+   "title": "attention",
+   "role": "facepass:engine"
+  }
+ },
+ "P1:33": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "P7",
+    0
+   ],
+   "width": 1344,
+   "height": 768,
+   "method": "lanczos",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "keyframe 1344x768",
+   "role": "facepass:engine"
+  }
+ },
+ "P1:89": {
+  "class_type": "StacySettings",
+  "inputs": {
+   "settings": [
+    "P11",
+    0
+   ],
+   "probe_image": [
+    "P1:33",
+    0
+   ],
+   "branch": "generate"
+  },
+  "_meta": {
+   "title": "пульт → значения (+ AUTO по ключевому кадру)",
+   "role": "facepass:engine"
+  }
+ },
+ "P11": {
+  "class_type": "StacyPanel",
+  "inputs": {
+   "mode": false,
+   "seed": 3875932223,
+   "duration_sec": 7,
+   "loop": true,
+   "end_frame": false,
+   "model_10eros": false,
+   "steps": 8,
+   "shift": 12.0,
+   "char_lora": 0.0,
+   "free_vram": "auto",
+   "face_pass": "auto",
+   "face_denoise_auto": true,
+   "face_denoise": 0.3,
+   "face_lora": 0.0,
+   "face_lock_temporal": 0.8
+  },
+  "_meta": {
+   "title": "PANEL прохода лица (режим: face pass готового видео)",
+   "role": "facepass:engine"
+  }
+ },
+ "P13": {
+  "class_type": "PrimitiveStringMultiline",
+  "inputs": {
+   "value": "A close-up of the face of a young woman, natural relaxed expression, natural skin texture, sharp focus on the eyes. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."
+  },
+  "_meta": {
+   "title": "IN face_prompt · промпт face pass",
+   "role": "facepass:in"
+  }
+ },
+ "P18": {
+  "class_type": "StacyVideoInput",
+  "inputs": {
+   "video": "(none)"
+  },
+  "_meta": {
+   "title": "ВИДЕО для face pass (загрузить)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:94": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "[видео] Qwen3-VL",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:95": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "[видео] H3 video VAE",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:96": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "[видео] H3 audio VAE",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:97": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "[видео] H3 FL2VA (face)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:98": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "P2:97",
+    0
+   ],
+   "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+   "strength_model": 1
+  },
+  "_meta": {
+   "title": "[видео] FL2V turbo 4-step",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:99": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "P2:98",
+    0
+   ],
+   "strength_model": 0.0,
+   "lora_name": "stacy_h3_face_v1_000001800.safetensors"
+  },
+  "_meta": {
+   "title": "LoRA лица (сила 0 — LoRA персонажей нет)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:100": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "P18",
+    0
+   ],
+   "width": 1920,
+   "height": 1080,
+   "method": "bicubic",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "[видео] ровно 1920x1080",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:101": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "P2:100",
+    0
+   ],
+   "batch_index": 0,
+   "length": 1
+  },
+  "_meta": {
+   "title": "[видео] первый кадр для AUTO",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:102": {
+  "class_type": "StacyLoopExtend",
+  "inputs": {
+   "images": [
+    "P2:100",
+    0
+   ],
+   "is_loop": [
+    "P2:118",
+    4
+   ],
+   "min_extra": 24,
+   "h3_grid": true
+  },
+  "_meta": {
+   "title": "[видео] loop extend (+head, grid)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:103": {
+  "class_type": "StacyAutoConfidence",
+  "inputs": {
+   "images": [
+    "P2:102",
+    0
+   ],
+   "prev_report": [
+    "P2:118",
+    24
+   ],
+   "confidence": [
+    "P135",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] порог детектора лица (AUTO)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:104": {
+  "class_type": "H3FaceTrackCrop",
+  "inputs": {
+   "images": [
+    "P2:102",
+    0
+   ],
+   "confidence": [
+    "P2:103",
+    0
+   ],
+   "crop_factor": [
+    "P136",
+    0
+   ],
+   "detector": "face_yolov8m.pt",
+   "canvas_width": 768,
+   "canvas_height": 768,
+   "canvas_mode": "manual",
+   "smooth_window": 21,
+   "size_smooth_window": 51,
+   "smooth_method": "gaussian",
+   "size_mode": "per_frame",
+   "identity_track": false,
+   "identity_threshold": 0.28,
+   "select": "largest_face",
+   "fallback_detector": "none",
+   "fallback_head_frac": 0.5,
+   "select_index": 0,
+   "identity_model": "insightface",
+   "cut_detection": "none",
+   "cut_threshold": 3,
+   "absent_shots": "off",
+   "X": 0,
+   "Y": 0,
+   "frame_index": 0
+  },
+  "_meta": {
+   "title": "[видео] face track + crop",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:105": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "P2:94",
+    0
+   ],
+   "vae": [
+    "P2:95",
+    0
+   ],
+   "audio_vae": [
+    "P2:96",
+    0
+   ],
+   "prompt": [
+    "P13",
+    0
+   ],
+   "width": [
+    "P2:104",
+    4
+   ],
+   "height": [
+    "P2:104",
+    5
+   ],
+   "length": [
+    "P2:104",
+    6
+   ],
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "[видео] face conditioning",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:106": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "P2:99",
+    0
+   ],
+   "denoise": [
+    "P2:118",
+    11
+   ],
+   "scheduler": "simple",
+   "steps": 4
+  },
+  "_meta": {
+   "title": "[видео] legacy denoise",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:107": {
+  "class_type": "H3InjectVideoLatent",
+  "inputs": {
+   "av_latent": [
+    "P2:105",
+    1
+   ],
+   "images": [
+    "P2:104",
+    0
+   ],
+   "vae": [
+    "P2:95",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] inject crops",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:108": {
+  "class_type": "H3PerFrameDenoise",
+  "inputs": {
+   "model": [
+    "P2:99",
+    0
+   ],
+   "av_latent": [
+    "P2:107",
+    0
+   ],
+   "transform": [
+    "P2:104",
+    1
+   ],
+   "denoise_multiplier_large_face": [
+    "P137",
+    0
+   ],
+   "denoise_multiplier_small_face": 1,
+   "scale_mode": "absolute_px",
+   "face_px_small": 100,
+   "face_px_large": 300,
+   "gamma": 1,
+   "smooth_frames": 9
+  },
+  "_meta": {
+   "title": "[видео] per-frame denoise",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:109": {
+  "class_type": "StacyOcclusionDenoise",
+  "inputs": {
+   "av_latent": [
+    "P2:108",
+    0
+   ],
+   "crops": [
+    "P2:104",
+    0
+   ],
+   "hand_strength": [
+    "P139",
+    0
+   ],
+   "hand_model": "hand_yolov8s.pt",
+   "confidence": 0.3,
+   "spread": 0.25,
+   "time_sigma": 2,
+   "expr_strength": 0.3,
+   "expr_frames": 6
+  },
+  "_meta": {
+   "title": "[видео] gentler under hands",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:110": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "P1:26",
+    0
+   ],
+   "conditioning": [
+    "P2:105",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face guider",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:111": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "P2:118",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face seed",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:112": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "[видео] euler (face)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:113": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "P2:111",
+    0
+   ],
+   "guider": [
+    "P2:110",
+    0
+   ],
+   "sampler": [
+    "P2:112",
+    0
+   ],
+   "sigmas": [
+    "P2:106",
+    0
+   ],
+   "latent_image": [
+    "P2:109",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face sample",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:114": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "P2:113",
+    0
+   ],
+   "vae": [
+    "P2:95",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face decode",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:115": {
+  "class_type": "StacyFlowAlign",
+  "inputs": {
+   "original": [
+    "P2:104",
+    0
+   ],
+   "refined": [
+    "P2:114",
+    0
+   ],
+   "align": [
+    "P138",
+    0
+   ],
+   "temporal": [
+    "P2:118",
+    15
+   ],
+   "align_blur": 0.02,
+   "flow_size": 384,
+   "temporal_mode": "ema",
+   "radius": 4
+  },
+  "_meta": {
+   "title": "[видео] lock face to source motion",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:116": {
+  "class_type": "H3FaceStitch",
+  "inputs": {
+   "base_images": [
+    "P2:102",
+    0
+   ],
+   "refined_crops": [
+    "P2:115",
+    0
+   ],
+   "transform": [
+    "P2:104",
+    1
+   ],
+   "feather": [
+    "P2:118",
+    17
+   ],
+   "paste_region": "face_only",
+   "mask_dilation": 24,
+   "colour_match": 1,
+   "blend": 1,
+   "undetected_frames": "fade_out",
+   "feather_scales_with_crop": false
+  },
+  "_meta": {
+   "title": "[видео] stitch face",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:117": {
+  "class_type": "StacyLoopFold",
+  "inputs": {
+   "images": [
+    "P2:116",
+    0
+   ],
+   "original_frames": [
+    "P2:102",
+    1
+   ],
+   "is_loop": [
+    "P2:118",
+    4
+   ],
+   "fade": 16,
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "[видео] loop fold",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:118": {
+  "class_type": "StacySettings",
+  "inputs": {
+   "settings": [
+    "P11",
+    0
+   ],
+   "probe_image": [
+    "P2:101",
+    0
+   ],
+   "branch": "face pass video"
+  },
+  "_meta": {
+   "title": "[видео] пульт → значения (+ AUTO по видео)",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:119": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "P2:103",
+    1
+   ],
+   "string_b": [
+    "P18",
+    3
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 0",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:120": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "P2:119",
+    0
+   ],
+   "string_b": [
+    "P2:104",
+    3
+   ],
+   "delimiter": "\n\n=== FACE TRACK ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 1",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:121": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "P2:120",
+    0
+   ],
+   "string_b": [
+    "P2:108",
+    1
+   ],
+   "delimiter": "\n\n=== PER-FRAME DENOISE ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 2",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:122": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "P2:121",
+    0
+   ],
+   "string_b": [
+    "P2:109",
+    1
+   ],
+   "delimiter": "\n\n=== HANDS NEAR THE FACE ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 3",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:123": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "P2:122",
+    0
+   ],
+   "string_b": [
+    "P2:115",
+    1
+   ],
+   "delimiter": "\n\n=== FACE LOCK ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 4",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:124": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "P2:118",
+    21
+   ],
+   "value": [
+    "P2:117",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: face pass видео",
+   "role": "facepass:engine"
+  }
+ },
+ "P2:125": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "P2:118",
+    21
+   ],
+   "value": [
+    "P2:123",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: face pass видео (отчёт)",
+   "role": "facepass:engine"
+  }
+ },
+ "P19": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "images": [
+    "P2:124",
+    0
+   ],
+   "frame_rate": 24,
+   "loop_count": 0,
+   "filename_prefix": "stacy_h3/Stacy_facepass",
+   "format": "video/h264-mp4",
+   "pix_fmt": "yuv420p",
+   "crf": 12,
+   "save_metadata": true,
+   "trim_to_audio": false,
+   "pingpong": false,
+   "save_output": true
+  },
+  "_meta": {
+   "title": "ИТОГ face pass готового видео",
+   "role": "facepass:out"
+  }
+ },
+ "P20": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "P2:125",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ОТЧЁТ face pass видео",
+   "role": "facepass:engine"
+  }
+ },
+ "P131": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 12.0
+  },
+  "_meta": {
+   "title": "KNOB shift · shift (10–14, по умолчанию 12)",
+   "role": "facepass:knob"
+  }
+ },
+ "P135": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": -1.0
+  },
+  "_meta": {
+   "title": "KNOB face_confidence · порог детектора лица (-1 = авто)",
+   "role": "facepass:knob"
+  }
+ },
+ "P136": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2.5
+  },
+  "_meta": {
+   "title": "KNOB crop_factor · запас кропа лица вокруг головы",
+   "role": "facepass:knob"
+  }
+ },
+ "P137": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.35
+  },
+  "_meta": {
+   "title": "KNOB large_face_mult · ослабление прохода для крупного лица",
+   "role": "facepass:knob"
+  }
+ },
+ "P138": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 1.0
+  },
+  "_meta": {
+   "title": "KNOB face_lock · привязка лица к движению (flow-lock)",
+   "role": "facepass:knob"
+  }
+ },
+ "P139": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 0.2
+  },
+  "_meta": {
+   "title": "KNOB hand_strength · проход лица рядом с руками (0–1)",
+   "role": "facepass:knob"
+  }
+ }
+}
