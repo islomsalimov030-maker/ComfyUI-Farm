@@ -18,4 +18,4 @@
 
 Движок — в сабграфе «ДВИЖОК ПРОХОДА ЛИЦА» (двойной клик — внутрь); менять там обычно ничего не нужно.
 
-**Модели:** `minimax_h3_fl2va_pruned_int8_convrot`, `minimax_h3_fl2v_turbo_4step_v1.1_768p`, `stacy_h3_face_v1_000001800` (LoRA), Qwen3-VL энкодер H3, VAE H3, мод `farm/stacy_face`, детекторы `face_yolov8m` / `hand_yolov8s`. Ноды: ComfyUI-StacyLoop, ComfyUI-MiniMaxH3Mod, KJNodes, VHS, Nvidia RTX nodes, ComfyUI-Farm.
+**Модели:** `minimax_h3_fl2va_pruned_int8_convrot`, `minimax_h3_fl2v_turbo_4step_v1.1_768p`, `stacy_h3_face_v1_000001800` (LoRA), Qwen3-VL энкодер H3, VAE H3, мод лица (поле `face_mod_name`: на поде `farm/stacy_face`, на студии `ss340/face_n10`), детекторы `face_yolov8m` / `hand_yolov8s`. Ноды: ComfyUI-StacyLoop, ComfyUI-MiniMaxH3Mod, KJNodes, VHS, Nvidia RTX nodes, ComfyUI-Farm.

@@ -47,12 +47,12 @@ def build() -> dict:
     g = K.prune(g, ["ИТОГ face pass готового видео", "ОТЧЁТ face pass видео"])
 
     spec = fp_spec()
-    keys = ["video_path", "out_name", "face_prompt"] + [k for k, *_ in spec]
+    keys = ["video_path", "out_name", "face_prompt", "face_mod_name"] + [k for k, *_ in spec]
     P = lambda k: ["FP", keys.index(k)]  # noqa: E731
     w = {k: d for k, _, d, *_ in spec}
     from farm.util_nodes import FP_PROMPT
     add(g, "FP", "NGFarmPanelFacepass", {"upload": "(none)", "video": "stacy_fp", "index": 0, "whole_folder": True,
-                                         "face_prompt": FP_PROMPT, **w}, PANEL_TITLE, "facepass:knob")
+                                         "face_prompt": FP_PROMPT, "face_mod_name": FACE_MOD, **w}, PANEL_TITLE, "facepass:knob")
 
     # главный пульт StacyPanel (внутри движка): режим — проход лица готового видео, значения — из пульта
     pan = K.by_title(g, "PANEL")
@@ -92,8 +92,8 @@ def build() -> dict:
     add(g, "ML", "MiniMaxH3RefModsLoader",
         {"show_info": False, "max_total_tokens": 16384,
          **{f"{a}_{i}": v for i in range(1, 9) for a, v in
-            (("mod", FACE_MOD if i == 1 else "(none)"), ("strength", P("face_mod") if i == 1 else 1.0), ("copies", 1))}},
-        f"мод лица {FACE_MOD}", "facepass:engine")
+            (("mod", P("face_mod_name") if i == 1 else "(none)"), ("strength", P("face_mod") if i == 1 else 1.0), ("copies", 1))}},
+        "мод лица (имя из пульта)", "facepass:engine")
     cond = K.by_title(g, "[видео] face conditioning")
     add(g, "MA", "MiniMaxH3RefModApply", {"conditioning": [cond, 0], "mods": ["ML", 0], "override": False,
                                           "retention": 1.0, "curve_direction": "constant", "scramble_seed": -1,

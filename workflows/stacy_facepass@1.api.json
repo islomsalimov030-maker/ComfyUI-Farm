@@ -5,12 +5,12 @@
    "mode": false,
    "seed": [
     "FP",
-    7
+    8
    ],
    "duration_sec": 7,
    "loop": [
     "FP",
-    8
+    9
    ],
    "end_frame": false,
    "model_10eros": false,
@@ -21,19 +21,19 @@
    "face_pass": "auto",
    "face_denoise_auto": [
     "FP",
-    5
+    6
    ],
    "face_denoise": [
     "FP",
-    6
+    7
    ],
    "face_lora": [
     "FP",
-    3
+    4
    ],
    "face_lock_temporal": [
     "FP",
-    14
+    15
    ]
   },
   "_meta": {
@@ -195,7 +195,7 @@
    ],
    "confidence": [
     "FP",
-    10
+    11
    ]
   },
   "_meta": {
@@ -216,7 +216,7 @@
    ],
    "crop_factor": [
     "FP",
-    11
+    12
    ],
    "detector": "face_yolov8m.pt",
    "canvas_width": 768,
@@ -340,7 +340,7 @@
    ],
    "denoise_multiplier_large_face": [
     "FP",
-    12
+    13
    ],
    "denoise_multiplier_small_face": 1,
    "scale_mode": "absolute_px",
@@ -367,7 +367,7 @@
    ],
    "hand_strength": [
     "FP",
-    15
+    16
    ],
    "hand_model": "hand_yolov8s.pt",
    "confidence": 0.3,
@@ -480,7 +480,7 @@
    ],
    "align": [
     "FP",
-    13
+    14
    ],
    "temporal": [
     "2:118",
@@ -742,6 +742,7 @@
    "index": 0,
    "whole_folder": true,
    "face_prompt": "St4cy_H3, a close-up of the face of the same young woman, her expression and head movement kept exactly as in the source video, natural skin texture, sharp focus on the eyes, every movement at natural real-time speed, never in slow motion. One continuous shot with no cuts. Filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.",
+   "face_mod_name": "farm/stacy_face",
    "face_lora": 1.0,
    "face_mod": 1.0,
    "face_denoise_auto": true,
@@ -783,7 +784,7 @@
   "inputs": {
    "switch": [
     "FP",
-    9
+    10
    ],
    "on_false": [
     "18",
@@ -804,10 +805,13 @@
   "inputs": {
    "show_info": false,
    "max_total_tokens": 16384,
-   "mod_1": "farm/stacy_face",
+   "mod_1": [
+    "FP",
+    3
+   ],
    "strength_1": [
     "FP",
-    4
+    5
    ],
    "copies_1": 1,
    "mod_2": "(none)",
@@ -833,7 +837,7 @@
    "copies_8": 1
   },
   "_meta": {
-   "title": "мод лица farm/stacy_face",
+   "title": "мод лица (имя из пульта)",
    "role": "facepass:engine"
   }
  },

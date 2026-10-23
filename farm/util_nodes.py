@@ -439,22 +439,62 @@ def facepass_name(path: Path) -> str:
     return f"{path.stem}_facepass_stacy"
 
 
-class FarmPanelFacepass:
+FACE_MOD_FALLBACK = ("farm/stacy_face", "ss340/face_n10", "ss340/face_n5", "ss340/char_face5")
+
+
+def _mod_names() -> list[str]:
+    """Список модов так же, как у MiniMaxH3RefModsLoader (тот же список — чтобы выход пульта подключался к нему)."""
+    try:
+        import nodes
+        return list(nodes.NODE_CLASS_MAPPINGS["MiniMaxH3RefModsLoader"].INPUT_TYPES()["required"]["mod_1"][0])
+    except Exception:   # noqa: BLE001 — вне ComfyUI или пакета нет
+        return ["(none)", *FACE_MOD_FALLBACK]
+
+
+def pick_mod(name: str, available: list[str]) -> str:
+    if name in available:
+        return name
+    for m in FACE_MOD_FALLBACK:
+        if m in available:
+            print(f"[farm] мода {name} нет — беру {m}")
+            return m
+    raise FileNotFoundError(f"нет мода лица {name} (и запасных {', '.join(FACE_MOD_FALLBACK)})")
+
+
+def _video_files(limit: int = 2000) -> list[str]:
+    files = []
+    try:
+        d = _in_dir()
+        for root, _, names in os.walk(d):
+            for n in names:
+                if n.lower().endswith(VIDEO_EXT) and "_facepass" not in n:
+                    files.append(os.path.relpath(os.path.join(root, n), d).replace(os.sep, "/"))
+                    if len(files) >= limit:
+                        return sorted(files)
+    except Exception:   # noqa: BLE001 — список для кнопки загрузки не должен ломать ноду
+        pass
+    return sorted(files)
+
+
+class _FacepassMeta(type):
+    @property
+    def RETURN_TYPES(cls):   # список модов считается при запросе (пакет H3Mod грузится позже ComfyUI-Farm)
+        return ("STRING", "STRING", "STRING", _mod_names()) + tuple(t for _, t, *_ in FP_SPEC)
+
+
+class FarmPanelFacepass(metaclass=_FacepassMeta):
     """Пульт stacy_facepass@1: вход (видео или папка) + все ручки прохода лица."""
     CATEGORY = "Next Genium/Farm"
     FUNCTION = "run"
     DESCRIPTION = ("Проход лица готового видео с LoRA Стейси. Папка: один Queue — все видео по очереди "
                    "(остальные ставятся в очередь сами). Итог: output/stacy_facepass/<имя>_facepass_stacy.mp4.")
-    RETURN_TYPES = ("STRING", "STRING", "STRING") + tuple(t for _, t, *_ in FP_SPEC)
-    RETURN_NAMES = ("video_path", "out_name", "face_prompt") + tuple(k for k, *_ in FP_SPEC)
+    RETURN_NAMES = ("video_path", "out_name", "face_prompt", "face_mod_name") + tuple(k for k, *_ in FP_SPEC)
 
     @classmethod
     def INPUT_TYPES(cls):
-        d = _in_dir()
-        files = []
-        if d.is_dir():
-            files = sorted(str(f.relative_to(d)).replace(os.sep, "/") for f in d.rglob("*")
-                           if f.suffix.lower() in VIDEO_EXT and "_facepass" not in f.stem)
+        files = _video_files()
+        mods = _mod_names()
+        dm = next((m for m in FACE_MOD_FALLBACK if m in mods), mods[0])
         req = {"upload": (["(none)"] + files, {"video_upload": True, "tooltip": "Загрузить одно видео (кнопка ниже). "
                                                  "(none) — взять видео или папку из поля video."}),
                "video": ("STRING", {"default": "stacy_fp", "tooltip": "Если upload = (none): видео или папка с видео "
@@ -463,7 +503,9 @@ class FarmPanelFacepass:
                                  "tooltip": "Номер видео в папке (0 — первое). При 0 и «всю папку» — все по очереди."}),
                "whole_folder": ("BOOLEAN", {"default": True, "tooltip": "Папка: один Queue — все видео."}),
                "face_prompt": ("STRING", {"default": FP_PROMPT, "multiline": True,
-                                          "tooltip": "Промпт прохода лица (статичная камера, свет и цвет без изменений)."})}
+                                          "tooltip": "Промпт прохода лица (статичная камера, свет и цвет без изменений)."}),
+               "face_mod_name": (mods, {"default": dm, "tooltip": "Мод лица Стейси (на поде farm/stacy_face, на "
+                                        "студии ss340/face_n10). Нет выбранного — берётся запасной."})}
         for k, t, d, lo, hi, st, tip in FP_SPEC:
             o = {"default": d, "tooltip": tip}
             if t != "BOOLEAN":
@@ -485,7 +527,9 @@ class FarmPanelFacepass:
         except Exception:   # noqa: BLE001
             return f"{upload}|{video}|{index}"
 
-    def run(self, video, index, whole_folder, face_prompt, upload="(none)", prompt=None, unique_id=None, **kw):
+    def run(self, video, index, whole_folder, face_prompt, upload="(none)", face_mod_name="farm/stacy_face",
+            prompt=None, unique_id=None, **kw):
+        mod = pick_mod(face_mod_name, _mod_names())
         vids = list_videos(upload if upload and upload != "(none)" else video)
         if index >= len(vids):
             raise IndexError(f"index {index}: в папке {len(vids)} видео (0…{len(vids) - 1})")
@@ -493,7 +537,7 @@ class FarmPanelFacepass:
             _requeue_index(prompt, str(unique_id), range(1, len(vids)))
         v = vids[index]
         print(f"[farm] stacy_facepass: {index + 1}/{len(vids)} {v.name}")
-        return (str(v), facepass_name(v), face_prompt) + tuple(kw[k] for k, *_ in FP_SPEC)
+        return (str(v), facepass_name(v), face_prompt, mod) + tuple(kw[k] for k, *_ in FP_SPEC)
 
 
 def _requeue_index(prompt: dict, my_id: str, indices) -> None:
