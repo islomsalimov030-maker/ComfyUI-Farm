@@ -96,6 +96,16 @@ window.farmBuild = async (name, opts = {}) => {
   if (!isAuto) muted.push(...col("ПРОХОД ЛИЦА ГОТОВОГО ВИДЕО — отдельно (включать, когда хватает памяти)", (r) => r.startsWith("facepass"), "#6e2e2e", 560));
   for (const n of muted) n.mode = 2;   // выключено (mute): не выполняется и память не занимает
 
+  // гайд прямо в воркфлоу
+  try {
+    const md = await (await fetch(RAW.replace(`workflows/${name}.api.json`, `docs/guides/${name.split("@")[0]}.md`), { cache: "no-store" })).text();
+    const note = LG.createNode("MarkdownNote") || LG.createNode("Note");
+    note.title = "ГАЙД — как пользоваться (прочитать первым)";
+    note.pos = [-760, 0]; note.size = [700, 1400]; g.add(note);
+    if (note.widgets?.[0]) note.widgets[0].value = md; else note.widgets_values = [md];
+    note.color = "#432"; note.bgcolor = "#653";
+  } catch (e) { console.warn("guide", e); }
+
   // переключатель групп rgthree
   try {
     const sw = LG.createNode("Fast Groups Muter (rgthree)");

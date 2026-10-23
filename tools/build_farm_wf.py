@@ -116,6 +116,41 @@ def tag_roles(g: dict, prefix: str, block: str) -> None:
         n["_meta"]["role"] = f"{block}:{kind}"
 
 
+STEP_KEY = {"ref2v": "steps_ref2v", "10Eros": "steps_10eros", "PinkCherry": "steps_pinkcherry"}
+
+
+def panelize(g: dict, prefix: str, cls: str, nid: str, title: str, role: str, labels=None) -> None:
+    """KNOB-ноды блока (prefix F/V/P) → один пульт: примитивы заменяются выходами пульта, у RandomNoise /
+    H3LatentFromImage виджет подключается к пульту (сами ноды уходят в движок)."""
+    import importlib
+    sys.path.insert(0, str(ROOT))
+    un = importlib.import_module("farm.util_nodes")
+    spec = un.PHOTO_SPEC if cls == "NGFarmPanelPhoto" else un.VIDEO_SPEC
+    keys = [k for k, *_ in spec]
+    add(g, nid, cls, {k: d for k, _, d, *_ in spec}, title, role)
+    for k in [k for k in g if k.startswith(prefix)]:
+        n = g.get(k)
+        if n is None:
+            continue
+        t = title_of = n["_meta"].get("title", "")
+        if not t.startswith("KNOB"):
+            continue
+        name = t.split(" ", 1)[1].split(" ")[0]
+        if name in ("pass1_steps", "steps"):
+            inst = int(k[1]) if k[1].isdigit() else 1
+            name = STEP_KEY[(labels or MODELS)[inst - 1][0]]
+        if name not in keys:
+            continue
+        idx = keys.index(name)
+        if n["class_type"].startswith("Primitive"):
+            relink(g, k, [nid, idx])
+        else:
+            w = "noise_seed" if n["class_type"] == "RandomNoise" else "denoise"
+            n["inputs"][w] = [nid, idx]
+            n["_meta"]["role"] = n["_meta"]["role"].replace(":knob", ":engine")
+            n["_meta"]["title"] = t.replace("KNOB ", "")
+
+
 def label_knobs(g: dict) -> None:
     for n in g.values():
         t = title(n)
@@ -148,7 +183,8 @@ def photo_instances(g: dict, n_models=MODELS) -> list[dict]:
     for r in res[1:]:
         for k, n in list(first["base"].items()):
             t = title(n)
-            shared = (t.startswith("KNOB") and t not in PER_MODEL_KNOBS) or t.startswith("IN")
+            prim = n["class_type"].startswith("Primitive")   # RandomNoise/H3LatentFromImage — часть движка, не общие
+            shared = (t.startswith("KNOB") and prim and t not in PER_MODEL_KNOBS) or t.startswith("IN")
             if shared:
                 relink(g, r["p"] + k, first["p"] + k)
     for r in res:
@@ -184,7 +220,8 @@ def video_instances(g: dict, face_pass: str, n_models=MODELS) -> list[dict]:
     for r in res[1:]:
         for k, n in list(first["base"].items()):
             t = title(n)
-            if (t.startswith("KNOB") and t not in PER_MODEL_KNOBS) or t.startswith("IN") or t == "PANEL":
+            prim = n["class_type"].startswith("Primitive")
+            if (t.startswith("KNOB") and prim and t not in PER_MODEL_KNOBS) or t.startswith("IN") or t == "PANEL":
                 relink(g, r["p"] + k, first["p"] + k)
     panel = g[first["p"] + tid(base, "PANEL")]["inputs"]
     panel.update({"face_pass": face_pass, "face_lora": 0.0, "char_lora": 1.0, "model_10eros": False, "mode": True})
@@ -288,6 +325,8 @@ def build_auto() -> dict:
     add(g, "Zv", "NGFarmZip", {"batch": "video", "shot_id": t(10),
                                **{f"video_{i}": [r["out"], 0] for i, r in enumerate(vi, 1)}},
         "ZIP видео · ссылка на скачивание", "video:zip")
+    panelize(g, "F", "NGFarmPanelPhoto", "PF", "ПУЛЬТ ФОТО — все ручки блока (наведите на поле — подсказка)", "photo1:knob")
+    panelize(g, "V", "NGFarmPanelVideo", "PV", "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)", "video1:knob")
     label_knobs(g)
     return g
 
@@ -354,6 +393,9 @@ def build_manual() -> dict:
     for r in vi:
         g[r["out"]]["inputs"]["filename_prefix"] = f"farm_manual/video_{r['label']}"
     facepass_block(g)
+    panelize(g, "F", "NGFarmPanelPhoto", "PF", "ПУЛЬТ ФОТО — все ручки блока (наведите на поле — подсказка)", "photo1:knob")
+    panelize(g, "V", "NGFarmPanelVideo", "PV", "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)", "video1:knob")
+    panelize(g, "P", "NGFarmPanelVideo", "PP", "ПУЛЬТ ПРОХОДА ЛИЦА — тонкая настройка", "facepass:knob")
     label_knobs(g)
     return g
 

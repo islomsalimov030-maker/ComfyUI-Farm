@@ -76,66 +76,6 @@
    "role": "photo1:arm"
   }
  },
- "F165": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 1
-  },
-  "_meta": {
-   "title": "KNOB seed · сид кадра (другой сид = другой вариант)",
-   "role": "photo1:knob"
-  }
- },
- "F166": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 2.0
-  },
-  "_meta": {
-   "title": "KNOB megapixels · размер картинки локации на входе H3, Мп",
-   "role": "photo1:knob"
-  }
- },
- "F168": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 8
-  },
-  "_meta": {
-   "title": "KNOB pass1_steps · шаги кадра (turbo 8, без turbo 20)",
-   "role": "photo1:knob"
-  }
- },
- "F169": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 40
-  },
-  "_meta": {
-   "title": "KNOB pass2_total · шаги доработки — всего",
-   "role": "photo1:knob"
-  }
- },
- "F170": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 8
-  },
-  "_meta": {
-   "title": "KNOB pass2_steps · шаги доработки — сколько делать",
-   "role": "photo1:knob"
-  }
- },
- "F171": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 12.0
-  },
-  "_meta": {
-   "title": "KNOB shift · shift (10–14, по умолчанию 12)",
-   "role": "photo1:knob"
-  }
- },
  "F184:1": {
   "class_type": "CLIPLoader",
   "inputs": {
@@ -166,8 +106,8 @@
     0
    ],
    "shift_video": [
-    "F171",
-    0
+    "PF",
+    5
    ],
    "shift_audio": 3
   },
@@ -184,8 +124,8 @@
     0
    ],
    "megapixels": [
-    "F166",
-    0
+    "PF",
+    6
    ],
    "upscale_method": "lanczos",
    "resolution_steps": 32
@@ -231,12 +171,12 @@
   "class_type": "ComfyMathExpression",
   "inputs": {
    "values.a": [
-    "F169",
-    0
+    "PF",
+    7
    ],
    "values.b": [
-    "F170",
-    0
+    "PF",
+    8
    ],
    "expression": "a - b"
   },
@@ -265,12 +205,12 @@
     1
    ],
    "noise_seed": [
-    "F165",
+    "PF",
     0
    ],
    "steps": [
-    "F168",
-    0
+    "PF",
+    2
    ],
    "add_noise": "enable",
    "cfg": 1,
@@ -305,12 +245,12 @@
     0
    ],
    "noise_seed": [
-    "F165",
+    "PF",
     0
    ],
    "steps": [
-    "F169",
-    0
+    "PF",
+    7
    ],
    "start_at_step": [
     "F184:8",
@@ -670,12 +610,15 @@
  },
  "F1fp_11190:11119": {
   "inputs": {
-   "noise_seed": 953552952704593
+   "noise_seed": [
+    "PF",
+    1
+   ]
   },
   "class_type": "RandomNoise",
   "_meta": {
-   "title": "KNOB face_seed · сид прохода лица кадра",
-   "role": "photo1:knob"
+   "title": "face_seed",
+   "role": "photo1:engine"
   }
  },
  "F1fp_11190:11120": {
@@ -791,7 +734,10 @@
   "inputs": {
    "steps": 10,
    "scheduler": "simple",
-   "denoise": 0.85,
+   "denoise": [
+    "PF",
+    9
+   ],
    "h3_latent": [
     "F1fp_11190:11117",
     1
@@ -811,8 +757,8 @@
   },
   "class_type": "H3LatentFromImage",
   "_meta": {
-   "title": "KNOB face_denoise · сила прохода лица кадра (0.75–0.9)",
-   "role": "photo1:knob"
+   "title": "face_denoise",
+   "role": "photo1:engine"
   }
  },
  "F1fp_f85:smp": {
@@ -1019,16 +965,6 @@
    "role": "photo2:arm"
   }
  },
- "F268": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 20
-  },
-  "_meta": {
-   "title": "KNOB pass1_steps · шаги кадра (turbo 8, без turbo 20)",
-   "role": "photo2:knob"
-  }
- },
  "F284:1": {
   "class_type": "CLIPLoader",
   "inputs": {
@@ -1059,8 +995,8 @@
     0
    ],
    "shift_video": [
-    "F171",
-    0
+    "PF",
+    5
    ],
    "shift_audio": 3
   },
@@ -1077,8 +1013,8 @@
     0
    ],
    "megapixels": [
-    "F166",
-    0
+    "PF",
+    6
    ],
    "upscale_method": "lanczos",
    "resolution_steps": 32
@@ -1124,12 +1060,12 @@
   "class_type": "ComfyMathExpression",
   "inputs": {
    "values.a": [
-    "F169",
-    0
+    "PF",
+    7
    ],
    "values.b": [
-    "F170",
-    0
+    "PF",
+    8
    ],
    "expression": "a - b"
   },
@@ -1158,12 +1094,12 @@
     1
    ],
    "noise_seed": [
-    "F165",
+    "PF",
     0
    ],
    "steps": [
-    "F268",
-    0
+    "PF",
+    3
    ],
    "add_noise": "enable",
    "cfg": 1,
@@ -1198,12 +1134,12 @@
     0
    ],
    "noise_seed": [
-    "F165",
+    "PF",
     0
    ],
    "steps": [
-    "F169",
-    0
+    "PF",
+    7
    ],
    "start_at_step": [
     "F284:8",
@@ -1493,6 +1429,19 @@
    "role": "photo2:engine"
   }
  },
+ "F2fp_11190:11119": {
+  "inputs": {
+   "noise_seed": [
+    "PF",
+    1
+   ]
+  },
+  "class_type": "RandomNoise",
+  "_meta": {
+   "title": "face_seed",
+   "role": "photo2:engine"
+  }
+ },
  "F2fp_11190:11120": {
   "inputs": {
    "model": [
@@ -1564,10 +1513,41 @@
    "role": "photo2:engine"
   }
  },
+ "F2fp_f85:lat": {
+  "inputs": {
+   "steps": 10,
+   "scheduler": "simple",
+   "denoise": [
+    "PF",
+    9
+   ],
+   "h3_latent": [
+    "F1fp_11190:11117",
+    1
+   ],
+   "vae": [
+    "F2fp_11190:11107",
+    0
+   ],
+   "image": [
+    "F2fp_11190:11115",
+    0
+   ],
+   "model": [
+    "F2fp_11190:11108",
+    0
+   ]
+  },
+  "class_type": "H3LatentFromImage",
+  "_meta": {
+   "title": "face_denoise",
+   "role": "photo2:engine"
+  }
+ },
  "F2fp_f85:smp": {
   "inputs": {
    "noise": [
-    "F1fp_11190:11119",
+    "F2fp_11190:11119",
     0
    ],
    "guider": [
@@ -1579,11 +1559,11 @@
     0
    ],
    "sigmas": [
-    "F1fp_f85:lat",
+    "F2fp_f85:lat",
     1
    ],
    "latent_image": [
-    "F1fp_f85:lat",
+    "F2fp_f85:lat",
     0
    ]
   },
@@ -1768,16 +1748,6 @@
    "role": "photo3:arm"
   }
  },
- "F368": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 20
-  },
-  "_meta": {
-   "title": "KNOB pass1_steps · шаги кадра (turbo 8, без turbo 20)",
-   "role": "photo3:knob"
-  }
- },
  "F384:1": {
   "class_type": "CLIPLoader",
   "inputs": {
@@ -1808,8 +1778,8 @@
     0
    ],
    "shift_video": [
-    "F171",
-    0
+    "PF",
+    5
    ],
    "shift_audio": 3
   },
@@ -1826,8 +1796,8 @@
     0
    ],
    "megapixels": [
-    "F166",
-    0
+    "PF",
+    6
    ],
    "upscale_method": "lanczos",
    "resolution_steps": 32
@@ -1873,12 +1843,12 @@
   "class_type": "ComfyMathExpression",
   "inputs": {
    "values.a": [
-    "F169",
-    0
+    "PF",
+    7
    ],
    "values.b": [
-    "F170",
-    0
+    "PF",
+    8
    ],
    "expression": "a - b"
   },
@@ -1907,12 +1877,12 @@
     1
    ],
    "noise_seed": [
-    "F165",
+    "PF",
     0
    ],
    "steps": [
-    "F368",
-    0
+    "PF",
+    4
    ],
    "add_noise": "enable",
    "cfg": 1,
@@ -1947,12 +1917,12 @@
     0
    ],
    "noise_seed": [
-    "F165",
+    "PF",
     0
    ],
    "steps": [
-    "F169",
-    0
+    "PF",
+    7
    ],
    "start_at_step": [
     "F384:8",
@@ -2242,6 +2212,19 @@
    "role": "photo3:engine"
   }
  },
+ "F3fp_11190:11119": {
+  "inputs": {
+   "noise_seed": [
+    "PF",
+    1
+   ]
+  },
+  "class_type": "RandomNoise",
+  "_meta": {
+   "title": "face_seed",
+   "role": "photo3:engine"
+  }
+ },
  "F3fp_11190:11120": {
   "inputs": {
    "model": [
@@ -2313,10 +2296,41 @@
    "role": "photo3:engine"
   }
  },
+ "F3fp_f85:lat": {
+  "inputs": {
+   "steps": 10,
+   "scheduler": "simple",
+   "denoise": [
+    "PF",
+    9
+   ],
+   "h3_latent": [
+    "F1fp_11190:11117",
+    1
+   ],
+   "vae": [
+    "F3fp_11190:11107",
+    0
+   ],
+   "image": [
+    "F3fp_11190:11115",
+    0
+   ],
+   "model": [
+    "F3fp_11190:11108",
+    0
+   ]
+  },
+  "class_type": "H3LatentFromImage",
+  "_meta": {
+   "title": "face_denoise",
+   "role": "photo3:engine"
+  }
+ },
  "F3fp_f85:smp": {
   "inputs": {
    "noise": [
-    "F1fp_11190:11119",
+    "F3fp_11190:11119",
     0
    ],
    "guider": [
@@ -2328,11 +2342,11 @@
     0
    ],
    "sigmas": [
-    "F1fp_f85:lat",
+    "F3fp_f85:lat",
     1
    ],
    "latent_image": [
-    "F1fp_f85:lat",
+    "F3fp_f85:lat",
     0
    ]
   },
@@ -2741,8 +2755,8 @@
     0
    ],
    "shift_video": [
-    "V1131",
-    0
+    "PV",
+    3
    ],
    "shift_audio": 3
   },
@@ -3340,7 +3354,7 @@
     0
    ],
    "steps": [
-    "V1130",
+    "PV",
     0
    ],
    "scheduler": "simple",
@@ -3426,8 +3440,8 @@
     0
    ],
    "strength": [
-    "V1132",
-    0
+    "PV",
+    4
    ],
    "chunk": 16
   },
@@ -3448,8 +3462,8 @@
     1
    ],
    "crossfade": [
-    "V1133",
-    0
+    "PV",
+    5
    ],
    "curve": "smootherstep"
   },
@@ -3491,8 +3505,8 @@
     4
    ],
    "strength": [
-    "V1134",
-    0
+    "PV",
+    6
    ],
    "radius": 2,
    "threshold": 4,
@@ -3584,8 +3598,8 @@
     24
    ],
    "confidence": [
-    "V1135",
-    0
+    "PV",
+    7
    ]
   },
   "_meta": {
@@ -3605,8 +3619,8 @@
     0
    ],
    "crop_factor": [
-    "V1136",
-    0
+    "PV",
+    8
    ],
    "detector": "face_yolov8m.pt",
    "canvas_width": 768,
@@ -3729,8 +3743,8 @@
     1
    ],
    "denoise_multiplier_large_face": [
-    "V1137",
-    0
+    "PV",
+    9
    ],
    "denoise_multiplier_small_face": 1,
    "scale_mode": "absolute_px",
@@ -3756,8 +3770,8 @@
     0
    ],
    "hand_strength": [
-    "V1139",
-    0
+    "PV",
+    11
    ],
    "hand_model": "hand_yolov8s.pt",
    "confidence": 0.3,
@@ -3869,8 +3883,8 @@
     0
    ],
    "align": [
-    "V1138",
-    0
+    "PV",
+    10
    ],
    "temporal": [
     "V11:89",
@@ -4319,106 +4333,6 @@
    "role": "video1:engine"
   }
  },
- "V1130": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 8
-  },
-  "_meta": {
-   "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
-   "role": "video1:knob"
-  }
- },
- "V1131": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 12.0
-  },
-  "_meta": {
-   "title": "KNOB shift · shift (10–14, по умолчанию 12)",
-   "role": "video1:knob"
-  }
- },
- "V1132": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": -1.0
-  },
-  "_meta": {
-   "title": "KNOB color_lock · фиксация цвета к кадру (-1 = авто)",
-   "role": "video1:knob"
-  }
- },
- "V1133": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": -1
-  },
-  "_meta": {
-   "title": "KNOB seam_crossfade · склейка шва петли, кадров (-1 = авто)",
-   "role": "video1:knob"
-  }
- },
- "V1134": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 1.0
-  },
-  "_meta": {
-   "title": "KNOB temporal_strength · стабилизатор дрожи всего кадра (0–1)",
-   "role": "video1:knob"
-  }
- },
- "V1135": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": -1.0
-  },
-  "_meta": {
-   "title": "KNOB face_confidence · порог детектора лица (-1 = авто)",
-   "role": "video1:knob"
-  }
- },
- "V1136": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 2.5
-  },
-  "_meta": {
-   "title": "KNOB crop_factor · запас кропа лица вокруг головы",
-   "role": "video1:knob"
-  }
- },
- "V1137": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 0.35
-  },
-  "_meta": {
-   "title": "KNOB large_face_mult · ослабление прохода для крупного лица",
-   "role": "video1:knob"
-  }
- },
- "V1138": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 1.0
-  },
-  "_meta": {
-   "title": "KNOB face_lock · привязка лица к движению (flow-lock)",
-   "role": "video1:knob"
-  }
- },
- "V1139": {
-  "class_type": "PrimitiveFloat",
-  "inputs": {
-   "value": 0.2
-  },
-  "_meta": {
-   "title": "KNOB hand_strength · проход лица рядом с руками (0–1)",
-   "role": "video1:knob"
-  }
- },
  "V21:23": {
   "class_type": "UNETLoader",
   "inputs": {
@@ -4453,8 +4367,8 @@
     0
    ],
    "shift_video": [
-    "V1131",
-    0
+    "PV",
+    3
    ],
    "shift_audio": 3
   },
@@ -5052,8 +4966,8 @@
     0
    ],
    "steps": [
-    "V2130",
-    0
+    "PV",
+    1
    ],
    "scheduler": "simple",
    "denoise": 1
@@ -5138,8 +5052,8 @@
     0
    ],
    "strength": [
-    "V1132",
-    0
+    "PV",
+    4
    ],
    "chunk": 16
   },
@@ -5160,8 +5074,8 @@
     1
    ],
    "crossfade": [
-    "V1133",
-    0
+    "PV",
+    5
    ],
    "curve": "smootherstep"
   },
@@ -5203,8 +5117,8 @@
     4
    ],
    "strength": [
-    "V1134",
-    0
+    "PV",
+    6
    ],
    "radius": 2,
    "threshold": 4,
@@ -5296,8 +5210,8 @@
     24
    ],
    "confidence": [
-    "V1135",
-    0
+    "PV",
+    7
    ]
   },
   "_meta": {
@@ -5317,8 +5231,8 @@
     0
    ],
    "crop_factor": [
-    "V1136",
-    0
+    "PV",
+    8
    ],
    "detector": "face_yolov8m.pt",
    "canvas_width": 768,
@@ -5441,8 +5355,8 @@
     1
    ],
    "denoise_multiplier_large_face": [
-    "V1137",
-    0
+    "PV",
+    9
    ],
    "denoise_multiplier_small_face": 1,
    "scale_mode": "absolute_px",
@@ -5468,8 +5382,8 @@
     0
    ],
    "hand_strength": [
-    "V1139",
-    0
+    "PV",
+    11
    ],
    "hand_model": "hand_yolov8s.pt",
    "confidence": 0.3,
@@ -5581,8 +5495,8 @@
     0
    ],
    "align": [
-    "V1138",
-    0
+    "PV",
+    10
    ],
    "temporal": [
     "V21:89",
@@ -5975,16 +5889,6 @@
    "role": "video2:engine"
   }
  },
- "V2130": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 20
-  },
-  "_meta": {
-   "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
-   "role": "video2:knob"
-  }
- },
  "V31:23": {
   "class_type": "UNETLoader",
   "inputs": {
@@ -6019,8 +5923,8 @@
     0
    ],
    "shift_video": [
-    "V1131",
-    0
+    "PV",
+    3
    ],
    "shift_audio": 3
   },
@@ -6618,8 +6522,8 @@
     0
    ],
    "steps": [
-    "V3130",
-    0
+    "PV",
+    2
    ],
    "scheduler": "simple",
    "denoise": 1
@@ -6704,8 +6608,8 @@
     0
    ],
    "strength": [
-    "V1132",
-    0
+    "PV",
+    4
    ],
    "chunk": 16
   },
@@ -6726,8 +6630,8 @@
     1
    ],
    "crossfade": [
-    "V1133",
-    0
+    "PV",
+    5
    ],
    "curve": "smootherstep"
   },
@@ -6769,8 +6673,8 @@
     4
    ],
    "strength": [
-    "V1134",
-    0
+    "PV",
+    6
    ],
    "radius": 2,
    "threshold": 4,
@@ -6862,8 +6766,8 @@
     24
    ],
    "confidence": [
-    "V1135",
-    0
+    "PV",
+    7
    ]
   },
   "_meta": {
@@ -6883,8 +6787,8 @@
     0
    ],
    "crop_factor": [
-    "V1136",
-    0
+    "PV",
+    8
    ],
    "detector": "face_yolov8m.pt",
    "canvas_width": 768,
@@ -7007,8 +6911,8 @@
     1
    ],
    "denoise_multiplier_large_face": [
-    "V1137",
-    0
+    "PV",
+    9
    ],
    "denoise_multiplier_small_face": 1,
    "scale_mode": "absolute_px",
@@ -7034,8 +6938,8 @@
     0
    ],
    "hand_strength": [
-    "V1139",
-    0
+    "PV",
+    11
    ],
    "hand_model": "hand_yolov8s.pt",
    "confidence": 0.3,
@@ -7147,8 +7051,8 @@
     0
    ],
    "align": [
-    "V1138",
-    0
+    "PV",
+    10
    ],
    "temporal": [
     "V31:89",
@@ -7541,16 +7445,6 @@
    "role": "video3:engine"
   }
  },
- "V3130": {
-  "class_type": "PrimitiveInt",
-  "inputs": {
-   "value": 20
-  },
-  "_meta": {
-   "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
-   "role": "video3:knob"
-  }
- },
  "RV": {
   "class_type": "NGFarmRefVideo",
   "inputs": {
@@ -7688,6 +7582,46 @@
   "_meta": {
    "title": "ZIP видео · ссылка на скачивание",
    "role": "video:zip"
+  }
+ },
+ "PF": {
+  "class_type": "NGFarmPanelPhoto",
+  "inputs": {
+   "seed": 1,
+   "face_seed": 953552952704593,
+   "steps_ref2v": 8,
+   "steps_10eros": 20,
+   "steps_pinkcherry": 20,
+   "shift": 12.0,
+   "megapixels": 2.0,
+   "pass2_total": 40,
+   "pass2_steps": 8,
+   "face_denoise": 0.85
+  },
+  "_meta": {
+   "title": "ПУЛЬТ ФОТО — все ручки блока (наведите на поле — подсказка)",
+   "role": "photo1:knob"
+  }
+ },
+ "PV": {
+  "class_type": "NGFarmPanelVideo",
+  "inputs": {
+   "steps_ref2v": 8,
+   "steps_10eros": 20,
+   "steps_pinkcherry": 20,
+   "shift": 12.0,
+   "color_lock": -1.0,
+   "seam_crossfade": -1,
+   "temporal_strength": 1.0,
+   "face_confidence": -1.0,
+   "crop_factor": 2.5,
+   "large_face_mult": 0.35,
+   "face_lock": 1.0,
+   "hand_strength": 0.2
+  },
+  "_meta": {
+   "title": "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)",
+   "role": "video1:knob"
   }
  }
 }

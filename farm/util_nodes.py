@@ -264,3 +264,57 @@ NAMES = {"NGFarmFrameFromFolder": "Кадр из папки по ID (Next Genium
          "NGFarmZip": "ZIP итогов + ссылка (Next Genium)",
          "NGFarmLocationPick": "Локация: загруженная по имени зоны / из таблицы (Next Genium)",
          "NGFarmRefVideo": "Видео-реф движения из таблицы (Next Genium)"}
+
+
+# ---------------------------------------------------------------- пульты (23.10): все ручки блока в одной ноде
+def _panel(name, display, desc, spec):
+    """spec: [(ключ, тип, по умолчанию, мин, макс, шаг, подсказка)] → нода с виджетами и выходом на каждый."""
+    def INPUT_TYPES(cls):
+        req = {}
+        for k, t, d, lo, hi, st, tip in spec:
+            o = {"default": d, "min": lo, "max": hi, "step": st, "tooltip": tip}
+            if t == "INT" and k.endswith("seed"):
+                o["control_after_generate"] = "fixed"
+            req[k] = (t, o)
+        return {"required": req}
+
+    def run(self, **kw):
+        return tuple(kw[k] for k, *_ in spec)
+
+    return type(name, (), {"CATEGORY": "Next Genium/Farm", "FUNCTION": "run", "DESCRIPTION": desc,
+                           "RETURN_TYPES": tuple(t for _, t, *_ in spec),
+                           "RETURN_NAMES": tuple(k for k, *_ in spec),
+                           "INPUT_TYPES": classmethod(INPUT_TYPES), "run": run}), display
+
+
+PHOTO_SPEC = [
+    ("seed", "INT", 1, 0, 2**53, 1, "Сид кадра: другой сид — другой вариант кадра."),
+    ("face_seed", "INT", 953552952704593, 0, 2**53, 1, "Сид прохода лица кадра."),
+    ("steps_ref2v", "INT", 8, 4, 40, 1, "Шаги кадра для ref2v (turbo-LoRA — 8)."),
+    ("steps_10eros", "INT", 20, 4, 40, 1, "Шаги кадра для 10Eros (без turbo — 20)."),
+    ("steps_pinkcherry", "INT", 20, 4, 40, 1, "Шаги кадра для PinkCherry (без turbo — 20)."),
+    ("shift", "FLOAT", 12.0, 1.0, 20.0, 0.5, "Shift сэмплера H3 (по умолчанию 12)."),
+    ("megapixels", "FLOAT", 2.0, 0.5, 8.0, 0.1, "Размер картинки локации на входе H3, Мп (больше — дольше)."),
+    ("pass2_total", "INT", 40, 8, 80, 1, "Доработка кадра: всего шагов расписания."),
+    ("pass2_steps", "INT", 8, 0, 40, 1, "Доработка кадра: сколько последних шагов делать (0 — без доработки)."),
+    ("face_denoise", "FLOAT", 0.85, 0.0, 1.0, 0.01, "Сила прохода лица кадра: 0.75–0.9; больше — лицо ближе к моду, но меньше от исходника."),
+]
+VIDEO_SPEC = [
+    ("steps_ref2v", "INT", 8, 4, 40, 1, "Шаги видео для ref2v (turbo-LoRA — 8)."),
+    ("steps_10eros", "INT", 20, 4, 40, 1, "Шаги видео для 10Eros (без turbo — 20)."),
+    ("steps_pinkcherry", "INT", 20, 4, 40, 1, "Шаги видео для PinkCherry (без turbo — 20)."),
+    ("shift", "FLOAT", 12.0, 6.0, 16.0, 0.5, "Shift сэмплера видео (10–14)."),
+    ("color_lock", "FLOAT", -1.0, -1.0, 1.0, 0.05, "Фиксация цвета к ключевому кадру: -1 — авто, 0 — выкл, 1 — полностью."),
+    ("seam_crossfade", "INT", -1, -1, 16, 1, "Склейка шва петли, кадров: -1 — авто."),
+    ("temporal_strength", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Стабилизатор дрожи всего кадра: 0 — выкл, 1 — полностью."),
+    ("face_confidence", "FLOAT", -1.0, -1.0, 0.6, 0.05, "Порог детектора лица для прохода лица: -1 — авто."),
+    ("crop_factor", "FLOAT", 2.5, 1.8, 3.5, 0.1, "Запас кропа лица вокруг головы (больше — больше контекста)."),
+    ("large_face_mult", "FLOAT", 0.35, 0.1, 1.0, 0.05, "Ослабление прохода лица, когда лицо крупное."),
+    ("face_lock", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Привязка лица к движению (flow-lock) — против дрожи лица."),
+    ("hand_strength", "FLOAT", 0.2, 0.0, 1.0, 0.05, "Сила прохода лица там, где у лица руки (меньше — руки не искажаются)."),
+]
+_PP, _PPN = _panel("FarmPanelPhoto", "ПУЛЬТ ФОТО (Next Genium)", "Все ручки блока фото в одной ноде.", PHOTO_SPEC)
+_PV, _PVN = _panel("FarmPanelVideo", "ПУЛЬТ ВИДЕО — доп. ручки (Next Genium)",
+                   "Ручки движка видео (PANEL — основные, здесь — тонкая настройка).", VIDEO_SPEC)
+NODES.update({"NGFarmPanelPhoto": _PP, "NGFarmPanelVideo": _PV})
+NAMES.update({"NGFarmPanelPhoto": _PPN, "NGFarmPanelVideo": _PVN})
