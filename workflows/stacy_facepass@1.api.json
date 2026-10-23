@@ -675,7 +675,7 @@
    "save_output": true
   },
   "_meta": {
-   "title": "ИТОГ FullHD mp4 (временное имя)",
+   "title": "ИТОГ FullHD mp4 (копия для очереди: _vhs/…_00001)",
    "role": "facepass:out"
   }
  },
@@ -785,7 +785,7 @@
  "NAME": {
   "class_type": "StringConcatenate",
   "inputs": {
-   "string_a": "stacy_facepass/",
+   "string_a": "stacy_facepass/_vhs/",
    "string_b": [
     "FP",
     1
@@ -793,7 +793,7 @@
    "delimiter": ""
   },
   "_meta": {
-   "title": "имя: stacy_facepass/<имя>_facepass_stacy",
+   "title": "имя: stacy_facepass/_vhs/<имя>_facepass_stacy (для очереди ComfyUI)",
    "role": "facepass:engine"
   }
  },

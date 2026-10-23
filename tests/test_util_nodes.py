@@ -46,9 +46,10 @@ def test_facepass_panel_and_finalize(tmp_path, monkeypatch):
     assert r[1] == "a_facepass_stacy"
     with pytest.raises(IndexError):
         U.FarmPanelFacepass().run("stacy_fp", 5, True, "p", **kw)
-    o = tmp_path / "out" / "stacy_facepass"; o.mkdir(parents=True)
-    (o / "b_facepass_stacy_00001.mp4").write_bytes(b"v")
-    (o / "b_facepass_stacy_00001.png").write_bytes(b"i")
-    dst = U.finalize_video([o / "b_facepass_stacy_00001.png", o / "b_facepass_stacy_00001.mp4"], "b_facepass_stacy")
-    assert dst.name == "b_facepass_stacy.mp4" and sorted(p.name for p in o.iterdir()) == ["b_facepass_stacy.mp4"]
+    o = tmp_path / "out" / "stacy_facepass"; v = o / "_vhs"; v.mkdir(parents=True)
+    (v / "b_facepass_stacy_00001.mp4").write_bytes(b"v")
+    (v / "b_facepass_stacy_00001.png").write_bytes(b"i")
+    dst = U.finalize_video([v / "b_facepass_stacy_00001.png", v / "b_facepass_stacy_00001.mp4"], "b_facepass_stacy")
+    assert dst.name == "b_facepass_stacy.mp4" and sorted(p.name for p in o.iterdir()) == ["_vhs", "b_facepass_stacy.mp4"]
+    assert sorted(p.name for p in v.iterdir()) == ["b_facepass_stacy_00001.mp4"] and dst.read_bytes() == b"v"
     assert "studio" not in U.FP_PROMPT.lower()

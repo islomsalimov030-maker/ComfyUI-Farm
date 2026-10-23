@@ -591,7 +591,8 @@ def _requeue_index(prompt: dict, my_id: str, indices) -> None:
 
 
 def finalize_video(files: list, out_name: str, subdir: str = "stacy_facepass") -> Path:
-    """Итог VHS (…_00001.mp4 + превью .png) → output/<subdir>/<out_name>.mp4; превью и прочие файлы удаляются."""
+    """Итог VHS (<subdir>/_vhs/…_00001.mp4) → жёсткая ссылка output/<subdir>/<out_name>.mp4; превью png удаляется.
+    Файл VHS остаётся на месте: на него ссылаются очередь и превью ComfyUI (кнопка скачивания в очереди)."""
     files = [Path(f) for f in files]
     mp4 = [f for f in files if f.suffix.lower() == ".mp4"]
     if not mp4:
@@ -601,12 +602,16 @@ def finalize_video(files: list, out_name: str, subdir: str = "stacy_facepass") -
     dst_dir.mkdir(parents=True, exist_ok=True)
     dst = dst_dir / f"{out_name}.mp4"
     k = 2
-    while dst.exists() and dst != src:
+    while dst.exists():
         dst = dst_dir / f"{out_name}_{k}.mp4"
         k += 1
-    os.replace(src, dst)
+    try:
+        os.link(src, dst)
+    except OSError:
+        import shutil
+        shutil.copyfile(src, dst)
     for f in files:
-        if f != src and f.exists() and f.parent.is_relative_to(_out_dir()):
+        if f.suffix.lower() == ".png" and f.exists():
             f.unlink()
     return dst
 

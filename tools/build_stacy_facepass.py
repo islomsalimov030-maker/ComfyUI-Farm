@@ -96,10 +96,10 @@ def build() -> dict:
 
     # итог: FullHD mp4 с fps исходника → точное имя, без превью
     out = K.by_title(g, "ИТОГ face pass готового видео")
-    add(g, "NAME", "StringConcatenate", {"string_a": "stacy_facepass/", "string_b": P("out_name"), "delimiter": ""},
-        "имя: stacy_facepass/<имя>_facepass_stacy", "facepass:engine")
+    add(g, "NAME", "StringConcatenate", {"string_a": "stacy_facepass/_vhs/", "string_b": P("out_name"), "delimiter": ""},
+        "имя: stacy_facepass/_vhs/<имя>_facepass_stacy (для очереди ComfyUI)", "facepass:engine")
     g[out]["inputs"].update({"frame_rate": [vin, 2], "filename_prefix": ["NAME", 0], "save_metadata": False})
-    g[out]["_meta"]["title"] = "ИТОГ FullHD mp4 (временное имя)"
+    g[out]["_meta"]["title"] = "ИТОГ FullHD mp4 (копия для очереди: _vhs/…_00001)"
     add(g, "FIN", "NGFarmFinalizeVideo", {"filenames": [out, 0], "out_name": P("out_name")},
         "ИТОГ · output/stacy_facepass/<имя>_facepass_stacy.mp4", "facepass:out")
     rep = K.by_title(g, "ОТЧЁТ face pass видео")
