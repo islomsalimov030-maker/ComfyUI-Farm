@@ -476,19 +476,29 @@ def _video_files(limit: int = 2000) -> list[str]:
     return sorted(files)
 
 
-class _FacepassMeta(type):
-    @property
-    def RETURN_TYPES(cls):   # список модов считается при запросе (пакет H3Mod грузится позже ComfyUI-Farm)
-        return ("STRING", "STRING", "STRING", _mod_names()) + tuple(t for _, t, *_ in FP_SPEC) + ("STACY_SETTINGS",)
+def face_mods(name: str, strength: float):
+    """H3_REF_MODS мода лица — тем же кодом, что MiniMaxH3RefModsLoader (выход пульта идёт прямо в RefModApply:
+    выход-список имён модов фронтенд ComfyUI связывал ненадёжно — WS-10b 23.10)."""
+    import nodes
+    cls = nodes.NODE_CLASS_MAPPINGS["MiniMaxH3RefModsLoader"]
+    kw = {}
+    for i in range(1, 9):
+        kw.update({f"mod_{i}": name if i == 1 else "(none)", f"strength_{i}": float(strength) if i == 1 else 1.0,
+                   f"copies_{i}": 1})
+    r = getattr(cls(), cls.FUNCTION)(show_info=False, max_total_tokens=16384, **kw)
+    if isinstance(r, dict):
+        r = r["result"]
+    return r[0]
 
 
-class FarmPanelFacepass(metaclass=_FacepassMeta):
-    """Пульт stacy_facepass@1: вход (видео или папка) + все ручки прохода лица."""
+class FarmPanelFacepass:
+    """Пульт stacy_facepass@1: вход (видео или папка) + все ручки прохода лица; сам отдаёт моды и STACY_SETTINGS."""
     CATEGORY = "Next Genium/Farm"
     FUNCTION = "run"
     DESCRIPTION = ("Проход лица готового видео с LoRA Стейси. Папка: один Queue — все видео по очереди "
                    "(остальные ставятся в очередь сами). Итог: output/stacy_facepass/<имя>_facepass_stacy.mp4.")
-    RETURN_NAMES = ("video_path", "out_name", "face_prompt", "face_mod_name") + tuple(k for k, *_ in FP_SPEC) + ("settings",)
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "H3_REF_MODS") + tuple(t for _, t, *_ in FP_SPEC) + ("STACY_SETTINGS",)
+    RETURN_NAMES = ("video_path", "out_name", "face_prompt", "mods") + tuple(k for k, *_ in FP_SPEC) + ("settings",)
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -537,7 +547,11 @@ class FarmPanelFacepass(metaclass=_FacepassMeta):
             _requeue_index(prompt, str(unique_id), range(1, len(vids)))
         v = vids[index]
         print(f"[farm] stacy_facepass: {index + 1}/{len(vids)} {v.name}")
-        return (str(v), facepass_name(v), face_prompt, mod) + tuple(kw[k] for k, *_ in FP_SPEC) + (stacy_settings(kw),)
+        try:
+            mods = face_mods(mod, kw["face_mod"])
+        except (KeyError, ImportError):   # вне ComfyUI (тесты)
+            mods = {"mod": mod, "strength": kw["face_mod"]}
+        return (str(v), facepass_name(v), face_prompt, mods) + tuple(kw[k] for k, *_ in FP_SPEC) + (stacy_settings(kw),)
 
 
 def stacy_settings(kw: dict):

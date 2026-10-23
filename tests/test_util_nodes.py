@@ -39,8 +39,9 @@ def test_facepass_panel_and_finalize(tmp_path, monkeypatch):
     r = U.FarmPanelFacepass().run("stacy_fp", 1, True, "p", face_mod_name="farm/nope", **kw)
     assert r[0].endswith("b.mp4") and r[1] == "b_facepass_stacy" and r[2] == "p" and len(r) == 5 + len(U.FP_SPEC)
     assert r[-1]["mode"] is False and r[-1]["face_denoise"] == 0.55 and r[-1]["face_lora"] == 0.75
-    assert r[3] == "farm/stacy_face" and U.pick_mod("x", ["(none)", "ss340/face_n10"]) == "ss340/face_n10"
+    assert r[3]["mod"] == "farm/stacy_face" and U.pick_mod("x", ["(none)", "ss340/face_n10"]) == "ss340/face_n10"
     assert len(U.FarmPanelFacepass.RETURN_TYPES) == len(U.FarmPanelFacepass.RETURN_NAMES)
+    assert all(isinstance(t, str) for t in U.FarmPanelFacepass.RETURN_TYPES)
     r = U.FarmPanelFacepass().run("x", 0, True, "p", upload="stacy_fp/a.mov", **kw)
     assert r[1] == "a_facepass_stacy"
     with pytest.raises(IndexError):

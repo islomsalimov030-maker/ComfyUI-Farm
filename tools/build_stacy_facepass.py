@@ -47,7 +47,7 @@ def build() -> dict:
     g = K.prune(g, ["ИТОГ face pass готового видео", "ОТЧЁТ face pass видео"])
 
     spec = fp_spec()
-    keys = ["video_path", "out_name", "face_prompt", "face_mod_name"] + [k for k, *_ in spec] + ["settings"]
+    keys = ["video_path", "out_name", "face_prompt", "mods"] + [k for k, *_ in spec] + ["settings"]
     P = lambda k: ["FP", keys.index(k)]  # noqa: E731
     w = {k: d for k, _, d, *_ in spec}
     from farm.util_nodes import FP_PROMPT
@@ -85,14 +85,9 @@ def build() -> dict:
     assert is_link(g[lora]["inputs"]["strength_model"])   # сила = StacySettings.face_lora ← пульт
     g[lora]["_meta"]["title"] = "LoRA лица Стейси (сила из пульта)"
 
-    # мод лица → условие прохода лица
-    add(g, "ML", "MiniMaxH3RefModsLoader",
-        {"show_info": False, "max_total_tokens": 16384,
-         **{f"{a}_{i}": v for i in range(1, 9) for a, v in
-            (("mod", P("face_mod_name") if i == 1 else "(none)"), ("strength", P("face_mod") if i == 1 else 1.0), ("copies", 1))}},
-        "мод лица (имя из пульта)", "facepass:engine")
+    # мод лица → условие прохода лица (моды грузит сам пульт: имя и сила — в пульте)
     cond = K.by_title(g, "[видео] face conditioning")
-    add(g, "MA", "MiniMaxH3RefModApply", {"conditioning": [cond, 0], "mods": ["ML", 0], "override": False,
+    add(g, "MA", "MiniMaxH3RefModApply", {"conditioning": [cond, 0], "mods": P("mods"), "override": False,
                                           "retention": 1.0, "curve_direction": "constant", "scramble_seed": -1,
                                           "curve_shape": "linear", "curve_value": 1.0, "max_total_tokens": 16384},
         "мод лица → условие", "facepass:engine")

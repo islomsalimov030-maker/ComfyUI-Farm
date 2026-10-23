@@ -758,47 +758,6 @@
    "role": "facepass:engine"
   }
  },
- "ML": {
-  "class_type": "MiniMaxH3RefModsLoader",
-  "inputs": {
-   "show_info": false,
-   "max_total_tokens": 16384,
-   "mod_1": [
-    "FP",
-    3
-   ],
-   "strength_1": [
-    "FP",
-    5
-   ],
-   "copies_1": 1,
-   "mod_2": "(none)",
-   "strength_2": 1.0,
-   "copies_2": 1,
-   "mod_3": "(none)",
-   "strength_3": 1.0,
-   "copies_3": 1,
-   "mod_4": "(none)",
-   "strength_4": 1.0,
-   "copies_4": 1,
-   "mod_5": "(none)",
-   "strength_5": 1.0,
-   "copies_5": 1,
-   "mod_6": "(none)",
-   "strength_6": 1.0,
-   "copies_6": 1,
-   "mod_7": "(none)",
-   "strength_7": 1.0,
-   "copies_7": 1,
-   "mod_8": "(none)",
-   "strength_8": 1.0,
-   "copies_8": 1
-  },
-  "_meta": {
-   "title": "мод лица (имя из пульта)",
-   "role": "facepass:engine"
-  }
- },
  "MA": {
   "class_type": "MiniMaxH3RefModApply",
   "inputs": {
@@ -807,8 +766,8 @@
     0
    ],
    "mods": [
-    "ML",
-    0
+    "FP",
+    3
    ],
    "override": false,
    "retention": 1.0,
