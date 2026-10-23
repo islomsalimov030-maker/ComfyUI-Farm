@@ -94,6 +94,17 @@ def build() -> dict:
     gd = K.by_title(g, "[видео] face guider")
     g[gd]["inputs"]["conditioning"] = ["MA", 0]
 
+    # анти-дрожь лица: кропы лица после flow-lock (выровнены по движению) → StacyTemporalStabilize → вклейка
+    fl = K.by_title(g, "[видео] lock face to source motion")
+    st = K.by_title(g, "[видео] stitch face")
+    sset = K.by_title(g, "[видео] пульт → значения (+ AUTO по видео)")
+    add(g, "FST", "StacyTemporalStabilize", {"images": [fl, 0], "strength": P("face_stab"), "radius": 2,
+                                             "threshold": P("face_stab_threshold"), "loop": [sset, 4],
+                                             "motion_compensation": True, "keep_sharpness": True},
+        "анти-дрожь лица (кропы)", "facepass:engine")
+    assert g[st]["inputs"]["refined_crops"] == [fl, 0]
+    g[st]["inputs"]["refined_crops"] = ["FST", 0]
+
     # итог: FullHD mp4 с fps исходника → точное имя, без превью
     out = K.by_title(g, "ИТОГ face pass готового видео")
     add(g, "NAME", "StringConcatenate", {"string_a": "stacy_facepass/_vhs/", "string_b": P("out_name"), "delimiter": ""},

@@ -462,7 +462,7 @@
     0
    ],
    "refined_crops": [
-    "2:115",
+    "FST",
     0
    ],
    "transform": [
@@ -513,7 +513,7 @@
   "inputs": {
    "settings": [
     "FP",
-    17
+    19
    ],
    "probe_image": [
     "2:101",
@@ -713,7 +713,9 @@
    "large_face_mult": 0.35,
    "face_lock": 1.0,
    "face_lock_temporal": 0.8,
-   "hand_strength": 0.2
+   "hand_strength": 0.2,
+   "face_stab": 1.0,
+   "face_stab_threshold": 8.0
   },
   "_meta": {
    "title": "ПУЛЬТ ПРОХОДА ЛИЦА Стейси — видео или папка + ручки (наведите на поле — подсказка)",
@@ -779,6 +781,34 @@
   },
   "_meta": {
    "title": "мод лица → условие",
+   "role": "facepass:engine"
+  }
+ },
+ "FST": {
+  "class_type": "StacyTemporalStabilize",
+  "inputs": {
+   "images": [
+    "2:115",
+    0
+   ],
+   "strength": [
+    "FP",
+    17
+   ],
+   "radius": 2,
+   "threshold": [
+    "FP",
+    18
+   ],
+   "loop": [
+    "2:118",
+    4
+   ],
+   "motion_compensation": true,
+   "keep_sharpness": true
+  },
+  "_meta": {
+   "title": "анти-дрожь лица (кропы)",
    "role": "facepass:engine"
   }
  },
