@@ -133,6 +133,9 @@ def build() -> dict:
     g["V" + by_title({k[1:]: v for k, v in V.items()}, vp["outputs"]["video_fullhd"]["title"])]["_meta"]["title"] = \
         "ИТОГ · видео FullHD 24 fps"
 
+    g["info"] = {"class_type": "PreviewAny", "inputs": {"source": t(11)},
+                 "_meta": {"title": "ТАБЛИЦА · что взято из строки"}}
+
     # --- подписи ручек
     for k, n in g.items():
         tl = n.get("_meta", {}).get("title", "")

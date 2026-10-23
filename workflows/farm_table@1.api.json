@@ -2633,5 +2633,17 @@
   "_meta": {
    "title": "имя файла video (+суффикс)"
   }
+ },
+ "info": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "T",
+    11
+   ]
+  },
+  "_meta": {
+   "title": "ТАБЛИЦА · что взято из строки"
+  }
  }
 }
