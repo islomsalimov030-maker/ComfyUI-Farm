@@ -21,5 +21,7 @@ def test_find_frame_and_zip(tmp_path, monkeypatch):
     assert z.is_file() and "SAMH-STD01_ref2v.png" in zipfile.ZipFile(z).namelist()
     assert "/view?filename=photo.zip" in r["ui"]["text"][0]
     pick = U.FarmPickFirst()
-    assert pick.check_lazy_status(True) == ["new_1", "new_2", "new_3"]
+    assert pick.check_lazy_status(True, new_2=None) == ["new_2"]
+    assert pick.check_lazy_status(True, new_1=None, new_2=None) == ["new_1"]
+    assert pick.check_lazy_status(False, from_folder=img) == []
     assert pick.run(True, new_2=img)[0] is img

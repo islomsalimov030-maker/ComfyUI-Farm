@@ -91,13 +91,18 @@ class FarmPickFirst:
                 "optional": {"new_1": ("IMAGE", {"lazy": True}), "new_2": ("IMAGE", {"lazy": True}),
                              "new_3": ("IMAGE", {"lazy": True}), "from_folder": ("IMAGE", {"lazy": True})}}
 
-    def check_lazy_status(self, use_new, new_1=None, new_2=None, new_3=None, from_folder=None, **kw):
-        return ["new_1", "new_2", "new_3"] if use_new else ["from_folder"]
+    def check_lazy_status(self, use_new, **kw):
+        # подключённые, но ещё не вычисленные ленивые входы приходят как None; неподключённых в kw нет вовсе
+        names = ["new_1", "new_2", "new_3"] if use_new else ["from_folder"]
+        for n in names:
+            if n in kw:
+                return [n] if kw[n] is None else []
+        return []
 
-    def run(self, use_new, new_1=None, new_2=None, new_3=None, from_folder=None):
-        for im in ([new_1, new_2, new_3] if use_new else [from_folder]):
-            if im is not None:
-                return (im,)
+    def run(self, use_new, **kw):
+        for n in (["new_1", "new_2", "new_3"] if use_new else ["from_folder"]):
+            if kw.get(n) is not None:
+                return (kw[n],)
         raise ValueError("нет кадра для видео: включите хотя бы одну модель фото или укажите папку кадров")
 
 
