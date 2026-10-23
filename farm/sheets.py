@@ -489,7 +489,7 @@ def validate_row(raw: dict, row: int, lib: Library, active_profiles: Optional[se
         rc.err("E_LOOP_END", "loop", "с «Закончить кадром шота» петля невозможна — поставьте «нет»")
 
     # референсы
-    for key in ("pose_ref", "motion_ref"):
+    for key in ("pose_ref", "motion_ref", "location_image"):
         v = str(g(key)).strip()
         n[key] = v or None
         if v and v.startswith("http") and not (is_drive_link(v) and drive_file_id(v)):
@@ -597,7 +597,7 @@ def _check_files(rc: RowCheck, lib: Library) -> None:
     for key, libname, id_, fkey, what in need:
         if id_ and lib.file(libname, id_, fkey) is None:
             rc.err("E_FILE_MISSING", key, f"нет файла {what}: {lib.expected_file(libname, id_, fkey)}")
-    for key in ("pose_ref", "motion_ref"):
+    for key in ("pose_ref", "motion_ref", "location_image"):
         v = n.get(key)
         if v and not v.startswith("http") and _local_path(lib.home, v) is None:
             rc.err("E_FILE_MISSING", key, f"нет файла {v}")
@@ -616,12 +616,13 @@ def row_hash(n: dict) -> str:
     keys = ("profile", "kind", "character", "plate", "zone", "pose_class", "plan", "face_in_frame",
             "outfit", "objects", "framing", "pose", "action",
             "focus", "amplitude", "base", "emotion", "loop", "duration", "start_from", "end_with",
-            "depends", "pose_ref", "motion_ref")
+            "depends", "pose_ref", "motion_ref", "location_image")
     blob = json.dumps({k: n.get(k) for k in keys}, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 
-def to_shot(rc: RowCheck, pose_ref: Optional[str] = None, motion_ref: Optional[str] = None) -> dict:
+def to_shot(rc: RowCheck, pose_ref: Optional[str] = None, motion_ref: Optional[str] = None,
+            location_image: Optional[str] = None) -> dict:
     """RowCheck (ok) → dict для DB.add_shot (CONTRACTS §3 + extra_json v0.4)."""
     n = rc.norm
     lo, hi = LIM["priority"]
@@ -643,6 +644,7 @@ def to_shot(rc: RowCheck, pose_ref: Optional[str] = None, motion_ref: Optional[s
             "start_from": n.get("start_from"), "end_with": n.get("end_with"),
             "zone": n.get("zone"), "pose_class": n.get("pose_class"), "plan": n.get("plan"),
             "face_in_frame": n.get("face_in_frame"),
+            "location_image": location_image,   # 23.10: готовая картинка локации/листа строки → <Picture 1> как есть
             "row_hash": row_hash(n),
         },
     }
@@ -775,11 +777,12 @@ class Sheets:
             existing = db.shot(sid)
             pose_ref = self._localize_ref(rc, "pose_ref", rep)
             motion_ref = self._localize_ref(rc, "motion_ref", rep)
+            location_image = self._localize_ref(rc, "location_image", rep)
             if not rc.ok:                           # ссылка не скачалась
                 rep["invalid"].append(sid)
                 statuses[rc.row] = rc.status_text()
                 continue
-            shot = to_shot(rc, pose_ref, motion_ref)
+            shot = to_shot(rc, pose_ref, motion_ref, location_image)
             note = ""
             if existing is None:
                 sf = rc.norm.get("start_from")

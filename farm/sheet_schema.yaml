@@ -47,6 +47,8 @@ scenes:
        note: "ID плиты с листа «Локации» вида локация/зона, например apartment/sofa."}
     - {key: zone, header: Зона, width: 150, type: ref, ref: zones,
        note: "v2: комната из листа «Зоны» (location sheet). Ракурс H3 выбирает сам. Вместо «Локация / плита»."}
+    - {key: location_image, header: Картинка локации, width: 160, type: link,
+       note: "Необязательно (23.10): ссылка Google Drive или путь в refs/ на готовую картинку локации или лист её ракурсов в полном разрешении. Заполнено — в кадр идёт ровно эта картинка вместо листа из «Зон»."}
     - {key: pose_class, header: Класс позы, width: 85, type: list, list: pose_class}
     - {key: plan, header: План, width: 80, type: list, list: plan, note: "Пусто — авто по позе"}
     - {key: face_in_frame, header: Лицо в кадре, width: 85, note: "да / нет / в конце / в зеркале"}

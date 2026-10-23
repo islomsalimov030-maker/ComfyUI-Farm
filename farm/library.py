@@ -321,7 +321,10 @@ class Library:
                     log.warning("шот %s: нет кадра у %s для end_frame", shot.get("shot_id"), ew)
         if stage == "frame":   # frame_ls@1 (WS-10, 23.10): лист ракурсов зоны + имена RefMod по соглашению
             zone = extra.get("zone") or pl
-            if zone:
+            li = extra.get("location_image")
+            if li and Path(li).is_file():      # 23.10: картинка локации из строки таблицы — как есть
+                out["location_sheet"] = str(li)
+            elif zone:
                 put("location_sheet", self.zone_sheet(zone))
             if ch:   # v2.1: лицо — мод базового персонажа, тело — мод варианта (персонаж в наряде)
                 person = self.base_id(self.character(ch)) or ch
