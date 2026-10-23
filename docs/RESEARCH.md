@@ -220,3 +220,9 @@
 - Depth Anything 3: Small, Base, Mono-Large, Metric-Large — Apache-2.0; Large, Giant, Nested (и 1.1) — CC-BY-NC-4.0 по README ([GitHub](https://github.com/ByteDance-Seed/Depth-Anything-3)); карточка HF DA3-LARGE-1.1 пишет apache-2.0 — расхождение, считаем NC.
 - Сравнение на 3 кадрах фермы — `docs/qa/WS-10_license_swap_1023.md`: AuraFace ≈ buffalo_l по своему сходству, зазор до чужого меньше на 0.05–0.12; V2-Small ↔ V2-Large ρ 0.92–0.99; DA3-Mono-Large ↔ V2-Large |ρ| 0.84–0.97, резче фигура.
 
+## 23.10 · Проход лица готового видео (WS-10b)
+- В `video_h3_loop@1` модель сэмплера прохода лица выбирает `StacyModelByMode`: при mode=False — выход 2 `H3PerFrameDenoise` (fl2va + turbo fl2v 4 шага + LoRA лица). При вырезании ветки bypass нужно делать по `face_pass_video_model`, иначе сэмплирует ref2va генерации.
+- Ветка face pass готового видео не содержит SAM3, `H3ResidualTemporalSmooth` и RTX VSR (они в генерации/кадре): только трекинг-кроп лица, per-frame denoise, руки, flow-lock (EMA), вклейка, петля.
+- Готовых нод «видео из папки по номеру + имя файла» нет: KJNodes `LoadVideosFromFolder` склеивает все видео в один батч/сетку без имён; core `LoadVideoDataSetFromFolder` отдаёт список VIDEO без имён. Сделаны свои `NGFarmPanelFacepass` + `NGFarmFinalizeVideo`.
+- Детекторы лица/рук StacyLoop — ultralytics YOLOv8 (AGPL-3.0), см. `tools/licenses.yaml`.
+
