@@ -76,6 +76,7 @@ window.farmBuild = async (name, opts = {}) => {
   const col = (title, pred, color, w) => { const l = nodes(pred); const ww = group(title, l, color, X, w); if (ww) X += ww + 60; return l; };
   const isAuto = name.startsWith("farm_auto");
   if (isAuto) col("ТАБЛИЦА — row + increment, Queue ×N = N строк", (r) => r === "table", "#3f789e");
+  if (isAuto) col("ЛОКАЦИИ (необязательно) — Load Image с именем файла = ID зоны из таблицы", (r) => r === "photo:loc", "#3f789e");
   col("ФОТО · входы и пульт (общие для всех моделей)",
       (r) => r === "photo:in" || r === "photo1:in" || r === "photo1:knob" || r === "photo:names" || r === "mask" || r === "mask:sub", "#2f7d4a", 520);
   const muted = [];

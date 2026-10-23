@@ -180,7 +180,7 @@
   "class_type": "ImageScaleToTotalPixels",
   "inputs": {
    "image": [
-    "T",
+    "LP",
     0
    ],
    "megapixels": [
@@ -1073,7 +1073,7 @@
   "class_type": "ImageScaleToTotalPixels",
   "inputs": {
    "image": [
-    "T",
+    "LP",
     0
    ],
    "megapixels": [
@@ -1822,7 +1822,7 @@
   "class_type": "ImageScaleToTotalPixels",
   "inputs": {
    "image": [
-    "T",
+    "LP",
     0
    ],
    "megapixels": [
@@ -2478,6 +2478,79 @@
    "role": "photo3:out"
   }
  },
+ "LP": {
+  "class_type": "NGFarmLocationPick",
+  "inputs": {
+   "zone": [
+    "T",
+    12
+   ],
+   "from_table": [
+    "T",
+    0
+   ],
+   "loc_1": [
+    "LI1",
+    0
+   ],
+   "loc_2": [
+    "LI2",
+    0
+   ],
+   "loc_3": [
+    "LI3",
+    0
+   ],
+   "loc_4": [
+    "LI4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ЛОКАЦИЯ · загруженная по имени зоны (иначе из таблицы)",
+   "role": "photo:loc"
+  }
+ },
+ "LI1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "ЛОКАЦИЯ 1 · имя файла = ID зоны (loft_living.png); не нужна — выключить (mute)",
+   "role": "photo:loc"
+  }
+ },
+ "LI2": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "ЛОКАЦИЯ 2 · имя файла = ID зоны (loft_living.png); не нужна — выключить (mute)",
+   "role": "photo:loc"
+  }
+ },
+ "LI3": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "ЛОКАЦИЯ 3 · имя файла = ID зоны (loft_living.png); не нужна — выключить (mute)",
+   "role": "photo:loc"
+  }
+ },
+ "LI4": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "ЛОКАЦИЯ 4 · имя файла = ID зоны (loft_living.png); не нужна — выключить (mute)",
+   "role": "photo:loc"
+  }
+ },
  "name_F1": {
   "class_type": "StringConcatenate",
   "inputs": {
@@ -2908,7 +2981,7 @@
     5
    ],
    "ref_videos.ref_video_0": [
-    "V115",
+    "RV",
     0
    ],
    "prompt": [
@@ -3000,7 +3073,7 @@
     0
    ],
    "ref_videos.ref_video_0": [
-    "V115",
+    "RV",
     0
    ],
    "prompt": [
@@ -3074,7 +3147,7 @@
     0
    ],
    "switch": [
-    "V115",
+    "RV",
     2
    ]
   },
@@ -3137,7 +3210,7 @@
     0
    ],
    "switch": [
-    "V115",
+    "RV",
     2
    ]
   },
@@ -4037,7 +4110,7 @@
     1
    ],
    "string_b": [
-    "V115",
+    "RV",
     1
    ],
    "delimiter": "\n"
@@ -4230,26 +4303,6 @@
   },
   "_meta": {
    "title": "IN face_prompt · промпт face pass",
-   "role": "video1:in"
-  }
- },
- "V115": {
-  "class_type": "StacyRefVideo",
-  "inputs": {
-   "settings": [
-    "V111",
-    0
-   ],
-   "prompt": [
-    "V112",
-    0
-   ],
-   "video": "(none)",
-   "start_sec": 0,
-   "length_sec": 0
-  },
-  "_meta": {
-   "title": "IN motion_ref · видео-референс <Video 1> (необязательно)",
    "role": "video1:in"
   }
  },
@@ -4640,7 +4693,7 @@
     5
    ],
    "ref_videos.ref_video_0": [
-    "V115",
+    "RV",
     0
    ],
    "prompt": [
@@ -4732,7 +4785,7 @@
     0
    ],
    "ref_videos.ref_video_0": [
-    "V115",
+    "RV",
     0
    ],
    "prompt": [
@@ -4806,7 +4859,7 @@
     0
    ],
    "switch": [
-    "V115",
+    "RV",
     2
    ]
   },
@@ -4869,7 +4922,7 @@
     0
    ],
    "switch": [
-    "V115",
+    "RV",
     2
    ]
   },
@@ -5769,7 +5822,7 @@
     1
    ],
    "string_b": [
-    "V115",
+    "RV",
     1
    ],
    "delimiter": "\n"
@@ -6206,7 +6259,7 @@
     5
    ],
    "ref_videos.ref_video_0": [
-    "V115",
+    "RV",
     0
    ],
    "prompt": [
@@ -6298,7 +6351,7 @@
     0
    ],
    "ref_videos.ref_video_0": [
-    "V115",
+    "RV",
     0
    ],
    "prompt": [
@@ -6372,7 +6425,7 @@
     0
    ],
    "switch": [
-    "V115",
+    "RV",
     2
    ]
   },
@@ -6435,7 +6488,7 @@
     0
    ],
    "switch": [
-    "V115",
+    "RV",
     2
    ]
   },
@@ -7335,7 +7388,7 @@
     1
    ],
    "string_b": [
-    "V115",
+    "RV",
     1
    ],
    "delimiter": "\n"
@@ -7496,6 +7549,29 @@
   "_meta": {
    "title": "KNOB steps · шаги видео (turbo 8, без turbo 20)",
    "role": "video3:knob"
+  }
+ },
+ "RV": {
+  "class_type": "NGFarmRefVideo",
+  "inputs": {
+   "path": [
+    "T",
+    13
+   ],
+   "start_sec": 0.0,
+   "length_sec": 0.0,
+   "settings": [
+    "V111",
+    0
+   ],
+   "prompt": [
+    "V112",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ВИДЕО-РЕФ движения из таблицы <Video 1> (пусто — без референса)",
+   "role": "video1:in"
   }
  },
  "name_V1": {

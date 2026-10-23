@@ -157,7 +157,110 @@ class FarmZip:
         return {"ui": {"text": [text]}, "result": (str(z),)}
 
 
-NODES = {"NGFarmFrameFromFolder": FarmFrameFromFolder, "NGFarmPickFirst": FarmPickFirst, "NGFarmZip": FarmZip}
+def _norm_name(s: str) -> str:
+    s = Path(str(s)).stem.lower()
+    return re.sub(r"[\s\-]+", "_", s.strip())
+
+
+class FarmLocationPick:
+    """Загруженные картинки локаций (Load Image) → та, чьё имя файла совпадает с зоной строки таблицы."""
+    CATEGORY = "Next Genium/Farm"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("location", "picked")
+    DESCRIPTION = ("Необязательные картинки локаций: подключите Load Image (имя файла = ID зоны из таблицы, например "
+                   "loft_living.png). Совпало — в кадр идёт эта картинка, иначе — локация из таблицы.")
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        opt = {f"loc_{i}": ("IMAGE", {"lazy": True}) for i in range(1, 9)}
+        opt["from_table"] = ("IMAGE", {"lazy": True})
+        return {"required": {"zone": ("STRING", {"forceInput": True})}, "optional": opt,
+                "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}}
+
+    @staticmethod
+    def _names(prompt, unique_id) -> dict:
+        """loc_i → имя файла Load Image, подключённой к этому входу (из графа запроса)."""
+        out = {}
+        try:
+            me = (prompt or {}).get(str(unique_id)) or {}
+            for k, v in (me.get("inputs") or {}).items():
+                if k.startswith("loc_") and isinstance(v, list):
+                    src = (prompt or {}).get(str(v[0])) or {}
+                    img = (src.get("inputs") or {}).get("image")
+                    if isinstance(img, str):
+                        out[k] = img
+        except Exception:   # noqa: BLE001
+            pass
+        return out
+
+    def _match(self, zone, prompt, unique_id):
+        z = _norm_name(zone)
+        if not z:
+            return None
+        names = self._names(prompt, unique_id)
+        for k, n in sorted(names.items()):
+            if _norm_name(n) == z:
+                return k
+        for k, n in sorted(names.items()):
+            nn = _norm_name(n)
+            if nn.startswith(z) or z in nn:
+                return k
+        return None
+
+    def check_lazy_status(self, zone, prompt=None, unique_id=None, **kw):
+        k = self._match(zone, prompt, unique_id) or "from_table"
+        return [k] if k in kw and kw[k] is None else []
+
+    def run(self, zone, prompt=None, unique_id=None, **kw):
+        k = self._match(zone, prompt, unique_id)
+        if k and kw.get(k) is not None:
+            return (kw[k], f"{zone} → загруженная картинка {self._names(prompt, unique_id).get(k)}")
+        if kw.get("from_table") is not None:
+            return (kw["from_table"], f"{zone} → из таблицы")
+        raise ValueError(f"нет картинки локации для зоны {zone}")
+
+
+class FarmRefVideo:
+    """Видео-реф движения из таблицы (путь) → вход <Video 1> движка видео (обёртка над StacyRefVideo)."""
+    CATEGORY = "Next Genium/Farm"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "BOOLEAN")
+    RETURN_NAMES = ("ref_video", "report", "has_video")
+    DESCRIPTION = "Видео-реф движения по пути из таблицы; пусто — без референса (как «(none)» у StacyRefVideo)."
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"path": ("STRING", {"forceInput": True}),
+                             "start_sec": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 600.0, "step": 0.1}),
+                             "length_sec": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 60.0, "step": 0.1})},
+                "optional": {"settings": ("STACY_SETTINGS",), "prompt": ("STRING", {"forceInput": True})}}
+
+    def run(self, path, start_sec=0.0, length_sec=0.0, settings=None, prompt=None):
+        import shutil
+        import nodes
+        cls = nodes.NODE_CLASS_MAPPINGS.get("StacyRefVideo")
+        if cls is None:
+            raise RuntimeError("нужен пакет ComfyUI-StacyLoop (StacyRefVideo)")
+        name = "(none)"
+        p = Path(path.strip()) if path and path.strip() else None
+        if p and p.is_file():
+            import folder_paths
+            d = Path(folder_paths.get_input_directory()) / "farm_refs"
+            d.mkdir(parents=True, exist_ok=True)
+            dst = d / p.name
+            if not dst.exists() or dst.stat().st_size != p.stat().st_size:
+                shutil.copyfile(p, dst)
+            name = f"farm_refs/{p.name}"
+        obj = cls()
+        return getattr(obj, cls.FUNCTION)(video=name, start_sec=start_sec, length_sec=length_sec,
+                                          settings=settings, prompt=prompt)
+
+
+NODES = {"NGFarmFrameFromFolder": FarmFrameFromFolder, "NGFarmPickFirst": FarmPickFirst, "NGFarmZip": FarmZip,
+         "NGFarmLocationPick": FarmLocationPick, "NGFarmRefVideo": FarmRefVideo}
 NAMES = {"NGFarmFrameFromFolder": "Кадр из папки по ID (Next Genium)",
          "NGFarmPickFirst": "Кадр для видео: из фото / из папки (Next Genium)",
-         "NGFarmZip": "ZIP итогов + ссылка (Next Genium)"}
+         "NGFarmZip": "ZIP итогов + ссылка (Next Genium)",
+         "NGFarmLocationPick": "Локация: загруженная по имени зоны / из таблицы (Next Genium)",
+         "NGFarmRefVideo": "Видео-реф движения из таблицы (Next Genium)"}

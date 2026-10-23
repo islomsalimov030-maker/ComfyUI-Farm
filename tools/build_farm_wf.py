@@ -236,7 +236,14 @@ def build_auto() -> dict:
     ph = photo_instances(g)
     f0, fp = ph[0], ph[0]["fp"]
     F = lambda key: f0["p"] + tid(f0["base"], key)
-    relink(g, F(fp["inputs"]["location_sheet"]["title"]), t(0))
+    # необязательные картинки локаций: Load Image с именем файла = ID зоны → берётся вместо локации из таблицы
+    add(g, "LP", "NGFarmLocationPick", {"zone": t(12), "from_table": t(0),
+                                        **{f"loc_{i}": [f"LI{i}", 0] for i in range(1, 5)}},
+        "ЛОКАЦИЯ · загруженная по имени зоны (иначе из таблицы)", "photo:loc")
+    for i in range(1, 5):
+        add(g, f"LI{i}", "LoadImage", {"image": "example.png"},
+            f"ЛОКАЦИЯ {i} · имя файла = ID зоны (loft_living.png); не нужна — выключить (mute)", "photo:loc")
+    relink(g, F(fp["inputs"]["location_sheet"]["title"]), ["LP", 0])
     g[F(fp["inputs"]["prompt"]["title"])]["inputs"]["value"] = t(3)
     mods = g[F(fp["inputs"]["char_face_mod"]["title"])]["inputs"]
     mods["mod_1"], mods["mod_2"], mods["mod_3"] = t(1), t(2), "(none)"
@@ -263,6 +270,13 @@ def build_auto() -> dict:
     relink(g, V(vp["inputs"]["keyframe"]["title"]), ["PK", 0])
     relink(g, V(vp["inputs"]["end_frame"]["title"]), ["PK", 0])
     relink(g, V(vp["inputs"]["face_ref"]["title"]), t(5))
+    # видео-реф движения из таблицы (<Video 1>): путь из колонки «Видео-реф движения»
+    rv = V(vp["inputs"]["motion_ref"]["title"])
+    old = g[rv]["inputs"]
+    add(g, "RV", "NGFarmRefVideo", {"path": t(13), "start_sec": 0.0, "length_sec": 0.0,
+                                    **{k: v for k, v in old.items() if k in ("settings", "prompt")}},
+        "ВИДЕО-РЕФ движения из таблицы <Video 1> (пусто — без референса)", "video1:in")
+    relink(g, rv, "RV")
     g[V(vp["inputs"]["prompt"]["title"])]["inputs"]["value"] = t(6)
     g[V(vp["inputs"]["face_prompt"]["title"])]["inputs"]["value"] = t(7)
     pan = g[V("PANEL")]["inputs"]

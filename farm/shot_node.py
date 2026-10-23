@@ -51,8 +51,13 @@ def load_row(table: str, row: int, shot_id: str):
         rc = ready[(max(1, row) - 1) % len(ready)]
     if not rc.ok:
         raise ValueError(f"строка {rc.id}: {rc.status_text()}")
-    loc = rc.norm.get("location_image")
-    shot = to_shot(rc, location_image=sh._localize_ref(rc, "location_image", {"lib_issues": []}) if loc else None)
+    rep = {"lib_issues": []}
+    loc = sh._localize_ref(rc, "location_image", rep) if rc.norm.get("location_image") else None
+    mr = sh._localize_ref(rc, "motion_ref", rep) if rc.norm.get("motion_ref") else None
+    pr = sh._localize_ref(rc, "pose_ref", rep) if rc.norm.get("pose_ref") else None
+    if not rc.ok:
+        raise ValueError(f"строка {rc.id}: {rc.status_text()}")
+    shot = to_shot(rc, pose_ref=pr, motion_ref=mr, location_image=loc)
     for k in ("objects_json", "depends_on_json"):
         shot[k] = json.dumps(shot.get(k) or [], ensure_ascii=False)
     return shot, lib, [r.id for r in ready]
@@ -62,15 +67,18 @@ class FarmShotFromTable:
     CATEGORY = "Next Genium/Farm"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "IMAGE", "STRING", "STRING",
-                    "FLOAT", "BOOLEAN", "STRING", "STRING")
+                    "FLOAT", "BOOLEAN", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("location", "face_mod", "body_mod", "frame_prompt", "frame_face_prompt", "face_ref",
-                    "video_prompt", "video_face_prompt", "duration_sec", "loop", "shot_id", "info")
+                    "video_prompt", "video_face_prompt", "duration_sec", "loop", "shot_id", "info",
+                    "zone", "motion_ref", "pose_ref")
     OUTPUT_TOOLTIPS = (
         "Локация <Picture 1>: «Картинка локации» строки или лист ракурсов зоны.",
         "Мод лица персонажа (farm/<персонаж>_face).", "Мод тела — персонаж в наряде (farm/<вариант>_body).",
         "Промпт кадра H3.", "Промпт прохода лица кадра.", "Эталон лица персонажа для видео <Picture 2>.",
         "Промпт видео-петли H3.", "Промпт прохода лица видео.", "Длительность видео из таблицы, с.",
-        "Петля из таблицы.", "ID строки.", "Что взято из таблицы (для проверки глазами).")
+        "Петля из таблицы.", "ID строки.", "Что взято из таблицы (для проверки глазами).",
+        "ID зоны из таблицы (по нему выбирается загруженная картинка локации).",
+        "Путь к видео-рефу движения строки (пусто — нет).", "Путь к фото-рефу позы строки (пусто — нет).")
     DESCRIPTION = ("Шот из таблицы сцен: номер строки с галочкой «В работу» (1…N) или ID → локация, моды, промпты "
                    "кадра и видео, длительность. Промпты пишет LLM фермы (Ollama) по шаблонам H3. "
                    "Чтобы прогнать N строк подряд: row → control «increment» и Queue ×N.")
@@ -115,7 +123,8 @@ class FarmShotFromTable:
                 f"видео: {dur} с, петля: {'да' if loop else 'нет'}")
         res = (_img(fr.get("location_sheet")), fr.get("char_face_mod") or "(none)", fr.get("char_body_mod") or "(none)",
                out["frame"][0], out["frame"][1], _img(vr.get("face_ref")), out["video"][0], out["video"][1],
-               dur, loop, shot["shot_id"], info)
+               dur, loop, shot["shot_id"], info, str(extra.get("zone") or shot.get("plate") or ""),
+               str(shot.get("motion_ref") or ""), str(shot.get("pose_ref") or ""))
         return {"ui": {"text": [info]}, "result": res}
 
     @classmethod
