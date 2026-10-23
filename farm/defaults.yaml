@@ -24,6 +24,7 @@ bandit:
 worker:
   idle_sleep_s: 5
   batch_size: 8
+  prefetch: true           # 23.10: отправлять следующие генерации, пока идут проверки на CPU
   autostart: true           # фоновый поток стартует при импорте; работу начинает только после «start»
 qa:
   routing_default: routing_default.yaml   # в пакете farm/

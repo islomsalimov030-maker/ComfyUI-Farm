@@ -338,12 +338,22 @@ def render(stage: str, template: str, fields: dict, v: dict, cfg: dict) -> str:
                                                              fields.get("scale_anchor") or "")),
             extra_rules=_dedupe(v["extra_rules"]),
             char_desc=v.get("char_desc", ""), framing_share=v.get("framing_share", ""))
-        if v.get("is_ls") and v.get("plan_opening"):
-            data["opening"] = v["plan_opening"]
-        elif v.get("is_ls") and not fields.get("framing_en"):
-            data["opening"] = "A frontal full-body shot"
+        if v.get("is_ls"):   # 23.10: «План» задаёт крупность, «Ракурс и кадр» — откуда камера; раньше план затирал ракурс
+            view = _lc(fields.get("framing_en") or "")
+            base = v.get("plan_opening") or ("" if view else "A frontal full-body shot")
+            data["opening"] = f"{base}, {view}" if base and view else (base or _cap(view))
+            if v.get("face_rule"):
+                data["extra_rules"] = _dedupe([v["face_rule"], *data["extra_rules"]])
     text = _env.get_template(f"{template}.j2").render(**data)
     return _tidy(text)
+
+
+# «Лицо в кадре» (таблица v2) → правило кадра frame_ls (23.10: раньше колонка в промпт не попадала)
+FACE_RULES = {
+    "нет": "She is seen from behind: her back is turned to the camera and her face is not visible.",
+    "в конце": "She is turned away from the camera at this moment: her face is not visible or only barely in profile.",
+    "в зеркале": "She stands facing a mirror with her back to the camera; her face is seen only as a reflection in the mirror.",
+}
 
 
 def _dedupe(xs: list) -> list:
@@ -470,6 +480,7 @@ def build(stage: str, shot: dict, lib: Any, profile: dict, ctx: Optional[dict] =
              pclass if pclass in ("sitting", "lying") else "standing", height),
          "char_desc": _char_desc(char, height), "hair_en": _lc(char.get("hair_en") or ""),
          "framing_share": cfg["defaults"]["framing_share"].get(pclass, "") if is_ls and plan in (None, "wide") else "",
+         "face_rule": FACE_RULES.get(str(extra.get("face_in_frame") or "").strip().lower(), "") if is_ls else "",
          "plan_opening": cfg["defaults"].get("plan_opening", {}).get(plan or "", "") if is_ls else "", "is_ls": is_ls,
          "scale_anchor": anchor["text"] if anchor else None}
     flags = {"has_video": has_video, "has_pose": has_pose, "end_pose_ru": _end_pose_ru(shot, extra, lib)}

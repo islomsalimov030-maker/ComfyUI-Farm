@@ -61,7 +61,23 @@ def no_face_expected(ctx: QAContext) -> bool:
             extra = json.loads(extra)
         except ValueError:
             extra = {}
-    return bool((ctx.extra or {}).get("no_face") or extra.get("no_face"))
+    fif = str(extra.get("face_in_frame") or "").strip().lower()
+    return bool((ctx.extra or {}).get("no_face") or extra.get("no_face") or fif in NO_FACE_VALUES)
+
+
+# «Лицо в кадре» (таблица v2): в стартовом кадре лица нет или оно только в отражении — метрикам лица не верим
+NO_FACE_VALUES = {"нет", "в конце", "в зеркале", "no", "end", "mirror"}
+
+
+def mirror_shot(ctx: QAContext) -> bool:
+    extra: Any = (ctx.shot or {}).get("extra_json") or {}
+    if isinstance(extra, str):
+        import json
+        try:
+            extra = json.loads(extra)
+        except ValueError:
+            extra = {}
+    return str(extra.get("face_in_frame") or "").strip().lower() in ("в зеркале", "mirror")
 
 
 def face_ref(ctx: QAContext) -> Optional[str]:

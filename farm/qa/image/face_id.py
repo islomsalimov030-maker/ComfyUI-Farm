@@ -42,7 +42,7 @@ def check(asset: Asset, ctx: QAContext) -> CheckResult:
           "face_px": round(f.size_px), "ver": VER}
     if why:
         ev["unreliable"] = why
-        if t.get("unreliable_action", "human") == "human":
+        if t.get("unreliable_action", "human") == "human" and not C.no_face_expected(ctx):
             # сходству не верим → не пропускаем молча: FACE_UNRELIABLE → needs_human (routing.yaml);
             # другой сид с надёжным лицом, прошедший проверку, всё равно станет кандидатом
             return CheckResult("face_id", sim, False, "hard", "FACE_UNRELIABLE", ev, VER)

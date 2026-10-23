@@ -128,6 +128,8 @@ class Worker:
         batch = Q.select(self.db, self.control.allows, self._workflow_of,
                          limit=self.cfg["worker"]["batch_size"], sticky=self._sticky,
                          allow_new=self.control.allows_shot)
+        if self.cfg["worker"].get("prefetch", True):
+            self._prefetch(batch)
         for shot in batch:
             if self._stop.is_set():
                 raise Stop()
@@ -144,6 +146,37 @@ class Worker:
                 self._to_human(shot, f"ошибка оркестратора: {e}")
                 n += 1
         return n
+
+    def _prefetch(self, batch: list[dict]) -> None:
+        """23.10: держать очередь ComfyUI занятой, пока воркер гоняет проверки на CPU — заранее планирует и
+        отправляет попытки шотов в *_gen (без ожидания), не больше comfy.max_in_flight. Ошибки не мешают шагам."""
+        limit = int(self.cfg["comfy"]["max_in_flight"])
+        try:
+            running = len(self.db.all("SELECT attempt_id FROM attempts WHERE status='running' AND superseded=0"))
+            for shot in batch:
+                if running >= limit or self._stop.is_set():
+                    return
+                if shot["state"] not in (S.FRAME_GEN, S.VIDEO_GEN):
+                    continue
+                stage = "frame" if shot["state"] == S.FRAME_GEN else "video"
+                sid, try_no = shot["shot_id"], int(shot.get("stage_try") or 0)
+                atts = self._attempts(sid, stage, try_no)
+                if not atts:
+                    atts = self.plan_attempts(shot, stage, self.profile(shot["profile"])) or []
+                if not atts:
+                    continue
+                graph, params = self.workflow(atts[0]["workflow"] + "@" + atts[0]["workflow_ver"])
+                for a in atts:
+                    if running >= limit:
+                        return
+                    if a["status"] == "queued" and self._ensure_submitted(a, graph, params) == "running":
+                        running += 1
+        except (ComfyUnavailable, Stop):
+            raise
+        except S.StaleState:
+            pass
+        except Exception:   # noqa: BLE001 — предвыборка вспомогательная, шаг шота разберётся сам
+            log.exception("предвыборка: ошибка")
 
     def run_until_idle(self, max_ticks: int = 200) -> int:
         """Для тестов и ручного прогона: тикать, пока есть продвижения."""

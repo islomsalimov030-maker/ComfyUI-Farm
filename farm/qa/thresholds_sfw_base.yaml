@@ -17,6 +17,12 @@ frame:
     max_roll: 50                 # лёжа «набок» — ArcFace/AuraFace ненадёжны (Лежа-2/5)
     min_luma_p95: 150            # L (Lab) 95-й перцентиль в лице: ниже — лицо в тени / жёсткий свет
     severity_missing: soft       # лица нет, а шот не помечен no_face → COMPOSITION
+    max_faces: 1                 # 23.10: больше лиц (второй человек на фоне) → EXTRA_PERSON; «в зеркале» +1
+    severity_extra: hard
+  frame_pad:                     # 23.10: однотонные поля по краям (паддинг H3) → FRAME_PAD
+    max_frac: 0.015              # полоса шире 1.5 % стороны кадра
+    std_max: 4.0
+    severity: hard
   face_id:
     backend: auraface            # прод: AuraFace-v1 glintr100 (Apache-2.0); buffalo_l — только сверка
     min: {auraface: 0.57, buffalo_l: 0.62}   # калибровка WS-05: надёжные позитивы AuraFace >= 0.58, негативы < 0.55

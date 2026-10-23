@@ -12,6 +12,8 @@ routes:
   FACE_ID:      {action: retry, knobs: [face_pass, lora_w, seed]}
   FACE_UNRELIABLE: {action: needs_human}                # лицо мелкое/профиль/наклон/в тени — сходству не верим
   COMPOSITION:  {action: retry, knobs: [prompt, seed]}  # лица нет, а шот его ждёт
+  EXTRA_PERSON: {action: retry, knobs: [seed]}          # 23.10: второй человек в кадре
+  FRAME_PAD:    {action: retry, knobs: [seed]}          # 23.10: поля по краям кадра
   AGE:          {action: retry, knobs: [prompt, seed]}
   SCALE:        {action: retry, knobs: [plate_slot, anchor, seed]}
   ANATOMY:      {action: retry, knobs: [seed]}

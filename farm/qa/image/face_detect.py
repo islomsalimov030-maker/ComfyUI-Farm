@@ -1,6 +1,6 @@
 """face_detect — есть ли лицо и можно ли верить метрикам лица (размер, поворот, наклон, тень).
 
-Нет лица в шоте, где оно ожидается → COMPOSITION (soft). Ненадёжно → info, причина в evidence
+Нет лица в шоте, где оно ожидается → COMPOSITION (soft). Лиц больше `max_faces` (второй человек) → EXTRA_PERSON (hard). Ненадёжно → info, причина в evidence
 (face_id/age дальше дают info вместо отказа — решает человек).
 """
 from __future__ import annotations
@@ -43,6 +43,11 @@ def check(asset: Asset, ctx: QAContext) -> CheckResult:
         ok = False
         return CheckResult("face_detect", 0.0, ok, t.get("severity_missing", "soft"), "COMPOSITION",
                            {"why": ["нет лица"]}, VER)
+    max_faces = int(t.get("max_faces", 1)) + (1 if C.mirror_shot(ctx) else 0)   # в зеркале — лицо + отражение
+    if len(fs) > max_faces:
+        return CheckResult("face_detect", float(len(fs)), False, t.get("severity_extra", "hard"), "EXTRA_PERSON",
+                           {"n_faces": len(fs), "max": max_faces,
+                            "bboxes": [[round(float(v)) for v in x.bbox] for x in fs]}, VER)
     why = reliability(f, img, t)
     C.state(asset)["face_unreliable"] = why
     ev = {"face_px": round(f.size_px), "yaw": round(f.yaw, 1), "roll": round(f.roll, 1),

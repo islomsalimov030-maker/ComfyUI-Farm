@@ -451,3 +451,19 @@ def test_v21_character_variant(env, monkeypatch, tmp_path):
     r = build("frame", shot, lib, prof, ctx={"no_cache": True})
     assert not errors(r.lint), [(i.code, i.msg) for i in r.lint]
     assert "navy pleated skirt" in r.text
+
+
+def test_frame_ls_view_and_face_rule(env, monkeypatch):
+    """23.10: «План» не затирает «Ракурс и кадр»; «Лицо в кадре: в зеркале» → правило в промпте."""
+    lib, shots, F = env
+    fr = dict(F["SIT-08"]["frame"]); fr["framing_en"] = "seen from behind and slightly to the right"
+    fake = FakeOllama([json.dumps(fr)])
+    prof, _ = _install(fake, monkeypatch)
+    prof = {**prof, "frame": {**prof["frame"], "workflow": "frame_ls@1", "prompt_template": "frame_ls_v1"}}
+    lib.data.setdefault("zones", {})["apartment_living"] = {"id": "apartment_living", "desc_en": "a lilac living room"}
+    shot = {**shots["SIT-08"], "extra_json": {**(shots["SIT-08"].get("extra_json") or {}), "zone": "apartment_living",
+                                              "pose_class": "sitting", "plan": "wide", "face_in_frame": "в зеркале"}}
+    r = build("frame", shot, lib, prof, ctx={"no_cache": True})
+    assert not errors(r.lint), [(i.code, i.msg) for i in r.lint]
+    assert "seen from behind and slightly to the right" in r.text
+    assert "reflection in the mirror" in r.text
