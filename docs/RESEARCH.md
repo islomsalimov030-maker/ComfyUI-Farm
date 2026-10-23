@@ -225,4 +225,6 @@
 - Ветка face pass готового видео не содержит SAM3, `H3ResidualTemporalSmooth` и RTX VSR (они в генерации/кадре): только трекинг-кроп лица, per-frame denoise, руки, flow-lock (EMA), вклейка, петля.
 - Готовых нод «видео из папки по номеру + имя файла» нет: KJNodes `LoadVideosFromFolder` склеивает все видео в один батч/сетку без имён; core `LoadVideoDataSetFromFolder` отдаёт список VIDEO без имён. Сделаны свои `NGFarmPanelFacepass` + `NGFarmFinalizeVideo`.
 - Детекторы лица/рук StacyLoop — ultralytics YOLOv8 (AGPL-3.0), см. `tools/licenses.yaml`.
+- A/B силы прохода лица видео (SIT-02, лицо ~120 px, fl2va turbo 4 шага, AuraFace к рефам Стейси): исходник 0.27 → AUTO 0.34 / LoRA 1.0 — 0.63; 0.55 / LoRA 0.75 — 0.67 (мин 0.59), мимика цела; при силе ≥ 0.55 LoRA лица 1.2 даёт гримасы, при 0.65 мимика меняется и с LoRA 0.75; один мод без LoRA — 0.64; 8 шагов не лучше 4; плотный кроп (1.8) хуже. Глазом изменение лица на 1080p малозаметно, хотя сходство растёт 0.27 → 0.67.
+- На поде с лимитом ОЗУ контейнера 94 ГБ (cgroup memory.max) ComfyUI падает по OOM на 3-м видео подряд: RAM-кэш и pinned memory меряют ОЗУ хоста (755 ГБ+). Лечится `--disable-pinned-memory --cache-lru 10`.
 

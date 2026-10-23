@@ -396,10 +396,10 @@ FP_PROMPT = ("St4cy_H3, a close-up of the face of the same young woman, her expr
              "no pan. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the "
              "reference image.")
 FP_SPEC = [  # имя, тип, дефолт, min, max, шаг, подсказка (короткая — видна при наведении)
-    ("face_lora", "FLOAT", 1.0, 0.0, 1.5, 0.05, "LoRA лица Стейси: 1.0; не похоже — до 1.2."),
-    ("face_mod", "FLOAT", 1.0, 0.0, 1.5, 0.05, "Сила мода лица farm/stacy_face (0 — без мода)."),
-    ("face_denoise_auto", "BOOLEAN", True, None, None, None, "AUTO — сила прохода по размеру лица. Выкл — ручная ниже."),
-    ("face_denoise", "FLOAT", 0.3, 0.1, 0.6, 0.01, "Сила прохода лица при AUTO выкл: не похоже — 0.32–0.38."),
+    ("face_lora", "FLOAT", 0.75, 0.0, 1.5, 0.05, "LoRA лица Стейси: 0.75 при силе 0.55 (выше 1 при силе ≥0.55 — гримасы)."),
+    ("face_mod", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Сила мода лица (0 — без мода, макс. 1)."),
+    ("face_denoise_auto", "BOOLEAN", False, None, None, None, "AUTO (по размеру лица, ~0.34) меняет лицо слабо. Выкл — сила ниже."),
+    ("face_denoise", "FLOAT", 0.55, 0.1, 0.7, 0.01, "Сила прохода лица: 0.55 (0.65 — меняется мимика)."),
     ("seed", "INT", 3875932223, 0, 2**53, 1, "Сид прохода лица."),
     ("loop", "BOOLEAN", True, None, None, None, "Видео — петля (ферма): вкл. Обычное видео — выкл."),
     ("vsr", "BOOLEAN", False, None, None, None, "RTX VSR до FullHD: включать, только если исходник меньше 1920×1080."),
