@@ -363,9 +363,16 @@ restart_comfy() {
   else
     start=$(( $(wc -l < $WS/logs/comfy.log 2>/dev/null || echo 0) + 1 ))
     tmux kill-session -t comfy 2>/dev/null || true
-    # та же команда, что в bootstrap.sh работодателя
+    # та же команда, что в bootstrap.sh работодателя; при лимите ОЗУ контейнера < 200 ГБ — без pinned memory и с
+    # LRU-кэшем: кэш ComfyUI меряет ОЗУ хоста, а не лимит контейнера (WS-10b 23.10: OOM-kill на поде с лимитом 94 ГБ)
+    local extra="${COMFY_ARGS:-}" lim
+    lim=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo max)
+    if [ -z "$extra" ] && [ "$lim" != max ] && [ "$lim" -lt 200000000000 ]; then
+      extra="--disable-pinned-memory --cache-lru 10"
+      echo "  лимит ОЗУ контейнера $((lim / 1000000000)) ГБ → $extra"
+    fi
     tmux new-session -d -s comfy -c "$COMFY" bash -c \
-      "source $WS/env.sh; $CPY main.py --listen 127.0.0.1 --port 8188 --enable-manager 2>&1 | tee -a $WS/logs/comfy.log"
+      "source $WS/env.sh; $CPY main.py --listen 127.0.0.1 --port 8188 --enable-manager $extra 2>&1 | tee -a $WS/logs/comfy.log"
     for _ in $(seq 1 240); do   # на сетевом томе (MooseFS) старт ComfyUI 10–13 мин (WS-10, 22.10)
       code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8188/system_stats || true)
       [ "$code" = 200 ] && break
