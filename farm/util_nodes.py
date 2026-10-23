@@ -385,3 +385,157 @@ _PF, _PFN = _panel("FarmPanelFace", "ПУЛЬТ ПРОХОДА ЛИЦА (Next Ge
                    VIDEO_SPEC, models=False)
 NODES.update({"NGFarmPanelPhoto": _PP, "NGFarmPanelVideo": _PV, "NGFarmPanelFace": _PF})
 NAMES.update({"NGFarmPanelPhoto": _PPN, "NGFarmPanelVideo": _PVN, "NGFarmPanelFace": _PFN})
+
+
+# ---------------------------------------------------------------- WS-10b (23.10): проход лица готового видео (Стейси)
+VIDEO_EXT = (".mp4", ".mov", ".webm", ".mkv", ".avi")
+FP_PROMPT = ("St4cy_H3, a close-up of the face of the same young woman, her expression and head movement kept exactly "
+             "as in the source video, natural skin texture, sharp focus on the eyes, every movement at natural "
+             "real-time speed, never in slow motion. One continuous shot with no cuts. Filmed from one fixed position; "
+             "the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and "
+             "no pan. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the "
+             "reference image.")
+FP_SPEC = [  # имя, тип, дефолт, min, max, шаг, подсказка (короткая — видна при наведении)
+    ("face_lora", "FLOAT", 1.0, 0.0, 1.5, 0.05, "LoRA лица Стейси: 1.0; не похоже — до 1.2."),
+    ("face_mod", "FLOAT", 1.0, 0.0, 1.5, 0.05, "Сила мода лица farm/stacy_face (0 — без мода)."),
+    ("face_denoise_auto", "BOOLEAN", True, None, None, None, "AUTO — сила прохода по размеру лица. Выкл — ручная ниже."),
+    ("face_denoise", "FLOAT", 0.3, 0.1, 0.6, 0.01, "Сила прохода лица при AUTO выкл: не похоже — 0.32–0.38."),
+    ("seed", "INT", 3875932223, 0, 2**53, 1, "Сид прохода лица."),
+    ("loop", "BOOLEAN", True, None, None, None, "Видео — петля (ферма): вкл. Обычное видео — выкл."),
+    ("vsr", "BOOLEAN", False, None, None, None, "RTX VSR до FullHD: включать, только если исходник меньше 1920×1080."),
+    ("face_confidence", "FLOAT", -1.0, -1.0, 0.6, 0.05, "Порог детектора лица: -1 — авто."),
+    ("crop_factor", "FLOAT", 2.5, 1.8, 3.5, 0.1, "Запас кропа вокруг головы."),
+    ("large_face_mult", "FLOAT", 0.35, 0.1, 1.0, 0.05, "Ослабление прохода для крупного лица."),
+    ("face_lock", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Привязка лица к движению (flow-lock) — против дрожи."),
+    ("face_lock_temporal", "FLOAT", 0.8, 0.0, 1.0, 0.05, "Сглаживание лица по времени."),
+    ("hand_strength", "FLOAT", 0.2, 0.0, 1.0, 0.05, "Проход лица под руками (0–1)."),
+]
+
+
+def _in_dir() -> Path:
+    try:
+        import folder_paths
+        return Path(folder_paths.get_input_directory())
+    except Exception:   # noqa: BLE001
+        return Path(os.environ.get("COMFY_INPUT", "/workspace/ComfyUI/input"))
+
+
+def list_videos(src: str) -> list[Path]:
+    """Видео или папка с видео (путь от input/ или абсолютный) → файлы по имени; уже обработанные пропускаются."""
+    p = Path(src.strip())
+    if not p.is_absolute():
+        p = _in_dir() / p
+    if p.is_file():
+        return [p]
+    if not p.is_dir():
+        raise FileNotFoundError(f"нет видео или папки: {p}")
+    vids = sorted(f for f in p.iterdir() if f.suffix.lower() in VIDEO_EXT and "_facepass" not in f.stem)
+    if not vids:
+        raise FileNotFoundError(f"в {p} нет видео ({', '.join(VIDEO_EXT)})")
+    return vids
+
+
+def facepass_name(path: Path) -> str:
+    return f"{path.stem}_facepass_stacy"
+
+
+class FarmPanelFacepass:
+    """Пульт stacy_facepass@1: вход (видео или папка) + все ручки прохода лица."""
+    CATEGORY = "Next Genium/Farm"
+    FUNCTION = "run"
+    DESCRIPTION = ("Проход лица готового видео с LoRA Стейси. Папка: один Queue — все видео по очереди "
+                   "(остальные ставятся в очередь сами). Итог: output/stacy_facepass/<имя>_facepass_stacy.mp4.")
+    RETURN_TYPES = ("STRING", "STRING", "STRING") + tuple(t for _, t, *_ in FP_SPEC)
+    RETURN_NAMES = ("video_path", "out_name", "face_prompt") + tuple(k for k, *_ in FP_SPEC)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        req = {"video": ("STRING", {"default": "stacy_fp", "tooltip": "Видео или папка с видео: путь от "
+                                    "ComfyUI/input (stacy_fp) или абсолютный."}),
+               "index": ("INT", {"default": 0, "min": 0, "max": 9999, "control_after_generate": "fixed",
+                                 "tooltip": "Номер видео в папке (0 — первое). При 0 и «всю папку» — все по очереди."}),
+               "whole_folder": ("BOOLEAN", {"default": True, "tooltip": "Папка: один Queue — все видео."}),
+               "face_prompt": ("STRING", {"default": FP_PROMPT, "multiline": True,
+                                          "tooltip": "Промпт прохода лица (статичная камера, свет и цвет без изменений)."})}
+        for k, t, d, lo, hi, st, tip in FP_SPEC:
+            o = {"default": d, "tooltip": tip}
+            if t != "BOOLEAN":
+                o.update({"min": lo, "max": hi, "step": st})
+            if k == "seed":
+                o["control_after_generate"] = "fixed"
+            req[k] = (t, o)
+        return {"required": req, "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}}
+
+    def run(self, video, index, whole_folder, face_prompt, prompt=None, unique_id=None, **kw):
+        vids = list_videos(video)
+        if index >= len(vids):
+            raise IndexError(f"index {index}: в папке {len(vids)} видео (0…{len(vids) - 1})")
+        if whole_folder and index == 0 and len(vids) > 1 and prompt:
+            _requeue_index(prompt, str(unique_id), range(1, len(vids)))
+        v = vids[index]
+        print(f"[farm] stacy_facepass: {index + 1}/{len(vids)} {v.name}")
+        return (str(v), facepass_name(v), face_prompt) + tuple(kw[k] for k, *_ in FP_SPEC)
+
+
+def _requeue_index(prompt: dict, my_id: str, indices) -> None:
+    import copy as _c
+    import urllib.request as _ur
+    try:
+        from comfy.cli_args import args
+        port = int(args.port)
+    except Exception:   # noqa: BLE001
+        port = 8188
+    for i in indices:
+        pr = _c.deepcopy(prompt)
+        pr[my_id]["inputs"]["index"] = i
+        try:
+            req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps({"prompt": pr}).encode(),
+                              {"Content-Type": "application/json"})
+            _ur.urlopen(req, timeout=30).read()
+        except Exception as e:   # noqa: BLE001
+            print(f"[farm] не удалось поставить видео #{i}: {e}")
+
+
+def finalize_video(files: list, out_name: str, subdir: str = "stacy_facepass") -> Path:
+    """Итог VHS (…_00001.mp4 + превью .png) → output/<subdir>/<out_name>.mp4; превью и прочие файлы удаляются."""
+    files = [Path(f) for f in files]
+    mp4 = [f for f in files if f.suffix.lower() == ".mp4"]
+    if not mp4:
+        raise FileNotFoundError(f"нет mp4 среди {files}")
+    src = mp4[-1]
+    dst_dir = _out_dir() / subdir
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    dst = dst_dir / f"{out_name}.mp4"
+    k = 2
+    while dst.exists() and dst != src:
+        dst = dst_dir / f"{out_name}_{k}.mp4"
+        k += 1
+    os.replace(src, dst)
+    for f in files:
+        if f != src and f.exists() and f.parent.is_relative_to(_out_dir()):
+            f.unlink()
+    return dst
+
+
+class FarmFinalizeVideo:
+    """Переименовать итог VHS в точное имя и убрать служебные файлы (превью png)."""
+    CATEGORY = "Next Genium/Farm"
+    FUNCTION = "run"
+    OUTPUT_NODE = True
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("path",)
+    DESCRIPTION = "Итог: output/stacy_facepass/<имя>_facepass_stacy.mp4 (без счётчика и превью)."
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"filenames": ("VHS_FILENAMES",), "out_name": ("STRING", {"forceInput": True})}}
+
+    def run(self, filenames, out_name):
+        dst = finalize_video(list(filenames[1]), out_name)
+        print(f"[farm] stacy_facepass: итог {dst}")
+        return {"ui": {"text": [str(dst)]}, "result": (str(dst),)}
+
+
+NODES.update({"NGFarmPanelFacepass": FarmPanelFacepass, "NGFarmFinalizeVideo": FarmFinalizeVideo})
+NAMES.update({"NGFarmPanelFacepass": "ПУЛЬТ ПРОХОДА ЛИЦА Стейси — видео/папка + ручки (Next Genium)",
+              "NGFarmFinalizeVideo": "Итог видео: точное имя, без превью (Next Genium)"})

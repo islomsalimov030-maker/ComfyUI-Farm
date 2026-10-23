@@ -75,6 +75,11 @@ window.farmBuild = async (name, opts = {}) => {
   };
   const col = (title, pred, color, w) => { const l = nodes(pred); const ww = group(title, l, color, X, w); if (ww) X += ww + 60; return l; };
   const isAuto = name.startsWith("farm_auto");
+  const isFP = name.startsWith("stacy_facepass");
+  if (isFP) {
+    col("ПУЛЬТ — видео или папка + все ручки (Queue один раз — вся папка)", (r) => r === "facepass:knob", "#2f7d4a", 560);
+    col("ДВИЖОК ПРОХОДА ЛИЦА + ИТОГ", (r) => r === "facepass:sub" || r === "facepass:out", "#5b3a6e", 560);
+  } else {
   if (isAuto) col("ТАБЛИЦА — row + increment, Queue ×N = N строк", (r) => r === "table", "#3f789e");
   if (isAuto) col("ЛОКАЦИИ (необязательно) — Load Image с именем файла = ID зоны из таблицы", (r) => r === "photo:loc", "#3f789e");
   col("ФОТО · входы и пульт (общие для всех моделей)",
@@ -89,6 +94,7 @@ window.farmBuild = async (name, opts = {}) => {
   if (isAuto) col("ZIP видео", (r) => r === "video:zip", "#444");
   if (!isAuto) muted.push(...col("ПРОХОД ЛИЦА ГОТОВОГО ВИДЕО — отдельно (включать, когда хватает памяти)", (r) => r.startsWith("facepass"), "#6e2e2e", 560));
   for (const n of muted) n.mode = 2;   // выключено (mute): не выполняется и память не занимает
+  }
 
   // гайд прямо в воркфлоу
   try {
@@ -101,7 +107,7 @@ window.farmBuild = async (name, opts = {}) => {
   } catch (e) { console.warn("guide", e); }
 
   // переключатель групп rgthree
-  try {
+  if (!isFP) try {
     const sw = LG.createNode("Fast Groups Muter (rgthree)");
     sw.title = "ВКЛ/ВЫКЛ блоков и моделей (выключенные не грузят модели)";
     sw.pos = [0, -420]; g.add(sw);

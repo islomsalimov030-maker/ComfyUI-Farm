@@ -1,0 +1,895 @@
+{
+ "11": {
+  "class_type": "StacyPanel",
+  "inputs": {
+   "mode": false,
+   "seed": [
+    "FP",
+    7
+   ],
+   "duration_sec": 7,
+   "loop": [
+    "FP",
+    8
+   ],
+   "end_frame": false,
+   "model_10eros": false,
+   "steps": 8,
+   "shift": 12.0,
+   "char_lora": 0.0,
+   "free_vram": "auto",
+   "face_pass": "auto",
+   "face_denoise_auto": [
+    "FP",
+    5
+   ],
+   "face_denoise": [
+    "FP",
+    6
+   ],
+   "face_lora": [
+    "FP",
+    3
+   ],
+   "face_lock_temporal": [
+    "FP",
+    14
+   ]
+  },
+  "_meta": {
+   "title": "StacyPanel · режим face pass готового видео (значения из пульта)",
+   "role": "facepass:engine"
+  }
+ },
+ "18": {
+  "class_type": "StacyVideoInput",
+  "inputs": {
+   "video": "(none)",
+   "fallback_path": [
+    "FP",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "видео: чтение файла из пульта",
+   "role": "facepass:engine"
+  }
+ },
+ "2:94": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "[видео] Qwen3-VL",
+   "role": "facepass:engine"
+  }
+ },
+ "2:95": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "[видео] H3 video VAE",
+   "role": "facepass:engine"
+  }
+ },
+ "2:96": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "_meta": {
+   "title": "[видео] H3 audio VAE",
+   "role": "facepass:engine"
+  }
+ },
+ "2:97": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "[видео] H3 FL2VA (face)",
+   "role": "facepass:engine"
+  }
+ },
+ "2:98": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "2:97",
+    0
+   ],
+   "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+   "strength_model": 1
+  },
+  "_meta": {
+   "title": "[видео] FL2V turbo 4-step",
+   "role": "facepass:engine"
+  }
+ },
+ "2:99": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "2:98",
+    0
+   ],
+   "strength_model": [
+    "2:118",
+    12
+   ],
+   "lora_name": "stacy_h3_face_v1_000001800.safetensors"
+  },
+  "_meta": {
+   "title": "LoRA лица Стейси (сила из пульта)",
+   "role": "facepass:engine"
+  }
+ },
+ "2:100": {
+  "class_type": "StacyFitFrame",
+  "inputs": {
+   "images": [
+    "VSRsw",
+    0
+   ],
+   "width": 1920,
+   "height": 1080,
+   "method": "bicubic",
+   "anchor_y": 0.5
+  },
+  "_meta": {
+   "title": "[видео] ровно 1920x1080",
+   "role": "facepass:engine"
+  }
+ },
+ "2:101": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "2:100",
+    0
+   ],
+   "batch_index": 0,
+   "length": 1
+  },
+  "_meta": {
+   "title": "[видео] первый кадр для AUTO",
+   "role": "facepass:engine"
+  }
+ },
+ "2:102": {
+  "class_type": "StacyLoopExtend",
+  "inputs": {
+   "images": [
+    "2:100",
+    0
+   ],
+   "is_loop": [
+    "2:118",
+    4
+   ],
+   "min_extra": 24,
+   "h3_grid": true
+  },
+  "_meta": {
+   "title": "[видео] loop extend (+head, grid)",
+   "role": "facepass:engine"
+  }
+ },
+ "2:103": {
+  "class_type": "StacyAutoConfidence",
+  "inputs": {
+   "images": [
+    "2:102",
+    0
+   ],
+   "prev_report": [
+    "2:118",
+    24
+   ],
+   "confidence": [
+    "FP",
+    10
+   ]
+  },
+  "_meta": {
+   "title": "[видео] порог детектора лица (AUTO)",
+   "role": "facepass:engine"
+  }
+ },
+ "2:104": {
+  "class_type": "H3FaceTrackCrop",
+  "inputs": {
+   "images": [
+    "2:102",
+    0
+   ],
+   "confidence": [
+    "2:103",
+    0
+   ],
+   "crop_factor": [
+    "FP",
+    11
+   ],
+   "detector": "face_yolov8m.pt",
+   "canvas_width": 768,
+   "canvas_height": 768,
+   "canvas_mode": "manual",
+   "smooth_window": 21,
+   "size_smooth_window": 51,
+   "smooth_method": "gaussian",
+   "size_mode": "per_frame",
+   "identity_track": false,
+   "identity_threshold": 0.28,
+   "select": "largest_face",
+   "fallback_detector": "none",
+   "fallback_head_frac": 0.5,
+   "select_index": 0,
+   "identity_model": "insightface",
+   "cut_detection": "none",
+   "cut_threshold": 3,
+   "absent_shots": "off",
+   "X": 0,
+   "Y": 0,
+   "frame_index": 0
+  },
+  "_meta": {
+   "title": "[видео] face track + crop",
+   "role": "facepass:engine"
+  }
+ },
+ "2:105": {
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "inputs": {
+   "clip": [
+    "2:94",
+    0
+   ],
+   "vae": [
+    "2:95",
+    0
+   ],
+   "audio_vae": [
+    "2:96",
+    0
+   ],
+   "prompt": [
+    "FP",
+    2
+   ],
+   "width": [
+    "2:104",
+    4
+   ],
+   "height": [
+    "2:104",
+    5
+   ],
+   "length": [
+    "2:104",
+    6
+   ],
+   "ref_image_size": "match"
+  },
+  "_meta": {
+   "title": "[видео] face conditioning",
+   "role": "facepass:engine"
+  }
+ },
+ "2:106": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "2:99",
+    0
+   ],
+   "denoise": [
+    "2:118",
+    11
+   ],
+   "scheduler": "simple",
+   "steps": 4
+  },
+  "_meta": {
+   "title": "[видео] legacy denoise",
+   "role": "facepass:engine"
+  }
+ },
+ "2:107": {
+  "class_type": "H3InjectVideoLatent",
+  "inputs": {
+   "av_latent": [
+    "2:105",
+    1
+   ],
+   "images": [
+    "2:104",
+    0
+   ],
+   "vae": [
+    "2:95",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] inject crops",
+   "role": "facepass:engine"
+  }
+ },
+ "2:108": {
+  "class_type": "H3PerFrameDenoise",
+  "inputs": {
+   "model": [
+    "2:99",
+    0
+   ],
+   "av_latent": [
+    "2:107",
+    0
+   ],
+   "transform": [
+    "2:104",
+    1
+   ],
+   "denoise_multiplier_large_face": [
+    "FP",
+    12
+   ],
+   "denoise_multiplier_small_face": 1,
+   "scale_mode": "absolute_px",
+   "face_px_small": 100,
+   "face_px_large": 300,
+   "gamma": 1,
+   "smooth_frames": 9
+  },
+  "_meta": {
+   "title": "[видео] per-frame denoise",
+   "role": "facepass:engine"
+  }
+ },
+ "2:109": {
+  "class_type": "StacyOcclusionDenoise",
+  "inputs": {
+   "av_latent": [
+    "2:108",
+    0
+   ],
+   "crops": [
+    "2:104",
+    0
+   ],
+   "hand_strength": [
+    "FP",
+    15
+   ],
+   "hand_model": "hand_yolov8s.pt",
+   "confidence": 0.3,
+   "spread": 0.25,
+   "time_sigma": 2,
+   "expr_strength": 0.3,
+   "expr_frames": 6
+  },
+  "_meta": {
+   "title": "[видео] gentler under hands",
+   "role": "facepass:engine"
+  }
+ },
+ "2:110": {
+  "class_type": "BasicGuider",
+  "inputs": {
+   "model": [
+    "2:108",
+    2
+   ],
+   "conditioning": [
+    "MA",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face guider",
+   "role": "facepass:engine"
+  }
+ },
+ "2:111": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "2:118",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face seed",
+   "role": "facepass:engine"
+  }
+ },
+ "2:112": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "[видео] euler (face)",
+   "role": "facepass:engine"
+  }
+ },
+ "2:113": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "2:111",
+    0
+   ],
+   "guider": [
+    "2:110",
+    0
+   ],
+   "sampler": [
+    "2:112",
+    0
+   ],
+   "sigmas": [
+    "2:106",
+    0
+   ],
+   "latent_image": [
+    "2:109",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face sample",
+   "role": "facepass:engine"
+  }
+ },
+ "2:114": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "2:113",
+    0
+   ],
+   "vae": [
+    "2:95",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "[видео] face decode",
+   "role": "facepass:engine"
+  }
+ },
+ "2:115": {
+  "class_type": "StacyFlowAlign",
+  "inputs": {
+   "original": [
+    "2:104",
+    0
+   ],
+   "refined": [
+    "2:114",
+    0
+   ],
+   "align": [
+    "FP",
+    13
+   ],
+   "temporal": [
+    "2:118",
+    15
+   ],
+   "align_blur": 0.02,
+   "flow_size": 384,
+   "temporal_mode": "ema",
+   "radius": 4
+  },
+  "_meta": {
+   "title": "[видео] lock face to source motion",
+   "role": "facepass:engine"
+  }
+ },
+ "2:116": {
+  "class_type": "H3FaceStitch",
+  "inputs": {
+   "base_images": [
+    "2:102",
+    0
+   ],
+   "refined_crops": [
+    "2:115",
+    0
+   ],
+   "transform": [
+    "2:104",
+    1
+   ],
+   "feather": [
+    "2:118",
+    17
+   ],
+   "paste_region": "face_only",
+   "mask_dilation": 24,
+   "colour_match": 1,
+   "blend": 1,
+   "undetected_frames": "fade_out",
+   "feather_scales_with_crop": false
+  },
+  "_meta": {
+   "title": "[видео] stitch face",
+   "role": "facepass:engine"
+  }
+ },
+ "2:117": {
+  "class_type": "StacyLoopFold",
+  "inputs": {
+   "images": [
+    "2:116",
+    0
+   ],
+   "original_frames": [
+    "2:102",
+    1
+   ],
+   "is_loop": [
+    "2:118",
+    4
+   ],
+   "fade": 16,
+   "curve": "smootherstep"
+  },
+  "_meta": {
+   "title": "[видео] loop fold",
+   "role": "facepass:engine"
+  }
+ },
+ "2:118": {
+  "class_type": "StacySettings",
+  "inputs": {
+   "settings": [
+    "11",
+    0
+   ],
+   "probe_image": [
+    "2:101",
+    0
+   ],
+   "branch": "face pass video"
+  },
+  "_meta": {
+   "title": "[видео] пульт → значения (+ AUTO по видео)",
+   "role": "facepass:engine"
+  }
+ },
+ "2:119": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "2:103",
+    1
+   ],
+   "string_b": [
+    "18",
+    3
+   ],
+   "delimiter": "\n\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 0",
+   "role": "facepass:engine"
+  }
+ },
+ "2:120": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "2:119",
+    0
+   ],
+   "string_b": [
+    "2:104",
+    3
+   ],
+   "delimiter": "\n\n=== FACE TRACK ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 1",
+   "role": "facepass:engine"
+  }
+ },
+ "2:121": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "2:120",
+    0
+   ],
+   "string_b": [
+    "2:108",
+    1
+   ],
+   "delimiter": "\n\n=== PER-FRAME DENOISE ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 2",
+   "role": "facepass:engine"
+  }
+ },
+ "2:122": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "2:121",
+    0
+   ],
+   "string_b": [
+    "2:109",
+    1
+   ],
+   "delimiter": "\n\n=== HANDS NEAR THE FACE ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 3",
+   "role": "facepass:engine"
+  }
+ },
+ "2:123": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": [
+    "2:122",
+    0
+   ],
+   "string_b": [
+    "2:115",
+    1
+   ],
+   "delimiter": "\n\n=== FACE LOCK ===\n"
+  },
+  "_meta": {
+   "title": "[видео] отчёт 4",
+   "role": "facepass:engine"
+  }
+ },
+ "2:124": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "2:118",
+    21
+   ],
+   "value": [
+    "2:117",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: face pass видео",
+   "role": "facepass:engine"
+  }
+ },
+ "2:125": {
+  "class_type": "StacyGate",
+  "inputs": {
+   "enabled": [
+    "2:118",
+    21
+   ],
+   "value": [
+    "2:123",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "режим: face pass видео (отчёт)",
+   "role": "facepass:engine"
+  }
+ },
+ "19": {
+  "class_type": "VHS_VideoCombine",
+  "inputs": {
+   "images": [
+    "2:124",
+    0
+   ],
+   "frame_rate": [
+    "18",
+    2
+   ],
+   "loop_count": 0,
+   "filename_prefix": [
+    "NAME",
+    0
+   ],
+   "format": "video/h264-mp4",
+   "pix_fmt": "yuv420p",
+   "crf": 12,
+   "save_metadata": false,
+   "trim_to_audio": false,
+   "pingpong": false,
+   "save_output": true
+  },
+  "_meta": {
+   "title": "ИТОГ FullHD mp4 (временное имя)",
+   "role": "facepass:out"
+  }
+ },
+ "20": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "2:125",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ОТЧЁТ прохода лица",
+   "role": "facepass:out"
+  }
+ },
+ "FP": {
+  "class_type": "NGFarmPanelFacepass",
+  "inputs": {
+   "video": "stacy_fp",
+   "index": 0,
+   "whole_folder": true,
+   "face_prompt": "St4cy_H3, a close-up of the face of the same young woman, her expression and head movement kept exactly as in the source video, natural skin texture, sharp focus on the eyes, every movement at natural real-time speed, never in slow motion. One continuous shot with no cuts. Filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.",
+   "face_lora": 1.0,
+   "face_mod": 1.0,
+   "face_denoise_auto": true,
+   "face_denoise": 0.3,
+   "seed": 3875932223,
+   "loop": true,
+   "vsr": false,
+   "face_confidence": -1.0,
+   "crop_factor": 2.5,
+   "large_face_mult": 0.35,
+   "face_lock": 1.0,
+   "face_lock_temporal": 0.8,
+   "hand_strength": 0.2
+  },
+  "_meta": {
+   "title": "ПУЛЬТ ПРОХОДА ЛИЦА Стейси — видео или папка + ручки (наведите на поле — подсказка)",
+   "role": "facepass:knob"
+  }
+ },
+ "VSR": {
+  "class_type": "RTXVideoSuperResolution",
+  "inputs": {
+   "images": [
+    "18",
+    0
+   ],
+   "resize_type": "target dimensions",
+   "resize_type.width": 1920,
+   "resize_type.height": 1096,
+   "quality": "ULTRA"
+  },
+  "_meta": {
+   "title": "RTX VSR до FullHD (вкл в пульте)",
+   "role": "facepass:engine"
+  }
+ },
+ "VSRsw": {
+  "class_type": "LazySwitchKJ",
+  "inputs": {
+   "switch": [
+    "FP",
+    9
+   ],
+   "on_false": [
+    "18",
+    0
+   ],
+   "on_true": [
+    "VSR",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "VSR вкл/выкл",
+   "role": "facepass:engine"
+  }
+ },
+ "ML": {
+  "class_type": "MiniMaxH3RefModsLoader",
+  "inputs": {
+   "show_info": false,
+   "max_total_tokens": 16384,
+   "mod_1": "farm/stacy_face",
+   "strength_1": [
+    "FP",
+    4
+   ],
+   "copies_1": 1,
+   "mod_2": "(none)",
+   "strength_2": 1.0,
+   "copies_2": 1,
+   "mod_3": "(none)",
+   "strength_3": 1.0,
+   "copies_3": 1,
+   "mod_4": "(none)",
+   "strength_4": 1.0,
+   "copies_4": 1,
+   "mod_5": "(none)",
+   "strength_5": 1.0,
+   "copies_5": 1,
+   "mod_6": "(none)",
+   "strength_6": 1.0,
+   "copies_6": 1,
+   "mod_7": "(none)",
+   "strength_7": 1.0,
+   "copies_7": 1,
+   "mod_8": "(none)",
+   "strength_8": 1.0,
+   "copies_8": 1
+  },
+  "_meta": {
+   "title": "мод лица farm/stacy_face",
+   "role": "facepass:engine"
+  }
+ },
+ "MA": {
+  "class_type": "MiniMaxH3RefModApply",
+  "inputs": {
+   "conditioning": [
+    "2:105",
+    0
+   ],
+   "mods": [
+    "ML",
+    0
+   ],
+   "override": false,
+   "retention": 1.0,
+   "curve_direction": "constant",
+   "scramble_seed": -1,
+   "curve_shape": "linear",
+   "curve_value": 1.0,
+   "max_total_tokens": 16384
+  },
+  "_meta": {
+   "title": "мод лица → условие",
+   "role": "facepass:engine"
+  }
+ },
+ "NAME": {
+  "class_type": "StringConcatenate",
+  "inputs": {
+   "string_a": "stacy_facepass/",
+   "string_b": [
+    "FP",
+    1
+   ],
+   "delimiter": ""
+  },
+  "_meta": {
+   "title": "имя: stacy_facepass/<имя>_facepass_stacy",
+   "role": "facepass:engine"
+  }
+ },
+ "FIN": {
+  "class_type": "NGFarmFinalizeVideo",
+  "inputs": {
+   "filenames": [
+    "19",
+    0
+   ],
+   "out_name": [
+    "FP",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "ИТОГ · output/stacy_facepass/<имя>_facepass_stacy.mp4",
+   "role": "facepass:out"
+  }
+ }
+}

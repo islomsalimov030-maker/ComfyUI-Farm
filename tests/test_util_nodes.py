@@ -25,3 +25,24 @@ def test_find_frame_and_zip(tmp_path, monkeypatch):
     assert pick.check_lazy_status(True, new_1=None, new_2=None) == ["new_1"]
     assert pick.check_lazy_status(False, from_folder=img) == []
     assert pick.run(True, new_2=img)[0] is img
+
+
+def test_facepass_panel_and_finalize(tmp_path, monkeypatch):
+    monkeypatch.setenv("COMFY_INPUT", str(tmp_path / "in"))
+    monkeypatch.setenv("COMFY_OUTPUT", str(tmp_path / "out"))
+    d = tmp_path / "in" / "stacy_fp"; d.mkdir(parents=True)
+    for n in ("b.mp4", "a.mov", "a_facepass_stacy.mp4", "note.txt"):
+        (d / n).write_bytes(b"x")
+    assert [p.name for p in U.list_videos("stacy_fp")] == ["a.mov", "b.mp4"]
+    assert U.list_videos(str(d / "b.mp4"))[0].name == "b.mp4"
+    kw = {k: d0 for k, _, d0, *_ in U.FP_SPEC}
+    r = U.FarmPanelFacepass().run("stacy_fp", 1, True, "p", **kw)
+    assert r[0].endswith("b.mp4") and r[1] == "b_facepass_stacy" and r[2] == "p" and len(r) == 3 + len(U.FP_SPEC)
+    with pytest.raises(IndexError):
+        U.FarmPanelFacepass().run("stacy_fp", 5, True, "p", **kw)
+    o = tmp_path / "out" / "stacy_facepass"; o.mkdir(parents=True)
+    (o / "b_facepass_stacy_00001.mp4").write_bytes(b"v")
+    (o / "b_facepass_stacy_00001.png").write_bytes(b"i")
+    dst = U.finalize_video([o / "b_facepass_stacy_00001.png", o / "b_facepass_stacy_00001.mp4"], "b_facepass_stacy")
+    assert dst.name == "b_facepass_stacy.mp4" and sorted(p.name for p in o.iterdir()) == ["b_facepass_stacy.mp4"]
+    assert "studio" not in U.FP_PROMPT.lower()
