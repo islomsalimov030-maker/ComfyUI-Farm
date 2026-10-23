@@ -1,46 +1,4 @@
 {
- "11": {
-  "class_type": "StacyPanel",
-  "inputs": {
-   "mode": false,
-   "seed": [
-    "FP",
-    8
-   ],
-   "duration_sec": 7,
-   "loop": [
-    "FP",
-    9
-   ],
-   "end_frame": false,
-   "model_10eros": false,
-   "steps": 8,
-   "shift": 12.0,
-   "char_lora": 0.0,
-   "free_vram": "auto",
-   "face_pass": "auto",
-   "face_denoise_auto": [
-    "FP",
-    6
-   ],
-   "face_denoise": [
-    "FP",
-    7
-   ],
-   "face_lora": [
-    "FP",
-    4
-   ],
-   "face_lock_temporal": [
-    "FP",
-    15
-   ]
-  },
-  "_meta": {
-   "title": "StacyPanel · режим face pass готового видео (значения из пульта)",
-   "role": "facepass:engine"
-  }
- },
  "18": {
   "class_type": "StacyVideoInput",
   "inputs": {
@@ -554,8 +512,8 @@
   "class_type": "StacySettings",
   "inputs": {
    "settings": [
-    "11",
-    0
+    "FP",
+    17
    ],
    "probe_image": [
     "2:101",

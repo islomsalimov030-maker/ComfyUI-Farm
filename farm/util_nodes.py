@@ -479,7 +479,7 @@ def _video_files(limit: int = 2000) -> list[str]:
 class _FacepassMeta(type):
     @property
     def RETURN_TYPES(cls):   # список модов считается при запросе (пакет H3Mod грузится позже ComfyUI-Farm)
-        return ("STRING", "STRING", "STRING", _mod_names()) + tuple(t for _, t, *_ in FP_SPEC)
+        return ("STRING", "STRING", "STRING", _mod_names()) + tuple(t for _, t, *_ in FP_SPEC) + ("STACY_SETTINGS",)
 
 
 class FarmPanelFacepass(metaclass=_FacepassMeta):
@@ -488,7 +488,7 @@ class FarmPanelFacepass(metaclass=_FacepassMeta):
     FUNCTION = "run"
     DESCRIPTION = ("Проход лица готового видео с LoRA Стейси. Папка: один Queue — все видео по очереди "
                    "(остальные ставятся в очередь сами). Итог: output/stacy_facepass/<имя>_facepass_stacy.mp4.")
-    RETURN_NAMES = ("video_path", "out_name", "face_prompt", "face_mod_name") + tuple(k for k, *_ in FP_SPEC)
+    RETURN_NAMES = ("video_path", "out_name", "face_prompt", "face_mod_name") + tuple(k for k, *_ in FP_SPEC) + ("settings",)
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -537,7 +537,23 @@ class FarmPanelFacepass(metaclass=_FacepassMeta):
             _requeue_index(prompt, str(unique_id), range(1, len(vids)))
         v = vids[index]
         print(f"[farm] stacy_facepass: {index + 1}/{len(vids)} {v.name}")
-        return (str(v), facepass_name(v), face_prompt, mod) + tuple(kw[k] for k, *_ in FP_SPEC)
+        return (str(v), facepass_name(v), face_prompt, mod) + tuple(kw[k] for k, *_ in FP_SPEC) + (stacy_settings(kw),)
+
+
+def stacy_settings(kw: dict):
+    """STACY_SETTINGS для движка StacyLoop: режим «проход лица готового видео», значения — из этого пульта.
+    Отдельной ноды StacyPanel в графе нет — её значения по умолчанию в UI сбивали с толку (WS-10b 23.10)."""
+    vals = {"mode": False, "seed": int(kw["seed"]), "duration_sec": 7.0, "loop": bool(kw["loop"]), "end_frame": False,
+            "model_10eros": False, "steps": 8, "shift": 12.0, "char_lora": 0.0, "free_vram": "auto",
+            "face_pass": "auto", "face_denoise_auto": bool(kw["face_denoise_auto"]),
+            "face_denoise": float(kw["face_denoise"]), "face_lora": float(kw["face_lora"]),
+            "face_lock_temporal": float(kw["face_lock_temporal"])}
+    try:
+        import nodes
+        cls = nodes.NODE_CLASS_MAPPINGS["StacyPanel"]
+    except Exception:   # noqa: BLE001 — вне ComfyUI (тесты)
+        return vals
+    return getattr(cls(), cls.FUNCTION)(**vals)[0]
 
 
 def _requeue_index(prompt: dict, my_id: str, indices) -> None:

@@ -47,19 +47,16 @@ def build() -> dict:
     g = K.prune(g, ["ИТОГ face pass готового видео", "ОТЧЁТ face pass видео"])
 
     spec = fp_spec()
-    keys = ["video_path", "out_name", "face_prompt", "face_mod_name"] + [k for k, *_ in spec]
+    keys = ["video_path", "out_name", "face_prompt", "face_mod_name"] + [k for k, *_ in spec] + ["settings"]
     P = lambda k: ["FP", keys.index(k)]  # noqa: E731
     w = {k: d for k, _, d, *_ in spec}
     from farm.util_nodes import FP_PROMPT
     add(g, "FP", "NGFarmPanelFacepass", {"upload": "(none)", "video": "stacy_fp", "index": 0, "whole_folder": True,
                                          "face_prompt": FP_PROMPT, "face_mod_name": FACE_MOD, **w}, PANEL_TITLE, "facepass:knob")
 
-    # главный пульт StacyPanel (внутри движка): режим — проход лица готового видео, значения — из пульта
+    # StacyPanel убран: STACY_SETTINGS (режим face pass, значения пульта) отдаёт сам пульт — выход settings
     pan = K.by_title(g, "PANEL")
-    g[pan]["inputs"].update({"mode": False, "char_lora": 0.0, "model_10eros": False,
-                             **{k: P(k) for k in ("seed", "face_denoise_auto", "face_denoise", "face_lora",
-                                                  "face_lock_temporal", "loop")}})
-    g[pan]["_meta"]["title"] = "StacyPanel · режим face pass готового видео (значения из пульта)"
+    relink(g, pan, P("settings"))
 
     # ручки → пульт
     relink(g, K.by_title(g, "IN face_prompt · промпт face pass"), P("face_prompt"))
