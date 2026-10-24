@@ -230,3 +230,25 @@
 - Если API-json грузить во вкладку ComfyUI, где нода-источник неизвестна (пакет не обновлён или вкладка открыта до рестарта), связи к виджетам теряются молча, и ноды работают на своих дефолтах (StacyPanel: seed 777, AUTO, 0.30, LoRA 1.0). Поэтому в stacy_facepass@1 STACY_SETTINGS отдаёт сам пульт, StacyPanel в графе нет. Проверка 23.10: дефолты нового графа дали AuraFace 0.664 / мин 0.605, как вариант I.
 - StacyOcclusionDenoise: при руке у лица (SIT-02 — рука под подбородком, 209/209 кадров) сила прохода под рукой ×0.2 (`hand_strength`) и «защита выражения» ×0.3 на половине кадров — проход в таких клипах слабее.
 
+
+## WS-10 (25.10) — лицензии: энкодер heretic и доноры 10Eros
+Проверка по первоисточникам (карточки HF / тексты лицензий), 25.10.2026. Только чтение веба, веса не качались.
+
+| Компонент | Лицензия | Прод? | Источник |
+|---|---|---|---|
+| `qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot` (движок H3) | Apache-2.0 (тег карточки) | ✅ да, но заменить | [ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot](https://huggingface.co/ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot) |
+| └ база `llmfan46/Qwen3-VL-32B-Instruct-ultra-uncensored-heretic` | Apache-2.0 | ✅ | [llmfan46/...](https://huggingface.co/llmfan46/Qwen3-VL-32B-Instruct-ultra-uncensored-heretic) |
+| └ база `Qwen/Qwen3-VL-32B-Instruct` | Apache-2.0 | ✅ | [Qwen/Qwen3-VL-32B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct) |
+| инструмент abliteration `p-e-w/heretic` | AGPL-3.0 | — на веса не распространяется | [GitHub](https://github.com/p-e-w/heretic) |
+| `qwen3vl_32b_minimax_h3_int8_convrot` (Comfy-Org, штатный) | ⚠ MiniMax H3 Community License | ✅ ниже $20 млн/год | [Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3/tree/main/text_encoders) |
+| `10Eros_Max_h3_hybrid_beta5_int8` (TenStrip) | ⚠ H3 CL + LTX-2 CL + Wan 2.2 + Krea 2 CL | ⚠ условно | [TenStrip/10Eros-Max](https://huggingface.co/TenStrip/10Eros-Max) |
+| └ донор LTX 2.3 | ⚠ LTX-2 Community License Agreement (05.01.2026) | ✅ ниже $10 млн/год | [LICENSE-2](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2) |
+| └ донор Wan 2.2 | ✅ Apache-2.0 | ✅ | [Wan-AI/Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) |
+| └ донор Krea 2 | ⚠ Krea 2 Community License (v1, 22.06.2026) | ⚠ ниже $1 млн/год | [krea/Krea-2-Raw](https://huggingface.co/krea/Krea-2-Raw) · [LICENSE.pdf](https://cdn.jsdelivr.net/gh/krea-ai/krea-2@db3984fbc6e13b34c0064990fc2d95ac64d00058/assets/hf_samples/LICENSE.pdf) |
+| MiniMax H3 (база, веса + энкодер в составе H3) | ⚠ MiniMax H3 Community License | ⚠ территориально | [LICENSE](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) |
+
+Выводы:
+- **Энкодер heretic лицензией чист.** Карточка ethanfel и база llmfan46 помечены `apache-2.0`; Qwen3-VL-32B — Apache-2.0, и сам H3-LICENSE это подтверждает: «the encoder of MiniMax H3 uses Qwen3-VL-32B, which is licensed under Apache 2.0 License». AGPL-3.0 у heretic — это лицензия **кода инструмента**, на модифицированные веса не распространяется (README heretic отдельной лицензии для результата не даёт). Проблема не в лицензии, а в происхождении: это неподписанная сторонняя сборка, плюс риск «отравленного» энкодера.
+- **Штатная замена Comfy-Org — не Apache, а H3 Community License** (`license_name: minimax-h3-community-license-agreement`): порог $20 млн/год выручки и требование «prominently display 'MiniMax H3'» в UI. Переход на неё **не выводит ферму из-под H3-лицензии** — это тот же класс, что у основных весов H3.
+- **10Eros Max beta5 — самый рискованный компонент.** README автора прямо: «The standard H3 community license applies… the community licenses for those source models apply as well to the portions of character that came from each» (LTX 2.3, Wan 2.2, Krea 2). Пороги: LTX-2 — «annual revenues of at least $10,000,000» → платная лицензия; Krea 2 — «total company-wide annual revenue of less than one million United States dollars ($1,000,000 USD)», при превышении «must immediately cease Commercial Use and contact Krea». Krea 2 ещё требует Content Filters («You must implement reasonable and appropriate Content Filter measures») и при распространении — префикс «Krea» в имени модели + Notice-файл. Wan 2.2 — Apache-2.0, без ограничений.
+- **Вывод по прод-продукту:** при выручке фермы **ниже $1 млн/год** 10Eros Max формально проходит по всем трём донорам, но с нагрузкой: content-фильтры, атрибуция/Notice, маркировка «MiniMax H3», раскрытие «AI-generated». Порог Krea в $1 млн — самый жёсткий, LTX ($10 млн) и H3 ($20 млн) — с большим запасом. **Рекомендация:** держать 10Eros как опцию, дефолтом идти на штатный MiniMax H3 + Comfy-Org-энкодер; версию 10Eros в коммерческий сервис выносить только после письменного разрешения Krea при приближении к $1 млн. Это пересказ текстов лицензий, не юрзаключение.
