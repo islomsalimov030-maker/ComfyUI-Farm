@@ -284,8 +284,13 @@ def name_concat(g, nid, a, b, role):
 # ------------------------------------------------------------------ сборка
 def build_auto() -> dict:
     g: dict = {}
-    T = add(g, "T", "NGFarmShotFromTable", {"table": "", "row": 1, "shot_id": ""},
-            "ТАБЛИЦА · шот из таблицы (row + increment, Queue ×N = N строк)", "table")
+    # 25.10: LLM — отдельная видимая нода; строку (row + increment) выбирает она, «Шот из таблицы» берёт её ID
+    L = add(g, "L", "NGFarmPromptLLM", {"table": "", "row": 1, "shot_id": "", "model": "", "ollama_url": "",
+                                        "fresh": False},
+            "ТАБЛИЦА · LLM поля промптов (row + increment, Queue ×N = N строк)", "table")
+    add(g, "llm_info", "PreviewAny", {"source": [L, 3]}, "ТАБЛИЦА · ответ LLM", "table")
+    T = add(g, "T", "NGFarmShotFromTable", {"table": [L, 1], "row": 1, "shot_id": [L, 2], "fields": [L, 0]},
+            "ТАБЛИЦА · шот из таблицы (строку задаёт нода LLM)", "table")
     t = lambda i: [T, i]
     add(g, "info", "PreviewAny", {"source": t(11)}, "ТАБЛИЦА · что взято из строки", "table")
 

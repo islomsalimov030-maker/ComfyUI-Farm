@@ -33,10 +33,12 @@ class FarmControl:
         return {"ui": {"text": [text]}, "result": (text,)}
 
 
-from .shot_node import FarmShotFromTable  # noqa: E402
+from .shot_node import FarmPromptLLM, FarmShotFromTable  # noqa: E402
 
 from .util_nodes import NAMES as _UN, NODES as _U  # noqa: E402
 
-NODE_CLASS_MAPPINGS = {"NGFarmControl": FarmControl, "NGFarmShotFromTable": FarmShotFromTable, **_U}
+NODE_CLASS_MAPPINGS = {"NGFarmControl": FarmControl, "NGFarmShotFromTable": FarmShotFromTable,
+                       "NGFarmPromptLLM": FarmPromptLLM, **_U}
 NODE_DISPLAY_NAME_MAPPINGS = {"NGFarmControl": "Farm Control (Next Genium)",
-                              "NGFarmShotFromTable": "Шот из таблицы (Next Genium)", **_UN}
+                              "NGFarmShotFromTable": "Шот из таблицы (Next Genium)",
+                              "NGFarmPromptLLM": "LLM · поля промптов (Next Genium)", **_UN}
