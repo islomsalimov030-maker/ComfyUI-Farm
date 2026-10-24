@@ -19,6 +19,13 @@ frame:
     severity_missing: soft       # лица нет, а шот не помечен no_face → COMPOSITION
     max_faces: 1                 # 23.10: больше лиц (второй человек на фоне) → EXTRA_PERSON; «в зеркале» +1
     severity_extra: hard
+  people:                        # 25.10: счёт людей по фигурам (поза) + лица вне фигур → EXTRA_PERSON
+    max_people: 1                # «в зеркале» +1; `people` в extra шота — сцены с несколькими персонажами
+    min_torso_vis: 0.5           # видимость плеч или таза позы
+    min_height_frac: 0.12        # рамка фигуры ниже 12 % кадра — не человек (ложная поза на фоне)
+    dedup_iou: 0.3
+    count_lone_faces: true       # лицо вне всех фигур — ещё человек
+    severity: hard               # ⚠ не откалиброван: на прогоне 10 строк посмотреть ложные срабатывания
   frame_pad:                     # 23.10: однотонные поля по краям (паддинг H3) → FRAME_PAD
     max_frac: 0.015              # полоса шире 1.5 % стороны кадра
     std_max: 4.0
