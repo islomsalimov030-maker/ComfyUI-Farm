@@ -714,7 +714,7 @@
    "face_lock": 1.0,
    "face_lock_temporal": 0.8,
    "hand_strength": 0.2,
-   "face_stab": 1.0,
+   "face_stab": 0.0,
    "face_stab_threshold": 8.0
   },
   "_meta": {
