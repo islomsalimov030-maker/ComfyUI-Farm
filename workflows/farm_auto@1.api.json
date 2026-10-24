@@ -1,13 +1,51 @@
 {
- "T": {
-  "class_type": "NGFarmShotFromTable",
+ "L": {
+  "class_type": "NGFarmPromptLLM",
   "inputs": {
    "table": "",
    "row": 1,
-   "shot_id": ""
+   "shot_id": "",
+   "model": "",
+   "ollama_url": "",
+   "fresh": false
   },
   "_meta": {
-   "title": "ТАБЛИЦА · шот из таблицы (row + increment, Queue ×N = N строк)",
+   "title": "ТАБЛИЦА · LLM поля промптов (row + increment, Queue ×N = N строк)",
+   "role": "table"
+  }
+ },
+ "llm_info": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "L",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "ТАБЛИЦА · ответ LLM",
+   "role": "table"
+  }
+ },
+ "T": {
+  "class_type": "NGFarmShotFromTable",
+  "inputs": {
+   "table": [
+    "L",
+    1
+   ],
+   "row": 1,
+   "shot_id": [
+    "L",
+    2
+   ],
+   "fields": [
+    "L",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ТАБЛИЦА · шот из таблицы (строку задаёт нода LLM)",
    "role": "table"
   }
  },
