@@ -364,7 +364,9 @@ restart_comfy() {
     start=$(( $(wc -l < $WS/logs/comfy.log 2>/dev/null || echo 0) + 1 ))
     tmux kill-session -t comfy 2>/dev/null || true
     # та же команда, что в bootstrap.sh работодателя; при лимите ОЗУ контейнера < 200 ГБ — без pinned memory и с
-    # LRU-кэшем: кэш ComfyUI меряет ОЗУ хоста, а не лимит контейнера (WS-10b 23.10: OOM-kill на поде с лимитом 94 ГБ)
+    # LRU-кэшем: кэш ComfyUI меряет ОЗУ хоста, а не лимит контейнера (WS-10b 23.10: OOM-kill на поде с лимитом 94 ГБ).
+    # Видео 10 с FullHD (video_h3_loop@2) при лимите 94 ГБ — только с COMFY_ARGS="--cache-none": LRU держит энкодер
+    # 25 ГБ, без этого OOM на стабилизаторе (WS-10, 25.10; запас с --cache-none 7–9 ГБ). Кадры — как по умолчанию.
     local extra="${COMFY_ARGS:-}" lim
     lim=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo max)
     if [ -z "$extra" ] && [ "$lim" != max ] && [ "$lim" -lt 200000000000 ]; then

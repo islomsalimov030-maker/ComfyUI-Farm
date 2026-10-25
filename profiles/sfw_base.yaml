@@ -1,5 +1,6 @@
 # sfw_base — профиль фермы v2 (WS-10, 23.10; решения пользователя): кадр frame_ls@1 — location sheet + RefMod,
-# без LoRA и листа персонажа, 3 Мп, проход лица H3 с модом лица; видео video_h3_loop@1 — ref2va + turbo 8.
+# без LoRA и листа персонажа, 3 Мп, проход лица H3 с модом лица; видео video_h3_loop@2 — ref2va + turbo 8
+# (26.10: @2 = рецепт памяти пода — свой энкодер прохода лица, free_vram on; ComfyUI на поде с --cache-none).
 name: sfw_base
 content_scope: sfw
 character_lora: false        # 23.10: LoRA персонажей нет — триггер в промпты не идёт
@@ -15,7 +16,7 @@ frame:
   seeds_per_try: 2
   prompt_template: frame_ls_v1
 video:
-  workflow: video_h3_loop@1
+  workflow: video_h3_loop@2
   arms:
     - id: ref2va_t8
       model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
