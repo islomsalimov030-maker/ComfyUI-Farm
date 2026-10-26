@@ -30,7 +30,7 @@ from ..contracts import LintIssue, PromptResult
 from . import schema as S
 from .config import PKG, load_config
 from .lint import LABEL_RE, errors, lint
-from .llm import CallStats, LLMInvalid, LLMUnavailable, OllamaClient, fix_request
+from .llm import CallStats, LLMInvalid, LLMUnavailable, OllamaClient, fix_request, make_client
 from .scale import anchor_from_card, scale_line, scale_line_ls
 from .timing import TimingError, actual_seconds, fmt, schedule
 
@@ -258,14 +258,17 @@ def _client(profile: dict) -> Optional[OllamaClient]:
     model = llm.get("prompt_model")
     if not model or str(model).lower() in ("none", "off", "false"):
         return None
-    key = (model, llm.get("url"))
+    key = (llm.get("backend") or "ollama", model, llm.get("url"))
     if key not in _clients:
-        _clients[key] = OllamaClient.from_profile(profile)
+        _clients[key] = make_client(profile)
     return _clients[key]
 
 
+CACHE_DIR: Optional[Path] = None   # None — $FARM_HOME/cache/prompts (на студии без фермы нода задаёт свою)
+
+
 def _cache_path(key: str) -> Path:
-    return farm_home() / "cache" / "prompts" / f"{key}.json"
+    return (CACHE_DIR or farm_home() / "cache" / "prompts") / f"{key}.json"
 
 
 def _cache_get(key: str) -> Optional[dict]:
