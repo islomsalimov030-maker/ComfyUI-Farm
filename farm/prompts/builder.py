@@ -229,8 +229,13 @@ def llm_input(stage: str, shot: dict, lib: Any, mode: str, end_s: float, flags: 
     return d
 
 
-@lru_cache(maxsize=16)
 def _system_text(path: str) -> str:
+    """26.10: ключ кэша — путь + время изменения: правка файла (загрузка в input/farm_profiles) видна без перезапуска."""
+    return _read_text(path, Path(path).stat().st_mtime_ns)
+
+
+@lru_cache(maxsize=32)
+def _read_text(path: str, mtime_ns: int) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 

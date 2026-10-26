@@ -119,6 +119,48 @@ def test_node_inputs_and_missing_table(monkeypatch, tmp_path):
         T.FarmTablePrompts().run("nope.xlsx", False, "ollama", "m", "", False)
 
 
+def test_studio_profiles_dir(env):
+    """Папка студии: образец sfw_base, она главнее репо, промпт — по имени файла рядом, модель профиля."""
+    import yaml
+    from farm.config import repo_dir
+    src, tmp = env
+    fp = tmp / "input" / T.PROFILES_SUBDIR
+    assert T.seed_profiles(fp) and not T.seed_profiles(fp)                       # второй раз не трогает
+    assert sorted(f.name for f in fp.iterdir()) == ["sfw_base.yaml", "sfw_v1_frame.md", "sfw_v1_video.md"]
+    prof = yaml.safe_load((fp / "sfw_base.yaml").read_text(encoding="utf-8"))
+    assert prof["frame"]["workflow"] and prof["llm"]["system_prompt"] == {"frame": "sfw_v1_frame.md",
+                                                                          "video": "sfw_v1_video.md"}
+    dirs = [fp, repo_dir() / "profiles"]
+
+    # образец без правок = тот же промпт, что из репо
+    a = T.table_to_prompts(src, tmp / "a.xlsx", {"backend": "llamacpp", "prompt_model": "m.gguf"}, profiles_dirs=dirs)
+    assert str(fp / "sfw_base.yaml") in a["profiles"]["sfw_base"] and a["ok"] == 4
+
+    # свой промпт кадра и модель профиля (поле model ноды пустое, бэкенд ноды — другой)
+    (fp / "sfw_v1_frame.md").write_text((fp / "sfw_v1_frame.md").read_text(encoding="utf-8") + "\nCUSTOM-MARK\n",
+                                        encoding="utf-8")
+    prof["llm"].update(backend="llamacpp", prompt_model="m.gguf")
+    (fp / "sfw_base.yaml").write_text(yaml.safe_dump(prof, allow_unicode=True), encoding="utf-8")
+    FakeLlama.calls.clear()
+    seen = []
+    orig = FakeLlama.create_chat_completion
+    FakeLlama.create_chat_completion = lambda self, messages, **kw: seen.append(messages[0]["content"]) or \
+        orig(self, messages, **kw)
+    try:
+        b = T.table_to_prompts(src, tmp / "b.xlsx", {"backend": "transformers", "prompt_model": ""},
+                               profiles_dirs=dirs)
+    finally:
+        FakeLlama.create_chat_completion = orig
+    assert b["profiles"]["sfw_base"].endswith("llamacpp: m.gguf") and FakeLlama.calls
+    assert any("CUSTOM-MARK" in s for s in seen)                                # кэш не помешал: другой промпт
+
+    # профиля нет нигде → ошибка в статусе строки, таблица не падает
+    c = T.table_to_prompts(src, tmp / "c.xlsx", {"backend": "llamacpp", "prompt_model": "m.gguf"},
+                           profiles_dirs=[tmp / "empty"])
+    assert all("нет профиля sfw_base.yaml" in x for x in c["lines"] if not x.startswith("СТ-01")
+               and not x.startswith("BAD"))
+
+
 # ----------------------------------------------------------------------------- transformers (без torch: заглушки)
 class _Ids(dict):
     def to(self, device):
