@@ -311,7 +311,7 @@ def _llm_profile():
 def _install(fake, monkeypatch):
     prof = _llm_profile()
     cl = OllamaClient.from_profile(prof, transport=httpx.MockTransport(fake))
-    monkeypatch.setattr(B, "_clients", {("qwen3-vl:8b-instruct", "http://ollama.test"): cl})
+    monkeypatch.setattr(B, "_clients", {("ollama", "qwen3-vl:8b-instruct", "http://ollama.test"): cl})
     return prof, cl
 
 

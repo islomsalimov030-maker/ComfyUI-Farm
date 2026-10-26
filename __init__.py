@@ -8,6 +8,8 @@ import os
 
 log = logging.getLogger("farm")
 
+WEB_DIRECTORY = "./web"   # 26.10: кнопка «Загрузить таблицу» у ноды «Таблица → промпты»
+
 if __package__:  # загружен ComfyUI как пакет custom_nodes/<папка>
     from .farm.nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
@@ -24,4 +26,4 @@ if __package__:  # загружен ComfyUI как пакет custom_nodes/<па
 else:  # импорт как отдельного файла (pytest при сборе тестов) — без побочных эффектов
     NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS = {}, {}
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
