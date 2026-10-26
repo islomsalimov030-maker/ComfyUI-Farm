@@ -277,9 +277,9 @@ FARM_MODELS = [  # метка, файл, turbo-LoRA (сила), шаги кад�
     # 27.10: Singularity ref2va v1.3 (HF WarmBloodAban, Apache-2.0 в карточке) — не дистиллирована, без turbo
     ("Singularity", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", 0.0, 20, 20),
 ]
-# Включатели, добавленные после 23.10, идут в optional ПОСЛЕ model_override: фронтенд восстанавливает
-# widgets_values по позиции, вставка в середину сдвинула бы значения в уже сохранённых воркфлоу.
-LATE_MODELS = {"Singularity"}
+# Порядок включателей в пульте (сверху вниз). Фронтенд восстанавливает widgets_values по позиции —
+# воркфлоу, сохранённые до 27.10 (без use_Singularity или с ним в конце), чинит web/farm_panels.js.
+UI_MODEL_ORDER = ["Singularity", "ref2v", "10Eros", "PinkCherry"]
 
 
 def _model_list():
@@ -340,9 +340,8 @@ def _panel(name, display, desc, spec, models=True):
                                            "включённых считаются по очереди (отдельные запуски в очереди ComfyUI, "
                                            "появляются в очереди через несколько секунд после старта первого)."})
         if models:
-            for lab, *_ in FARM_MODELS:
-                if lab not in LATE_MODELS:
-                    req[f"use_{lab}"] = _use(lab)
+            for lab in UI_MODEL_ORDER:
+                req[f"use_{lab}"] = _use(lab)
         for k, t, d, lo, hi, st, tip in spec:
             o = {"default": d, "min": lo, "max": hi, "step": st, "tooltip": tip}
             if t == "INT" and k.endswith("seed"):
@@ -351,9 +350,6 @@ def _panel(name, display, desc, spec, models=True):
         out = {"required": req}
         if models:
             out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."})}
-            for lab, *_ in FARM_MODELS:
-                if lab in LATE_MODELS:
-                    out["optional"][f"use_{lab}"] = _use(lab)
             out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID", "extra_pnginfo": "EXTRA_PNGINFO"}
         return out
 
