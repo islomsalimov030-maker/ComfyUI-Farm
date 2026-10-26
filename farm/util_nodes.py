@@ -274,7 +274,12 @@ FARM_MODELS = [  # метка, файл, turbo-LoRA (сила), шаги кад�
     ("ref2v", "minimax_h3_ref2va_pruned_int8_convrot.safetensors", 1.0, 8, 8),
     ("10Eros", "10Eros_Max_h3_hybrid_beta5_int8.safetensors", 0.0, 20, 20),
     ("PinkCherry", "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors", 0.0, 20, 20),
+    # 27.10: Singularity ref2va v1.3 (HF WarmBloodAban, Apache-2.0 в карточке) — не дистиллирована, без turbo
+    ("Singularity", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", 0.0, 20, 20),
 ]
+# Включатели, добавленные после 23.10, идут в optional ПОСЛЕ model_override: фронтенд восстанавливает
+# widgets_values по позиции, вставка в середину сдвинула бы значения в уже сохранённых воркфлоу.
+LATE_MODELS = {"Singularity"}
 
 
 def _model_list():
@@ -285,8 +290,10 @@ def _model_list():
         return [m[1] for m in FARM_MODELS]
 
 
-def _requeue(prompt: dict, my_id: str, labels: list[str]) -> None:
-    """Поставить в очередь копии запроса с другими моделями (все пульты фермы в копии — на эту модель)."""
+def _requeue(prompt: dict, my_id: str, labels: list[str], extra_pnginfo=None) -> None:
+    """Поставить в очередь копии запроса с другими моделями (все пульты фермы в копии — на эту модель).
+    client_id текущего запуска передаётся дальше: вкладка, нажавшая Run, видит прогресс и итоги копий;
+    extra_pnginfo — граф в метаданных итоговых файлов, как у первого запуска."""
     import copy as _c
     import urllib.request as _ur
     try:
@@ -300,9 +307,24 @@ def _requeue(prompt: dict, my_id: str, labels: list[str]) -> None:
             if str(n.get("class_type", "")).startswith("NGFarmPanel"):
                 n["inputs"]["model_override"] = lab
         try:
-            req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps({"prompt": pr}).encode(),
+            body = {"prompt": pr}
+            extra = {}
+            try:
+                import server as _srv
+                cid = getattr(_srv.PromptServer.instance, "client_id", None)
+                if cid:
+                    body["client_id"] = cid
+                    extra["client_id"] = cid
+            except Exception:   # noqa: BLE001 — вне ComfyUI
+                pass
+            if extra_pnginfo:
+                extra["extra_pnginfo"] = extra_pnginfo
+            if extra:
+                body["extra_data"] = extra
+            req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps(body).encode(),
                               {"Content-Type": "application/json"})
             _ur.urlopen(req, timeout=30).read()
+            print(f"[farm] в очередь поставлен запуск модели {lab}")
         except Exception as e:   # noqa: BLE001
             print(f"[farm] не удалось поставить запуск {lab}: {e}")
 
@@ -312,11 +334,15 @@ def _panel(name, display, desc, spec, models=True):
 
     def INPUT_TYPES(cls):
         req = {}
+        def _use(lab):
+            return ("BOOLEAN", {"default": lab == "ref2v",
+                                "tooltip": f"Модель {lab}: вкл — своя версия результата. Несколько "
+                                           "включённых считаются по очереди (отдельные запуски в очереди ComfyUI, "
+                                           "появляются в очереди через несколько секунд после старта первого)."})
         if models:
             for lab, *_ in FARM_MODELS:
-                req[f"use_{lab}"] = ("BOOLEAN", {"default": lab == "ref2v",
-                                                 "tooltip": f"Модель {lab}: вкл — своя версия результата. Несколько "
-                                                            "включённых считаются по очереди (отдельные запуски)."})
+                if lab not in LATE_MODELS:
+                    req[f"use_{lab}"] = _use(lab)
         for k, t, d, lo, hi, st, tip in spec:
             o = {"default": d, "min": lo, "max": hi, "step": st, "tooltip": tip}
             if t == "INT" and k.endswith("seed"):
@@ -325,10 +351,13 @@ def _panel(name, display, desc, spec, models=True):
         out = {"required": req}
         if models:
             out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."})}
-            out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}
+            for lab, *_ in FARM_MODELS:
+                if lab in LATE_MODELS:
+                    out["optional"][f"use_{lab}"] = _use(lab)
+            out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID", "extra_pnginfo": "EXTRA_PNGINFO"}
         return out
 
-    def run(self, prompt=None, unique_id=None, model_override="", **kw):
+    def run(self, prompt=None, unique_id=None, extra_pnginfo=None, model_override="", **kw):
         vals = tuple(kw[k] for k in keys)
         if not models:
             return vals
@@ -343,7 +372,7 @@ def _panel(name, display, desc, spec, models=True):
             panels = sorted(str(k) for k, n in (prompt or {}).items()
                             if str(n.get("class_type", "")).startswith("NGFarmPanel"))
             if prompt and panels and panels[0] == str(unique_id) and len(on) > 1:
-                _requeue(prompt, str(unique_id), [m[0] for m in on[1:]])
+                _requeue(prompt, str(unique_id), [m[0] for m in on[1:]], extra_pnginfo)
         stage = 3 if "Video" in name else 2   # индекс шагов: 3 — кадр, 4 — видео в FARM_MODELS
         steps = cur[4] if "Video" in name else cur[3]
         return (cur[1], float(cur[2]), int(steps), cur[0]) + vals
@@ -585,9 +614,24 @@ def _requeue_index(prompt: dict, my_id: str, indices) -> None:
         pr = _c.deepcopy(prompt)
         pr[my_id]["inputs"]["index"] = i
         try:
-            req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps({"prompt": pr}).encode(),
+            body = {"prompt": pr}
+            extra = {}
+            try:
+                import server as _srv
+                cid = getattr(_srv.PromptServer.instance, "client_id", None)
+                if cid:
+                    body["client_id"] = cid
+                    extra["client_id"] = cid
+            except Exception:   # noqa: BLE001 — вне ComfyUI
+                pass
+            if extra_pnginfo:
+                extra["extra_pnginfo"] = extra_pnginfo
+            if extra:
+                body["extra_data"] = extra
+            req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps(body).encode(),
                               {"Content-Type": "application/json"})
             _ur.urlopen(req, timeout=30).read()
+            print(f"[farm] в очередь поставлен запуск модели {lab}")
         except Exception as e:   # noqa: BLE001
             print(f"[farm] не удалось поставить видео #{i}: {e}")
 

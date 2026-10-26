@@ -29,6 +29,7 @@ MODELS = [  # (метка, файл модели, turbo-LoRA или None, шаг
     ("ref2v", "minimax_h3_ref2va_pruned_int8_convrot.safetensors", True, 8, 8),
     ("10Eros", "10Eros_Max_h3_hybrid_beta5_int8.safetensors", False, 20, 20),
     ("PinkCherry", "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors", False, 20, 20),
+    ("Singularity", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", False, 20, 20),
 ]
 F_TURBO = "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
 
@@ -116,7 +117,7 @@ def tag_roles(g: dict, prefix: str, block: str) -> None:
         n["_meta"]["role"] = f"{block}:{kind}"
 
 
-STEP_KEY = {"ref2v": "steps_ref2v", "10Eros": "steps_10eros", "PinkCherry": "steps_pinkcherry"}
+STEP_KEY = {"ref2v": "steps_ref2v", "10Eros": "steps_10eros", "PinkCherry": "steps_pinkcherry", "Singularity": "steps_singularity"}
 
 
 def panelize(g: dict, prefix: str, cls: str, nid: str, title: str, role: str, labels=None) -> None:
