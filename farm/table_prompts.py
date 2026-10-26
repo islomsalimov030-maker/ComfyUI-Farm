@@ -2,7 +2,8 @@
 
 Тот же сборщик, что у фермы (farm/prompts: поля LLM по системному промпту и JSON-схеме → тайминг H3, масштаб,
 шаблоны, линтер), но без воркера и БД фермы — работает на любом ComfyUI (сервер студии). LLM — llama.cpp внутри
-ComfyUI (GGUF из models/LLM, официальная Qwen3-VL-8B докачивается сама) или Ollama, если она есть.
+ComfyUI: transformers на GPU (модель HF) или llama.cpp (GGUF; на студии собран без CUDA — медленно), либо Ollama.
+Официальная Qwen3-VL-8B (Apache-2.0) докачивается в models/LLM сама.
 Итог: output/farm_prompts/<имя>_prompts.xlsx (ссылка на скачивание — в ноде).
 """
 from __future__ import annotations
@@ -16,7 +17,9 @@ from typing import Callable, Optional
 
 log = logging.getLogger("farm")
 
-BACKENDS = {"llama.cpp (внутри ComfyUI)": "llamacpp", "ollama": "ollama"}
+BACKENDS = {"transformers (GPU)": "transformers", "llama.cpp (внутри ComfyUI)": "llamacpp", "ollama": "ollama"}
+DEFAULT_MODEL = {"transformers": "Qwen/Qwen3-VL-8B-Instruct", "llamacpp": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+                 "ollama": "qwen3-vl:8b-instruct"}
 OUT_COLS = [("frame", "Промпт кадра"), ("frame_face", "Промпт лица (кадр)"), ("video", "Промпт видео"),
             ("video_face", "Промпт лица (видео)"), ("status", "Промпты · статус")]
 TABLE_SUBDIR = "farm_tables"
@@ -190,11 +193,13 @@ class FarmTablePrompts:
                                   f"input/{TABLE_SUBDIR}/."}),
             "only_ready": ("BOOLEAN", {"default": False, "tooltip": "Только строки с галочкой «В работу». "
                                                                     "Выкл — все строки с ID."}),
-            "backend": (list(BACKENDS), {"tooltip": "llama.cpp — модель грузится прямо в ComfyUI (Ollama не нужна). "
-                                                    "ollama — сервер Ollama по адресу ниже."}),
-            "model": ("STRING", {"default": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
-                                 "tooltip": "llama.cpp: файл GGUF в models/LLM (официальная Qwen3-VL-8B докачается сама, "
-                                            "5 ГБ). ollama: имя модели (qwen3-vl:8b-instruct)."}),
+            "backend": (list(BACKENDS), {"tooltip": "transformers — модель HF на видеокарте (~17 ГБ VRAM), ~1 мин на "
+                                                    "промпт. llama.cpp — GGUF прямо в ComfyUI (без CUDA — на процессоре, "
+                                                    "~12 мин). ollama — сервер Ollama по адресу ниже."}),
+            "model": ("STRING", {"default": "",
+                                 "tooltip": "Пусто — по бэкенду: transformers Qwen/Qwen3-VL-8B-Instruct (папка в models/LLM, "
+                                            "докачается сама, 17 ГБ), llama.cpp Qwen3VL-8B-Instruct-Q4_K_M.gguf (5 ГБ), "
+                                            "ollama qwen3-vl:8b-instruct."}),
             "ollama_url": ("STRING", {"default": "", "tooltip": "Только для ollama. Пусто — http://127.0.0.1:11434."}),
             "fresh": ("BOOLEAN", {"default": False, "tooltip": "Спросить LLM заново, не брать поля из кэша."}),
         }}
@@ -210,7 +215,8 @@ class FarmTablePrompts:
         _prompt_cache_dir()
         _free_comfy_vram()
         be = BACKENDS.get(backend, backend)
-        llm = {"backend": be, "prompt_model": model.strip(), "url": ollama_url.strip() if be == "ollama" else ""}
+        model = model.strip() or DEFAULT_MODEL.get(be, "")
+        llm = {"backend": be, "prompt_model": model, "url": ollama_url.strip() if be == "ollama" else ""}
         stem = re.sub(r"[^\w.-]+", "_", src.stem)
         dst = _out_dir() / "farm_prompts" / f"{stem}_prompts.xlsx"
         prog = None

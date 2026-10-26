@@ -117,3 +117,71 @@ def test_node_inputs_and_missing_table(monkeypatch, tmp_path):
     assert T.table_files() == [f"{T.TABLE_SUBDIR}/scenes.xlsx"]                # свои итоги в список не попадают
     with pytest.raises(ValueError, match="нет таблицы"):
         T.FarmTablePrompts().run("nope.xlsx", False, "ollama", "m", "", False)
+
+
+# ----------------------------------------------------------------------------- transformers (без torch: заглушки)
+class _Ids(dict):
+    def to(self, device):
+        return self
+
+
+class FakeTok:
+    """Токены = символы; модель «пишет» поля STD-01 по стадии из системного промпта."""
+
+    def apply_chat_template(self, messages, add_generation_prompt, tokenize):
+        return json.dumps(messages, ensure_ascii=False) + "<assistant>"
+
+    def __call__(self, text, return_tensors, add_special_tokens):
+        assert text.endswith("<assistant>{")                                   # ответ начат с «{»
+        ids = list(text)
+        return _Ids(input_ids=type("T", (), {"shape": (1, len(ids))})(), _ids=ids)
+
+    def decode(self, ids, skip_special_tokens):
+        return "".join(ids)
+
+
+class FakeModel:
+    device = "cuda"
+    calls = 0
+
+    def eval(self):
+        return self
+
+    def generate(self, input_ids, _ids, max_new_tokens, do_sample):
+        FakeModel.calls += 1
+        stage = "video" if "start_pose" in "".join(_ids) else "frame"
+        reply = "```json\n" + json.dumps(F["STD-01"][stage]) + "\n```" if FakeModel.calls == 1 else \
+            json.dumps(F["STD-01"][stage])
+        return [_ids + list(reply[1:] if reply.startswith("{") else reply)]
+
+
+@pytest.fixture
+def fake_torch(monkeypatch):
+    import contextlib
+    import sys
+    from types import SimpleNamespace
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(manual_seed=lambda s: None,
+                                                              inference_mode=contextlib.nullcontext))
+    FakeModel.calls = 0
+
+
+def test_transformers_backend(env, fake_torch, monkeypatch):
+    from farm.prompts.llm import TransformersClient, resolve_hf
+    src, tmp = env
+    hf = tmp / "LLM" / "Qwen3-VL-8B-Instruct"
+    hf.mkdir()
+    (hf / "config.json").write_text("{}")
+    (hf / "model.safetensors").write_bytes(b"x")
+    assert resolve_hf("Qwen/Qwen3-VL-8B-Instruct", [tmp / "LLM"]) == hf             # папка по имени репозитория
+    with pytest.raises(LLMUnavailable):
+        resolve_hf("Qwen/Other", [tmp / "LLM"], download=False)
+    assert isinstance(make_client({"llm": {"backend": "transformers"}}), TransformersClient)
+    loads = []
+    orig = TransformersClient.__init__
+    monkeypatch.setattr(TransformersClient, "__init__", lambda self, *a, **kw: orig(
+        self, *a, **{**kw, "loader": lambda p: loads.append(p) or (FakeModel(), FakeTok())}))
+    r = T.table_to_prompts(src, tmp / "o.xlsx", {"backend": "transformers", "prompt_model": "Qwen/Qwen3-VL-8B-Instruct"})
+    st = dict(x.split(": ", 1) for x in r["lines"])
+    assert st["STD-01"] == "ok" and st["SIT-02"] == "ok"                       # первый ответ не JSON — ушёл на переделку
+    assert loads == [hf]                                                        # загрузка один раз за таблицу
+    assert not FakeLlama.calls                                                  # llama.cpp не трогали

@@ -1,5 +1,6 @@
 """Клиент Ollama для полей промпта (WS-04): /api/chat + structured outputs, ретраи, выгрузка модели.
-26.10: `LlamaCppClient` — то же без сервера (GGUF в процессе ComfyUI), выбор — profile.llm.backend.
+26.10: `LlamaCppClient` — то же без сервера (GGUF в процессе ComfyUI), `TransformersClient` — модель HF на GPU;
+выбор — profile.llm.backend.
 
 - `format` = JSON-схема полей (Ollama ≥ 0.5) или просто "json" (`format_mode: json`).
 - Невалидный JSON или схема не сошлась → ошибки уходят обратно в чат, не больше `max_retries` (2) раз.
@@ -223,6 +224,110 @@ class LlamaCppClient(OllamaClient):
                 self.unload()
 
 
+class TransformersClient(LlamaCppClient):
+    """26.10: модель HF (safetensors) на GPU через transformers — там, где llama.cpp собран без CUDA (студия).
+
+    Грамматики нет: схема только в системном промпте, ответ начинается с «{», невалидный JSON уходит
+    обратно в чат (общий цикл `chat_json`). Модель: id репозитория HF (`Qwen/Qwen3-VL-8B-Instruct` —
+    папка `models/LLM/Qwen3-VL-8B-Instruct`, докачивается) или путь к папке с config.json.
+    """
+
+    def __init__(self, model: str, loader: Optional[Callable] = None, **kw):
+        kw.pop("llama_factory", None)
+        super().__init__(model, **kw)
+        self.url = "transformers"
+        self._loader = loader          # тесты: (path) → (model, tokenizer)
+
+    @classmethod
+    def from_profile(cls, profile: dict, **kw) -> "TransformersClient":
+        llm = (profile or {}).get("llm") or {}
+        return cls(model=llm.get("prompt_model") or DEFAULT_HF, keep_alive=llm.get("keep_alive", 0),
+                   options=dict(llm.get("options") or {}), format_mode="json",
+                   max_retries=int(llm.get("max_retries", 2)), **kw)
+
+    def _load(self):
+        if self._llm is None:
+            path = resolve_hf(self.model, self._dirs)
+            if self._loader is not None:
+                self._llm = self._loader(path)
+            else:
+                try:
+                    import torch
+                    import transformers
+                    from transformers import AutoModelForImageTextToText, AutoTokenizer
+                    tok = AutoTokenizer.from_pretrained(str(path))
+                    m = AutoModelForImageTextToText.from_pretrained(str(path), dtype=torch.bfloat16,
+                                                                    device_map="cuda", attn_implementation="sdpa")
+                except Exception as e:   # noqa: BLE001 — нет пакета, старая версия, нет CUDA
+                    v = getattr(locals().get("transformers"), "__version__", "?")
+                    raise LLMUnavailable(f"transformers {v}: не загрузилась {path.name}: {e}") from e
+                self._llm = (m.eval(), tok)
+        return self._llm
+
+    def unload(self) -> None:
+        had, self._llm = self._llm is not None, None
+        if had:
+            import gc
+            gc.collect()
+            try:
+                import torch
+                torch.cuda.empty_cache()
+            except Exception:   # noqa: BLE001
+                pass
+
+    def ping(self) -> bool:
+        try:
+            resolve_hf(self.model, self._dirs, download=False)
+            return True
+        except LLMUnavailable:
+            return False
+
+    def _post(self, messages: list, schema: Optional[dict], seed: Optional[int]) -> dict:
+        m, tok = self._load()
+        text = tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False) + "{"
+        try:
+            import torch
+            if seed is not None:
+                torch.manual_seed(int(seed))
+            ids = tok(text, return_tensors="pt", add_special_tokens=False).to(m.device)
+            temp = float(self.options.get("temperature", 0))
+            gen = {"do_sample": True, "temperature": temp} if temp > 0 else {"do_sample": False}
+            with torch.inference_mode():
+                out = m.generate(**ids, max_new_tokens=int(self.options.get("num_predict", 2048)), **gen)
+        except Exception as e:   # noqa: BLE001
+            raise LLMUnavailable(f"transformers {self.model}: {e}") from e
+        new = out[0][ids["input_ids"].shape[1]:]
+        return {"message": {"content": "{" + tok.decode(new, skip_special_tokens=True)}, "eval_count": len(new)}
+
+
+DEFAULT_HF = "Qwen/Qwen3-VL-8B-Instruct"   # Apache-2.0, bf16 ~17 ГБ VRAM
+HF_FILES = ["*.json", "*.safetensors", "*.txt", "*.jinja", "*.model"]
+
+
+def resolve_hf(name: str, dirs: Optional[list] = None, download: bool = True):
+    """Папка модели HF: абсолютный путь, models/LLM/<имя> (рекурсивно, с config.json) или докачка репозитория."""
+    from pathlib import Path
+    p = Path(name)
+    if p.is_absolute():
+        if (p / "config.json").is_file():
+            return p
+        raise LLMUnavailable(f"нет config.json в {p}")
+    dirs = [Path(d) for d in (dirs if dirs is not None else _llm_dirs())]
+    base = p.name
+    for d in dirs:
+        if d.is_dir():
+            hit = next((c.parent for c in d.rglob("config.json") if c.parent.name == base), None)
+            if hit is not None and any(hit.glob("*.safetensors")):
+                return hit
+    if not download or "/" not in name or not dirs:
+        raise LLMUnavailable(f"нет модели {name} в {', '.join(map(str, dirs)) or 'models/LLM'}")
+    try:
+        from huggingface_hub import snapshot_download
+        return Path(snapshot_download(name, local_dir=str(dirs[-1] / base), allow_patterns=HF_FILES))
+    except Exception as e:   # noqa: BLE001
+        raise LLMUnavailable(f"не скачалась {name}: {e}") from e
+
+
 DEFAULT_GGUF = "Qwen3VL-8B-Instruct-Q4_K_M.gguf"   # тот же квант, что у Ollama qwen3-vl:8b-instruct
 KNOWN_GGUF = {   # официальные GGUF (Apache-2.0) — докачка в models/LLM/<repo>/
     "Qwen3VL-8B-Instruct-Q4_K_M.gguf": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
@@ -267,8 +372,10 @@ def resolve_gguf(name: str, dirs: Optional[list] = None, download: bool = True):
 
 
 def make_client(profile: dict):
-    """Клиент по profile.llm.backend: ollama (по умолчанию) | llamacpp."""
+    """Клиент по profile.llm.backend: ollama (по умолчанию) | llamacpp | transformers."""
     backend = str(((profile or {}).get("llm") or {}).get("backend") or "ollama").lower()
+    if backend in ("transformers", "hf"):
+        return TransformersClient.from_profile(profile)
     return (LlamaCppClient if backend in ("llamacpp", "llama.cpp", "llama_cpp") else OllamaClient).from_profile(profile)
 
 
