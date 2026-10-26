@@ -316,16 +316,79 @@ def resolve_hf(name: str, dirs: Optional[list] = None, download: bool = True):
     base = p.name
     for d in dirs:
         if d.is_dir():
-            hit = next((c.parent for c in d.rglob("config.json") if c.parent.name == base), None)
-            if hit is not None and any(hit.glob("*.safetensors")):
+            hit = next((c.parent for c in d.rglob("config.json") if c.parent.name == base and _hf_complete(c.parent)),
+                       None)
+            if hit is not None:
                 return hit
     if not download or "/" not in name or not dirs:
         raise LLMUnavailable(f"нет модели {name} в {', '.join(map(str, dirs)) or 'models/LLM'}")
+    dst = dirs[-1] / base
+    hf_fetch(name, dst)
+    if not _hf_complete(dst):
+        raise LLMUnavailable(f"{name}: после докачки в {dst} не все шарды")
+    return dst
+
+
+def _hf_complete(d) -> bool:
+    """config.json + все шарды из model.safetensors.index.json (или model.safetensors) на месте."""
+    if not (d / "config.json").is_file():
+        return False
+    idx = d / "model.safetensors.index.json"
+    if idx.is_file():
+        shards = set(json.loads(idx.read_text(encoding="utf-8")).get("weight_map", {}).values())
+        return bool(shards) and all((d / s).is_file() for s in shards)
+    return (d / "model.safetensors").is_file()
+
+
+def hf_fetch(repo: str, dst, patterns: Optional[list] = None, http: Optional[httpx.Client] = None) -> list:
+    """Файлы репозитория HF → dst прямым HTTP (без hf_xet: на студии snapshot_download за 1.5 ч не докачал 17 ГБ).
+    Готовые файлы нужного размера пропускаются, недокачанные (.part) продолжаются с места обрыва."""
+    import fnmatch
+    import logging
+    from pathlib import Path
+    log = logging.getLogger("farm")
+    dst = Path(dst)
+    hc = http or httpx.Client(timeout=httpx.Timeout(60, read=300), follow_redirects=True)
     try:
-        from huggingface_hub import snapshot_download
-        return Path(snapshot_download(name, local_dir=str(dirs[-1] / base), allow_patterns=HF_FILES))
-    except Exception as e:   # noqa: BLE001
-        raise LLMUnavailable(f"не скачалась {name}: {e}") from e
+        r = hc.get(f"https://huggingface.co/api/models/{repo}/tree/main")
+        r.raise_for_status()
+        files = [(f["path"], int((f.get("lfs") or {}).get("size") or f.get("size") or 0)) for f in r.json()
+                 if f.get("type") == "file" and any(fnmatch.fnmatch(f["path"], pt) for pt in (patterns or HF_FILES))]
+        got = []
+        for path, size in files:
+            out = dst / path
+            if out.is_file() and (not size or out.stat().st_size == size):
+                continue
+            out.parent.mkdir(parents=True, exist_ok=True)
+            part = out.with_name(out.name + ".part")
+            done = part.stat().st_size if part.is_file() else 0
+            hdr = {"Range": f"bytes={done}-"} if done else {}
+            t0, mark = time.monotonic(), done
+            with hc.stream("GET", f"https://huggingface.co/{repo}/resolve/main/{path}", headers=hdr) as resp:
+                if resp.status_code == 416:      # уже целиком
+                    pass
+                else:
+                    resp.raise_for_status()
+                    if done and resp.status_code != 206:   # сервер не умеет Range — заново
+                        done = 0
+                    with open(part, "ab" if done else "wb") as f:
+                        for chunk in resp.iter_bytes(8 << 20):
+                            f.write(chunk)
+                            done += len(chunk)
+                            if done - mark >= 1 << 30:
+                                log.info("farm: %s %s — %.1f/%.1f ГБ, %.0f МБ/с", repo, path, done / 1e9, size / 1e9,
+                                         (done - mark) / 1e6 / max(time.monotonic() - t0, 1e-3))
+                                t0, mark = time.monotonic(), done
+            if size and part.stat().st_size != size:
+                raise LLMUnavailable(f"{repo}/{path}: скачано {part.stat().st_size} из {size} байт")
+            os.replace(part, out)
+            got.append(path)
+        return got
+    except httpx.HTTPError as e:
+        raise LLMUnavailable(f"не скачалась {repo}: {e}") from e
+    finally:
+        if http is None:
+            hc.close()
 
 
 DEFAULT_GGUF = "Qwen3VL-8B-Instruct-Q4_K_M.gguf"   # тот же квант, что у Ollama qwen3-vl:8b-instruct
@@ -363,12 +426,11 @@ def resolve_gguf(name: str, dirs: Optional[list] = None, download: bool = True):
     repo = KNOWN_GGUF.get(p.name)
     if not download or repo is None or not dirs:
         raise LLMUnavailable(f"нет модели {name} в {', '.join(map(str, dirs)) or 'models/LLM'}")
-    try:
-        from huggingface_hub import hf_hub_download
-        dst = dirs[-1] / repo.split("/")[-1]
-        return Path(hf_hub_download(repo, p.name, local_dir=str(dst)))
-    except Exception as e:   # noqa: BLE001
-        raise LLMUnavailable(f"не скачалась {repo}/{p.name}: {e}") from e
+    dst = dirs[-1] / repo.split("/")[-1]
+    hf_fetch(repo, dst, patterns=[p.name])
+    if not (dst / p.name).is_file():
+        raise LLMUnavailable(f"нет {p.name} в {repo}")
+    return dst / p.name
 
 
 def make_client(profile: dict):

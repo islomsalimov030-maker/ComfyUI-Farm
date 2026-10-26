@@ -185,3 +185,38 @@ def test_transformers_backend(env, fake_torch, monkeypatch):
     assert st["STD-01"] == "ok" and st["SIT-02"] == "ok"                       # первый ответ не JSON — ушёл на переделку
     assert loads == [hf]                                                        # загрузка один раз за таблицу
     assert not FakeLlama.calls                                                  # llama.cpp не трогали
+
+
+def test_hf_fetch_resume_and_complete(tmp_path):
+    import httpx
+    from farm.prompts.llm import _hf_complete, hf_fetch
+    blobs = {"config.json": b"{}", "model-00001-of-00002.safetensors": b"A" * 100,
+             "model-00002-of-00002.safetensors": b"B" * 50, "README.md": b"skip",
+             "model.safetensors.index.json": json.dumps({"weight_map": {"a": "model-00001-of-00002.safetensors",
+                                                                       "b": "model-00002-of-00002.safetensors"}}).encode()}
+    seen = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/tree/main"):
+            return httpx.Response(200, json=[{"type": "file", "path": k, "size": len(v)} for k, v in blobs.items()])
+        name = req.url.path.rsplit("/", 1)[-1]
+        rng = req.headers.get("range")
+        seen.append((name, rng))
+        data = blobs[name]
+        if rng:
+            start = int(rng.split("=")[1].rstrip("-"))
+            return httpx.Response(206, content=data[start:])
+        return httpx.Response(200, content=data)
+
+    dst = tmp_path / "Qwen3-VL-8B-Instruct"
+    dst.mkdir()
+    (dst / "config.json").write_bytes(b"{}")                                        # уже есть — не качается
+    (dst / "model-00001-of-00002.safetensors.part").write_bytes(b"A" * 40)          # обрыв на 40 байтах
+    (dst / "model.safetensors.index.json").write_bytes(blobs["model.safetensors.index.json"])
+    assert not _hf_complete(dst)
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    got = hf_fetch("Qwen/Qwen3-VL-8B-Instruct", dst, http=http)
+    assert sorted(got) == ["model-00001-of-00002.safetensors", "model-00002-of-00002.safetensors"]
+    assert ("model-00001-of-00002.safetensors", "bytes=40-") in seen and not any(n == "README.md" for n, _ in seen)
+    assert (dst / "model-00001-of-00002.safetensors").read_bytes() == b"A" * 100 and _hf_complete(dst)
+    assert hf_fetch("Qwen/Qwen3-VL-8B-Instruct", dst, http=http) == []                  # повтор — ничего не качает
