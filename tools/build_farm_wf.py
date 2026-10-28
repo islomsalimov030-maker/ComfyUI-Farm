@@ -440,6 +440,17 @@ def main() -> int:
         for n in g.values():
             roles[n["_meta"].get("role", "?")] = roles.get(n["_meta"].get("role", "?"), 0) + 1
         print(name, len(g), "нод", roles)
+
+        # @2 — та же схема со склеенными одинаковыми загрузчиками (WS-14: OOM).
+        # ComfyUI не дедуплицирует CLIPLoader: каждый узел = свой энкодер (~25 ГБ).
+        # @1 остаётся как есть (история), @2 — рабочий.
+        import dedup_loaders as DL
+        g2, notes = DL.dedup(g)
+        (WF / f"{name[:-2]}@2.api.json").write_text(json.dumps(g2, ensure_ascii=False, indent=1) + "\n",
+                                                  encoding="utf-8")
+        print(f"{name[:-2]}@2", len(g2), "нод; склеено:", len(notes))
+        for n in notes:
+            print("   •", n)
     return 0
 
 

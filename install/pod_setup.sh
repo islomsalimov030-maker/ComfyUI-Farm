@@ -367,11 +367,20 @@ restart_comfy() {
     # LRU-кэшем: кэш ComfyUI меряет ОЗУ хоста, а не лимит контейнера (WS-10b 23.10: OOM-kill на поде с лимитом 94 ГБ).
     # Видео 10 с FullHD (video_h3_loop@2) при лимите 94 ГБ — только с COMFY_ARGS="--cache-none": LRU держит энкодер
     # 25 ГБ, без этого OOM на стабилизаторе (WS-10, 25.10; запас с --cache-none 7–9 ГБ). Кадры — как по умолчанию.
+    # WS-14 (29.10): LRU-кэш тоже копит энкодер 25 ГБ + клип FullHD 5 ГБ сверх лимита — при лимите < 200 ГБ
+    # для фермы (кадры+видео) нужен именно --cache-none, а не LRU. Ставим его по умолчанию; свой COMFY_ARGS
+    # пользователь может переопределить.
     local extra="${COMFY_ARGS:-}" lim
     lim=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo max)
-    if [ -z "$extra" ] && [ "$lim" != max ] && [ "$lim" -lt 200000000000 ]; then
-      extra="--disable-pinned-memory --cache-lru 10"
-      echo "  лимит ОЗУ контейнера $((lim / 1000000000)) ГБ → $extra"
+    if [ "$lim" != max ] && [ "$lim" -lt 200000000000 ]; then
+      if [ -z "$extra" ]; then
+        # --cache-none: без RAM-кэша ComfyUI (WS-14). --disable-pinned-memory: pinned-память
+        # не считается cgroup-ом вовремя (WS-10b 23.10).
+        extra="--disable-pinned-memory --cache-none"
+        echo "  лимит ОЗУ контейнера $((lim / 1000000000)) ГБ → $extra (WS-14: без RAM-кэша)"
+      else
+        echo "  лимит ОЗУ контейнера $((lim / 1000000000)) ГБ → свой COMFY_ARGS: $extra"
+      fi
     fi
     tmux new-session -d -s comfy -c "$COMFY" bash -c \
       "source $WS/env.sh; $CPY main.py --listen 127.0.0.1 --port 8188 --enable-manager $extra 2>&1 | tee -a $WS/logs/comfy.log"

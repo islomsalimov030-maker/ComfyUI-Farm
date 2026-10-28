@@ -6,7 +6,7 @@ content_scope: sfw
 character_lora: false        # 23.10: LoRA персонажей нет — триггер в промпты не идёт
 llm: {prompt_model: qwen3-vl:8b-instruct, judge_model: qwen3-vl:8b-instruct, keep_alive: 0}
 frame:
-  workflow: frame_ls@1
+  workflow: frame_ls@2          # WS-14 (29.10): @2 = склеенные загрузчики (один энкодер вместо двух, −25 ГБ ОЗУ)
   arms:
     - id: ls_ref2va_t8
       model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
