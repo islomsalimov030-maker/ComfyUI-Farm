@@ -8,3 +8,6 @@ __pycache__/
 /data/
 /outputs/
 .pytest_cache/
+
+# временные прогоны/скретчи
+.tmp_wf/
