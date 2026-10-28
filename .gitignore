@@ -11,3 +11,5 @@ __pycache__/
 
 # временные прогоны/скретчи
 .tmp_wf/
+.tmp_oom/
+.tmp_scripts/
