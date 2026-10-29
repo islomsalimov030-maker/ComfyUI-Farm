@@ -66,6 +66,12 @@ check_env() {
   [ -x "$CPY" ] || { echo "ОШИБКА: нет $CPY — сначала /workspace/bootstrap.sh до УСПЕХ."; exit 1; }
   PY312=$(command -v python3.12 || command -v python3)
   echo "  ComfyUI venv: $("$CPY" -V 2>&1), torch $("$CPY" -c 'import torch;print(torch.__version__)' 2>/dev/null)"
+  # Версия ядра ComfyUI на поде — из образа RunPod (bootstrap.sh), нами не пиннится.
+  # Пишем в лог установки, чтобы знать, на чём работаем (WS-14).
+  local cver ccommit
+  cver=$(sed -n "s/^__version__ *= *['\"]\\([^'\"]*\\).*/\\1/p" "$COMFY/comfyui_version.py" 2>/dev/null | head -1)
+  ccommit=$(git -C "$COMFY" log -1 --format="%H %cd" --date=short 2>/dev/null | head -1)
+  echo "  ядро ComfyUI: ${cver:-не определено}${ccommit:+ ($ccommit)}"
   echo "  HF_HOME=$HF_HOME"
   local free_gb; free_gb=$(df -BG --output=avail $WS | tail -1 | tr -dc 0-9)
   echo "  свободно на томе: ${free_gb} ГБ"

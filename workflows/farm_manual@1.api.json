@@ -3431,7 +3431,8 @@
    "face_denoise": 0.85,
    "use_ref2v": true,
    "use_10Eros": false,
-   "use_PinkCherry": false
+   "use_PinkCherry": false,
+   "use_Singularity": false
   },
   "_meta": {
    "title": "ПУЛЬТ ФОТО — все ручки блока (наведите на поле — подсказка)",
@@ -3452,7 +3453,8 @@
    "hand_strength": 0.2,
    "use_ref2v": true,
    "use_10Eros": false,
-   "use_PinkCherry": false
+   "use_PinkCherry": false,
+   "use_Singularity": false
   },
   "_meta": {
    "title": "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)",

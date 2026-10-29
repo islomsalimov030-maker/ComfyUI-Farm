@@ -29,6 +29,9 @@ MODELS = [  # (метка, файл модели, turbo-LoRA или None, шаг
     ("ref2v", "minimax_h3_ref2va_pruned_int8_convrot.safetensors", True, 8, 8),
     ("10Eros", "10Eros_Max_h3_hybrid_beta5_int8.safetensors", False, 20, 20),
     ("PinkCherry", "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors", False, 20, 20),
+    # 29.10 (WS-14): Singularity — как в farm/util_nodes.py (FARM_MODELS), без turbo, 20 шагов.
+    # Держим списокы рядом: расхождение даёт воркфлоу, который не проходит валидацию пульта.
+    ("Singularity", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", False, 20, 20),
 ]
 F_TURBO = "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
 

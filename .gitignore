@@ -13,3 +13,4 @@ __pycache__/
 .tmp_wf/
 .tmp_oom/
 .tmp_scripts/
+.tmp_out/

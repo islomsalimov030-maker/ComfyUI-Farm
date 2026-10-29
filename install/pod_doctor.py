@@ -99,10 +99,16 @@ def mem_check(url: str) -> list:
                        "(COMFY_ARGS=\"--cache-none\")")
     else:
         out.append("лимит ОЗУ контейнера: не виден (cgroup v1 или без лимита)")
-    # флаги запуска ComfyUI
+    # версия ядра и флаги запуска ComfyUI
     try:
         with urllib.request.urlopen(url.rstrip("/") + "/system_stats", timeout=30) as r:
-            argv = (json.loads(r.read()).get("system") or {}).get("argv") or []
+            sysinfo = json.loads(r.read()).get("system") or {}
+        ver = sysinfo.get("comfyui_version")
+        out.append(f"ядро ComfyUI: {ver or 'не указано'}")
+        for key, label in (("python_version", "python"), ("pytorch_version", "torch")):
+            if sysinfo.get(key):
+                out.append(f"{label}: {sysinfo[key]}")
+        argv = sysinfo.get("argv") or []
         if argv:
             flags = " ".join(argv[1:])
             out.append(f"флаги ComfyUI: {flags}")
@@ -110,7 +116,7 @@ def mem_check(url: str) -> list:
                 out.append("!! включён RAM-кэш ComfyUI — при лимите контейнера он и есть "
                            "причина OOM; перезапустить с --cache-none")
     except Exception as e:  # noqa: BLE001
-        out.append(f"флаги ComfyUI: не прочитать ({e})")
+        out.append(f"версия/флаги ComfyUI: не прочитать ({e})")
     return out
 
 

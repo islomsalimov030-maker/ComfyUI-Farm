@@ -274,7 +274,12 @@ FARM_MODELS = [  # метка, файл, turbo-LoRA (сила), шаги кад�
     ("ref2v", "minimax_h3_ref2va_pruned_int8_convrot.safetensors", 1.0, 8, 8),
     ("10Eros", "10Eros_Max_h3_hybrid_beta5_int8.safetensors", 0.0, 20, 20),
     ("PinkCherry", "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors", 0.0, 20, 20),
+    # 27.10: Singularity ref2va v1.3 (HF WarmBloodAban, Apache-2.0 в карточке) — не дистиллирована, без turbo
+    ("Singularity", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", 0.0, 20, 20),
 ]
+# Порядок включателей в пульте (сверху вниз). Фронтенд восстанавливает widgets_values по позиции —
+# воркфлоу, сохранённые до 27.10 (без use_Singularity или с ним в конце), чинит web/farm_panels.js.
+UI_MODEL_ORDER = ["Singularity", "ref2v", "10Eros", "PinkCherry"]
 
 
 def _model_list():
@@ -313,7 +318,7 @@ def _panel(name, display, desc, spec, models=True):
     def INPUT_TYPES(cls):
         req = {}
         if models:
-            for lab, *_ in FARM_MODELS:
+            for lab in UI_MODEL_ORDER:
                 req[f"use_{lab}"] = ("BOOLEAN", {"default": lab == "ref2v",
                                                  "tooltip": f"Модель {lab}: вкл — своя версия результата. Несколько "
                                                             "включённых считаются по очереди (отдельные запуски)."})
@@ -324,11 +329,18 @@ def _panel(name, display, desc, spec, models=True):
             req[k] = (t, o)
         out = {"required": req}
         if models:
-            out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."})}
+            out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."}),
+                               "steps_override": ("INT", {"default": 0, "min": 0, "max": 40,
+                                                          "tooltip": "Шаги сэмплера вручную: 0 — как положено модели "
+                                                                     "(turbo-модели 8, дообученные без turbo 20). "
+                                                                     "Число больше 0 — перекрыть. ВНИМАНИЕ: у "
+                                                                     "дообученных без turbo моделей (10Eros, PinkCherry, "
+                                                                     "Singularity) меньше ~20 шагов кадр выходит "
+                                                                     "недогарённым — экономит время, но портит качество."})}
             out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"}
         return out
 
-    def run(self, prompt=None, unique_id=None, model_override="", **kw):
+    def run(self, prompt=None, unique_id=None, model_override="", steps_override=0, **kw):
         vals = tuple(kw[k] for k in keys)
         if not models:
             return vals
@@ -346,6 +358,12 @@ def _panel(name, display, desc, spec, models=True):
                 _requeue(prompt, str(unique_id), [m[0] for m in on[1:]])
         stage = 3 if "Video" in name else 2   # индекс шагов: 3 — кадр, 4 — видео в FARM_MODELS
         steps = cur[4] if "Video" in name else cur[3]
+        # WS-14 (29.10): ручка «шаги» — 0 = как положено модели, >0 = перекрыть.
+        # Нужна, потому что у turbo-моделей 8 шагов, а у дообученных без turbo (Singularity,
+        # 10Eros, PinkCherry) 20 — в 2.5 раза дольше. Раньше число шагов было жёстко в таблице
+        # и ручкой не менялось: пульт не давал ни ускорить генерацию, ни ухудшить качество по воле.
+        if steps_override and int(steps_override) > 0:
+            steps = int(steps_override)
         return (cur[1], float(cur[2]), int(steps), cur[0]) + vals
 
     rt = (("MODEL_NAME", "FLOAT", "INT", "STRING") if models else ()) + tuple(t for _, t, *_ in spec)
