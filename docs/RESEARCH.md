@@ -433,3 +433,30 @@
     и `MSYS2_ARG_CONV_EXCL='*'`.
 - **Проверка установки**: `GET /api/models/loras` и `GET /api/object_info/LoraLoaderModelOnly` —
   имя должно появиться в списке выбора ноды.
+
+## WS-15 (31.10) — лицензии весов и нод AIO_auto / AIO_manual V2.0
+
+Лицензия самого MiniMax H3 (база, VAE, turbo-LoRA, H3 CLA) здесь не рассматривается — решается отдельно; все H3-производные дополнительно несут её условия.
+
+| Компонент | Лицензия | Коммерция в ферме | Источник |
+|---|---|---|---|
+| 10Eros Max TURBO-hybrid **beta4** | H3 + доноры LTX 2.3 (< $10 млн/год), Wan 2.2 (Apache-2.0), Krea 2 (< $1 млн/год, фильтры, атрибуция) | ⚠ с условием; **beta4 — corrupted по словам автора, в AIO заменена на beta5** | [TenStrip/10Eros-Max](https://huggingface.co/TenStrip/10Eros-Max) |
+| Singularity ref2va v1.3 | Apache-2.0 (карточка HF) | ✅ | [WarmBloodAban](https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity) |
+| PinkCherry ref2va beta-0.6 | Apache-2.0 (карточка HF) | ✅ | [SexGod1979](https://huggingface.co/SexGod1979/PinkCherry-NSFW_MiniMax-H3) |
+| qwen3vl_32b … heretic int8 | Apache-2.0 по всей цепочке (ethanfel → llmfan46 → Qwen3-VL-32B); AGPL у инструмента heretic — только код | ✅; риск — неподписанная сторонняя сборка | [ethanfel](https://huggingface.co/ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot) |
+| face_yolov8m.pt, hand_yolov8s.pt (Bingsu/adetailer) | карточка apache-2.0, но Ultralytics: обученные YOLO-модели — **AGPL-3.0** | ⚠ прод без Enterprise License — нет; замена MediaPipe Face/Hand (Apache-2.0) | [Ultralytics License](https://www.ultralytics.com/license) |
+| SAM3 (comfyui-rmbg берёт зеркало 1038lab/sam3) | SAM License (Meta): royalty-free, запрет военного/ITAR | ✅ с условием | [facebook/sam3](https://huggingface.co/facebook/sam3) |
+| taeh3 (превью) | MIT (madebyollin/taehv) | ✅ | [taehv](https://github.com/madebyollin/taehv) |
+| stacy_h3_face_v1 / stacy_h3_A_stills | свои; обучены на outputs H3 | ⚠ трактовка H3 CLA (обучение на outputs) — решается вместе с лицензией H3 | RESEARCH §1 |
+| InsightFace buffalo_l/antelopev2 | non-commercial research | ⚠ нет; **comfyui-h3-facerefine тянет её по умолчанию** (`identity_model="insightface"` даже при `identity_track=False`, `insightface` в requirements) → в проде ставить `identity_model=clip_vision` или менять трекер | [insightface](https://github.com/deepinsight/insightface) |
+| ComfyUI-MiniMaxH3Mod f946208 | MIT | ✅ | LICENSE@f946208 |
+| comfyui-h3-facerefine d8521d1 (Carasibana) | MIT (код) | ✅ код; ⚠ веса InsightFace/YOLO | LICENSE@d8521d1 |
+| comfyui-inpaint-cropandstitch, kjnodes, VHS, comfyui-rmbg | GPL-3.0 | ✅ внутренне; при распространении — исходники; модели RMBG (BRIA и др.) — по своим лицензиям, не проверены | LICENSE в репо |
+| comfyui_nvidia_rtx_nodes 892515e (RTX VSR) | код Apache-2.0; `nvidia-vfx` — проприетарная (MAXINE SDK License: без сублицензии/распространения) | ⚠ SaaS на облачных GPU явно не разрешён и не запрещён — **не проверено**, нужен запрос в NVIDIA | [PyPI nvidia-vfx](https://pypi.org/project/nvidia-vfx/) |
+| minimax-h3-image-studio b4a2339 | Unlicense | ✅ | LICENSE@b4a2339 |
+| rgthree-comfy | MIT | ✅ | LICENSE |
+| ComfyUI-StacyLoop 095b77d (своё) | MIT; зависимость `ultralytics` (AGPL-3.0) | ✅ код; ⚠ YOLO | LICENSE@095b77d |
+| h3_img2img_latent | MIT с `de0b5df`; **на 512b1b3 (в воркфлоу) LICENSE ещё нет** | ✅ после обновления до de0b5df | GitHub |
+| ComfyUI-Farm (своё) | MIT — файл есть в `ws15-close`, **на origin/main не было** до слияния WS-15 | ✅ после слияния в main | репо |
+
+StacyLoop (`StacyAutoConfidence`) InsightFace не тянет — только YOLO-детектор. Не проверены: условия NVIDIA VFX SDK для SaaS, модели внутри comfyui-rmbg кроме SAM3.
