@@ -22,6 +22,15 @@ def _img(path: str | None):
     return torch.from_numpy(np.asarray(im).astype("float32") / 255.0)[None]
 
 
+def _mods(face: str, body: str) -> tuple:
+    """(моды кадра, мод лица) как H3_REF_MODS; вне ComfyUI (тесты) — имена."""
+    from .util_nodes import ref_mods
+    try:
+        return ref_mods([face, body]), ref_mods([face])
+    except (KeyError, ImportError):
+        return [face, body], [face]
+
+
 def _table_path(table: str) -> str:
     if table.strip():
         return table.strip()
@@ -148,11 +157,12 @@ class FarmPromptLLM:
 class FarmShotFromTable:
     CATEGORY = "Next Genium/Farm"
     FUNCTION = "run"
+    # mods / face_mods — в конце, чтобы не сдвинуть связи сохранённых графов (WS-15)
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING", "STRING", "IMAGE", "STRING", "STRING",
-                    "FLOAT", "BOOLEAN", "STRING", "STRING", "STRING", "STRING", "STRING")
+                    "FLOAT", "BOOLEAN", "STRING", "STRING", "STRING", "STRING", "STRING", "H3_REF_MODS", "H3_REF_MODS")
     RETURN_NAMES = ("location", "face_mod", "body_mod", "frame_prompt", "frame_face_prompt", "face_ref",
                     "video_prompt", "video_face_prompt", "duration_sec", "loop", "shot_id", "info",
-                    "zone", "motion_ref", "pose_ref")
+                    "zone", "motion_ref", "pose_ref", "mods", "face_mods")
     OUTPUT_TOOLTIPS = (
         "Локация <Picture 1>: «Картинка локации» строки или лист ракурсов зоны.",
         "Мод лица персонажа (farm/<персонаж>_face).", "Мод тела — персонаж в наряде (farm/<вариант>_body).",
@@ -160,7 +170,9 @@ class FarmShotFromTable:
         "Промпт видео-петли H3.", "Промпт прохода лица видео.", "Длительность видео из таблицы, с.",
         "Петля из таблицы.", "ID строки.", "Что взято из таблицы (для проверки глазами).",
         "ID зоны из таблицы (по нему выбирается загруженная картинка локации).",
-        "Путь к видео-рефу движения строки (пусто — нет).", "Путь к фото-рефу позы строки (пусто — нет).")
+        "Путь к видео-рефу движения строки (пусто — нет).", "Путь к фото-рефу позы строки (пусто — нет).",
+        "Моды кадра (лицо + персонаж в наряде, сила 1) → RefModApply кадра. Мода нет на сервере — ошибка.",
+        "Мод лица (сила 1) → RefModApply прохода лица.")
     DESCRIPTION = ("Шот из таблицы сцен: номер строки с галочкой «В работу» (1…N) или ID → локация, моды, промпты "
                    "кадра и видео, длительность. Промпты пишет LLM фермы (Ollama) по шаблонам H3. "
                    "Чтобы прогнать N строк подряд: row → control «increment» и Queue ×N.")
@@ -198,6 +210,7 @@ class FarmShotFromTable:
                out["frame"][0], out["frame"][1], _img(vr.get("face_ref")), out["video"][0], out["video"][1],
                dur, loop, shot["shot_id"], info, str(extra.get("zone") or shot.get("plate") or ""),
                str(shot.get("motion_ref") or ""), str(shot.get("pose_ref") or ""))
+        res += _mods(res[1], res[2])
         return {"ui": {"text": [info]}, "result": res}
 
     @classmethod

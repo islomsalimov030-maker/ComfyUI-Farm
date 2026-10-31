@@ -517,19 +517,32 @@ def _video_files(limit: int = 2000) -> list[str]:
     return sorted(files)
 
 
-def face_mods(name: str, strength: float):
-    """H3_REF_MODS мода лица — тем же кодом, что MiniMaxH3RefModsLoader (выход пульта идёт прямо в RefModApply:
-    выход-список имён модов фронтенд ComfyUI связывал ненадёжно — WS-10b 23.10)."""
+def ref_mods(names: list[str], strength: float = 1.0):
+    """H3_REF_MODS из списка имён — тем же кодом, что MiniMaxH3RefModsLoader (выход ноды идёт прямо в RefModApply:
+    выход-список имён модов фронтенд ComfyUI связывал ненадёжно — WS-10b 23.10). «(none)» и пустые пропускаются;
+    имени нет на сервере — ошибка (чужой мод молча не подставляется). Нет ни одного мода — пустой список."""
     import nodes
     cls = nodes.NODE_CLASS_MAPPINGS["MiniMaxH3RefModsLoader"]
+    names = [n for n in names if n and n != "(none)"][:8]
+    known = set(cls.INPUT_TYPES()["required"]["mod_1"][0])
+    missing = [n for n in names if n not in known]
+    if missing:
+        raise FileNotFoundError(f"нет RefMod-мода: {', '.join(missing)} (models/refmods/<имя>.safetensors)")
+    if not names:
+        return []
     kw = {}
     for i in range(1, 9):
-        kw.update({f"mod_{i}": name if i == 1 else "(none)", f"strength_{i}": float(strength) if i == 1 else 1.0,
-                   f"copies_{i}": 1})
+        kw.update({f"mod_{i}": names[i - 1] if i <= len(names) else "(none)",
+                   f"strength_{i}": float(strength) if i <= len(names) else 1.0, f"copies_{i}": 1})
     r = getattr(cls(), cls.FUNCTION)(show_info=False, max_total_tokens=16384, **kw)
     if isinstance(r, dict):
         r = r["result"]
     return r[0]
+
+
+def face_mods(name: str, strength: float):
+    """H3_REF_MODS мода лица (пульт прохода лица)."""
+    return ref_mods([name], strength)
 
 
 class FarmPanelFacepass:
