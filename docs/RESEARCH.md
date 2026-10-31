@@ -412,3 +412,24 @@
 - **Почему генерации на поде стали медленнее (29.10, WS-14)**: пульт `NGFarmPanelVideo` берёт модель и ЧИСЛО ШАГОВ из таблицы `FARM_MODELS` (`farm/util_nodes.py`): `ref2v` → turbo-LoRA 1.0 + **8 шагов**; `Singularity`/`10Eros`/`PinkCherry` → turbo-LoRA 0 + **20 шагов**. В ручном воркфлоу `farm_manual` переключатель пульта стоял на `use_Singularity`, а узел turbo-LoRA (id 57) был в режиме bypass (mode 4) — то есть модель шла 20 полных шагов без turbo-дистилляции. Штатный быстрый путь фермы (`ref2v` + turbo 8 шагов) на поде замерялся 736–791 с (25–26.10, RESEARCH ниже); переключение пульта на `use_Singularity` возвращает 20 шагов. Turbo-LoRA у Singularity сам по себе не запрещён — автор модели (RESEARCH: WS-01, 16.10) предлагает `ref2v_turbo_4step` для скорости, т.к. сама модель не дистиллирована.
 - **Шаги в ручном воркфлоу не настраиваются**: `farm_manual@2.api.json` берёт `BasicScheduler.steps` из выхода пульта (`PV`, индекс 2) — это жёстко заданное в `FARM_MODELS` число, ручки у пульта нет. В боевом воркфлоу фермы `video_h3_loop@2` шаги вынесены в отдельный `PrimitiveInt` «KNOB steps» = 8 (Singularity тоже гоняют на 8 шагах) — этот способ даёт скорость без смены модели.
 - **Студия (29.10): ядро 0.34.6, запускается с `--cache-ram 8 24`** (`/system_stats` → argv), свободно ~52–57 ГБ из 123 ГБ. Все ноды воркфлоу на месте (4114 классов в `/object_info`), промпты принимаются и исполняются (`success` в истории). Проблема не в нодах, а в (а) старой версии ядра — не проходит миграция alembic `0008_drop_asset_meta`, промпты молча отбрасываются (WS-12), и (б) 24 ГБ RAM-кэша при 52 ГБ свободных. Под 502 бэкенд отваливается — на студии уже висит посторонняя NSFW-задача (87 узлов, `hmnsfwAIOV25`), промпты стоят за ней в очереди.
+
+
+## Как ставить модель на студию (30.10, WS-10; перенесено WS-15 без имени модели)
+
+Проверено на `comfy.next-genium.com` (ComfyUI 0.34.6, ComfyUI-Manager v4.2.1 legacy, `db_mode: local`).
+
+- **Штатный путь менеджера НЕ работает** для произвольных моделей: `POST /v2/manager/queue/install_model`
+  требует, чтобы тройка `(save_path, base, filename)` была в whitelist — `model-list.json`
+  (`check_whitelist_for_model`, `comfyui_manager/legacy/manager_server.py`). В списках студии
+  (local 509 записей / cache 564) H3-лор нет → ответ **400 «Invalid model install request is detected»**.
+  Дополнительно: без поля `id` в payload батч-роут `/v2/manager/queue/batch` падает с **500**
+  (KeyError в `failed.add(x['id'])`).
+- **Рабочий путь** — кастомная нода `ComfyUI-Model-Manager` (на студии установлена), база `/model-manager`:
+  - `POST /model-manager/upload` — FormData: `folder` = **абсолютный путь** (`/root/ComfyUI/models/loras`),
+    `file` = файл. Поддерживаемые расширения: `.safetensors`, `.ckpt`, `.sft`, `.gguf`, `.bin`, `.pth`, `.pt`, `.pt2`.
+  - `GET /model-manager/models` — список папок моделей; `GET /model-manager/supported-extensions`.
+  - `DELETE /model-manager/model/{type}/{pathIndex}/{fullname}` — удалить (pathIndex — индекс в списке папок).
+  - В Git Bash путь в `folder` портится (`/root` → `C:/Program Files/Git/root`) — нужен `MSYS_NO_PATHCONV=1`
+    и `MSYS2_ARG_CONV_EXCL='*'`.
+- **Проверка установки**: `GET /api/models/loras` и `GET /api/object_info/LoraLoaderModelOnly` —
+  имя должно появиться в списке выбора ноды.
