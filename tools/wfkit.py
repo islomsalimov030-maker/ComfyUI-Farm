@@ -256,13 +256,16 @@ def to_api(root):
             sg = subs[n["type"]]
             named = n.get("widgets_values_named") or {}
             src = {}
+            # Метка «в работе»: экземпляр может ссылаться на свой же выход
+            # (например, список моделей → подграф «Models from LIST» → его же
+            # выход model наружу). Без метки resolve() уходит в бесконечную рекурсию.
+            inst_out[n["id"]] = {}
             for k, si in enumerate(sg["inputs"]):
                 inp = next((i for i in n.get("inputs", []) if i["name"] == si["name"]), None)
                 if inp is not None and inp.get("link") is not None:
                     src[k] = resolve(inp["link"])
                 elif si["name"] in named:
                     src[k] = ("val", named[si["name"]])
-            inst_out[n["id"]] = {}
             res = walk(sg, f"{prefix}{n['id']}:", src)
             inst_out[n["id"]] = res
             return res

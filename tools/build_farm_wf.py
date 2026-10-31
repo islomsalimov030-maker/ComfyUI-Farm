@@ -29,6 +29,8 @@ MODELS = [  # (метка, файл модели, turbo-LoRA или None, шаг
     ("ref2v", "minimax_h3_ref2va_pruned_int8_convrot.safetensors", True, 8, 8),
     ("10Eros", "10Eros_Max_h3_hybrid_beta5_int8.safetensors", False, 20, 20),
     ("PinkCherry", "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors", False, 20, 20),
+    # 29.10 (WS-14): Singularity — как в farm/util_nodes.py (FARM_MODELS), без turbo, 20 шагов.
+    # Держим списокы рядом: расхождение даёт воркфлоу, который не проходит валидацию пульта.
     ("Singularity", "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors", False, 20, 20),
 ]
 F_TURBO = "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"
@@ -441,6 +443,17 @@ def main() -> int:
         for n in g.values():
             roles[n["_meta"].get("role", "?")] = roles.get(n["_meta"].get("role", "?"), 0) + 1
         print(name, len(g), "нод", roles)
+
+        # @2 — та же схема со склеенными одинаковыми загрузчиками (WS-14: OOM).
+        # ComfyUI не дедуплицирует CLIPLoader: каждый узел = свой энкодер (~25 ГБ).
+        # @1 остаётся как есть (история), @2 — рабочий.
+        import dedup_loaders as DL
+        g2, notes = DL.dedup(g)
+        (WF / f"{name[:-2]}@2.api.json").write_text(json.dumps(g2, ensure_ascii=False, indent=1) + "\n",
+                                                  encoding="utf-8")
+        print(f"{name[:-2]}@2", len(g2), "нод; склеено:", len(notes))
+        for n in notes:
+            print("   •", n)
     return 0
 
 

@@ -349,11 +349,19 @@ def _panel(name, display, desc, spec, models=True):
             req[k] = (t, o)
         out = {"required": req}
         if models:
-            out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."})}
+            out["optional"] = {"model_override": ("STRING", {"default": "", "tooltip": "Служебное: ставит ферма."}),
+                               "steps_override": ("INT", {"default": 0, "min": 0, "max": 40,
+                                                          "tooltip": "Шаги сэмплера вручную: 0 — как положено модели "
+                                                                     "(turbo-модели 8, дообученные без turbo 20). "
+                                                                     "Число больше 0 — перекрыть. ВНИМАНИЕ: у "
+                                                                     "дообученных без turbo моделей (10Eros, PinkCherry, "
+                                                                     "Singularity) меньше ~20 шагов кадр выходит "
+                                                                     "недогарённым — экономит время, но портит качество."})}
             out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID", "extra_pnginfo": "EXTRA_PNGINFO"}
         return out
 
-    def run(self, prompt=None, unique_id=None, extra_pnginfo=None, model_override="", **kw):
+    def run(self, prompt=None, unique_id=None, extra_pnginfo=None, model_override="", steps_override=0,
+            **kw):
         vals = tuple(kw[k] for k in keys)
         if not models:
             return vals
@@ -371,6 +379,12 @@ def _panel(name, display, desc, spec, models=True):
                 _requeue(prompt, str(unique_id), [m[0] for m in on[1:]], extra_pnginfo)
         stage = 3 if "Video" in name else 2   # индекс шагов: 3 — кадр, 4 — видео в FARM_MODELS
         steps = cur[4] if "Video" in name else cur[3]
+        # WS-14 (29.10): ручка «шаги» — 0 = как положено модели, >0 = перекрыть.
+        # Нужна, потому что у turbo-моделей 8 шагов, а у дообученных без turbo (Singularity,
+        # 10Eros, PinkCherry) 20 — в 2.5 раза дольше. Раньше число шагов было жёстко в таблице
+        # и ручкой не менялось: пульт не давал ни ускорить генерацию, ни ухудшить качество по воле.
+        if steps_override and int(steps_override) > 0:
+            steps = int(steps_override)
         return (cur[1], float(cur[2]), int(steps), cur[0]) + vals
 
     rt = (("MODEL_NAME", "FLOAT", "INT", "STRING") if models else ()) + tuple(t for _, t, *_ in spec)

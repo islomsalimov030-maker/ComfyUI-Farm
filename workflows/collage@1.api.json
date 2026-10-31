@@ -1,0 +1,279 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 1 · фото"
+  }
+ },
+ "2": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 2 · фото"
+  }
+ },
+ "3": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 3 · фото"
+  }
+ },
+ "4": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 4 · фото"
+  }
+ },
+ "5": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 5 · фото"
+  }
+ },
+ "6": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 6 · фото"
+  }
+ },
+ "7": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 7 · фото"
+  }
+ },
+ "8": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "IN 8 · фото"
+  }
+ },
+ "9": {
+  "class_type": "ImageBatchMultiSkipEmpty",
+  "inputs": {
+   "image_1": [
+    "1",
+    0
+   ],
+   "image_2": [
+    "2",
+    0
+   ],
+   "image_3": [
+    "3",
+    0
+   ],
+   "image_4": [
+    "4",
+    0
+   ],
+   "inputcount": 8
+  },
+  "_meta": {
+   "title": "БАТЧ · собрать загруженные фото"
+  }
+ },
+ "10": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 2
+  },
+  "_meta": {
+   "title": "KNOB columns · колонок в ряду"
+  }
+ },
+ "11": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 512
+  },
+  "_meta": {
+   "title": "KNOB cell_w · ширина ячейки, px"
+  }
+ },
+ "12": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 512
+  },
+  "_meta": {
+   "title": "KNOB cell_h · высота ячейки, px"
+  }
+ },
+ "13": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 8
+  },
+  "_meta": {
+   "title": "KNOB padding · отступ между фото, px"
+  }
+ },
+ "14": {
+  "class_type": "PrimitiveString",
+  "inputs": {
+   "value": "20, 20, 20"
+  },
+  "_meta": {
+   "title": "KNOB pad_color · цвет добора «R, G, B»"
+  }
+ },
+ "15": {
+  "class_type": "ImageGrid",
+  "inputs": {
+   "images": [
+    "9",
+    0
+   ],
+   "columns": [
+    "10",
+    0
+   ],
+   "cell_width": [
+    "11",
+    0
+   ],
+   "cell_height": [
+    "12",
+    0
+   ],
+   "padding": [
+    "13",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "СЕТКА · рамки (фото растягивается в ячейку)"
+  }
+ },
+ "16": {
+  "class_type": "ImageResizeKJv2",
+  "inputs": {
+   "image": [
+    "9",
+    0
+   ],
+   "width": [
+    "11",
+    0
+   ],
+   "height": [
+    "12",
+    0
+   ],
+   "pad_color": [
+    "14",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "keep_proportion": "pad",
+   "crop_position": "center",
+   "divisible_by": 8
+  },
+  "_meta": {
+   "title": "ВПИСАТЬ · сохранить пропорции (pad)"
+  }
+ },
+ "17": {
+  "class_type": "ImageGrid",
+  "inputs": {
+   "images": [
+    "16",
+    0
+   ],
+   "columns": [
+    "10",
+    0
+   ],
+   "cell_width": [
+    "11",
+    0
+   ],
+   "cell_height": [
+    "12",
+    0
+   ],
+   "padding": 0
+  },
+  "_meta": {
+   "title": "СЕТКА · плотная (мозаика без искажений)"
+  }
+ },
+ "18": {
+  "class_type": "PrimitiveBoolean",
+  "inputs": {
+   "value": false
+  },
+  "_meta": {
+   "title": "KNOB режим · true = плотная, false = рамки"
+  }
+ },
+ "19": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "switch": [
+    "18",
+    0
+   ],
+   "on_false": [
+    "15",
+    0
+   ],
+   "on_true": [
+    "17",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ВЫБОР · рамки / плотная"
+  }
+ },
+ "20": {
+  "class_type": "PreviewImage",
+  "inputs": {
+   "images": [
+    "19",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ПРЕВЬЮ · коллаж"
+  }
+ },
+ "21": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "19",
+    0
+   ],
+   "filename_prefix": "collage/collage"
+  },
+  "_meta": {
+   "title": "СОХРАНИТЬ · коллаж"
+  }
+ }
+}

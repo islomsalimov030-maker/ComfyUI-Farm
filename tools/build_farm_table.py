@@ -150,6 +150,15 @@ def main() -> int:
     out = WF / "farm_table@1.api.json"
     out.write_text(json.dumps(g, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(out, len(g), "нод")
+
+    # @2 — со склеенными одинаковыми загрузчиками (WS-14: OOM, ~50 ГБ энкодера).
+    import dedup_loaders as DL
+    g2, notes = DL.dedup(g)
+    out2 = WF / "farm_table@2.api.json"
+    out2.write_text(json.dumps(g2, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(out2, len(g2), "нод; склеено:", len(notes))
+    for n in notes:
+        print("   •", n)
     return 0
 
 
