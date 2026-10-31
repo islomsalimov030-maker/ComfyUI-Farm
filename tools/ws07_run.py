@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import os
@@ -34,8 +35,8 @@ CFG = REPO / "tools" / "ws07_series.yaml"
 EST = {"frame": 50, "load": 90, "upscale": {"none": 20, "rtx": 40, "seedvr2_3b": 240, "seedvr2_7b": 420}}
 
 
-def load_cfg() -> dict:
-    c = yaml.safe_load(CFG.read_text(encoding="utf-8"))
+def load_cfg(path: Path | str = CFG) -> dict:
+    c = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     c["kit"] = os.environ.get("WS07_KIT", c["kit"])
     c["out"] = os.environ.get("WS07_OUT", c["out"])
     return c
@@ -52,15 +53,19 @@ def jobs(cfg: dict, series: list[str]) -> list[dict]:
                             "id": f"{c.stem}__{m}"})
             continue
         for gen, arm, var, pose in itertools.product(sp["gen"], sp["arm"], sp["variant"], cfg["poses"]):
+            suffix = ""
+            if cfg.get("fingerprint_settings"):
+                settings = json.dumps(cfg["arms"][arm], sort_keys=True).encode()
+                suffix = "__" + hashlib.sha256(settings).hexdigest()[:12]
             for seed in cfg["seeds"][pose][: sp.get("seeds", 1)]:
                 out.append({"series": s, "kind": "frame", "gen": gen, "arm": arm, "variant": var, "pose": pose,
-                            "seed": seed, "id": f"{pose}__{gen}__{arm}__{var}__{seed}"})
+                            "seed": seed, "id": f"{pose}__{gen}__{arm}__{var}__{seed}{suffix}"})
     # одна рука/генератор подряд — меньше перезагрузок моделей
     out.sort(key=lambda j: (j.get("arm", ""), j.get("gen", j.get("method", "")), j["series"], j.get("pose", "")))
     return out
 
 
-def estimate(js: list[dict]) -> tuple[float, int]:
+def estimate(js: list[dict], frame_s: float | None = None) -> tuple[float, int]:
     t, loads, last = 0.0, 0, None
     for j in js:
         if j["kind"] == "upscale":
@@ -71,7 +76,7 @@ def estimate(js: list[dict]) -> tuple[float, int]:
             t += EST["load"]
             loads += 1
             last = key
-        t += EST["frame"]
+        t += EST["frame"] if frame_s is None else frame_s
     return t, loads
 
 
@@ -93,7 +98,7 @@ def done_ids(cfg: dict, series: str) -> set[str]:
 # --------------------------------------------------------------------------------------- граф задания
 def _arm(cfg: dict, name: str, model_files: set | None) -> dict:
     a = dict(cfg["arms"][name])
-    if model_files is not None and a["model"] not in model_files and a.get("alt_model") in model_files:
+    if not cfg.get("strict_models") and model_files is not None and a["model"] not in model_files and a.get("alt_model") in model_files:
         a["model"] = a["alt_model"]
     return a
 
@@ -162,11 +167,15 @@ def check(client, cfg: dict, js: list[dict]) -> int:
     loras = combo_values(info, "LoraLoaderModelOnly", "lora_name")
     vaes = combo_values(info, "VAELoader", "vae_name")
     bad = 0
-    for name, a in cfg["arms"].items():
-        m = a["model"] if a["model"] in models else a.get("alt_model")
-        miss = ([a["model"]] if m not in models else []) + [l["name"] for l in a["loras"] if l["name"] not in loras]
+    for name in sorted({j["arm"] for j in js if j["kind"] == "frame"}):
+        a = _arm(cfg, name, models)
+        miss = ([a["model"]] if a["model"] not in models else []) + [l["name"] for l in a.get("loras", []) if l["name"] not in loras]
         print(f"рука {name:20s} {'OK' if not miss else 'НЕТ: ' + ', '.join(miss)}")
-    print("t1 image VAE:", "OK" if "minimax_h3_t1_image_vae_step1597.safetensors" in vaes else "нет (A_t1/B_t1/C_t1 упадут)")
+        bad += bool(miss)
+    if any(j.get("gen", "").endswith("_t1") for j in js):
+        have_t1 = "minimax_h3_t1_image_vae_step1597.safetensors" in vaes
+        print("t1 image VAE:", "OK" if have_t1 else "нет")
+        bad += not have_t1
     qp = combo_values(info, "H3ReferenceEditPrepare", "quality_profile")
     if any(j.get("gen") == "A_t1" for j in js) and G.SINGLE_PROFILE not in qp:
         print(f"A_t1: в Image Studio нет профиля «{G.SINGLE_PROFILE}» (есть {sorted(qp)}) — нужен пакет ≥ v23 "
@@ -187,11 +196,24 @@ def check(client, cfg: dict, js: list[dict]) -> int:
                 bad += 1
             seen.add(j["method"])
             continue
-        key = (j["gen"], j["variant"], j["pose"])
+        key = (j["gen"], j["arm"], j["variant"], j["pose"])
         if key in seen:
             continue
         seen.add(key)
-        g = frame_job_graph(cfg, j, uploaded, models)
+        try:
+            g = frame_job_graph(cfg, j, uploaded, models)
+        except (OSError, KeyError, ValueError) as e:
+            print(f"граф {j['arm']}/{j['pose']}: {e}")
+            bad += 1
+            continue
+        for node in g.values():
+            for inp in ("model_name", "unet_name", "vae_name", "clip_name", "sampler_name", "scheduler"):
+                value = node["inputs"].get(inp)
+                spec = ((info.get(node["class_type"]) or {}).get("input") or {})
+                field = (spec.get("required") or {}).get(inp) or (spec.get("optional") or {}).get(inp)
+                if isinstance(value, str) and field and isinstance(field[0], list) and value not in field[0]:
+                    print(f"недоступно {node['class_type']}.{inp}: {value}")
+                    bad += 1
         miss = G.classes(g) - set(info)
         if miss:
             if j["gen"] not in seen:
@@ -210,9 +232,14 @@ def check(client, cfg: dict, js: list[dict]) -> int:
 def run(client, cfg: dict, js: list[dict], limit: int, budget_min: float) -> int:
     from farm.comfy_client import ExecutionFailed, NodeErrors
     info = object_info(client)
-    models = combo_values(info, "DiffusionModelLoaderKJ", "model_name")
+    models = combo_values(info, "DiffusionModelLoaderKJ", "model_name") | combo_values(info, "UNETLoader", "unet_name")
+    if cfg.get("strict_models"):
+        missing = {cfg["arms"][j["arm"]]["model"] for j in js if j["kind"] == "frame"} - models
+        if missing:
+            print("нет выбранных моделей:", ", ".join(sorted(missing)))
+            return 1
     uploaded = upload_kit(client, cfg)
-    t_start, n = time.time(), 0
+    t_start, n, failed = time.time(), 0, False
     for j in js:
         if j["id"] in done_ids(cfg, j["series"]):
             continue
@@ -234,6 +261,7 @@ def run(client, cfg: dict, js: list[dict], limit: int, budget_min: float) -> int
             t0 = time.time()
             try:
                 pid = client.submit(g, prompt_id=str(uuid.uuid4()))
+                rec["prompt_id"] = pid
                 entry = client.wait(pid, cfg["timeout_s"])
                 rec.update(status="success", sec=round(time.time() - t0, 1), prompt_id=pid,
                            files=_save_outputs(client, entry, outdir, j))
@@ -258,8 +286,12 @@ def run(client, cfg: dict, js: list[dict], limit: int, budget_min: float) -> int
             f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
         n += 1
         print(f"[{n}] {j['id']}: {rec['status']} {rec.get('sec', '')} с", flush=True)
+        if rec["status"] != "success":
+            failed = True
+            if cfg.get("stop_on_error"):
+                break
     print(f"готово заданий: {n}, {(time.time() - t_start) / 60:.1f} мин")
-    return 0
+    return 1 if failed else 0
 
 
 def _save_outputs(client, entry: dict, outdir: Path, j: dict) -> list[str]:
@@ -283,20 +315,34 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--budget-min", type=float, default=0)
     ap.add_argument("--url", default=os.environ.get("COMFY_URL", "http://127.0.0.1:8188"))
+    ap.add_argument("--config", type=Path, default=CFG)
+    ap.add_argument("--arm", action="append", help="только выбранная рука (например, для пробы --limit 1)")
+    ap.add_argument("--frame-seconds", type=float, help="измеренное время кадра для plan")
     a = ap.parse_args()
-    cfg = load_cfg()
+    cfg = load_cfg(a.config)
+    if a.cmd != "refmod" and not a.series:
+        ap.error("укажите серию явно")
+    if a.cmd == "run" and cfg.get("require_budget") and a.budget_min <= 0:
+        ap.error("для этого конфига нужен положительный --budget-min")
+    if a.frame_seconds is not None and a.frame_seconds <= 0:
+        ap.error("--frame-seconds должен быть положительным")
     unknown = [s for s in a.series if s not in cfg["series"]]
     if unknown:
         print("нет серий:", unknown, "есть:", list(cfg["series"]))
         return 2
     js = jobs(cfg, a.series)
+    if a.arm:
+        unknown = set(a.arm) - {j.get("arm") for j in js}
+        if unknown:
+            ap.error(f"нет выбранных рук в этих сериях: {sorted(unknown)}")
+        js = [j for j in js if j.get("arm") in a.arm]
     if a.cmd == "plan":
-        for s in a.series:
-            sj = [j for j in js if j["series"] == s]
-            t, loads = estimate(sj)
-            print(f"{s:14s} заданий {len(sj):3d}  загрузок модели {loads}  ≈ {t / 60:.0f} мин")
-        t, loads = estimate(js)
-        print(f"{'ИТОГО':14s} заданий {len(js):3d}  загрузок модели {loads}  ≈ {t / 60:.0f} мин")
+        frame_s = a.frame_seconds if a.frame_seconds is not None else cfg.get("estimate_frame_s", EST["frame"])
+        for s in [*a.series, "ИТОГО"]:
+            sj = js if s == "ИТОГО" else [j for j in js if j["series"] == s]
+            t, loads = estimate(sj, frame_s)
+            timing = "время: после проб (--frame-seconds)" if frame_s is None else f"≈ {t / 60:.0f} мин (предварительно)"
+            print(f"{s:14s} заданий {len(sj):3d}  загрузок модели {loads}  {timing}")
         return 0
     from farm.comfy_client import ComfyClient
     client = ComfyClient(a.url, request_timeout_s=120)

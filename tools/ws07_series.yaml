@@ -40,11 +40,8 @@ arms:
     model: pinkcherryFl2vaV1FinalTurbo_v10.safetensors
     loras: [{name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
     knobs: {pass1_steps: 8}
-  eros_L15:          # 10Eros Max: на поде — локальный файл движка; если нет, Civitai v1.1 (10erosMaxInt8Ref2va_v11)
-    model: 10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors
-    alt_model: 10erosMaxInt8Ref2va_v11.safetensors
-    loras: [{name: stacy_h3_A_stills_000001750.safetensors, w: 1.5}]
-    knobs: {pass1_steps: 8}
+  # eros_L15 убрана: beta4 исключена пользователем 15.10, повторный тест не нужен.
+  # Новую основу добавим после утверждения состава раунда A.
 
 # Серия: декартово произведение gen × arm × variant × pose × seed (seeds: сколько сидов брать из списка).
 # variant — входы и промпт кадра (tools/ws07_lib.prompt_variant): fixe | skeleton | green | wide | idcrop.
@@ -76,7 +73,7 @@ series:
   s3_arms:           # 1-я сессия — модели при LoRA 1.5; base_t8_L15 берётся из s2_scale
     kind: frame
     gen: [A]
-    arm: [singularity_t8_L15, pinkcherry_L15, eros_L15]
+    arm: [singularity_t8_L15, pinkcherry_L15]
     variant: [fixe]
     seeds: 2
   s3_lora_turbo:     # 1-я сессия, если останется время; иначе 2-я

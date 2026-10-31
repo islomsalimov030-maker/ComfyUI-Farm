@@ -28,6 +28,7 @@ sys.path[:0] = [str(REPO / "tools")]
 
 import wf_params as P  # noqa: E402
 import ws07_lib as L  # noqa: E402
+import wfkit as W  # noqa: E402
 
 ENGINE = REPO / "workflows" / "frame_h3@1.params.yaml"
 OUT_RAW = "OUT raw · кадр до доработки лица"
@@ -117,7 +118,7 @@ def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs
                 refmods: Optional[list[dict]] = None, retention: float = 1.0,
                 max_total_tokens: int = 12288, canvas: Optional[tuple[int, int]] = None) -> dict:
     """inputs: {plate, sheet, outfit?, pose?} — имена файлов в ComfyUI/input; prompt — с метками движка
-    (1 плита, 2 лист, 3 одежда, 4 поза); arm: {model, loras: [{name, w}], knobs?}.
+    (1 плита, 2 лист, 3 одежда, 4 поза); arm: {model, loras: [{name, w}], knobs?, sampler?}.
     A_refmod: refmods = [{mod, strength?, copies?}] (1–8, имена в models/refmods) — обязательно, умолчаний нет
     (чужой мод не должен подставиться молча). max_total_tokens — лимит всех модов на шаг (0 = без лимита).
     Раунд D (SS-340 §10): sheet необязателен (без листа связь <Picture 2> снимается); canvas=(w, h) — холст кадра
@@ -129,6 +130,14 @@ def frame_graph(gen: str, inputs: dict, prompt: str, seed: int, arm: dict, knobs
     vals = {k: inputs[k] for k in ("plate", "sheet", "outfit", "pose") if inputs.get(k)}
     vals.update(prompt=prompt, seed=int(seed), model=arm["model"], loras=arm.get("loras") or [])
     g = prune(P.apply(p, api, vals), [OUT_RAW])
+    if not arm.get("loras"):
+        W.bypass(g, nid(g, p["arm"]["loras"]["title"]), "model")
+    sampler = arm.get("sampler") or {}
+    unknown = set(sampler) - {"cfg", "sampler_name", "scheduler"}
+    if unknown:
+        raise ValueError(f"неизвестные параметры sampler: {sorted(unknown)}")
+    for t in ("p1", "p2"):
+        g[nid(g, T[t])]["inputs"].update(sampler)
     kn = {**(arm.get("knobs") or {}), **(knobs or {})}
     if gen == "A_p2lo":
         kn["pass2_steps"] = 3
