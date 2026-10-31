@@ -231,3 +231,10 @@
 - Если API-json грузить во вкладку ComfyUI, где нода-источник неизвестна (пакет не обновлён или вкладка открыта до рестарта), связи к виджетам теряются молча, и ноды работают на своих дефолтах (StacyPanel: seed 777, AUTO, 0.30, LoRA 1.0). Поэтому в stacy_facepass@1 STACY_SETTINGS отдаёт сам пульт, StacyPanel в графе нет. Проверка 23.10: дефолты нового графа дали AuraFace 0.664 / мин 0.605, как вариант I.
 - StacyOcclusionDenoise: при руке у лица (SIT-02 — рука под подбородком, 209/209 кадров) сила прохода под рукой ×0.2 (`hand_strength`) и «защита выражения» ×0.3 на половине кадров — проход в таких клипах слабее.
 
+## 31.10 · SCENE3D — 3D-болванки для кадров
+- MPFB2 (Blender extension, `blender --command extension install mpfb`): код GPL-3.0, сетка и таргеты MakeHuman CC0; пакет system assets (волосы, одежда, кожа) — CC0, 94/94 ([files.makehumancommunity.org](https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/)). Риг `openpose` MPFB задаёт точки COCO через индексы вершин и хелперы суставов базовой сетки — по ним OpenPose считается из любой позы без детектора.
+- Z-Image Fun ControlNet Union 2.1 + гладкие 3D-карты: при силе, достаточной для композиции, «пережигает» текстуры (мраморные пятна); ослабление и ранний `end_percent` не помогают, помогает второй проход без ControlNet (denoise 0.55) — композиция сохраняется. Два `ZImageFunControlnet` цепочкой (depth + pose) работают.
+- Только поза (pose) комнату и ракурс не задаёт; только depth ≤ 0.5 почти не действует.
+- `MiniMaxH3FunControlNetApply` (H3 Fun ControlNet, веса `minimax_h3_fun_controlnet_union_pruned_bf16` на студии есть) — только в master ComfyUI; на студии 0.34.6 ноды нет.
+- DWPose на виде со спины путает «лево ↔ право» и дорисовывает точки лица — метрики позы считать с допуском перестановки, флаг лица на виде сзади не верить.
+
