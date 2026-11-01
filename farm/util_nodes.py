@@ -329,7 +329,60 @@ def _requeue(prompt: dict, my_id: str, labels: list[str], extra_pnginfo=None) ->
             print(f"[farm] не удалось поставить запуск {lab}: {e}")
 
 
-def _panel(name, display, desc, spec, models=True):
+_TRI = ["auto", "on", "off"]
+
+
+def _settings_inputs(face: bool) -> dict:
+    """WS-15: поля бывшего PANEL (StacyPanel) — в пульте блока; из них пульт сам собирает STACY_SETTINGS.
+    Идут в конце (optional): старые раскладки сохранённых графов не сдвигаются."""
+    d = {"seed": ("INT", {"default": 1, "min": 0, "max": 2**53, "control_after_generate": "fixed",
+                          "tooltip": "Сид генерации (и прохода лица)."})}
+    if not face:
+        d["duration_sec"] = ("FLOAT", {"default": 8.0, "min": 1.0, "max": 20.0, "step": 0.25,
+                                       "tooltip": "Длительность, с. В farm_auto подключена к таблице."})
+    d["loop"] = ("BOOLEAN", {"default": True, "tooltip": "Петля: первый кадр = последний. В farm_auto — из таблицы."})
+    if not face:
+        d["end_frame"] = ("BOOLEAN", {"default": False, "tooltip": "Конечный кадр <Picture 3> (только при петле ВЫКЛ)."})
+        d["face_pass"] = (_TRI, {"default": "auto", "tooltip": "Проход лица: auto — только если лицо мельче холста "
+                                                               "прохода (крупный план — без него); on / off — всегда."})
+    d["free_vram"] = (_TRI, {"default": "auto", "tooltip": "Освобождать VRAM перед цветом/апскейлом: auto — на картах "
+                                                           "до 48 ГБ."})
+    d["face_denoise_auto"] = ("BOOLEAN", {"default": True, "tooltip": "Сила прохода лица по размеру лица (авто)."})
+    d["face_denoise"] = ("FLOAT", {"default": 0.30, "min": 0.10, "max": 0.60, "step": 0.01,
+                                   "tooltip": "Сила прохода лица, если авто выкл."})
+    d["face_lora"] = ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.5, "step": 0.05,
+                                "tooltip": "LoRA лица в проходе лица. 0 — LoRA персонажей в ферме нет (решение 23.10)."})
+    d["face_lock_temporal"] = ("FLOAT", {"default": 0.8, "min": 0.0, "max": 0.95, "step": 0.05,
+                                         "tooltip": "Сглаживание привязки лица во времени."})
+    return d
+
+
+def _stacy_panel(vals: dict):
+    """STACY_SETTINGS кодом StacyPanel (StacyLoop); вне ComfyUI (тесты) — словарь как есть."""
+    try:
+        import nodes
+        cls = nodes.NODE_CLASS_MAPPINGS["StacyPanel"]
+    except Exception:   # noqa: BLE001
+        return vals
+    return getattr(cls(), cls.FUNCTION)(**vals)[0]
+
+
+def panel_settings(kw: dict, mode: bool, steps: int, shift: float):
+    """mode True — генерация (ПУЛЬТ ВИДЕО), False — проход лица готового видео. Полей нет (старый граф) —
+    умолчания из _settings_inputs."""
+    d = {k: s[1]["default"] for k, s in _settings_inputs(not mode).items()}
+    d.update({k: v for k, v in kw.items() if k in d})
+    return _stacy_panel({
+        "mode": mode, "seed": int(d["seed"]), "duration_sec": float(d.get("duration_sec", 7.0)),
+        "loop": bool(d["loop"]), "end_frame": bool(d.get("end_frame", False)), "model_10eros": False,
+        "steps": int(steps), "shift": float(shift), "char_lora": 0.0, "free_vram": d["free_vram"],
+        "face_pass": d.get("face_pass", "auto"), "face_denoise_auto": bool(d["face_denoise_auto"]),
+        "face_denoise": float(d["face_denoise"]), "face_lora": float(d["face_lora"]),
+        "face_lock_temporal": float(d["face_lock_temporal"])})
+
+
+def _panel(name, display, desc, spec, models=True, settings=None):
+    """settings: None — без STACY_SETTINGS; "video" / "face" — пульт сам заменяет PANEL (выход settings последним)."""
     keys = [k for k, *_ in spec]
 
     def INPUT_TYPES(cls):
@@ -358,12 +411,16 @@ def _panel(name, display, desc, spec, models=True):
                                                                      "Singularity) меньше ~20 шагов кадр выходит "
                                                                      "недогарённым — экономит время, но портит качество."})}
             out["hidden"] = {"prompt": "PROMPT", "unique_id": "UNIQUE_ID", "extra_pnginfo": "EXTRA_PNGINFO"}
+        if settings:
+            out.setdefault("optional", {}).update(_settings_inputs(settings == "face"))
         return out
 
     def run(self, prompt=None, unique_id=None, extra_pnginfo=None, model_override="", steps_override=0,
             **kw):
         vals = tuple(kw[k] for k in keys)
         if not models:
+            if settings:
+                vals += (panel_settings(kw, False, 8, 12.0),)   # проход лица готового видео: fl2va + turbo 4
             return vals
         on = [m for m in FARM_MODELS if kw.get(f"use_{m[0]}")]
         if model_override:
@@ -385,10 +442,14 @@ def _panel(name, display, desc, spec, models=True):
         # и ручкой не менялось: пульт не давал ни ускорить генерацию, ни ухудшить качество по воле.
         if steps_override and int(steps_override) > 0:
             steps = int(steps_override)
+        if settings:
+            vals += (panel_settings(kw, True, steps, kw.get("shift", 12.0)),)
         return (cur[1], float(cur[2]), int(steps), cur[0]) + vals
 
     rt = (("MODEL_NAME", "FLOAT", "INT", "STRING") if models else ()) + tuple(t for _, t, *_ in spec)
     rn = (("model_name", "turbo_lora", "steps", "model_label") if models else ()) + tuple(keys)
+    if settings:
+        rt, rn = rt + ("STACY_SETTINGS",), rn + ("settings",)
     cls = type(name, (), {"CATEGORY": "Next Genium/Farm", "FUNCTION": "run", "DESCRIPTION": desc,
                           "RETURN_TYPES": rt, "RETURN_NAMES": rn,
                           "INPUT_TYPES": classmethod(INPUT_TYPES), "run": run})
@@ -418,10 +479,12 @@ VIDEO_SPEC = [
     ("hand_strength", "FLOAT", 0.2, 0.0, 1.0, 0.05, "Сила прохода лица там, где у лица руки."),
 ]
 _PP, _PPN = _panel("FarmPanelPhoto", "ПУЛЬТ ФОТО (Next Genium)", "Модели и все ручки блока фото.", PHOTO_SPEC)
-_PV, _PVN = _panel("FarmPanelVideo", "ПУЛЬТ ВИДЕО — модели и тонкая настройка (Next Genium)",
-                   "Модели и ручки движка видео (PANEL — основные).", VIDEO_SPEC)
-_PF, _PFN = _panel("FarmPanelFace", "ПУЛЬТ ПРОХОДА ЛИЦА (Next Genium)", "Ручки прохода лица готового видео.",
-                   VIDEO_SPEC, models=False)
+_PV, _PVN = _panel("FarmPanelVideo", "ПУЛЬТ ВИДЕО — все ручки блока (Next Genium)",
+                   "Модели и все ручки движка видео; выход settings заменяет PANEL (WS-15).", VIDEO_SPEC,
+                   settings="video")
+_PF, _PFN = _panel("FarmPanelFace", "ПУЛЬТ ПРОХОДА ЛИЦА (Next Genium)",
+                   "Все ручки прохода лица готового видео; выход settings заменяет PANEL (WS-15).",
+                   VIDEO_SPEC, models=False, settings="face")
 NODES.update({"NGFarmPanelPhoto": _PP, "NGFarmPanelVideo": _PV, "NGFarmPanelFace": _PF})
 NAMES.update({"NGFarmPanelPhoto": _PPN, "NGFarmPanelVideo": _PVN, "NGFarmPanelFace": _PFN})
 
@@ -617,12 +680,7 @@ def stacy_settings(kw: dict):
             "face_pass": "auto", "face_denoise_auto": bool(kw["face_denoise_auto"]),
             "face_denoise": float(kw["face_denoise"]), "face_lora": float(kw["face_lora"]),
             "face_lock_temporal": float(kw["face_lock_temporal"])}
-    try:
-        import nodes
-        cls = nodes.NODE_CLASS_MAPPINGS["StacyPanel"]
-    except Exception:   # noqa: BLE001 — вне ComfyUI (тесты)
-        return vals
-    return getattr(cls(), cls.FUNCTION)(**vals)[0]
+    return _stacy_panel(vals)
 
 
 def _requeue_index(prompt: dict, my_id: str, indices) -> None:

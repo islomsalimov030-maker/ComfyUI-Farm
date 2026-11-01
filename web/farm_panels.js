@@ -5,6 +5,10 @@
 //   A — до c25864e: use_Singularity нет (на одно значение меньше)
 //   B — c25864e:    use_Singularity в конце, после model_override (булево)
 //   C — WS-14 29.10: добавлена ручка steps_override (шаги сэмплера) — в optional, после model_override
+//   D — WS-15 01.11: в ПУЛЬТ ВИДЕО переехали поля PANEL (seed … face_lock_temporal) — в optional, в конце.
+//       Старые раскладки короче: позиционно новые поля не заполняются и остаются по умолчанию.
+//       Раскладка той же длины, что и виджеты, — текущая, её не трогаем (иначе «последняя строка»
+//       попала бы на face_pass="auto").
 //
 // Миграция НЕ угадывает по длине массива: длина ненадёжна (у сидов ComfyUI пишет ещё
 // маркер "fixed", у ручек разный набор). Вместо этого раскладка определяется по СОДЕРЖИМОМУ:
@@ -65,7 +69,12 @@ function valueFor(kind, name, v, spec) {
         for (let i = v.length - 1; i >= 0; i--) if (isStr(v[i])) return v[i];
         return "";
     }
-    if (name === "steps_override") return 0;        // новая ручка: у старых воркфлоу значение по умолчанию
+    if (name === "steps_override") {                // C: число сразу после model_override; A/B — по умолчанию 0
+        for (let i = v.length - 1; i >= 0; i--) {
+            if (isStr(v[i])) return typeof v[i + 1] === "number" ? v[i + 1] : 0;
+        }
+        return 0;
+    }
     const si = spec.indexOf(name);
     if (si < 0) return undefined;
     // Ручки идут после включателей. У сидов ComfyUI пишет ещё маркер "fixed" СРАЗУ ПОСЛЕ
@@ -85,6 +94,7 @@ function migrate(node, info) {
     const v = info?.widgets_values;
     const ws = node.widgets ?? [];
     if (!Array.isArray(v) || !ws.length) return;
+    if (v.length === ws.length) return;             // сохранено текущей версией пульта
     const spec = SPEC[node.comfyClass] ?? [];
     const kind = layoutOf(v);
     if (!kind) return;

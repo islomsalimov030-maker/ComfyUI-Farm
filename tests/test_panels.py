@@ -60,7 +60,9 @@ def test_panel_steps_output_index_unchanged():
     assert req[:4] == ["use_Singularity", "use_ref2v", "use_10Eros", "use_PinkCherry"]
     assert req[4:] == ["shift", "color_lock", "seam_crossfade", "temporal_strength", "face_confidence",
                       "crop_factor", "large_face_mult", "face_lock", "hand_strength"]
-    assert list(it["optional"].keys()) == ["model_override", "steps_override"]
+    # WS-15: поля бывшего PANEL — после steps_override, выход settings — последним
+    assert list(it["optional"].keys())[:2] == ["model_override", "steps_override"]
+    assert names[-1] == "settings"
 
 
 def test_builder_models_match_runtime():
