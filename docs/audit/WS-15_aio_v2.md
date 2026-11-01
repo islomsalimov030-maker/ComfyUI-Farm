@@ -24,25 +24,33 @@
 | 13 | оба | Ядро в JSON 0.34.x, студия 0.34.6. `MiniMaxH3FunControlNetApply` требует ≥ 0.35.0 | инфо | см. ниже |
 | 14 | оба | Лицензии: YOLO-детекторы (AGPL), InsightFace в `comfyui-h3-facerefine` по умолчанию, NVIDIA VFX SDK | P1 | в RESEARCH «WS-15 (31.10)»; замены — после ок (ниже) |
 
-## Дублирование ручек (как есть)
-Движок видео берёт значения из трёх мест:
-- **ПУЛЬТ ВИДЕО** (`NGFarmPanelVideo`): модель и turbo (включатели), steps (по модели), shift, color_lock, seam_crossfade,
-  temporal_strength, face_confidence, crop_factor, large_face_mult, face_lock, hand_strength.
-- **PANEL** (`StacyPanel`) → **StacySettings** внутри движка: seed, длительность и петля (в auto — связями из таблицы),
-  end_frame, free_vram, face_pass, face_denoise(_auto), face_lora, face_lock_temporal. Поля PANEL `model_10eros`,
-  `steps`, `shift`, `char_lora` **ни на что не влияют** (их перекрывают пульт и ARM) — в гайде «не трогать».
-- Фото: всё из **ПУЛЬТА ФОТО**; дублей нет.
+## Один пульт на блок (сделано 01.11, AIO V2.2)
+Было: движок видео брал значения из **ПУЛЬТА ВИДЕО** (модель, шаги, shift, цвет, шов, лицо…) и из **PANEL**
+(`StacyPanel` → `StacySettings`: сид, длительность, петля, конечный кадр, free_vram, проход лица, сила/LoRA/сглаживание
+лица); поля PANEL `model_10eros`, `steps`, `shift`, `char_lora` ни на что не влияли. В manual у прохода лица — свой
+PANEL внутри сабграфа.
 
-**Предложение (после ок):** один пульт на блок — `NGFarmPanelVideo` сам отдаёт `STACY_SETTINGS` (как уже делает
-`NGFarmPanelFacepass` через `stacy_settings()`), поля PANEL переезжают в пульт, StacyPanel из AIO убирается.
-Нужна миграция раскладки пульта (`web/farm_panels.js`, по именам) и версия воркфлоу V2.2.
+Стало: `NGFarmPanelVideo` и `NGFarmPanelFace` получили поля PANEL (optional, в конце) и выход `settings`
+(STACY_SETTINGS, собирается кодом StacyPanel); PANEL удалён из обоих AIO, в manual — и из сабграфа прохода лица
+(вход сабграфа `seed` → `settings`). Значения PANEL перенесены в пульты. Старые графы: связи не сдвигаются
+(выход добавлен последним), раскладки виджетов переводит `web/farm_panels.js` (раскладка D; проверено на настоящем JS
+через node). Фото — без изменений (дублей не было).
+
+## Детекторы без AGPL и InsightFace (сделано 01.11, AIO V2.2)
+- `H3FaceTrackCrop` → **`StacyFaceTrackCrop`** (StacyLoop): тот же код трекера ComfyUI-H3-FaceRefine, детектор
+  `mediapipe_face` (MediaPipe BlazeFace, Apache-2.0). Оригинальный пакет на студии не трогается.
+- `StacyAutoConfidence.detector`, `StacySettings.face_detector` = `mediapipe_face`; `StacyOcclusionDenoise.hand_model` =
+  `mediapipe_hand` (Hand Landmarker, Apache-2.0).
+- InsightFace: по коду грузится только при `identity_track=True` (в AIO false) — не использовался; для страховки
+  `identity_model=clip_vision`.
+- Рамки BlazeFace откалиброваны под face_yolov8m, чтобы `crop_factor` и AUTO-пороги сохранили смысл (см. RESEARCH).
 
 ## Ядро ≥ 0.35 (для H3 Fun ControlNet) — что затронет
 - Студия: обновление ядра чинит и проблему WS-12 (alembic `0008`, большие графы не исполняются), но меняет фронтенд и V3-ноды → перепроверить AIO, пульты (`farm_panels.js`), StacyLoop/KJ/VHS, кэш-флаги (`--cache-ram`).
 - Решение для 3D (бриф WS-16): отдельная копия `/workspace/ComfyUI-next` на поде (свой venv, порт 8189, модели через `extra_model_paths`); студию и общую установку не трогаем.
 
-## Ждёт решения пользователя
-1. Обновить ComfyUI-Farm на студии до `e329496` (без этого V2.1 auto не загрузит выходы `mods`/`face_mods`).
-2. Свести пульты (см. выше) — да/нет.
-3. Прод-замены по лицензиям: детектор лица/рук в StacyLoop и facerefine → MediaPipe (Apache-2.0); в `H3FaceTrackCrop` явно `identity_model=clip_vision`. Отдельный поток или в бэклог.
-4. `h3_img2img_latent` в воркфлоу на `512b1b3` (без LICENSE) → обновить до `de0b5df` (MIT) на студии/поде.
+## Статус решений пользователя (01.11)
+1. ComfyUI-Farm / StacyLoop / h3_img2img_latent на студии — обновлены (WS-15, см. STATUS).
+2. Пульты сведены — да (V2.2).
+3. Детекторы MediaPipe, InsightFace не грузится — сделано (V2.2).
+4. `h3_img2img_latent` → `de0b5df` (MIT) — вместе с п.1.

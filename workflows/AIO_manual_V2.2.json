@@ -1154,7 +1154,7 @@
    "title": "ВИДЕО · видео-референс движения (необязательно)",
    "properties": {
     "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-    "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+    "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
     "Node name for S&R": "StacyRefVideo",
     "ue_properties": {
      "widget_ue_connectable": {},
@@ -1519,7 +1519,7 @@
    "title": "ПУЛЬТ ФОТО — все ручки блока",
    "properties": {
     "aux_id": "islomsalimov030-maker/ComfyUI-Farm",
-    "ver": "e329496aecc5ff916434ca4f4b1fda612386fd6e",
+    "ver": "54321acc133420078415a7d84829e180aa53fc01",
     "Node name for S&R": "NGFarmPanelPhoto",
     "ue_properties": {
      "widget_ue_connectable": {},
@@ -1664,7 +1664,7 @@
    "title": "ПУЛЬТ ВИДЕО — все ручки блока (наведите на поле — подсказка)",
    "properties": {
     "aux_id": "islomsalimov030-maker/ComfyUI-Farm",
-    "ver": "e329496aecc5ff916434ca4f4b1fda612386fd6e",
+    "ver": "54321acc133420078415a7d84829e180aa53fc01",
     "Node name for S&R": "NGFarmPanelVideo",
     "ue_properties": {
      "widget_ue_connectable": {},
@@ -1786,7 +1786,7 @@
    "title": "ПУЛЬТ ПРОХОДА ЛИЦА — все ручки блока",
    "properties": {
     "aux_id": "islomsalimov030-maker/ComfyUI-Farm",
-    "ver": "e329496aecc5ff916434ca4f4b1fda612386fd6e",
+    "ver": "54321acc133420078415a7d84829e180aa53fc01",
     "Node name for S&R": "NGFarmPanelFace",
     "ue_properties": {
      "widget_ue_connectable": {},
@@ -5643,7 +5643,7 @@
       "properties": {
        "Image Studio": "v18",
        "aux_id": "islomsalimov030-maker/h3_img2img_latent",
-       "ver": "512b1b3fe3d35a71ec69b55a9d59b7511370fd62",
+       "ver": "de0b5df0f980cbf5708e641d07d4014c2c5b2816",
        "Node name for S&R": "H3LatentFromImage",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -7721,7 +7721,7 @@
       "title": "keyframe 1344x768",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFitFrame",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -7785,7 +7785,7 @@
       "title": "конечный кадр → 1344x768",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFitFrame",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -7921,7 +7921,7 @@
       "title": "промпт ← длительность и петля",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyPromptRetime",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -9511,7 +9511,7 @@
       "title": "освободить VRAM (до цвета и апскейла)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFreeVRAM",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -9583,7 +9583,7 @@
       "title": "цвет → как у ключевого кадра",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyColorLock",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -9661,7 +9661,7 @@
       "title": "loop seam",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyLoopSeam",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -9799,7 +9799,7 @@
       "title": "анти-дрожь до RTX (выравнивание по движению)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyTemporalStabilize",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -9962,7 +9962,7 @@
       "title": "exact 1920x1080",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFitFrame",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -10037,7 +10037,7 @@
       "title": "loop extend (+head, grid)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyLoopExtend",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -10110,7 +10110,7 @@
       "title": "порог детектора лица (AUTO)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyAutoConfidence",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -10119,12 +10119,13 @@
        }
       },
       "widgets_values": [
-       -1
+       -1,
+       "mediapipe_face"
       ]
      },
      {
       "id": 99,
-      "type": "H3FaceTrackCrop",
+      "type": "StacyFaceTrackCrop",
       "pos": [
        10847.727148437498,
        306
@@ -10245,17 +10246,17 @@
       "title": "face track + crop",
       "properties": {
        "Image Studio": "v18",
-       "cnr_id": "comfyui-h3-facerefine",
-       "ver": "d8521d14fe0d721d80cd9417fff5a559cbc21aba",
-       "Node name for S&R": "H3FaceTrackCrop",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
+       "Node name for S&R": "StacyFaceTrackCrop",
        "ue_properties": {
         "widget_ue_connectable": {},
         "input_ue_unconnectable": {},
         "version": "7.8"
-       }
+       },
+       "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop"
       },
       "widgets_values": [
-       "face_yolov8m.pt",
+       "mediapipe_face",
        0.35,
        2.5,
        768,
@@ -10271,7 +10272,7 @@
        "none",
        0.5,
        0,
-       "insightface",
+       "clip_vision",
        "none",
        3,
        "off",
@@ -10693,7 +10694,7 @@
       "title": "gentler under hands",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyOcclusionDenoise",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -10702,7 +10703,7 @@
        }
       },
       "widgets_values": [
-       "hand_yolov8s.pt",
+       "mediapipe_hand",
        0.3,
        0.2,
        0.25,
@@ -11043,7 +11044,7 @@
       "title": "lock face to source motion",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFlowAlign",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -11197,7 +11198,7 @@
       "title": "loop fold",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyLoopFold",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -11369,7 +11370,7 @@
       "title": "сводный отчёт",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyReport",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -12060,7 +12061,7 @@
       "title": "пульт → значения (+ AUTO по ключевому кадру)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacySettings",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -12069,7 +12070,8 @@
        }
       },
       "widgets_values": [
-       "generate"
+       "generate",
+       "mediapipe_face"
       ]
      },
      {
@@ -12113,7 +12115,7 @@
       "title": "режим: генерация",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyGate",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -12161,7 +12163,7 @@
       "title": "режим: генерация (raw)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyGate",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -12209,7 +12211,7 @@
       "title": "режим: генерация (кадр)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyGate",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -12259,7 +12261,7 @@
       "title": "режим: генерация (отчёт)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyGate",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -14197,7 +14199,7 @@
       "title": "keyframe 1344x768",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFitFrame",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -14416,7 +14418,7 @@
       "title": "пульт → значения (+ AUTO по ключевому кадру)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacySettings",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -14425,7 +14427,8 @@
        }
       },
       "widgets_values": [
-       "generate"
+       "generate",
+       "mediapipe_face"
       ]
      },
      {
@@ -14498,7 +14501,7 @@
       "title": "ВИДЕО для face pass (загрузить)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyVideoInput",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -14821,7 +14824,7 @@
       "title": "[видео] ровно 1920x1080",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFitFrame",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -14944,7 +14947,7 @@
       "title": "[видео] loop extend (+head, grid)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyLoopExtend",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -15017,7 +15020,7 @@
       "title": "[видео] порог детектора лица (AUTO)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyAutoConfidence",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -15026,12 +15029,13 @@
        }
       },
       "widgets_values": [
-       -1
+       -1,
+       "mediapipe_face"
       ]
      },
      {
       "id": 154,
-      "type": "H3FaceTrackCrop",
+      "type": "StacyFaceTrackCrop",
       "pos": [
        3111.6785156250003,
        1010
@@ -15152,17 +15156,17 @@
       "title": "[видео] face track + crop",
       "properties": {
        "Image Studio": "v18",
-       "cnr_id": "comfyui-h3-facerefine",
-       "ver": "d8521d14fe0d721d80cd9417fff5a559cbc21aba",
-       "Node name for S&R": "H3FaceTrackCrop",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
+       "Node name for S&R": "StacyFaceTrackCrop",
        "ue_properties": {
         "widget_ue_connectable": {},
         "input_ue_unconnectable": {},
         "version": "7.8"
-       }
+       },
+       "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop"
       },
       "widgets_values": [
-       "face_yolov8m.pt",
+       "mediapipe_face",
        0.35,
        2.5,
        768,
@@ -15178,7 +15182,7 @@
        "none",
        0.5,
        0,
-       "insightface",
+       "clip_vision",
        "none",
        3,
        "off",
@@ -15598,7 +15602,7 @@
       "title": "[видео] gentler under hands",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyOcclusionDenoise",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -15607,7 +15611,7 @@
        }
       },
       "widgets_values": [
-       "hand_yolov8s.pt",
+       "mediapipe_hand",
        0.3,
        0.2,
        0.25,
@@ -15948,7 +15952,7 @@
       "title": "[видео] lock face to source motion",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyFlowAlign",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -16102,7 +16106,7 @@
       "title": "[видео] loop fold",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyLoopFold",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -16335,7 +16339,7 @@
       "title": "[видео] пульт → значения (+ AUTO по видео)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacySettings",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -16344,7 +16348,8 @@
        }
       },
       "widgets_values": [
-       "face pass video"
+       "face pass video",
+       "mediapipe_face"
       ]
      },
      {
@@ -16693,7 +16698,7 @@
       "title": "режим: face pass видео",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyGate",
        "ue_properties": {
         "widget_ue_connectable": {},
@@ -16743,7 +16748,7 @@
       "title": "режим: face pass видео (отчёт)",
       "properties": {
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop",
-       "ver": "095b77da4f4dc1a7817d0b263106166cd3b7b619",
+       "ver": "f9f8d1711a31dbccbc2f1cc4011ddff91a2ccdc7",
        "Node name for S&R": "StacyGate",
        "ue_properties": {
         "widget_ue_connectable": {},

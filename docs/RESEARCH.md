@@ -448,7 +448,7 @@
 | SAM3 (comfyui-rmbg берёт зеркало 1038lab/sam3) | SAM License (Meta): royalty-free, запрет военного/ITAR | ✅ с условием | [facebook/sam3](https://huggingface.co/facebook/sam3) |
 | taeh3 (превью) | MIT (madebyollin/taehv) | ✅ | [taehv](https://github.com/madebyollin/taehv) |
 | stacy_h3_face_v1 / stacy_h3_A_stills | свои; обучены на outputs H3 | ⚠ трактовка H3 CLA (обучение на outputs) — решается вместе с лицензией H3 | RESEARCH §1 |
-| InsightFace buffalo_l/antelopev2 | non-commercial research | ⚠ нет; **comfyui-h3-facerefine тянет её по умолчанию** (`identity_model="insightface"` даже при `identity_track=False`, `insightface` в requirements) → в проде ставить `identity_model=clip_vision` или менять трекер | [insightface](https://github.com/deepinsight/insightface) |
+| InsightFace buffalo_l/antelopev2 | non-commercial research | ⚠ нет. **Поправка 01.11 (по коду d8521d1, `nodes.py:1438`):** в `H3FaceTrackCrop` эмбеддер (и InsightFace) создаётся только при `identity_track=True`; в AIO `identity_track=false` → не грузится. Пакет `insightface` стоит по requirements, но без весов это MIT-код. Для страховки в AIO V2.2 `identity_model=clip_vision` | [insightface](https://github.com/deepinsight/insightface) |
 | ComfyUI-MiniMaxH3Mod f946208 | MIT | ✅ | LICENSE@f946208 |
 | comfyui-h3-facerefine d8521d1 (Carasibana) | MIT (код) | ✅ код; ⚠ веса InsightFace/YOLO | LICENSE@d8521d1 |
 | comfyui-inpaint-cropandstitch, kjnodes, VHS, comfyui-rmbg | GPL-3.0 | ✅ внутренне; при распространении — исходники; модели RMBG (BRIA и др.) — по своим лицензиям, не проверены | LICENSE в репо |
@@ -460,3 +460,19 @@
 | ComfyUI-Farm (своё) | MIT — файл есть в `ws15-close`, **на origin/main не было** до слияния WS-15 | ✅ после слияния в main | репо |
 
 StacyLoop (`StacyAutoConfidence`) InsightFace не тянет — только YOLO-детектор. Не проверены: условия NVIDIA VFX SDK для SaaS, модели внутри comfyui-rmbg кроме SAM3.
+
+## WS-15 (01.11) — MediaPipe вместо YOLO в проходе лица: калибровка
+Проверено на 79 SFW-кадрах (9 петель SS-456, широкие планы FullHD, лица 68–176 px; 7 портретов из датасета лица),
+CPU, ultralytics 8.4 + `face_yolov8m.pt` / `hand_yolov8s.pt` против mediapipe 1.2.0 (Tasks API). Скрипт —
+`tools/calib_detectors.py`.
+- **Лицо, BlazeFace full range по целому кадру** — плохо на широких планах: уверенность по медиане 0.42 (YOLO 0.82),
+  на 16/79 кадрах лучшая рамка не на лице (лёжа, со спины). Причина — вход сети 192 px.
+- **То же + плитки с перекрытием** (сторона 0.5 короткой стороны кадра, перекрытие 1/3, NMS): лицо на 79/79,
+  все рамки совпадают с YOLO. Рамка BlazeFace уже и ниже, чем у face_yolov8m; после пересчёта (ширина ×0.90,
+  высота ×1.22, центр −0.084 высоты) IoU с YOLO по медиане **0.81** (p10 0.42), размеры ±3 % → `crop_factor` и
+  AUTO-размер лица сохраняют смысл. AUTO-пороги MediaPipe 0.50/0.40/0.30/0.20 — на всех 10 роликах выбран 0.50.
+- **Руки, Hand Landmarker** (на кропе лица ×2.5, 768 px, как в проходе лица): YOLO — 40/79 кропов, MediaPipe —
+  14/79 (все внутри находок YOLO). Плитки дают ложные «руки» на ушах/подбородке → для рук только целый кадр.
+  **Рука прямо у лица (L3, лёжа на диване): YOLO 8/8 кадров, MediaPipe 3/8** — защита рук слабее; в видео частично
+  компенсирует удержание по соседним кадрам (`hold_frames`), не проверено. YOLO остаётся выбором в поле `hand_model`.
+- InsightFace в `H3FaceTrackCrop` не грузится при `identity_track=false` (так в AIO).
