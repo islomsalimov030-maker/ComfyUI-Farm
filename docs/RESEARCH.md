@@ -476,3 +476,11 @@ CPU, ultralytics 8.4 + `face_yolov8m.pt` / `hand_yolov8s.pt` против mediap
   **Рука прямо у лица (L3, лёжа на диване): YOLO 8/8 кадров, MediaPipe 3/8** — защита рук слабее; в видео частично
   компенсирует удержание по соседним кадрам (`hold_frames`), не проверено. YOLO остаётся выбором в поле `hand_model`.
 - InsightFace в `H3FaceTrackCrop` не грузится при `identity_track=false` (так в AIO).
+- **Студия (01.11):** обновлены ComfyUI-Farm `e435af3`, ComfyUI-StacyLoop `722b228`, h3_img2img_latent `de0b5df`
+  (Manager API, рецепт WS-10b). mediapipe 1.2.0 ставится по requirements, но **не запускается: в контейнере нет
+  `libGLESv2.so.2` / libEGL** (нужен `apt install libegl1 libgles2` — делает админ студии). Ноды StacyLoop в этом
+  случае пишут WARNING и берут YOLO-файл (`face_yolov8m.pt` / `hand_yolov8s.pt`) — проход лица не падает.
+  Проверочный граф (AUTO-порог, StacyFaceTrackCrop, StacyHandMask, ПУЛЬТ ВИДЕО → StacySettings) — success.
+  На поде `install/pod_setup.sh` уже ставит `libegl1 libgles2`.
+- Мелочь: отчёт StacySettings пишет «model: Singularity ref2va» — метка `model_10eros=false` из StacyLoop, модель
+  на самом деле задаёт пульт (косметика, не влияет на генерацию).
