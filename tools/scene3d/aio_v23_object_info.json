@@ -1,0 +1,1946 @@
+{
+ "BasicGuider": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "conditioning": [
+     "CONDITIONING",
+     {}
+    ],
+    "model": [
+     "MODEL",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "conditioning"
+   ]
+  },
+  "output": [
+   "GUIDER"
+  ],
+  "output_name": [
+   "GUIDER"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_custom_sampler"
+ },
+ "CLIPLoader": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "device": [
+     [
+      "default",
+      "cpu"
+     ],
+     {
+      "advanced": true
+     }
+    ]
+   },
+   "required": {
+    "clip_name": [
+     [
+      "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+     ]
+    ],
+    "type": [
+     [],
+     {
+      "_options_total": 32
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "device"
+   ],
+   "required": [
+    "clip_name",
+    "type"
+   ]
+  },
+  "output": [
+   "CLIP"
+  ],
+  "output_name": [
+   "CLIP"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ },
+ "ComfyMathExpression": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "expression": [
+     "STRING",
+     {
+      "default": "a + b",
+      "multiline": true
+     }
+    ],
+    "values": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "value": [
+          "FLOAT,INT,BOOLEAN",
+          {}
+         ]
+        }
+       },
+       "min": 1,
+       "names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+        "m",
+        "n",
+        "o",
+        "p",
+        "q",
+        "r",
+        "s",
+        "t",
+        "u",
+        "v",
+        "w",
+        "x",
+        "y",
+        "z"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "expression",
+    "values"
+   ]
+  },
+  "output": [
+   "FLOAT",
+   "INT",
+   "BOOLEAN"
+  ],
+  "output_name": [
+   "FLOAT",
+   "INT",
+   "BOOL"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_math"
+ },
+ "ConditioningZeroOut": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "conditioning": [
+     "CONDITIONING"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "conditioning"
+   ]
+  },
+  "output": [
+   "CONDITIONING"
+  ],
+  "output_name": [
+   "CONDITIONING"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ },
+ "FloatConstant": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "value": [
+     "FLOAT",
+     {
+      "default": 0.0,
+      "max": 18446744073709551615,
+      "min": -18446744073709551615,
+      "step": 1e-05
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "output": [
+   "FLOAT"
+  ],
+  "output_name": [
+   "value"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes"
+ },
+ "GrowMaskWithBlur": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "fill_holes": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ]
+   },
+   "required": {
+    "blur_radius": [
+     "FLOAT",
+     {
+      "default": 0.0,
+      "max": 100,
+      "min": 0.0,
+      "step": 0.1
+     }
+    ],
+    "decay_factor": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    ],
+    "expand": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": -16384,
+      "step": 1
+     }
+    ],
+    "flip_input": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "incremental_expandrate": [
+     "FLOAT",
+     {
+      "default": 0.0,
+      "max": 100.0,
+      "min": 0.0,
+      "step": 0.1
+     }
+    ],
+    "lerp_alpha": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    ],
+    "mask": [
+     "MASK"
+    ],
+    "tapered_corners": [
+     "BOOLEAN",
+     {
+      "default": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "fill_holes"
+   ],
+   "required": [
+    "mask",
+    "expand",
+    "incremental_expandrate",
+    "tapered_corners",
+    "flip_input",
+    "blur_radius",
+    "lerp_alpha",
+    "decay_factor"
+   ]
+  },
+  "output": [
+   "MASK",
+   "MASK"
+  ],
+  "output_name": [
+   "mask",
+   "mask_inverted"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes"
+ },
+ "H3ImageDecode": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "decode_mode": [
+     [
+      "temporal",
+      "single_latent_slice"
+     ],
+     {
+      "default": "temporal"
+     }
+    ],
+    "latent_index": [
+     "INT",
+     {
+      "default": 0,
+      "max": 4096,
+      "min": 0
+     }
+    ],
+    "spatial_decode": [
+     [
+      "native",
+      "full_image (experimental)"
+     ],
+     {
+      "default": "native"
+     }
+    ]
+   },
+   "required": {
+    "samples": [
+     "LATENT",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "decode_mode",
+    "latent_index",
+    "spatial_decode"
+   ],
+   "required": [
+    "samples",
+    "vae"
+   ]
+  },
+  "output": [
+   "IMAGE",
+   "INT",
+   "STRING",
+   "INT"
+  ],
+  "output_name": [
+   "frames",
+   "decoded_frames",
+   "decode_info",
+   "recommended_index"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-MiniMax-H3-Image-Studio"
+ },
+ "H3ImageFrameSelector": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "emit_candidate_batch": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "recommended_index": [
+     "INT",
+     {
+      "forceInput": true
+     }
+    ],
+    "source_image": [
+     "IMAGE",
+     {}
+    ]
+   },
+   "required": {
+    "candidate_end": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.05
+     }
+    ],
+    "candidate_start": [
+     "FLOAT",
+     {
+      "default": 0.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.05
+     }
+    ],
+    "frames": [
+     "IMAGE",
+     {}
+    ],
+    "manual_index": [
+     "INT",
+     {
+      "default": 0,
+      "max": 4096,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "similarity_weight": [
+     "FLOAT",
+     {
+      "default": 0.6,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.05
+     }
+    ],
+    "skip_first_frames": [
+     "INT",
+     {
+      "default": 0,
+      "max": 128,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "strategy": [
+     [
+      "decode_recommended",
+      "first",
+      "stable_quality",
+      "balanced_edit",
+      "best_quality",
+      "most_similar_to_source",
+      "sharpest",
+      "middle",
+      "last",
+      "manual_index"
+     ],
+     {
+      "default": "decode_recommended"
+     }
+    ],
+    "top_k": [
+     "INT",
+     {
+      "default": 4,
+      "max": 16,
+      "min": 1,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "source_image",
+    "emit_candidate_batch",
+    "recommended_index"
+   ],
+   "required": [
+    "frames",
+    "strategy",
+    "manual_index",
+    "skip_first_frames",
+    "candidate_start",
+    "candidate_end",
+    "similarity_weight",
+    "top_k"
+   ]
+  },
+  "output": [
+   "IMAGE",
+   "IMAGE",
+   "INT",
+   "FLOAT",
+   "STRING"
+  ],
+  "output_name": [
+   "selected_image",
+   "candidate_batch_debug",
+   "selected_index",
+   "selected_score",
+   "score_report"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-MiniMax-H3-Image-Studio"
+ },
+ "H3LatentFromImage": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "denoise": [
+     "FLOAT",
+     {
+      "default": 0.35,
+      "max": 1.0,
+      "min": 0.01,
+      "step": 0.01
+     }
+    ],
+    "h3_latent": [
+     "LATENT",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "scheduler": [
+     [
+      "simple",
+      "sgm_uniform",
+      "karras",
+      "exponential",
+      "ddim_uniform",
+      "beta",
+      "normal",
+      "linear_quadratic",
+      "kl_optimal"
+     ],
+     {
+      "default": "simple"
+     }
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 10,
+      "max": 200,
+      "min": 1
+     }
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "h3_latent",
+    "vae",
+    "image",
+    "model",
+    "steps",
+    "scheduler",
+    "denoise"
+   ]
+  },
+  "output": [
+   "LATENT",
+   "SIGMAS",
+   "STRING"
+  ],
+  "output_name": [
+   "h3_latent",
+   "sigmas",
+   "info"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.h3_img2img_latent"
+ },
+ "INTConstant": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "value": [
+     "INT",
+     {
+      "default": 0,
+      "max": 18446744073709551615,
+      "min": -18446744073709551615
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "output": [
+   "INT"
+  ],
+  "output_name": [
+   "value"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes"
+ },
+ "ImageCompositeMasked": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "mask": [
+     "MASK",
+     {}
+    ]
+   },
+   "required": {
+    "destination": [
+     "IMAGE",
+     {}
+    ],
+    "resize_source": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "source": [
+     "IMAGE",
+     {}
+    ],
+    "x": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "y": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "mask"
+   ],
+   "required": [
+    "destination",
+    "source",
+    "x",
+    "y",
+    "resize_source"
+   ]
+  },
+  "output": [
+   "IMAGE"
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_mask"
+ },
+ "ImageScale": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "crop": [
+     [
+      "disabled",
+      "center"
+     ]
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 512,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "image": [
+     "IMAGE"
+    ],
+    "upscale_method": [
+     [
+      "nearest-exact",
+      "bilinear",
+      "area",
+      "bicubic",
+      "lanczos"
+     ]
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 512,
+      "max": 16384,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "upscale_method",
+    "width",
+    "height",
+    "crop"
+   ]
+  },
+  "output": [
+   "IMAGE"
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ },
+ "KSamplerAdvanced": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "add_noise": [
+     [
+      "enable",
+      "disable"
+     ],
+     {
+      "advanced": true
+     }
+    ],
+    "cfg": [
+     "FLOAT",
+     {
+      "default": 8.0,
+      "max": 100.0,
+      "min": 0.0,
+      "round": 0.01,
+      "step": 0.1
+     }
+    ],
+    "end_at_step": [
+     "INT",
+     {
+      "advanced": true,
+      "default": 10000,
+      "max": 10000,
+      "min": 0
+     }
+    ],
+    "latent_image": [
+     "LATENT"
+    ],
+    "model": [
+     "MODEL"
+    ],
+    "negative": [
+     "CONDITIONING"
+    ],
+    "noise_seed": [
+     "INT",
+     {
+      "control_after_generate": true,
+      "default": 0,
+      "max": 18446744073709551615,
+      "min": 0
+     }
+    ],
+    "positive": [
+     "CONDITIONING"
+    ],
+    "return_with_leftover_noise": [
+     [
+      "disable",
+      "enable"
+     ],
+     {
+      "advanced": true
+     }
+    ],
+    "sampler_name": [
+     [
+      "euler",
+      "res_multistep"
+     ],
+     {
+      "_options_total": 45
+     }
+    ],
+    "scheduler": [
+     [
+      "simple",
+      "sgm_uniform",
+      "karras",
+      "exponential",
+      "ddim_uniform",
+      "beta",
+      "normal",
+      "linear_quadratic",
+      "kl_optimal"
+     ]
+    ],
+    "start_at_step": [
+     "INT",
+     {
+      "advanced": true,
+      "default": 0,
+      "max": 10000,
+      "min": 0
+     }
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 20,
+      "max": 10000,
+      "min": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "add_noise",
+    "noise_seed",
+    "steps",
+    "cfg",
+    "sampler_name",
+    "scheduler",
+    "positive",
+    "negative",
+    "latent_image",
+    "start_at_step",
+    "end_at_step",
+    "return_with_leftover_noise"
+   ]
+  },
+  "output": [
+   "LATENT"
+  ],
+  "output_name": [
+   "LATENT"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ },
+ "KSamplerSelect": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "sampler_name": [
+     "COMBO",
+     {
+      "_options_total": 45,
+      "multiselect": false,
+      "options": [
+       "euler",
+       "res_multistep"
+      ]
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "sampler_name"
+   ]
+  },
+  "output": [
+   "SAMPLER"
+  ],
+  "output_name": [
+   "SAMPLER"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_custom_sampler"
+ },
+ "LazySwitchKJ": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "on_false": [
+     "*",
+     {
+      "lazy": true
+     }
+    ],
+    "on_true": [
+     "*",
+     {
+      "lazy": true
+     }
+    ],
+    "switch": [
+     "BOOLEAN"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "switch",
+    "on_false",
+    "on_true"
+   ]
+  },
+  "output": [
+   "*"
+  ],
+  "output_name": [
+   "*"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes"
+ },
+ "LoadImage": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "image": [
+     [
+      "example.png"
+     ],
+     {
+      "_options_total": 35,
+      "image_upload": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image"
+   ]
+  },
+  "output": [
+   "IMAGE",
+   "MASK"
+  ],
+  "output_name": [
+   "IMAGE",
+   "MASK"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ },
+ "LoadImagesFromFolderKJ": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "image_load_cap": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "include_subfolders": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "start_index": [
+     "INT",
+     {
+      "default": 0,
+      "min": 0,
+      "step": 1
+     }
+    ]
+   },
+   "required": {
+    "folder": [
+     "STRING",
+     {
+      "default": ""
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 1024,
+      "min": -1,
+      "step": 1
+     }
+    ],
+    "keep_aspect_ratio": [
+     [
+      "crop",
+      "pad",
+      "stretch"
+     ]
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 1024,
+      "min": -1,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "image_load_cap",
+    "start_index",
+    "include_subfolders"
+   ],
+   "required": [
+    "folder",
+    "width",
+    "height",
+    "keep_aspect_ratio"
+   ]
+  },
+  "output": [
+   "IMAGE",
+   "MASK",
+   "INT",
+   "STRING"
+  ],
+  "output_name": [
+   "image",
+   "mask",
+   "count",
+   "image_path"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-KJNodes"
+ },
+ "MiniMaxH3FunControlNetApply": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "control_video": [
+     "IMAGE",
+     {}
+    ],
+    "mask": [
+     "MASK",
+     {}
+    ],
+    "source_video": [
+     "IMAGE",
+     {}
+    ]
+   },
+   "required": {
+    "end_percent": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.001
+     }
+    ],
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "model_patch": [
+     "MODEL_PATCH",
+     {}
+    ],
+    "start_percent": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.001
+     }
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "max": 10.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "control_video",
+    "mask",
+    "source_video"
+   ],
+   "required": [
+    "model",
+    "model_patch",
+    "vae",
+    "strength",
+    "start_percent",
+    "end_percent"
+   ]
+  },
+  "output": [
+   "MODEL"
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_minimax_h3"
+ },
+ "MiniMaxH3RefModApply": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "graph_preset": [
+     "COMBO",
+     {
+      "default": "(none)",
+      "multiselect": false,
+      "options": [
+       "(none)"
+      ]
+     }
+    ],
+    "max_total_tokens": [
+     "INT",
+     {
+      "default": 0,
+      "max": 1048576,
+      "min": 0
+     }
+    ],
+    "save_preset_as": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": false
+     }
+    ],
+    "scramble_keep": [
+     "INT",
+     {
+      "default": 1,
+      "max": 80,
+      "min": 1
+     }
+    ],
+    "scramble_mode": [
+     "COMBO",
+     {
+      "default": "shuffle",
+      "multiselect": false,
+      "options": [
+       "shuffle",
+       "subset",
+       "legacy_subset"
+      ]
+     }
+    ]
+   },
+   "required": {
+    "conditioning": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "template": {
+       "allowed_types": "MINIMAX_H3_COND,CONDITIONING",
+       "template_id": "cond"
+      }
+     }
+    ],
+    "curve_direction": [
+     "COMBO",
+     {
+      "default": "constant",
+      "multiselect": false,
+      "options": [
+       "constant",
+       "concept_at_start",
+       "concept_at_middle",
+       "concept_at_end",
+       "concept_at_ends"
+      ]
+     }
+    ],
+    "curve_shape": [
+     "COMBO",
+     {
+      "default": "linear",
+      "multiselect": false,
+      "options": [
+       "linear",
+       "ease",
+       "sigmoid",
+       "tanh",
+       "quadratic",
+       "cubic",
+       "exponential",
+       "stair",
+       "elastic",
+       "bump",
+       "dip"
+      ]
+     }
+    ],
+    "curve_value": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    ],
+    "mods": [
+     "H3_REF_MODS",
+     {}
+    ],
+    "override": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "retention": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    ],
+    "scramble_seed": [
+     "INT",
+     {
+      "control_after_generate": "fixed",
+      "default": -1,
+      "max": 2147483647,
+      "min": -1,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "graph_preset",
+    "scramble_mode",
+    "scramble_keep",
+    "max_total_tokens",
+    "save_preset_as"
+   ],
+   "required": [
+    "conditioning",
+    "mods",
+    "override",
+    "retention",
+    "curve_direction",
+    "scramble_seed",
+    "curve_shape",
+    "curve_value"
+   ]
+  },
+  "output": [
+   "COMFY_MATCHTYPE_V3",
+   "IMAGE"
+  ],
+  "output_name": [
+   "conditioning",
+   "curve graph"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-MiniMaxH3Mod"
+ },
+ "MiniMaxH3ReferenceToVideo": {
+  "_port": 8189,
+  "input": {
+   "optional": {
+    "audio_vae": [
+     "VAE",
+     {}
+    ],
+    "ref_audios": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_audio": [
+          "AUDIO",
+          {
+           "tooltip": "Standalone reference audio"
+          }
+         ]
+        }
+       },
+       "max": 3,
+       "min": 0,
+       "prefix": "ref_audio_"
+      }
+     }
+    ],
+    "ref_images": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_image": [
+          "IMAGE",
+          {
+           "tooltip": "Reference image (downscaled to 2048 short edge if larger, never upscaled)"
+          }
+         ]
+        }
+       },
+       "max": 9,
+       "min": 0,
+       "prefix": "ref_image_"
+      }
+     }
+    ],
+    "ref_video_audios": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_video_audio": [
+          "AUDIO",
+          {
+           "tooltip": "Soundtrack of the same-numbered reference video"
+          }
+         ]
+        }
+       },
+       "max": 3,
+       "min": 0,
+       "prefix": "ref_video_audio_"
+      }
+     }
+    ],
+    "ref_videos": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "ref_video": [
+          "IMAGE",
+          {
+           "tooltip": "Reference video frames at 24 fps (2-15s)"
+          }
+         ]
+        }
+       },
+       "max": 3,
+       "min": 0,
+       "prefix": "ref_video_"
+      }
+     }
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ]
+   },
+   "required": {
+    "clip": [
+     "CLIP",
+     {}
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 768,
+      "max": 16384,
+      "min": 32,
+      "step": 32
+     }
+    ],
+    "length": [
+     "INT",
+     {
+      "default": 124,
+      "max": 3600,
+      "min": 5,
+      "step": 17
+     }
+    ],
+    "prompt": [
+     "STRING",
+     {
+      "dynamicPrompts": true,
+      "multiline": true
+     }
+    ],
+    "ref_image_size": [
+     "COMBO",
+     {
+      "default": "match",
+      "multiselect": false,
+      "options": [
+       "match",
+       "max"
+      ]
+     }
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 1344,
+      "max": 16384,
+      "min": 32,
+      "step": 32
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "vae",
+    "audio_vae",
+    "ref_images",
+    "ref_videos",
+    "ref_video_audios",
+    "ref_audios"
+   ],
+   "required": [
+    "clip",
+    "prompt",
+    "width",
+    "height",
+    "length",
+    "ref_image_size"
+   ]
+  },
+  "output": [
+   "CONDITIONING",
+   "LATENT"
+  ],
+  "output_name": [
+   "positive",
+   "LATENT"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_minimax_h3"
+ },
+ "MiniMaxH3SigmaShift": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "model": [
+     "MODEL",
+     {}
+    ],
+    "shift_audio": [
+     "FLOAT",
+     {
+      "default": 3.0,
+      "max": 100.0,
+      "min": 0.01,
+      "step": 0.01
+     }
+    ],
+    "shift_video": [
+     "FLOAT",
+     {
+      "default": 12.0,
+      "max": 100.0,
+      "min": 0.01,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "model",
+    "shift_video",
+    "shift_audio"
+   ]
+  },
+  "output": [
+   "MODEL"
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_minimax_h3"
+ },
+ "ModelPatchLoader": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "name": [
+     [
+      "minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"
+     ]
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "name"
+   ]
+  },
+  "output": [
+   "MODEL_PATCH"
+  ],
+  "output_name": [
+   "MODEL_PATCH"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_model_patch"
+ },
+ "PrimitiveBoolean": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "value": [
+     "BOOLEAN",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "output": [
+   "BOOLEAN"
+  ],
+  "output_name": [
+   "BOOLEAN"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_primitive"
+ },
+ "PrimitiveString": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "value": [
+     "STRING",
+     {
+      "multiline": false
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "output": [
+   "STRING"
+  ],
+  "output_name": [
+   "STRING"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_primitive"
+ },
+ "PrimitiveStringMultiline": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "value": [
+     "STRING",
+     {
+      "multiline": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "value"
+   ]
+  },
+  "output": [
+   "STRING"
+  ],
+  "output_name": [
+   "STRING"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_primitive"
+ },
+ "RandomNoise": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "noise_seed": [
+     "INT",
+     {
+      "control_after_generate": true,
+      "default": 0,
+      "max": 18446744073709551615,
+      "min": 0
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "noise_seed"
+   ]
+  },
+  "output": [
+   "NOISE"
+  ],
+  "output_name": [
+   "NOISE"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_custom_sampler"
+ },
+ "RepeatImageBatch": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "amount": [
+     "INT",
+     {
+      "default": 1,
+      "max": 4096,
+      "min": 1
+     }
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "amount"
+   ]
+  },
+  "output": [
+   "IMAGE"
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_images"
+ },
+ "SAM3Segment": {
+  "_port": 8188,
+  "input": {
+   "optional": {
+    "background": [
+     [
+      "Alpha",
+      "Color"
+     ],
+     {
+      "default": "Alpha"
+     }
+    ],
+    "background_color": [
+     "COLORCODE",
+     {
+      "default": "#222222"
+     }
+    ],
+    "device": [
+     [
+      "Auto",
+      "CPU",
+      "GPU"
+     ],
+     {
+      "default": "Auto"
+     }
+    ],
+    "invert_output": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ],
+    "mask_blur": [
+     "INT",
+     {
+      "default": 0,
+      "max": 64,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "mask_offset": [
+     "INT",
+     {
+      "default": 0,
+      "max": 64,
+      "min": -64,
+      "step": 1
+     }
+    ],
+    "max_segments": [
+     "INT",
+     {
+      "default": 0,
+      "max": 128,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "segment_pick": [
+     "INT",
+     {
+      "default": 0,
+      "max": 128,
+      "min": 0,
+      "step": 1
+     }
+    ],
+    "unload_model": [
+     "BOOLEAN",
+     {
+      "default": false
+     }
+    ]
+   },
+   "required": {
+    "confidence_threshold": [
+     "FLOAT",
+     {
+      "default": 0.5,
+      "max": 0.95,
+      "min": 0.05,
+      "step": 0.01
+     }
+    ],
+    "image": [
+     "IMAGE"
+    ],
+    "model_name": [
+     [
+      "sam3.1_multiplex_fp16",
+      "sam3"
+     ],
+     {
+      "default": "sam3.1_multiplex_fp16"
+     }
+    ],
+    "output_mode": [
+     [
+      "Merged",
+      "Separate"
+     ],
+     {
+      "default": "Merged"
+     }
+    ],
+    "prompt": [
+     "STRING",
+     {
+      "default": "",
+      "multiline": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "max_segments",
+    "segment_pick",
+    "mask_blur",
+    "mask_offset",
+    "device",
+    "invert_output",
+    "unload_model",
+    "background",
+    "background_color"
+   ],
+   "required": [
+    "image",
+    "model_name",
+    "prompt",
+    "output_mode",
+    "confidence_threshold"
+   ]
+  },
+  "output": [
+   "IMAGE",
+   "MASK",
+   "IMAGE",
+   "BBOX"
+  ],
+  "output_name": [
+   "IMAGE",
+   "MASK",
+   "MASK_IMAGE",
+   "BBOXES"
+  ],
+  "output_node": false,
+  "python_module": "custom_nodes.ComfyUI-RMBG"
+ },
+ "SamplerCustomAdvanced": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "guider": [
+     "GUIDER",
+     {}
+    ],
+    "latent_image": [
+     "LATENT",
+     {}
+    ],
+    "noise": [
+     "NOISE",
+     {}
+    ],
+    "sampler": [
+     "SAMPLER",
+     {}
+    ],
+    "sigmas": [
+     "SIGMAS",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "noise",
+    "guider",
+    "sampler",
+    "sigmas",
+    "latent_image"
+   ]
+  },
+  "output": [
+   "LATENT",
+   "LATENT"
+  ],
+  "output_name": [
+   "output",
+   "denoised_output"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_custom_sampler"
+ },
+ "UNETLoader": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "unet_name": [
+     [
+      "minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+     ]
+    ],
+    "weight_dtype": [
+     [
+      "default",
+      "fp8_e4m3fn",
+      "fp8_e4m3fn_fast",
+      "fp8_e5m2"
+     ],
+     {
+      "advanced": true
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "unet_name",
+    "weight_dtype"
+   ]
+  },
+  "output": [
+   "MODEL"
+  ],
+  "output_name": [
+   "MODEL"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ },
+ "VAELoader": {
+  "_port": 8189,
+  "input": {
+   "required": {
+    "vae_name": [
+     [
+      "minimax_h3_audio_vae_fp32.safetensors",
+      "minimax_h3_video_vae_fp16.safetensors",
+      "pixel_space"
+     ]
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "vae_name"
+   ]
+  },
+  "output": [
+   "VAE"
+  ],
+  "output_name": [
+   "VAE"
+  ],
+  "output_node": false,
+  "python_module": "nodes"
+ }
+}

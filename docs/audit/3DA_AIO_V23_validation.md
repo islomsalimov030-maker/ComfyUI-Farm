@@ -1,0 +1,75 @@
+# AIO manual V2.3 — офлайн UI-патч (aio-v23-ui-1)
+
+## Готовые файлы
+
+- `workflows/aio/AIO_manual_V2.3.ui.json` рядом с V2.2.
+- `tools/scene3d/patch_aio_v23.py` — детерминированный versioned UI-патчер (stdlib + существующий `tools/wfkit.py`). Не вызывает HTTP/GPU, не экспортирует API, не меняет V2.2. `--check` сравнивает сохранённый UI с результатом патчера.
+- `tools/scene3d/test_aio_v23.py` — офлайн положительные/негативные проверки.
+- `tools/scene3d/aio_v23_object_info.json` — сокращённые схемы 31 используемого типа с 8189 и fallback 8188; `_port` фиксирует источник. Длинные списки файлов обрезаны; это не перечень всех установленных моделей.
+
+Исходный `3DA_AIO_V23_plan.md` не перезаписан. STATUS/RESEARCH не изменены. Commit/push, установка пакетов, GPU и перезапуск пода не выполнялись.
+
+## Что добавлено
+
+Отдельная группа «3D», главный BOOLEAN выключен. Существующие PHOTO_SPEC/пульт, пресеты моделей, виджеты, промпты, режимы и face-pass не изменены. Исходные строковые значения копируются непрозрачно, не используются для составления новых промптов и не выводятся в проверки.
+
+Ветка: base ref2va (без turbo) → shift 12/3 → 25 steps / cfg1 / euler / simple → decode/select → новый **SAM3 person** → feather 8 → композит на фотоплиту → опциональная гармонизация → **штатный проход лица**. Два прежних IMAGE-входа FACE/crop получают новый LazySwitchKJ: OFF — ровно прежний `gen · выбор кадра`, ON — новый результат. Настройки старого прохода лица, включая подключённый face_denoise, сохраняются.
+
+- Picture1 — отдельная фотоплита, Picture2 — отдельный SFW-эталон личности.
+- `playblast.png` с тенями: ImageScale 1344×768 → RepeatImageBatch **5 кадров**, как IMAGE в `ref_videos.ref_video_0` (24 fps по контракту H3; отдельного fps-входа у кондиционера нет).
+- Пара conditioner с/без Video1 + **согласованная пара LazySwitchKJ conditioning/latent**, повторяет паттерн ВИДЕО. Диагностический режим без Video1 имеет отдельный новый SFW-промпт без неподключённой метки Video1.
+- RefMod не заменён: используется существующий PHOTO-loader `mods` и копия существующего Apply-рецепта.
+- FunCN pose — отдельный LazySwitchKJ MODEL. При OFF загрузка union patch и папки pose не является необходимой зависимостью выбранной ветки. Strength/end ограничены выражениями `min(max(a, 0), 0.5)`; start=0. Отдельная папка только pose, cap=5, 1344×768. Поддержка min/max подтверждена чтением установленного `comfy_extras/nodes_math.py` (MATH_FUNCTIONS); исполнение clamp ещё не проверялось runtime.
+- Гармонизация: **тот же base ref2va, без FunCN**, 10 шагов H3LatentFromImage, denoise 0.30 или 0.45. SamplerCustomAdvanced получает **оба** `h3_latent` и `sigmas` этого узла (не ошибочный новый full-noise schedule). Условие — тот же RefMod/ref2va с Picture1/Picture2.
+- Новые title уникальны и имеют scope `3D · ...`. В V2.2 на top уже есть три пары одинаковых legacy-title; они намеренно не переименованы. Идентификация новых узлов — по title; числовые ID нужны только сериализатору/линкам.
+
+### Явный выбор рецепта
+
+| Рецепт | pose | harmonize |
+|---|---|---|
+| **R1s — сохранённый default** | OFF | OFF |
+| R1s+pose | ON | OFF |
+| R1s+harmonize | OFF | ON; 0.30 / 0.45 |
+
+Главный 3D всегда OFF при загрузке. Оба recipe-toggle ON — дополнительная комбинация, не принятый рецепт. Default R1s оставлен по исходному явному заданию, не объявлен победителем.
+
+Позднее координатор сообщил итог серии: рабочий рецепт **R1s+pose0.5 до50%**, без обязательной гармонизации; pose 8/8, face до прохода лица 2/8 ≥0.6. Это результаты внешней серии, не runtime V2.3. Для воспроизведения в UI включить pose вручную; автоматического изменения дефолтов нет.
+
+## Выполненная проверка
+
+Команды из корня репозитория:
+
+```text
+.venv/Scripts/python tools/scene3d/patch_aio_v23.py
+.venv/Scripts/python tools/scene3d/patch_aio_v23.py --check
+.venv/Scripts/python -m pytest tools/scene3d/test_aio_v23.py -q
+```
+
+Результат: **9 passed** (включая сверку новых socket names, обязательных linked-входов, числа outputs и named/positional widgets с targeted object_info). V2.3: 5 графов, **244 узла (+54)**, **528 ссылок**, 0 структурных ошибок.
+
+Проверены существование endpoints, слоты, совместимость типов с wildcard/union, обе стороны links, точные обратные endpoints, `linkIds` виртуальных -10/-20, уникальность UUID интерфейса, синхронность definition/instance. Негативные тесты ловят подмену типа, обратного endpoint, включённый default и изменение старого виджета. Повторная генерация детерминирована.
+
+**Default OFF comparison PASS**: после снятия только объявленных вставок/двух перенаправлений исходный граф полностью совпадает с V2.2, включая все widget literals/modes/titles; порядок fanout/links канонизирован. Дополнительно проверено, что реальный главный toggle равен False и false-ветка ведёт именно к исходному selector. Исходный файл проверен побайтово — не изменён.
+
+Это **структурное сравнение**, не реальный экспорт/исполнение UI. Оно не доказывает ленивую загрузку моделей в конкретной версии frontend или отсутствие frontend-миграций виджетов.
+
+## Блокеры runtime
+
+1. Надёжного полного UI→API экспортёра для этого AIO нет: `wfkit.to_api2` не восстанавливает все позиционные widgets/seed-control/пульты. Он намеренно не используется. **POST /prompt, dry-run и SFW-runtime V2.3 не выполнены**; псевдо-API за результат не выдаётся.
+2. На момент первого object_info next8189 не было H3LatentFromImage, SAM3Segment, StacyFitFrame. При последующем снимке H3LatentFromImage уже появился (подключал основной). SAM3Segment/StacyFitFrame и множество остальных legacy-типов доступны только на старом8188. Пакеты на `/workspace/ComfyUI/custom_nodes`: `h3_img2img_latent`, `ComfyUI-RMBG`, `ComfyUI-StacyLoop`, `ComfyUI-H3-FaceRefine`, `ComfyUI-Inpaint-CropAndStitch`, `Nvidia_RTX_Nodes_ComfyUI`, `ComfyUI-VideoHelperSuite`, `rgthree-comfy` и др. На next были только Farm/KJNodes/Image-Studio/RefMod. Подключение/перезапуск — основной.
+3. `StacyFaceTrackCrop` отсутствует в обоих прочитанных object_info (legacy ВИДЕО). Не ремонтировался в scope 3D. Это может помешать загрузке полного AIO даже при выключенном 3D.
+4. Текущий RMBG3.3.0 имеет обязательный `model_name` **перед** prompt. Новый PERSON задан по текущей схеме (`sam3`, `person`). Старый FACE из V2.2 имеет старый массив без model_name: **не изменён по заданию**, frontend-миграцию/корректность FACE нужно отдельно проверить перед запуском. Не принимать workflow, если FACE сместился на неправильные значения.
+5. Pose folder — явный placeholder `__SET_POSE_FOLDER__`; изображения — `example.png`. Нужны свои SFW-входы. Модель base ref2va, оба VAE и int8 union подтверждены targeted object_info. Новый CLIP — официальный qwen3vl nvfp4_awq (не произвольный legacy CLIP).
+6. PERSON-маска не захватывает падающую тень за пределами тела: композит способен удалить часть тени, сохранённой генерацией. Это известное визуальное ограничение, гармонизация не гарантирует исправление. Проверять контакт, края/волосы/пальцы, тень и позу глазами.
+
+## Инструкция основному для runtime
+
+1. Дождаться завершения текущих metrics/GPU работ. Самостоятельно подключить недостающие готовые пакеты к next, решить старый FACE model_name и `StacyFaceTrackCrop`, перезапустить по своему плану. Патчер этого не делает.
+2. Загрузить `AIO_manual_V2.3.ui.json` в настоящий frontend. Проверить отсутствующие типы, точность виджетов, интерфейс PHOTO и то, что его muter включил штатный движок/RefMod. Сначала 3D OFF: сравнить с V2.2 **при одинаковых независимых SFW-входах**. Унаследованные промпты не запускать автоматически.
+3. Загрузить Picture1 фотоплиту, Picture2 SFW-лицо, playblast.png с тенями. Глобальная маска PHOTO OFF. Включить 3D, оставить Video1 ON. Сначала R1s; затем pose ON strength0.5/end0.5 и папка пяти pose PNG, например `input/plate3d/P4_table_stand/control/pose`. Не смешивать карты.
+4. При желании гармонизация ON, pose OFF, сравнить 0.30/0.45 на том же seed; штатный face-pass и его denoise отдельно контролировать существующим PHOTO-пультом. Проверить AST min/max clamp, оба выхода H3LatentFromImage, итог 1344×768 и отсутствие загрузки CN при pose OFF.
+5. Сделать **реальный frontend API Export**, проверить `/prompt` на SFW (validation может поставить задачу в очередь — только с планом), сохранить node_errors/время/изображения. Лишь после этого отмечать runtime accepted.
+
+## Лицензии
+
+Новые custom-ноды не написаны и не установлены. Переиспользованы core ComfyUI (GPL-3), KJNodes (GPL-3), ComfyUI-RMBG (GPL-3), текущий H3LatentFromImage `de0b5df` (MIT; LICENSE прочитан на поде). SAM3 веса — SAM License, коммерческое применение с ограничениями по назначению, см. уже существующую таблицу `docs/RESEARCH.md` (§2.1). Новых некоммерческих весов/библиотек ветка не добавляет. Ограничения legacy-пакетов не пересматривались и остаются отдельной задачей.
