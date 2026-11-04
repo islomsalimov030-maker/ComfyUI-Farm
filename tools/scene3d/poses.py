@@ -66,7 +66,7 @@ POSES = {
         ("upperleg01.L", "Z", -4), ("head", "Z", 8)]},
     # right hand in front of the chest (a phone), left arm hanging
     "stand_phone": {"contact": "floor", "steps": [
-        HANG("L"), ("@reach", "R", "upperarm01.R", (0.10, -0.28, -0.22)), ("head", "X", 12)]},
+        HANG("L"), ("@reach", "R", "upperarm01.R", (0.08, -0.25, -0.14)), ("head", "X", 12)]},
     "stand_look_away": {"contact": "floor", "steps": _arms_down(40, 6, 18) + [
         ("head", "Z", 25), ("upperleg01.L", "X", -5), ("lowerleg01.L", "X", 10)]},
 }
