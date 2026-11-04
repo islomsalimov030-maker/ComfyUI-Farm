@@ -120,6 +120,31 @@ def prompt_a(spec, sc):
         "overall_soundscape:", "N/A", "non_diegetic_music:", "N/A"])
 
 
+def prompt_a2(spec, sc):
+    """Round 3: <Picture 1> is the EMPTY room - the round-2 prompt ('the frame is exactly <Picture 1>') let H3 drop
+    the person in 4 of 17 frames."""
+    return "\n".join([
+        "subject_definitions:",
+        "<Subject 1> is the young woman whose face is shown in <Picture 2>, with exactly that face, hair and skin tone.",
+        "<Picture 1> is the empty room seen from the exact camera position and framing of the shot; the shot is this "
+        "frame with <Subject 1> added to it.",
+        "<Picture 2> is only an identity reference of her face and never appears on screen.",
+        "summary:",
+        f"[reference generation] One single photograph of <Subject 1> {sc['action']}, in the room of <Picture 1>, "
+        "framed exactly as <Picture 1>.",
+        "retention_analysis:",
+        "<Picture 1>: fully_preserved - the room, its furniture, its framing and its materials are retained.",
+        "<Picture 2>: fully_preserved - her facial identity is retained.",
+        "<Subject 1> (appears in the frame): fully_preserved - her face, hair, body proportions and outfit are retained.",
+        "detailed_description:",
+        f"A photorealistic live-action still, {STATIC} The room is {spec['room']}, exactly as in <Picture 1>. "
+        f"<Subject 1> is clearly visible in the frame, {sc['action']}. {TAIL} True-to-life scale: she is an adult "
+        f"woman of normal height and she is never enlarged to fill the frame. Scale anchor: {sc['anchor']}. "
+        "One continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and "
+        "never appears on screen.",
+        "overall_soundscape:", "N/A", "non_diegetic_music:", "N/A"])
+
+
 def prompt_b(spec, sc, with_room):
     room_def = ("<Picture 2> shows the room exactly as framed in the shot; it is the background and stays unchanged."
                 if with_room else "")
@@ -163,10 +188,19 @@ def variants(spec, sc, seed, W, H):
                 ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.7))],
         "A4": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=0.8, end_percent=1.0)),
                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.7))],
+        # round 3: depth = photo + the mannequin silhouette at its real distance (fixes size along the ray)
+        "A3n": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=1.0, end_percent=1.0)),
+                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+        "A5": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=1.0)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+        "A6": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=1.0)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.7))],
     }.items():
-        g = base_graph(seed, W, H, prompt_a(spec, sc), ["ref_room", "ref_char"])
+        pr = prompt_a2(spec, sc) if v in ("A3n", "A5", "A6") else prompt_a(spec, sc)
+        g = base_graph(seed, W, H, pr, ["ref_room", "ref_char"])
         g["ctl_pose"] = folder(name, "pose")
         g["ctl_depth"] = folder(name, "depth")
+        g["ctl_dperson"] = folder(name, "depth_person")
         chain(g, applies)
         out[v] = g
     for v, (st, room) in {"B1": (0.7, False), "B2": (0.5, False), "B3": (0.7, True)}.items():
@@ -208,11 +242,31 @@ def prep(maps, spec):
         dil.convert("RGB").save(os.path.join(inp, f"plate3d_{sc['name']}_mask_dil.png"))
         soft = dil.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
         soft.convert("RGB").save(os.path.join(inp, f"plate3d_{sc['name']}_mask_soft.png"))
+        person_depth(maps, d, m)
         clay = Image.open(os.path.join(d, "clay.png")).convert("RGB")
         over = Image.composite(clay, photo, m)
         pose = Image.open(os.path.join(d, "pose25.png")).convert("RGB")
         over = Image.composite(pose, over, pose.convert("L").point(lambda p: 255 if p > 20 else 0))
         over.save(os.path.join(SHEETS, f"check_{sc['name']}.jpg"), quality=88)
+
+
+def person_depth(maps, d, m):
+    """control/depth_person: the photo depth with the mannequin silhouette painted at its distance from the camera
+    (flat, the depth of the placement point), same normalisation as depth_loc (plate.json inv_norm)."""
+    info = json.load(open(os.path.join(maps, "_plate", "plate.json")))
+    pose = json.load(open(os.path.join(d, "pose25.json")))
+    R = info["R_world_from_cv"]
+    v = [pose["hit_world"][0], pose["hit_world"][1], pose["hit_world"][2] - info["cam_height_m"]]
+    z = sum(R[i][2] * v[i] for i in range(3))            # camera-forward distance (cv = R^T world)
+    lo, hi = info["inv_norm"]["lo"], info["inv_norm"]["hi"]
+    val = max(0, min(255, round((1.0 / z - lo) / (hi - lo) * 255)))
+    dep = Image.open(os.path.join(d, "depth_loc8.png")).convert("L")
+    dep.paste(val, mask=m)
+    out = os.path.join(d, "control", "depth_person")
+    os.makedirs(out, exist_ok=True)
+    for i in range(1, 6):
+        dep.convert("RGB").save(os.path.join(out, f"depth_{i:05d}.png"))
+    print(f"[ab] {os.path.basename(d)}: person at {z:.2f} m -> depth value {val}", flush=True)
 
 
 def post(g):
@@ -224,7 +278,7 @@ def post(g):
     return json.load(r)["prompt_id"]
 
 
-def wait(pid, timeout=900):
+def wait(pid, timeout=300):
     t0 = time.time()
     while time.time() - t0 < timeout:
         h = json.load(u.urlopen(f"{URL}/history/{pid}"))
@@ -240,9 +294,9 @@ def sheet(scene, seeds, variants_, tag="ab"):
     tiles = [(f"check {scene}", os.path.join(SHEETS, f"check_{scene}.jpg"))]
     for s in seeds:
         for v in variants_:
-            for tag in (v, f"{v}c"):
-                f = sorted(x for x in os.listdir(outdir) if x.startswith(f"{tag}_s{s}_"))
-                tiles.append((f"{tag} s{s}", os.path.join(outdir, f[-1]) if f else None))
+            for vt in (v, f"{v}c"):
+                f = sorted(x for x in os.listdir(outdir) if x.startswith(f"{vt}_s{s}_"))
+                tiles.append((f"{vt} s{s}", os.path.join(outdir, f[-1]) if f else None))
     tw, th, cols = 640, 360, 6
     rows = (len(tiles) + cols - 1) // cols
     sh = Image.new("RGB", (tw * cols, (th + 20) * rows), "white")
@@ -284,7 +338,7 @@ def main():
     for scene, v, s, pid in jobs:
         st, sec = wait(pid)
         log.append({"scene": scene, "variant": v, "seed": s, "prompt_id": pid, "status": st, "wait_s": sec})
-        print(f"[ab] {scene} {v} s{s}: {st} ({sec} s)")
+        print(f"[ab] {scene} {v} s{s}: {st} ({sec} s)", flush=True)
     json.dump(log, open(f"/workspace/farm/scene3d/{a.sheet_tag}_runs.json", "w"), indent=1)
     for sc in scenes:
         print("[ab] sheet", sheet(sc["name"], seeds, vs, a.sheet_tag))

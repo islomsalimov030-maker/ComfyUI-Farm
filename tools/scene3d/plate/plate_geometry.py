@@ -144,6 +144,7 @@ def main():
         "fov_x_deg": float(np.degrees(2 * np.arctan(0.5 / fx))),
         "cam_height_m": cam_h, "R_world_from_cv": R.tolist(),
         "floor": {"inliers": n_in, "candidates": n_cand},
+        "inv_norm": {"lo": float(lo), "hi": float(hi)},  # depth_loc = (1/z - lo) / (hi - lo), z in metres
         "depth_m": {"p1": float(np.percentile(dep[valid], 1)), "p99": float(np.percentile(dep[valid], 99))},
         "mesh": {"verts": int(keep.sum()), "faces": len(faces), "stride": s},
     }
