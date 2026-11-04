@@ -11,7 +11,11 @@ A (photo = layout): Picture 1 = the location photo (same camera as the maps), Pi
   A1 pose 0.8/0.8 | A2 depth 0.5/0.6 + pose 0.8/0.8 | A3 depth 1.0/1.0 + pose 0.5/0.5   (strength/end_percent)
 B (inpaint): Fun ControlNet in inpaint mode - source_video = the photo, mask = the mannequin (dilated),
   control = pose; Picture 1 = face, RefMod as in A. The result is also composited onto the photo with a soft mask.
-  B1 pose 1.0/1.0 | B2 pose 0.7/0.7 | B3 = B1 + the photo as Picture 2
+  B1 inpaint 0.7/0.7 | B2 inpaint 0.5/0.4 | B3 = B1 + the photo as Picture 2
+  (dry run 04.11: at strength 1.0 the int8 union patch copies the black hole of the masked source; at 0.7 the hole
+  goes but the room drifts - hence the composite.)
+A results are composited onto the photo the same way (A*c): the camera is the photo camera, so the body should land
+inside the mask; outside it the room stays pixel-exact.
 Outputs: ComfyUI output/plate3d_ab/<scene>/<variant>_s<seed>_*.png, sheets in /workspace/farm/scene3d/sheets/ab_<scene>.jpg,
 run log /workspace/farm/scene3d/ab_runs.json (variant, seed, prompt_id, seconds, status).
 """
@@ -160,7 +164,7 @@ def variants(spec, sc, seed, W, H):
         g["ctl_depth"] = folder(name, "depth")
         chain(g, applies)
         out[v] = g
-    for v, (st, room) in {"B1": (1.0, False), "B2": (0.7, False), "B3": (1.0, True)}.items():
+    for v, (st, room) in {"B1": (0.7, False), "B2": (0.5, False), "B3": (0.7, True)}.items():
         refs = ["ref_char", "ref_room"] if room else ["ref_char"]
         g = base_graph(seed, W, H, prompt_b(spec, sc, room), refs)
         g["ref_room"] = node("LoadImage", image="plate3d_rgb.png")
@@ -170,15 +174,16 @@ def variants(spec, sc, seed, W, H):
         g["m_rep"] = node("RepeatImageBatch", image=["m_img", 0], amount=5)
         g["m_mask"] = node("ImageToMask", image=["m_rep", 0], channel="red")
         chain(g, [("ap_inp", dict(control_video=["ctl_pose", 0], mask=["m_mask", 0], source_video=["src_rep", 0],
-                                  strength=st, end_percent=st if st < 1 else 1.0))])
-        g["soft_img"] = node("LoadImage", image=f"plate3d_{name}_mask_soft.png")
-        g["soft"] = node("ImageToMask", image=["soft_img", 0], channel="red")
-        g["comp"] = node("ImageCompositeMasked", destination=["ref_room", 0], source=["sel", 0], x=0, y=0,
-                         resize_source=False, mask=["soft", 0])
-        g["save_comp"] = node("SaveImage", images=["comp", 0], filename_prefix=f"plate3d_ab/{name}/{v}c_s{seed}")
+                                  strength=st, end_percent={0.7: 0.7, 0.5: 0.4}[st]))])
         out[v] = g
     for v, g in out.items():
         g["save"] = node("SaveImage", images=["sel", 0], filename_prefix=f"plate3d_ab/{name}/{v}_s{seed}")
+        g["photo"] = node("LoadImage", image="plate3d_rgb.png")
+        g["soft_img"] = node("LoadImage", image=f"plate3d_{name}_mask_soft.png")
+        g["soft"] = node("ImageToMask", image=["soft_img", 0], channel="red")
+        g["comp"] = node("ImageCompositeMasked", destination=["photo", 0], source=["sel", 0], x=0, y=0,
+                         resize_source=False, mask=["soft", 0])
+        g["save_comp"] = node("SaveImage", images=["comp", 0], filename_prefix=f"plate3d_ab/{name}/{v}c_s{seed}")
     return out
 
 
@@ -230,10 +235,10 @@ def sheet(scene, seeds, variants_):
     tiles = [(f"check {scene}", os.path.join(SHEETS, f"check_{scene}.jpg"))]
     for s in seeds:
         for v in variants_:
-            tag = f"{v}c" if v.startswith("B") else v
-            f = sorted(x for x in os.listdir(outdir) if x.startswith(f"{tag}_s{s}_"))
-            tiles.append((f"{tag} s{s}", os.path.join(outdir, f[-1]) if f else None))
-    tw, th, cols = 640, 360, 4
+            for tag in (v, f"{v}c"):
+                f = sorted(x for x in os.listdir(outdir) if x.startswith(f"{tag}_s{s}_"))
+                tiles.append((f"{tag} s{s}", os.path.join(outdir, f[-1]) if f else None))
+    tw, th, cols = 640, 360, 6
     rows = (len(tiles) + cols - 1) // cols
     sh = Image.new("RGB", (tw * cols, (th + 20) * rows), "white")
     dr = ImageDraw.Draw(sh)
