@@ -28,7 +28,8 @@ MODEL = "Ruicheng/moge-2-vitl-normal"
 def fit_floor(points, normals, valid, h, rng):
     """RANSAC plane over the lower 45% of the frame where the predicted normal points up (OpenCV: -Y)."""
     rows = np.arange(points.shape[0])[:, None] >= int(points.shape[0] * 0.55)
-    up_like = normals[..., 1] < -0.8 if normals is not None else np.ones(valid.shape, bool)
+    # either normal convention (OpenCV y down / OpenGL y up): a floor normal is vertical
+    up_like = np.abs(normals[..., 1]) > 0.8 if normals is not None else np.ones(valid.shape, bool)
     cand = points[valid & rows & up_like]
     if len(cand) < 500:
         cand = points[valid & rows]
@@ -51,7 +52,7 @@ def fit_floor(points, normals, valid, h, rng):
     # refine by least squares on the inliers
     p = cand[inl]
     c = p.mean(0)
-    _, _, vt = np.linalg.svd(p - c)
+    _, _, vt = np.linalg.svd(p - c, full_matrices=False)  # full U would be N x N
     n = vt[-1]
     if n[1] > 0:
         n = -n
