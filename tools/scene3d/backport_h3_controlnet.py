@@ -1,25 +1,25 @@
 """WS-3D-A: backport MiniMax H3 Fun ControlNet onto the studio's ComfyUI 0.34.6.
 
 The user authorised the backport and write access (04.11). The studio has no shell and no
-Manager API, so the only server-side write path is a node that saves text to a path:
-"CR Save Text To File" (Comfyroll Studio). This script uses it.
+Manager API, so the server-side write goes through a node that saves text to a path:
+"Basic data handling: PathSaveStringFile" (custom_nodes.basic_data_handling).
 
-What is written (see docs/experiments/3DA_GATE_2026-11-04.md §2):
+What is written (see docs/experiments/3DA_GATE_2026-11-04.md §2.1):
 
   comfy/ldm/minimax/controlnet.py   NEW  - from ComfyUI v0.35.0, verbatim
   comfy_extras/nodes_model_patch.py  PATCH - the "minimax" branch in ModelPatchLoader
-  nodes_minimax_h3.py                PATCH - the Apply node + the two patch classes
+  comfy_extras/nodes_minimax_h3.py   PATCH - the Apply node + the two patch classes
   comfy/model_prefetch.py            PATCH - pause_malloc_graph (no-op on 0.34.6)
 
-Every file is written to a .bak backup first, and the studio must be restarted afterwards:
-ComfyUI loads its node modules at start.
+Every existing file is written to a .bak backup first, and the studio must be restarted
+afterwards: ComfyUI loads its node modules at start.
 
 The studio is shared. This script touches ONLY the four files above and nothing else.
 
 Usage:
-  python tools/scene3d/backport_h3_controlnet.py --probe    # show the plan, write nothing
-  python tools/scene3d/backport_h3_controlnet.py --apply    # write the files
-  python tools/scene3d/backport_h3_controlnet.py --verify   # check the files landed
+  python tools/scene3d/backport_h3_controlnet.py --probe                       # show the plan
+  python tools/scene3d/backport_h3_controlnet.py --apply --root /abs/ComfyUI  # write the files
+  python tools/scene3d/backport_h3_controlnet.py --verify --root /abs/ComfyUI
 """
 import argparse
 import json
@@ -30,9 +30,9 @@ import time
 import requests
 
 # The ComfyUI root on the studio: the process is started as ./ComfyUI/main.py, so the package
-# lives in ./ComfyUI/comfy, the extras in ./ComfyUI/comfy_extras and the node modules in
-# ./ComfyUI/nodes.
-CANDIDATE_ROOTS = ["/workspace/ComfyUI", "./ComfyUI", "/ComfyUI", "/opt/ComfyUI",
+# lives in <cwd>/ComfyUI/comfy and the extras in <cwd>/ComfyUI/comfy_extras. The absolute path
+# is not visible from outside, so --apply needs it passed in.
+CANDIDATE_ROOTS = ["/workspace/ComfyUI", "/ComfyUI", "/app/ComfyUI", "/opt/ComfyUI",
                     "/home/comfy/ComfyUI", "/root/ComfyUI"]
 
 SRC = ".tmp_scripts/upstream"
@@ -45,13 +45,19 @@ def session():
     return s, os.environ["COMFY_URL"].rstrip("/")
 
 
-def save_text(s, url, text, out_dir, name, ext="py"):
-    """Queue the Comfyroll node that writes one text file server-side."""
-    g = {"w": {"class_type": "CR Save Text To File",
-               "inputs": {"multiline_text": text,
-                          "output_file_path": out_dir,
-                          "file_name": name,
-                          "file_extension": ext}}}
+def save_text(s, url, text, path):
+    """Write one text file server-side, at an absolute path.
+
+    Uses "Basic data handling: PathSaveStringFile" (custom_nodes.basic_data_handling): it takes
+    the full path and creates the parent directories.
+
+    NOT "CR Save Text To File" (Comfyroll): that node builds the path as
+    output_file_path + "\\" + file_name + "." + file_extension, so on Linux the backslash lands
+    inside the file name instead of separating directories, and the extension is appended again
+    (x.py -> x.py.py).
+    """
+    g = {"w": {"class_type": "Basic data handling: PathSaveStringFile",
+               "inputs": {"text": text, "path": path, "create_dirs": True, "encoding": "utf-8"}}}
     r = s.post(f"{url}/prompt", json={"prompt": g}, timeout=120)
     if r.status_code != 200:
         raise RuntimeError(f"queue failed: {r.status_code} {r.text[:400]}")
@@ -67,10 +73,16 @@ def save_text(s, url, text, out_dir, name, ext="py"):
     raise RuntimeError("timeout waiting for the write")
 
 
-def read_remote(s, url, out_dir, name):
-    """Read a file the studio already has, or None if it is not there."""
+def read_remote(s, url, path):
+    """Read a file the studio already has, or None if it is not there.
+
+    /view serves output/ and input/ by subfolder; the ComfyUI package itself is not served,
+    so the backup copy is read back through the write node instead (see --verify).
+    """
+    name = os.path.basename(path)
+    sub = os.path.dirname(path)
     for typ in ("output", "input"):
-        r = s.get(f"{url}/view", params={"filename": name, "type": typ, "subfolder": out_dir},
+        r = s.get(f"{url}/view", params={"filename": name, "type": typ, "subfolder": sub},
                   timeout=60)
         if r.status_code == 200 and r.content:
             try:
@@ -237,7 +249,7 @@ def main():
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--verify", action="store_true")
     ap.add_argument("--probe", action="store_true")
-    ap.add_argument("--root", default="", help="the ComfyUI root on the studio")
+    ap.add_argument("--root", default="", help="the ComfyUI root on the studio (absolute path)")
     a = ap.parse_args()
 
     s, url = session()
@@ -247,34 +259,42 @@ def main():
     print("files:")
     files = build_files()
 
+    # The write node needs an absolute path, and the studio's package root is not known from
+    # outside - the studio starts as ./ComfyUI/main.py, so the package sits in <cwd>/ComfyUI.
+    # --root must therefore be given explicitly for --apply.
     if a.verify:
         print("\nverify: read the files back from the studio")
         for rel in files:
-            out_dir = os.path.join(roots[0], os.path.dirname(rel))
-            name = os.path.basename(rel)
-            r = s.get(f"{url}/view", params={"filename": name, "type": "output",
-                                             "subfolder": out_dir}, timeout=60)
-            print(f"  {rel}: HTTP {r.status_code} ({len(r.content)} bytes)")
+            path = os.path.join(roots[0], rel)
+            body = read_remote(s, url, path)
+            print(f"  {rel}: {'readable' if body else 'not served by /view'}"
+                  f"{'' if body is None else f' ({len(body)} bytes)'}")
+        print("\nnote: /view serves output/ and input/ only - the ComfyUI package is not")
+        print("      readable from outside. The real check is /object_info after a restart.")
         return 0
 
     if a.probe or not a.apply:
         print("\nprobe roots:", roots)
-        print("NOTE: --apply writes into the ComfyUI package (with .bak backups).")
-        print("      The studio needs a restart afterwards.")
+        print("NOTE: --apply needs an absolute --root, e.g.")
+        print("      --root /workspace/ComfyUI   (the dir that holds comfy/ and comfy_extras/)")
+        print("      It writes into the ComfyUI package (with .bak backups) and needs a restart.")
         return 0
 
+    if not roots[0].startswith("/"):
+        print("STOP: --root must be an absolute path on the studio "
+              f"(got {roots[0]!r}). Pass --root /<abs>/ComfyUI.")
+        return 1
+
     for rel, (content, note) in files.items():
-        out_dir = os.path.join(roots[0], os.path.dirname(rel))
-        name = os.path.basename(rel)
-        print(f"writing {rel} -> {out_dir} ({note})")
+        path = os.path.join(roots[0], rel)
+        print(f"writing {rel} -> {path} ({note})")
         # Back up the current file first: the studio is shared, so the original must be
         # recoverable without a git checkout.
-        backup = f"{name}.bak"
-        existing = read_remote(s, url, out_dir, name)
+        existing = read_remote(s, url, path)
         if existing is not None:
-            save_text(s, url, existing, out_dir, backup)
-            print(f"  backup -> {backup} ({len(existing)} bytes)")
-        save_text(s, url, content, out_dir, name)
+            save_text(s, url, existing, path + ".bak")
+            print(f"  backup -> {path}.bak ({len(existing)} bytes)")
+        save_text(s, url, content, path)
         print("  ok")
     print("\nall files written. The studio must be restarted for the new node to appear.")
     return 0
