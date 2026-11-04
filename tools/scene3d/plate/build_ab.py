@@ -1,0 +1,279 @@
+"""Scene3D plate, pod side: tests A and B on the maps from render_plate_scene.py, queue, wait, check sheets.
+
+Run ON THE POD with the ComfyUI-next python (has PIL), ComfyUI-next on 127.0.0.1:8189:
+  /workspace/ComfyUI-next/venv/bin/python tools/scene3d/plate/build_ab.py \
+      --maps /workspace/ComfyUI-next/input/plate3d --spec tools/scene3d/plate/scenes_mainroom1.json --seeds 101
+
+Expects in --maps: _plate/plate_rgb.png and <scene>/{mask.png, clay.png, pose25.png, control/pose, control/depth}.
+
+A (photo = layout): Picture 1 = the location photo (same camera as the maps), Picture 2 = face 0003.png,
+  RefMod farm/stacy_face + farm/stacy_body, Fun ControlNet depth (of the photo) + pose (of the mannequin).
+  A1 pose 0.8/0.8 | A2 depth 0.5/0.6 + pose 0.8/0.8 | A3 depth 1.0/1.0 + pose 0.5/0.5   (strength/end_percent)
+B (inpaint): Fun ControlNet in inpaint mode - source_video = the photo, mask = the mannequin (dilated),
+  control = pose; Picture 1 = face, RefMod as in A. The result is also composited onto the photo with a soft mask.
+  B1 pose 1.0/1.0 | B2 pose 0.7/0.7 | B3 = B1 + the photo as Picture 2
+Outputs: ComfyUI output/plate3d_ab/<scene>/<variant>_s<seed>_*.png, sheets in /workspace/farm/scene3d/sheets/ab_<scene>.jpg,
+run log /workspace/farm/scene3d/ab_runs.json (variant, seed, prompt_id, seconds, status).
+"""
+import argparse
+import copy
+import json
+import os
+import shutil
+import time
+import urllib.request as u
+
+from PIL import Image, ImageDraw, ImageFilter
+
+URL = "http://127.0.0.1:8189"
+COMFY = "/workspace/ComfyUI-next"
+SHEETS = "/workspace/farm/scene3d/sheets"
+FACE = "0003.png"
+MODS = ("farm/stacy_face", "farm/stacy_body")
+PATCH = "minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"
+STATIC = ("filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, "
+          "with no camera movement, no zoom and no pan.")
+TAIL = ("The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.")
+
+
+def node(t, **inputs):
+    return {"class_type": t, "inputs": inputs}
+
+
+def base_graph(seed, W, H, prompt, refs):
+    g = {
+        "unet": node("DiffusionModelLoaderKJ", model_name="minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+                     weight_dtype="default", compute_dtype="default", patch_cublaslinear=False,
+                     sage_attention="disabled", enable_fp16_accumulation=False),
+        "lora": node("LoraLoaderModelOnly", model=["unet", 0], strength_model=1.0,
+                     lora_name="minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors"),
+        "shift": node("MiniMaxH3SigmaShift", model=["lora", 0], shift_video=12.0, shift_audio=3.0),
+        "clip": node("CLIPLoader", clip_name="qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", type="minimax",
+                     device="default"),
+        "vae": node("VAELoader", vae_name="minimax_h3_video_vae_fp16.safetensors"),
+        "avae": node("VAELoader", vae_name="minimax_h3_audio_vae_fp32.safetensors"),
+        "patch": node("ModelPatchLoader", name=PATCH),
+        "ref_room": node("LoadImage", image="plate3d_rgb.png"),
+        "ref_char": node("LoadImage", image=FACE),
+        "r2v": node("MiniMaxH3ReferenceToVideo", clip=["clip", 0], vae=["vae", 0], audio_vae=["avae", 0],
+                    width=W, height=H, length=5, ref_image_size="match", prompt=prompt),
+        "mods": node("MiniMaxH3RefModsLoader", show_info=False, max_total_tokens=16384,
+                     **{f"mod_{i}": (MODS[i - 1] if i <= len(MODS) else "(none)") for i in range(1, 9)},
+                     **{f"strength_{i}": 1.0 for i in range(1, 9)}, **{f"copies_{i}": 1 for i in range(1, 9)}),
+        "refmod": node("MiniMaxH3RefModApply", conditioning=["r2v", 0], mods=["mods", 0], override=False,
+                       retention=1.0, curve_direction="constant", scramble_seed=-1, curve_shape="linear",
+                       curve_value=1.0, max_total_tokens=16384),
+        "neg": node("ConditioningZeroOut", conditioning=["refmod", 0]),
+        "ks": node("KSamplerAdvanced", model=None, positive=["refmod", 0], negative=["neg", 0],
+                   latent_image=["r2v", 1], add_noise="enable", noise_seed=seed, steps=8, cfg=1.0,
+                   sampler_name="euler", scheduler="simple", start_at_step=0, end_at_step=10000,
+                   return_with_leftover_noise="disable"),
+        "dec": node("H3ImageDecode", samples=["ks", 0], vae=["vae", 0]),
+        "sel": node("H3ImageFrameSelector", frames=["dec", 0], recommended_index=["dec", 3],
+                    strategy="decode_recommended", manual_index=2, skip_first_frames=0, candidate_start=0.0,
+                    candidate_end=1.0, similarity_weight=0.25, top_k=4, emit_candidate_batch=False),
+    }
+    for i, r in enumerate(refs):
+        g["r2v"]["inputs"][f"ref_images.ref_image_{i}"] = [r, 0]
+    if "ref_room" not in refs:
+        del g["ref_room"]
+    return g
+
+
+def folder(scene, m):
+    return node("LoadImagesFromFolderKJ", folder=f"input/plate3d/{scene}/control/{m}", width=1536, height=864,
+                keep_aspect_ratio="stretch", image_load_cap=5, start_index=0, include_subfolders=False)
+
+
+def chain(g, applies):
+    """applies: list of (name, extra_inputs). Model chain shift -> apply... -> ks."""
+    prev = "shift"
+    for name, extra in applies:
+        g[name] = node("MiniMaxH3FunControlNetApply", model=[prev, 0], model_patch=["patch", 0], vae=["vae", 0],
+                       start_percent=0.0, **extra)
+        prev = name
+    g["ks"]["inputs"]["model"] = [prev, 0]
+
+
+def prompt_a(spec, sc):
+    return "\n".join([
+        "subject_definitions:",
+        "<Subject 1> is the young woman whose face is shown in <Picture 2>, with exactly that face, hair and skin tone.",
+        "<Picture 1> is the exact frame of the room: the same camera position, framing, furniture and layout; "
+        "the shot reproduces it.",
+        "<Picture 2> is only an identity reference of her face and never appears on screen.",
+        "summary:",
+        f"[reference generation] One single photograph of the room in <Picture 1> with <Subject 1> {sc['action']}.",
+        "retention_analysis:",
+        "<Picture 1>: fully_preserved - the room, its furniture, its framing and its materials are retained.",
+        "<Picture 2>: fully_preserved - her facial identity is retained.",
+        "<Subject 1>: fully_preserved - her face, hair, body proportions and outfit are retained.",
+        "detailed_description:",
+        f"A photorealistic live-action still, {STATIC} The frame is exactly <Picture 1>: {spec['room']}. "
+        f"<Subject 1> is {sc['action']}. {TAIL} True-to-life scale: she is an adult woman of normal height and she "
+        f"is never enlarged to fill the frame. Scale anchor: {sc['anchor']}. One continuous shot with no cuts and "
+        "no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen.",
+        "overall_soundscape:", "N/A", "non_diegetic_music:", "N/A"])
+
+
+def prompt_b(spec, sc, with_room):
+    room_def = ("<Picture 2> shows the room exactly as framed in the shot; it is the background and stays unchanged."
+                if with_room else "")
+    lines = [
+        "subject_definitions:",
+        "<Subject 1> is the young woman whose face is shown in <Picture 1>, with exactly that face, hair and skin tone.",
+        "<Picture 1> is only an identity reference of her face and never appears on screen.",
+    ]
+    if with_room:
+        lines.append(room_def)
+    lines += [
+        "summary:",
+        f"[reference generation] One single photograph of <Subject 1> {sc['action']} in {spec['room']}.",
+        "retention_analysis:",
+        "<Picture 1>: fully_preserved - her facial identity is retained.",
+    ]
+    if with_room:
+        lines.append("<Picture 2>: fully_preserved - the room and its framing are retained.")
+    lines += [
+        "<Subject 1>: fully_preserved - her face, hair, body proportions and outfit are retained.",
+        "detailed_description:",
+        f"A photorealistic live-action still, {STATIC} The room is {spec['room']}. <Subject 1> is {sc['action']}. "
+        f"{TAIL} True-to-life scale: she is an adult woman of normal height and she is never enlarged to fill the "
+        f"frame. Scale anchor: {sc['anchor']}. One continuous shot with no cuts and no close-up inserts; <Picture 1> "
+        "is only a reference for her face and never appears on screen.",
+        "overall_soundscape:", "N/A", "non_diegetic_music:", "N/A"]
+    return "\n".join(lines)
+
+
+def variants(spec, sc, seed, W, H):
+    name = sc["name"]
+    out = {}
+    for v, applies in {
+        "A1": [("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.8, end_percent=0.8))],
+        "A2": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=0.5, end_percent=0.6)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.8, end_percent=0.8))],
+        "A3": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=1.0, end_percent=1.0)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+    }.items():
+        g = base_graph(seed, W, H, prompt_a(spec, sc), ["ref_room", "ref_char"])
+        g["ctl_pose"] = folder(name, "pose")
+        g["ctl_depth"] = folder(name, "depth")
+        chain(g, applies)
+        out[v] = g
+    for v, (st, room) in {"B1": (1.0, False), "B2": (0.7, False), "B3": (1.0, True)}.items():
+        refs = ["ref_char", "ref_room"] if room else ["ref_char"]
+        g = base_graph(seed, W, H, prompt_b(spec, sc, room), refs)
+        g["ref_room"] = node("LoadImage", image="plate3d_rgb.png")
+        g["ctl_pose"] = folder(name, "pose")
+        g["src_rep"] = node("RepeatImageBatch", image=["ref_room", 0], amount=5)
+        g["m_img"] = node("LoadImage", image=f"plate3d_{name}_mask_dil.png")
+        g["m_rep"] = node("RepeatImageBatch", image=["m_img", 0], amount=5)
+        g["m_mask"] = node("ImageToMask", image=["m_rep", 0], channel="red")
+        chain(g, [("ap_inp", dict(control_video=["ctl_pose", 0], mask=["m_mask", 0], source_video=["src_rep", 0],
+                                  strength=st, end_percent=st if st < 1 else 1.0))])
+        g["soft_img"] = node("LoadImage", image=f"plate3d_{name}_mask_soft.png")
+        g["soft"] = node("ImageToMask", image=["soft_img", 0], channel="red")
+        g["comp"] = node("ImageCompositeMasked", destination=["ref_room", 0], source=["sel", 0], x=0, y=0,
+                         resize_source=False, mask=["soft", 0])
+        g["save_comp"] = node("SaveImage", images=["comp", 0], filename_prefix=f"plate3d_ab/{name}/{v}c_s{seed}")
+        out[v] = g
+    for v, g in out.items():
+        g["save"] = node("SaveImage", images=["sel", 0], filename_prefix=f"plate3d_ab/{name}/{v}_s{seed}")
+    return out
+
+
+def prep(maps, spec):
+    """Flat copies in ComfyUI input/ (LoadImage), dilated + soft masks, check overlays."""
+    inp = os.path.join(COMFY, "input")
+    shutil.copy(os.path.join(maps, "_plate", "plate_rgb.png"), os.path.join(inp, "plate3d_rgb.png"))
+    photo = Image.open(os.path.join(inp, "plate3d_rgb.png")).convert("RGB")
+    for sc in spec["scenes"]:
+        d = os.path.join(maps, sc["name"])
+        m = Image.open(os.path.join(d, "mask.png")).convert("L").point(lambda p: 255 if p > 127 else 0)
+        dil = m.filter(ImageFilter.MaxFilter(25))           # ~12 px around the body
+        dil.convert("RGB").save(os.path.join(inp, f"plate3d_{sc['name']}_mask_dil.png"))
+        soft = dil.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
+        soft.convert("RGB").save(os.path.join(inp, f"plate3d_{sc['name']}_mask_soft.png"))
+        clay = Image.open(os.path.join(d, "clay.png")).convert("RGB")
+        over = Image.composite(clay, photo, m)
+        pose = Image.open(os.path.join(d, "pose25.png")).convert("RGB")
+        over = Image.composite(pose, over, pose.convert("L").point(lambda p: 255 if p > 20 else 0))
+        over.save(os.path.join(SHEETS, f"check_{sc['name']}.jpg"), quality=88)
+
+
+def post(g):
+    try:
+        r = u.urlopen(u.Request(URL + "/prompt", data=json.dumps({"prompt": g}).encode(),
+                                headers={"Content-Type": "application/json"}))
+    except u.HTTPError as e:  # graph rejected: print why and stop, nothing else gets queued
+        raise SystemExit(f"[ab] graph rejected: {e.read().decode()[:2000]}")
+    return json.load(r)["prompt_id"]
+
+
+def wait(pid, timeout=900):
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        h = json.load(u.urlopen(f"{URL}/history/{pid}"))
+        if pid in h:
+            st = h[pid].get("status", {})
+            return st.get("status_str", "?"), round(time.time() - t0)
+        time.sleep(3)
+    return "timeout", timeout
+
+
+def sheet(scene, seeds, variants_):
+    outdir = os.path.join(COMFY, "output", "plate3d_ab", scene)
+    tiles = [(f"check {scene}", os.path.join(SHEETS, f"check_{scene}.jpg"))]
+    for s in seeds:
+        for v in variants_:
+            tag = f"{v}c" if v.startswith("B") else v
+            f = sorted(x for x in os.listdir(outdir) if x.startswith(f"{tag}_s{s}_"))
+            tiles.append((f"{tag} s{s}", os.path.join(outdir, f[-1]) if f else None))
+    tw, th, cols = 640, 360, 4
+    rows = (len(tiles) + cols - 1) // cols
+    sh = Image.new("RGB", (tw * cols, (th + 20) * rows), "white")
+    dr = ImageDraw.Draw(sh)
+    for i, (lab, p) in enumerate(tiles):
+        x, y = (i % cols) * tw, (i // cols) * (th + 20)
+        dr.text((x + 4, y + 4), lab, fill="black")
+        if p and os.path.exists(p):
+            sh.paste(Image.open(p).convert("RGB").resize((tw, th)), (x, y + 20))
+    path = os.path.join(SHEETS, f"ab_{scene}.jpg")
+    sh.save(path, quality=85)
+    return path
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--maps", required=True)
+    ap.add_argument("--spec", required=True)
+    ap.add_argument("--seeds", default="101")
+    ap.add_argument("--only", default="")
+    ap.add_argument("--variants", default="A1,A2,A3,B1,B2,B3")
+    a = ap.parse_args()
+    spec = json.load(open(a.spec, encoding="utf-8"))
+    W, H = spec["size"]
+    seeds = [int(s) for s in a.seeds.split(",")]
+    vs = a.variants.split(",")
+    scenes = [s for s in spec["scenes"] if not a.only or s["name"] in a.only.split(",")]
+    os.makedirs(SHEETS, exist_ok=True)
+    prep(a.maps, {"scenes": scenes})
+    jobs = []
+    for sc in scenes:
+        for s in seeds:
+            for v, g in variants(spec, sc, s, W, H).items():
+                if v in vs:
+                    jobs.append((sc["name"], v, s, post(g)))
+    print(f"[ab] queued {len(jobs)}")
+    log = []
+    for scene, v, s, pid in jobs:
+        st, sec = wait(pid)
+        log.append({"scene": scene, "variant": v, "seed": s, "prompt_id": pid, "status": st, "wait_s": sec})
+        print(f"[ab] {scene} {v} s{s}: {st} ({sec} s)")
+    json.dump(log, open("/workspace/farm/scene3d/ab_runs.json", "w"), indent=1)
+    for sc in scenes:
+        print("[ab] sheet", sheet(sc["name"], seeds, vs))
+
+
+if __name__ == "__main__":
+    main()

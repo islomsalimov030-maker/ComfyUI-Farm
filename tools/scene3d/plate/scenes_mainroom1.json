@@ -1,0 +1,19 @@
+{
+ "photo": "Home_Stacey_Mainroom-1.png",
+ "size": [1536, 864],
+ "room": "a bathroom and living room with a long backlit mirror over a stone vanity, a white clawfoot bathtub, a glass shower, a slatted wooden screen, a pink sofa, a slatted wooden bench and a round wooden table by a tall window",
+ "scenes": [
+  {"name": "P1_sofa_sit", "pose": "sit_upright", "seat": [0.82, 0.785], "yaw": "camera",
+   "action": "sitting upright on the pink sofa with her hands resting on her thighs",
+   "anchor": "the sofa backrest reaches her shoulder blades"},
+  {"name": "P2_bench_sit", "pose": "sit_upright", "seat": [0.76, 0.825], "yaw": "camera",
+   "action": "sitting on the slatted wooden bench with her hands resting on her thighs",
+   "anchor": "the bench seat reaches just below her knees"},
+  {"name": "P3_tub_stand", "pose": "stand_hand_on_hip", "feet": [0.62, 0.94], "yaw": "camera",
+   "action": "standing next to the clawfoot bathtub with her left hand on her hip",
+   "anchor": "the rim of the bathtub reaches her upper thigh"},
+  {"name": "P4_table_stand", "pose": "stand_relaxed", "feet": [0.9, 0.92], "yaw": "camera", "yaw_add": -40,
+   "action": "standing by the round wooden table near the window, turned three-quarters, her arms relaxed",
+   "anchor": "the round table reaches her upper thigh"}
+ ]
+}

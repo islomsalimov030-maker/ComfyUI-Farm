@@ -451,4 +451,5 @@ def main():
         run_scene(a, spec, scene, size)
 
 
-main()
+if __name__ == "__main__":
+    main()
