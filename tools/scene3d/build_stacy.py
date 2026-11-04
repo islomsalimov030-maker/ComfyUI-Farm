@@ -1,4 +1,4 @@
-"""Scene3D: Stacy body mannequin (MPFB2 / MakeHuman, CC0 assets) with the default rig, height 168 cm.
+"""Scene3D: Stacy body mannequin (MPFB2 / MakeHuman, CC0 assets) with the default rig, height 162 cm.
 blender -b --python tools/scene3d/build_stacy.py -- --out C:/work/scene3d_work/stacy_mannequin.blend
     [--assets C:/work/scene3d_work/mh_assets] [--hair long01] [--clothes female_sportsuit01] [--preview DIR]
 Shape is approximate (from sheet_body_sfw): slim waist, wide hips, full glutes, medium-full bust, athletic.
@@ -16,7 +16,9 @@ from bl_ext.blender_org.mpfb.services.humanservice import HumanService
 from bl_ext.blender_org.mpfb.services.locationservice import LocationService
 from bl_ext.blender_org.mpfb.services.targetservice import TargetService
 
-HEIGHT_M = 1.68
+# Рост манекена Стейси. Пользователь подтвердил 162 см (04.11); в пилоте (31.10) был 168 см —
+# база гейта пересчитана на 162, поэтому числа пилота сопоставимы по относительной разнице.
+HEIGHT_M = 1.62
 MACRO = {"gender": 0.0, "age": 0.5, "muscle": 0.55, "weight": 0.45, "proportions": 0.85,
          "height": 0.55, "cupsize": 0.7, "firmness": 0.8,
          "race": {"asian": 0.0, "caucasian": 1.0, "african": 0.0}}
