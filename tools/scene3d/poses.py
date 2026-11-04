@@ -112,6 +112,10 @@ def reach(rig, side, anchor, offset):
 
     names = [f"{b}.{side}" for b, *_ in REACH_DOF]
     base = [pbs[n].matrix_basis.copy() for n in names]
+    # every update would re-skin the body (~0.1 s): switch the mesh modifiers off while searching
+    mods = [m for o in bpy.data.objects if o.type == "MESH" for m in o.modifiers if m.show_viewport]
+    for m in mods:
+        m.show_viewport = False
 
     def restore(ms):
         for n, m in zip(names, ms):
@@ -149,6 +153,9 @@ def reach(rig, side, anchor, offset):
         if best < 0.01:
             break
     restore(best_all[1])
+    for m in mods:
+        m.show_viewport = True
+    bpy.context.view_layer.update()
     miss = (pbs[eff].head - target).length
     print(f"[poses] reach {side}->{anchor}{tuple(offset)}: miss {miss * 100:.1f} cm (cost {best_all[0] * 100:.1f}), "
           f"angles {best_all[2]}")
