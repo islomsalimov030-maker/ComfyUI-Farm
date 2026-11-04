@@ -238,3 +238,10 @@
 - `MiniMaxH3FunControlNetApply` (H3 Fun ControlNet, веса `minimax_h3_fun_controlnet_union_pruned_bf16` на студии есть) — только в master ComfyUI; на студии 0.34.6 ноды нет.
 - DWPose на виде со спины путает «лево ↔ право» и дорисовывает точки лица — метрики позы считать с допуском перестановки, флаг лица на виде сзади не верить.
 
+
+## 04.11 · 3D-A — гейт H3 Fun ControlNet (WS-3D-A)
+- `MiniMaxH3FunControlNetApply` — **ядро ComfyUI ≥0.35.0** (PR #15975, `comfy/ldm/minimax/controlnet.py`), не кастом-нода: в Comfy Registry 0 совпадений, поставить через Manager нельзя. На студии 0.34.6 → `/object_info` пустой. Остальные зависимости бэкпорта в 0.34.6 уже есть (`set_model_patch_replace`, `WrappersMP.DIFFUSION_MODEL`, `comfy.ldm.minimax.model/vae`); не хватает только `comfy.model_prefetch.pause_malloc_graph` (no-op без графа comfy compiler/aimdo).
+- Сторонняя замена `wyzborrero/ComfyUI-H3-FunControl` (Apache-2.0 ✅) — другие имена нод (`H3FunControlLoader`/`H3FunControlApply`), чтение из `models/controlnet/`, **без inpaint**, curve-form чекпоинт. Для гейта не подходит: маска персонажа обязательна.
+- Чекпоинт Fun ControlNet Union лежит в **`Comfy-Org/MiniMax-H3/model_patches/`**, НЕ в `alibaba-pai/MiniMax-H3-Fun-Controlnet-Union` (там только полный `MiniMax-H3-Fun-Controlnet-Union.safetensors` без pruned-вариантов). Файлы: `..._pruned_bf16` 4 222 169 456 Б, `..._pruned_int8_convrot` 2 296 635 360 Б (взяли бы int8 — рядом с UNet int8 на 32 ГБ VRAM bf16 рискован). Ошибка пути в брифе WS-3D-A.
+- Лицензия Fun ControlNet Union = `minimax-h3-community-license-agreement` — **тот же** H3-лицензии (`docs/RESEARCH.md` §1): территория вне ЕС/UK/KR/US, >$20 млн/год — письменное разрешение, запрет использовать Outputs для улучшения других AI-моделей. Отдельного нового риска чекпоинт не добавляет.
+- `LoadImagesFromFolderKJ` (KJNodes, GPL-3.0): относительный `folder` резолвится в `os.path.join(args.base_directory, folder)` — **`base_directory` = корень ComfyUI, не `input/`**; значит путь должен быть `input/<папка>`. Узел грузит **все** картинки папки в один батч → поза и глубина должны лежать в **разных** папках.
