@@ -48,8 +48,37 @@ def faces(img):
     return 0, 0.0, None
 
 
+def calib(ref, dirs, face_h):
+    """Same-person / other-person sims of real photos, optionally shrunk so the face is face_h px tall:
+    tells what a 'good' sim is at the face sizes our frames have."""
+    for d in dirs:
+        sims = []
+        for f in sorted(glob.glob(os.path.join(d, "**", "*.*"), recursive=True))[:40]:
+            if not f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                continue
+            img = Image.open(f).convert("RGB")
+            n, h, e = faces(img)
+            if e is None:
+                continue
+            if face_h and h > face_h:
+                k = face_h / h
+                n, h, e = faces(img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))),
+                                           Image.LANCZOS))
+                if e is None:
+                    continue
+            sims.append(float(e @ ref))
+        if sims:
+            sims.sort()
+            print(f"[calib] {d} (face {face_h or 'full'} px): n {len(sims)}, mean {sum(sims) / len(sims):.3f}, "
+                  f"min {sims[0]:.3f}, median {sims[len(sims) // 2]:.3f}, max {sims[-1]:.3f}")
+        else:
+            print(f"[calib] {d}: no faces")
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--calib", default="", help="comma list of folders (same person, other person) - calibration only")
+    ap.add_argument("--calib-face-h", type=int, default=0)
     ap.add_argument("--glob", default="*/A*_s*", help="relative to output/plate3d_ab, .png added")
     ap.add_argument("--runs", default="", help="ab_runs.json: only these scene/variant/seed")
     ap.add_argument("--tag", default="face")
@@ -58,6 +87,9 @@ def main():
     _n, _h, ref = faces(Image.open(a.ref).convert("RGB"))
     if ref is None:
         raise SystemExit(f"no face in the reference {a.ref}")
+    if a.calib:
+        calib(ref, a.calib.split(","), a.calib_face_h)
+        return
     files = sorted(glob.glob(os.path.join(OUT, a.glob + "*.png")))
     if a.runs:
         want = {(r["scene"], f"{r['variant']}_s{r['seed']}_") for r in json.load(open(a.runs))}
