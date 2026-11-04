@@ -60,7 +60,7 @@ def base_graph(seed, W, H, prompt, refs):
         "vae": node("VAELoader", vae_name="minimax_h3_video_vae_fp16.safetensors"),
         "avae": node("VAELoader", vae_name="minimax_h3_audio_vae_fp32.safetensors"),
         "patch": node("ModelPatchLoader", name=PATCH),
-        "ref_room": node("LoadImage", image="plate3d_rgb.png"),
+        "ref_room": node("LoadImage", image=f"{LOC[0]}_rgb.png"),
         "ref_char": node("LoadImage", image=FACE),
         "r2v": node("MiniMaxH3ReferenceToVideo", clip=["clip", 0], vae=["vae", 0], audio_vae=["avae", 0],
                     width=W, height=H, length=5, ref_image_size="match", prompt=prompt),
@@ -88,10 +88,11 @@ def base_graph(seed, W, H, prompt, refs):
 
 
 SIZE = [1536, 864]   # set from --size / spec in main()
+LOC = ["plate3d"]     # basename of --maps: input/<LOC>/<scene>/control, photo input/<LOC>_rgb.png (one per location)
 
 
 def folder(scene, m):
-    return node("LoadImagesFromFolderKJ", folder=f"input/plate3d/{scene}/control/{m}", width=SIZE[0], height=SIZE[1],
+    return node("LoadImagesFromFolderKJ", folder=f"input/{LOC[0]}/{scene}/control/{m}", width=SIZE[0], height=SIZE[1],
                 keep_aspect_ratio="stretch", image_load_cap=5, start_index=0, include_subfolders=False)
 
 
@@ -226,7 +227,7 @@ def variants(spec, sc, seed, W, H):
     for v, (st, room) in {"B1": (0.7, False), "B2": (0.5, False), "B3": (0.7, True)}.items():
         refs = ["ref_char", "ref_room"] if room else ["ref_char"]
         g = base_graph(seed, W, H, prompt_b(spec, sc, room), refs)
-        g["ref_room"] = node("LoadImage", image="plate3d_rgb.png")
+        g["ref_room"] = node("LoadImage", image=f"{LOC[0]}_rgb.png")
         g["ctl_pose"] = folder(name, "pose")
         g["src_rep"] = node("RepeatImageBatch", image=["ref_room", 0], amount=5)
         g["m_img"] = node("LoadImage", image=f"plate3d_{name}_mask_dil.png")
@@ -243,7 +244,7 @@ def variants(spec, sc, seed, W, H):
             if k in g and f'"{k}"' not in used:
                 del g[k]
         g["save"] = node("SaveImage", images=["sel", 0], filename_prefix=f"plate3d_ab/{name}/{v}{tag}_s{seed}")
-        g["photo0"] = node("LoadImage", image="plate3d_rgb.png")
+        g["photo0"] = node("LoadImage", image=f"{LOC[0]}_rgb.png")
         g["photo"] = node("ImageScale", image=["photo0", 0], upscale_method="lanczos", width=W, height=H,
                           crop="disabled")
         g["soft_img0"] = node("LoadImage", image=f"plate3d_{name}_mask_soft.png")
@@ -260,8 +261,8 @@ def variants(spec, sc, seed, W, H):
 def prep(maps, spec):
     """Flat copies in ComfyUI input/ (LoadImage), dilated + soft masks, check overlays."""
     inp = os.path.join(COMFY, "input")
-    shutil.copy(os.path.join(maps, "_plate", "plate_rgb.png"), os.path.join(inp, "plate3d_rgb.png"))
-    photo = Image.open(os.path.join(inp, "plate3d_rgb.png")).convert("RGB")
+    shutil.copy(os.path.join(maps, "_plate", "plate_rgb.png"), os.path.join(inp, f"{LOC[0]}_rgb.png"))
+    photo = Image.open(os.path.join(inp, f"{LOC[0]}_rgb.png")).convert("RGB")
     for sc in spec["scenes"]:
         d = os.path.join(maps, sc["name"])
         m = Image.open(os.path.join(d, "mask.png")).convert("L").point(lambda p: 255 if p > 127 else 0)
@@ -389,6 +390,7 @@ def main():
     spec = json.load(open(a.spec, encoding="utf-8"))
     W, H = map(int, a.size.split("x")) if a.size else spec["size"]
     SIZE[:] = [W, H]
+    LOC[0] = os.path.basename(os.path.normpath(a.maps))
     tag = "" if (W, H) == (1536, 864) else f"_{W}"
     seeds = [int(s) for s in a.seeds.split(",")]
     vs = a.variants.split(",")
