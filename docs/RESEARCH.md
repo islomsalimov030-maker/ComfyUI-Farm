@@ -14,6 +14,9 @@
 
 ## 2. Лицензии нод и моделей (проверено по файлу LICENSE в репо)
 
+- 04.11.2026 · 3D-A, PCK: код [DWPose](https://github.com/IDEA-Research/DWPose/blob/main/LICENSE), [controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/LICENSE.txt), [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX/blob/main/LICENSE) — Apache-2.0; [yzd-v/DWPose](https://huggingface.co/yzd-v/DWPose) маркирует `dw-ll_ucoco_384.onnx`/`yolox_l.onnx` Apache-2.0. **Оговорки:** условия обучающего UBody публично не подтверждены; внутри controlnet_aux/dwpose есть LICENSE CMU OpenPose (noncommercial research) и импорты старых body/hand/face. Не считать весь пакет безусловно коммерчески чистым; для измерения исследуется отдельный ONNX-путь без OpenPose. В продакшен не утверждено.
+- 04.11.2026 · 3D-A, измерение лица: `face_sim.py` выбирает самую высокую MTCNN-рамку, иногда это зеркало/растение: 3 из 4 выбранных A5e-лиц на P4/P8 ложные. Среднее A5e .074 не характеризует личность персонажа; нужна привязка лица к обнаруженному человеку и просмотр кропов. Факты/листы: `docs/experiments/3DA_STEP1_2026-11-05.md`.
+
 | Компонент | Лицензия | Вывод |
 |---|---|---|
 | RES4LYF (ClownShark, из `minimaxH3TextToImageMulti`) | AGPL-3.0 **+ запрет коммерческого сервиса без разрешения** | ⚠ для продакшена спросить автора или не использовать |

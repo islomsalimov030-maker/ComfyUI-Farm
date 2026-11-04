@@ -1,0 +1,25 @@
+# Step 2 (3DA_HANDOFF_2026-11-05): quality without turbo. Fun CN official: 40 steps, cfg 1.0.
+size: [1344, 768]
+steps: 40
+cfg: 1.0
+seeds: [101, 202]
+timeout_s: 900
+models:
+  base: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+  eros: 10Eros_Max_h3_hybrid_beta5_int8.safetensors
+locations:
+  - maps: /workspace/ComfyUI-next/input/plate3d
+    spec: scenes_mainroom1_r4.json
+    scenes: [P4_table_stand, P8_hand_face, P9_hip_one]
+  - maps: /workspace/ComfyUI-next/input/plate3d_m3
+    spec: scenes_mainroom3.json
+    scenes: [M3_bed_sit]
+recipes:
+  # Q1: base ref2va, depth (photo + body at its distance) 1.0 to 100 % / 75 %, pose 0.5 / 0.8 to 50 %
+  - {name: Q1_d100_p05, model: base, depth_end: 1.0, pose_strength: 0.5}
+  - {name: Q1_d100_p08, model: base, depth_end: 1.0, pose_strength: 0.8}
+  - {name: Q1_d75_p05, model: base, depth_end: 0.75, pose_strength: 0.5}
+  - {name: Q1_d75_p08, model: base, depth_end: 0.75, pose_strength: 0.8}
+  # Q2: the same on the AIO photo fine-tune (does the Fun CN patch load and hold)
+  - {name: Q2_d100_p05, model: eros, depth_end: 1.0, pose_strength: 0.5}
+  - {name: Q2_d75_p08, model: eros, depth_end: 0.75, pose_strength: 0.8}
