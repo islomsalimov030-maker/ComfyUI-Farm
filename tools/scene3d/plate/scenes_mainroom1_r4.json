@@ -2,6 +2,7 @@
  "photo": "Home_Stacey_Mainroom-1.png",
  "size": [1536, 864],
  "room": "a bathroom and living room with a long backlit mirror over a stone vanity, a white clawfoot bathtub, a glass shower, a slatted wooden screen, a pink sofa, a slatted wooden bench and a round wooden table by a tall window",
+ "light": {"azimuth_deg": 130, "elevation_deg": 35, "strength": 3.0, "color": [1.0, 0.78, 0.55], "ambient": 0.35, "ambient_color": [0.85, 0.8, 0.95], "softness_deg": 10, "note": "sunset window right-back of the frame, warm mirror backlight left"},
  "scenes": [
   {"name": "P2_bench_sit", "pose": "sit_upright", "seat": [0.76, 0.825], "yaw": "camera",
    "action": "sitting on the slatted wooden bench with her hands resting on her thighs",

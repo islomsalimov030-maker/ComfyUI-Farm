@@ -23,6 +23,13 @@ props: [{"file": path (.fbx .obj .glb .gltf .blend) or "builtin:phone", "size_m"
          "hand": "L"|"R" (at the palm) or "at": [u, v] (stands on the surface under that pixel),
          "rot_deg": [x, y, z], "offset_m": [x, y, z], "decimate": 0..1, "desc": text for the prompt}]
   Props get pass_index 1: they go into mask.png and depth_char.png with the mannequin.
+  builtin:phone, builtin:book, builtin:cup - simple boxes / cylinder of real size.
+playblast (05.11): Cycles (OptiX/CUDA if present, else CPU), 64 samples + denoise, transparent film; the photo mesh is a
+  shadow catcher, mannequin and props are light-grey clay. Light = spec "light" (scene overrides location):
+  {"azimuth_deg": 0 from the camera, +90 from the right of the frame, -90 left, 180 from behind the subject,
+   "elevation_deg", "strength", "color": [r, g, b], "ambient", "softness_deg"}, or {"key_dir": left|right|back|front|top,
+   "temp": warm|neutral|cool} (plate card), else the brightest area of the photo. Out: playblast_rgba.png and
+  playblast.png = photo + clay + its cast/contact shadows (alpha_composite) in the photo camera.
 """
 import argparse
 import json
@@ -49,7 +56,137 @@ def args():
     ap.add_argument("--mannequin", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--only", default="")
+    ap.add_argument("--samples", type=int, default=64, help="Cycles samples of the playblast pass")
+    ap.add_argument("--no-playblast", action="store_true")
     return ap.parse_args(argv)
+
+
+KEY_DIR = {"front": (0, 35), "right": (90, 30), "left": (-90, 30), "back": (180, 25), "top": (0, 75)}
+TEMP = {"warm": (1.0, 0.82, 0.62), "neutral": (1.0, 1.0, 1.0), "cool": (0.8, 0.88, 1.0)}
+
+
+def resolve_light(light, photo_path):
+    """spec light -> azimuth/elevation/strength/color/ambient/softness. See the module docstring."""
+    light = dict(light or {})
+    if "azimuth_deg" not in light and light.get("key_dir") in KEY_DIR:
+        light["azimuth_deg"], light["elevation_deg"] = KEY_DIR[light["key_dir"]]
+    if "color" not in light and light.get("temp") in TEMP:
+        light["color"] = TEMP[light["temp"]]
+    if "azimuth_deg" not in light:
+        # no data: the brightest column of the photo (a window) gives the side, low sun
+        from PIL import Image, ImageFilter
+        im = Image.open(photo_path).convert("L").resize((64, 36)).filter(ImageFilter.GaussianBlur(3))
+        px = list(im.getdata())
+        u = (px.index(max(px)) % 64 + 0.5) / 64
+        light["azimuth_deg"], light["elevation_deg"] = max(-90.0, min(90.0, (u - 0.5) * 180)), 30
+        print(f"[plate] light from the photo: brightest u {u:.2f} -> azimuth {light['azimuth_deg']:.0f}")
+    light.setdefault("elevation_deg", 30)
+    light.setdefault("strength", 3.0)
+    light.setdefault("color", TEMP["neutral"])
+    light.setdefault("ambient", 0.3)
+    light.setdefault("softness_deg", 8)
+    return light
+
+
+def use_gpu(sc):
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    for kind in ("OPTIX", "CUDA"):
+        try:
+            prefs.compute_device_type = kind
+            prefs.get_devices()
+        except Exception:  # noqa: BLE001 - no such backend in this build
+            continue
+        gpus = [d for d in prefs.devices if d.type == kind]
+        if gpus:
+            for d in prefs.devices:
+                d.use = d.type == kind
+            sc.cycles.device = "GPU"
+            return kind
+    sc.cycles.device = "CPU"
+    return "CPU"
+
+
+def render_playblast(a, sc, cam, plate, light, out, feet=None):
+    """Clay mannequin + props lit like the photo, photo mesh = shadow catcher, over the photo.
+    feet = (x, y, z) of the floor contact: a flat 0.8 m disc catcher there gives a clean contact shadow
+    (the MoGe relief under the feet is noisy and catches almost none)."""
+    photo = os.path.join(a.plate, "plate_rgb.png")
+    L = resolve_light(light, photo)
+    sc.render.engine = "CYCLES"
+    dev = use_gpu(sc)
+    sc.cycles.samples = a.samples
+    sc.cycles.use_denoising = True
+    sc.cycles.denoiser = "OPTIX" if dev == "OPTIX" else "OPENIMAGEDENOISE"
+    sc.render.film_transparent = True
+    plate.is_shadow_catcher = True
+    # the depth relief of the photo (back walls, shower) must not shade the sun itself: it only catches shadows
+    plate.visible_shadow = False
+    disc = None
+    if feet is not None:
+        bpy.ops.mesh.primitive_circle_add(radius=L.get("contact_radius_m", 0.8), vertices=48, fill_type="NGON",
+                                          location=(feet[0], feet[1], feet[2] + 0.003))
+        disc = bpy.context.active_object
+        disc.is_shadow_catcher = True
+        disc.visible_shadow = False
+    clay = bpy.data.materials.new("clay_light")
+    clay.use_nodes = True
+    bsdf = clay.node_tree.nodes["Principled BSDF"]
+    bsdf.inputs["Base Color"].default_value = (0.6, 0.6, 0.6, 1)
+    bsdf.inputs["Roughness"].default_value = 0.6
+    bpy.context.view_layer.material_override = clay
+    # sun: azimuth 0 = from the camera, +90 = from the right of the frame, 180 = from behind the subject
+    fwd = cam.matrix_world.to_3x3() @ Vector((0, 0, -1))
+    fwd = Vector((fwd.x, fwd.y, 0)).normalized()
+    right = Vector((fwd.y, -fwd.x, 0))
+    az, el = math.radians(L["azimuth_deg"]), math.radians(L["elevation_deg"])
+    to_light = (-fwd * math.cos(az) + right * math.sin(az)) * math.cos(el) + Vector((0, 0, math.sin(el)))
+    sd = bpy.data.lights.new("sun", "SUN")
+    sd.energy = L["strength"]
+    sd.color = L["color"][:3]
+    sd.angle = math.radians(L["softness_deg"])
+    sun = bpy.data.objects.new("sun", sd)
+    sc.collection.objects.link(sun)
+    sun.rotation_euler = to_light.to_track_quat("Z", "Y").to_euler()   # the lamp shines along its -Z
+    world = sc.world or bpy.data.worlds.new("w")
+    sc.world = world
+    world.use_nodes = True
+    bg = world.node_tree.nodes.get("Background") or world.node_tree.nodes.new("ShaderNodeBackground")
+    amb = L.get("ambient_color", L["color"])
+    bg.inputs["Color"].default_value = (amb[0], amb[1], amb[2], 1)
+    bg.inputs["Strength"].default_value = L["ambient"]
+    s = sc.render.image_settings
+    s.file_format, s.color_mode, s.color_depth = "PNG", "RGBA", "8"
+    sc.view_settings.view_transform = "Standard"
+    sc.render.filepath = f"{out}/playblast_rgba.png"
+    bpy.ops.render.render(write_still=True)
+    bpy.context.view_layer.material_override = None
+    plate.is_shadow_catcher = False
+    plate.visible_shadow = True
+    if disc is not None:
+        bpy.data.objects.remove(disc, do_unlink=True)
+    sc.render.film_transparent = False
+    import numpy as np
+    from PIL import Image, ImageFilter
+    base = Image.open(photo).convert("RGBA")
+    layer = Image.open(f"{out}/playblast_rgba.png").convert("RGBA").resize(base.size, Image.LANCZOS)
+    # shadow alpha outside the figure: drop the catcher noise (< 0.08), fade with the distance from the figure
+    # (a long low-sun shadow across the room reads as a stain), scale by shadow_opacity
+    char = Image.open(f"{out}/mask.png").convert("L").resize(base.size, Image.NEAREST)
+    m = np.asarray(char) > 127
+    ys = np.nonzero(m.any(axis=1))[0]
+    fig_h = int(ys[-1] - ys[0]) if len(ys) else base.height // 3
+    near = char.point(lambda p: 255 if p > 127 else 0).filter(ImageFilter.MaxFilter(9))
+    radius = float(max(4.0, fig_h * float(L.get("shadow_reach", 0.25))))
+    prox = np.asarray(near.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32) / 255.0
+    prox = np.clip(prox / max(prox.max(), 1e-6) * 4.0, 0, 1)
+    rgba = np.asarray(layer).astype(np.float32)
+    al = rgba[..., 3] / 255.0
+    sh = np.where(al < 0.08, 0, al) * prox * L.get("shadow_opacity", 0.8)
+    rgba[..., 3] = np.where(m, al, sh) * 255
+    layer = Image.fromarray(rgba.clip(0, 255).astype(np.uint8), "RGBA")
+    Image.alpha_composite(base, layer).convert("RGB").save(f"{out}/playblast.png")
+    print(f"[plate] playblast ({dev}, {a.samples} spp): sun az {L['azimuth_deg']:.0f} el {L['elevation_deg']:.0f} "
+          f"strength {L['strength']}, ambient {L['ambient']}")
 
 
 def setup_plate_camera(sc, info):
@@ -138,11 +275,13 @@ def import_prop(pr):
     """Import one prop, return the empty that carries it (origin = bbox centre, scaled to size_m)."""
     before = set(bpy.data.objects)
     f = pr["file"]
-    if f == "builtin:phone":
+    if f in ("builtin:phone", "builtin:book"):
         bpy.ops.mesh.primitive_cube_add(size=1)
         o = bpy.context.active_object
-        o.scale = (0.075, 0.008, 0.15)
+        o.scale = (0.075, 0.008, 0.15) if f == "builtin:phone" else (0.15, 0.025, 0.22)
         bpy.ops.object.transform_apply(scale=True)
+    elif f == "builtin:cup":
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.04, depth=0.095, vertices=24)
     else:
         ext = os.path.splitext(f)[1].lower()
         if ext == ".fbx":
@@ -208,7 +347,7 @@ def place_props(sc, info, cam, scene, rig, skip):
     return objs
 
 
-def run_scene(a, info, scene):
+def run_scene(a, info, scene, light=None):
     bpy.ops.wm.open_mainfile(filepath=a.mannequin)
     sc = bpy.context.scene
     out = os.path.join(a.out, scene["name"])
@@ -271,6 +410,8 @@ def run_scene(a, info, scene):
     sc.eevee.taa_render_samples = 1
     render_pass(sc, f"{out}/depth_char.png", engine="BLENDER_EEVEE", override=depth_material(1.0 / hi, 1.0 / lo),
                 bw16=True)
+    if not a.no_playblast:
+        render_playblast(a, sc, cam, plate, light, out, feet=(hit.x, hit.y, placed["feet_z"]))
 
     W, H = info["size"]
     size = (W, H)
@@ -311,7 +452,7 @@ def main():
     for scene in spec["scenes"]:
         if a.only and scene["name"] not in a.only.split(","):
             continue
-        run_scene(a, info, scene)
+        run_scene(a, info, scene, scene.get("light", spec.get("light")))
 
 
 if __name__ == "__main__":

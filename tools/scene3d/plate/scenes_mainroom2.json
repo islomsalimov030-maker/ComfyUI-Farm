@@ -2,6 +2,7 @@
  "photo": "Home_Stacey_Mainroom-2-1.png",
  "size": [1536, 864],
  "room": "a bright empty stretching room with lilac walls, a light wooden floor, a pink yoga mat on the floor, rolled exercise mats and a foam roller against the wall, a pink dumbbell, a tall leaning mirror and sheer curtains by a large window",
+ "light": {"azimuth_deg": -70, "elevation_deg": 20, "strength": 3.5, "color": [1.0, 0.85, 0.65], "ambient": 0.4, "ambient_color": [0.88, 0.82, 0.98], "softness_deg": 5, "note": "low sun through the window on the left, mirror shadow falls right"},
  "scenes": [
   {"name": "M2_mat_stand", "pose": "stand_one_hand_hip", "feet": [0.50, 0.83], "yaw": "camera",
    "action": "standing on the pink yoga mat with only her left hand on her hip, her right arm hanging straight down",
