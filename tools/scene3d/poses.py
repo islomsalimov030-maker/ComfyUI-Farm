@@ -69,6 +69,29 @@ POSES = {
         HANG("L"), ("@reach", "R", "upperarm01.R", (0.08, -0.25, -0.14)), ("head", "X", 12)]},
     "stand_look_away": {"contact": "floor", "steps": _arms_down(40, 6, 18) + [
         ("head", "Z", 25), ("upperleg01.L", "X", -5), ("lowerleg01.L", "X", 10)]},
+    # SFW table 05.11 (docs/tables/stacy_sfw_test.md): poses with props / harder turns
+    # right hand holds a mug at the chest (builtin:cup at the palm), left arm hanging, weight on the left leg
+    "stand_cup": {"contact": "floor", "steps": [
+        # offset x is mirrored for R: negative = towards the midline (mug in front of the chest, not out to the side)
+        HANG("L"), ("@reach", "R", "upperarm01.R", (-0.10, -0.20, -0.20)),
+        ("upperleg01.R", "X", -4), ("lowerleg01.R", "X", 8), ("head", "X", 6)]},
+    # crouch with both hands at the right shoe (tying the lace), head down
+    "crouch_shoelace": {"contact": "floor", "steps": [
+        ("upperleg01.L", "X", -100), ("upperleg01.R", "X", -100),
+        ("upperleg01.L", "Z", -12), ("upperleg01.R", "Z", 12),
+        ("lowerleg01.L", "X", 128), ("lowerleg01.R", "X", 128),
+        ("foot.L", "X", -28), ("foot.R", "X", -28),
+        ("spine05", "X", 38), ("head", "X", 18),
+        ("@reach", "R", "foot.R", (0.03, -0.10, 0.04)), ("@reach", "L", "foot.R", (-0.06, -0.10, 0.05))]},
+    # on her back, both hands hold a book above the chest (builtin:book at the right palm), face visible
+    "lie_read": {"contact": "lie", "steps": [
+        ("@reach", "R", "upperarm01.R", (0.12, -0.32, -0.08)), ("@reach", "L", "upperarm01.L", (0.12, -0.32, -0.08)),
+        ("upperleg01.L", "X", -25), ("upperleg01.R", "X", -10),
+        ("lowerleg01.L", "X", 45), ("lowerleg01.R", "X", 15), ("head", "X", 25)]},
+    # back to the camera, head and shoulders turned over the left shoulder towards the camera
+    "stand_back_look": {"contact": "floor", "yaw_add": 180, "steps": [
+        HANG("L"), HANG("R"), ("upperleg01.R", "X", -4), ("lowerleg01.R", "X", 8),
+        ("spine03", "Z", 12), ("spine05", "Z", 15), ("neck01", "Z", 20), ("head", "Z", 35)]},
 }
 
 
