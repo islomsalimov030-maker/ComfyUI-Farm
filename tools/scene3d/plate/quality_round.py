@@ -69,12 +69,15 @@ def make_graph(spec, scene, seed, recipe, config):
         ab.chain(g, [('ap_inpaint', dict(control_video=['ctl_pose', 0], source_video=['source_batch', 0],
                                          mask=['inpaint_mask', 0], strength=1.0, end_percent=1.0))])
     if recipe.get('clay_video'):
-        g['clay'] = ab.node('LoadImage', image=f"{ab.LOC[0]}/{scene['name']}/clay_plate.png")
+        # playblast: Cycles clay + cast/contact shadows over the photo (render_plate_scene.py, maps <LOC>_s)
+        src = (f"{ab.LOC[0]}_s/{scene['name']}/playblast.png" if recipe.get('playblast')
+               else f"{ab.LOC[0]}/{scene['name']}/clay_plate.png")
+        g['clay'] = ab.node('LoadImage', image=src)
         g['clay_scale'] = ab.node('ImageScale', image=['clay', 0], upscale_method='lanczos',
                                   width=w, height=h, crop='disabled')
         g['clay_batch'] = ab.node('RepeatImageBatch', image=['clay_scale', 0], amount=5)
         g['r2v']['inputs']['ref_videos.ref_video_0'] = ['clay_batch', 0]
-        g['r2v']['inputs']['prompt'] = clay_prompt(spec, scene)
+        g['r2v']['inputs']['prompt'] = clay_prompt(spec, scene, shadow=bool(recipe.get('playblast')))
         g['ks']['inputs']['steps'] = recipe['steps']
         control = recipe.get('control')
         applies = []
@@ -86,8 +89,24 @@ def make_graph(spec, scene, seed, recipe, config):
             del g[name]
         ab.chain(g, applies)
     g['save']['inputs']['filename_prefix'] = f"plate3d_quality/{scene['name']}/{recipe['name']}_s{seed}"
+    # Harmonisation: the chosen frame back through the same ref2va conditioning at low denoise (img2img),
+    # no ControlNet, so light and colour of the figure merge with the room while the pose stays.
+    for d in recipe.get('harmonize', []):
+        t = f"h{round(d * 100)}"
+        g[f'{t}_lat'] = ab.node('H3LatentFromImage', h3_latent=['r2v', 1], vae=['vae', 0], image=['sel', 0],
+                                model=['shift', 0], steps=10, scheduler='simple', denoise=d)
+        g[f'{t}_noise'] = ab.node('RandomNoise', noise_seed=seed)
+        g[f'{t}_guider'] = ab.node('BasicGuider', model=['shift', 0], conditioning=['refmod', 0])
+        g[f'{t}_sampler'] = ab.node('KSamplerSelect', sampler_name='euler')
+        g[f'{t}_smp'] = ab.node('SamplerCustomAdvanced', noise=[f'{t}_noise', 0], guider=[f'{t}_guider', 0],
+                                sampler=[f'{t}_sampler', 0], sigmas=[f'{t}_lat', 1], latent_image=[f'{t}_lat', 0])
+        g[f'{t}_dec'] = ab.node('H3ImageDecode', samples=[f'{t}_smp', 0], vae=['vae', 0])
+        g[f'{t}_sel'] = ab.node('H3ImageFrameSelector', frames=[f'{t}_dec', 0], recommended_index=[f'{t}_dec', 3],
+                                **{k: v for k, v in g['sel']['inputs'].items() if k not in ('frames', 'recommended_index')})
+        g[f'{t}_save'] = ab.node('SaveImage', images=[f'{t}_sel', 0],
+                                 filename_prefix=f"plate3d_quality/{scene['name']}/{recipe['name']}_{t}_s{seed}")
     # Remove unused control loaders and patches, so R1 truly has no ControlNet load.
-    pending = ['save']
+    pending = [k for k, n in g.items() if n['class_type'] == 'SaveImage']
     required = set()
     while pending:
         name = pending.pop()
@@ -103,7 +122,11 @@ def make_graph(spec, scene, seed, recipe, config):
     return g
 
 
-def clay_prompt(spec, scene):
+def clay_prompt(spec, scene, shadow=False):
+    outfit = ('She wears an opaque grey athletic T-shirt and opaque full-length navy trousers.' if not shadow else
+              'She wears an opaque grey athletic T-shirt, opaque full-length navy trousers and white sneakers. '
+              'She is lit by the same light as the room in <Picture 1> and casts a soft natural shadow '
+              'on the floor and furniture beneath her.')
     return '\n'.join([
         'subject_definitions:',
         '<Subject 1> is the adult woman whose identity is shown in <Picture 2>; replace the clay figure in <Video 1> with her.',
@@ -119,7 +142,7 @@ def clay_prompt(spec, scene):
         '<Picture 2>: attribute_transfer - transfer facial identity to <Subject 1>.',
         'detailed_description:',
         f'A photorealistic live-action still. [Shot 1] {ab.STATIC} The room is {spec["room"]}. '
-        f'<Subject 1> is {scene["action"]}. She wears an opaque grey athletic T-shirt and opaque full-length navy trousers. '
+        f'<Subject 1> is {scene["action"]}. {outfit} '
         f'Preserve the exact pose and placement from <Video 1>. Scale anchor: {scene["anchor"]}. '
         'No clay materials, no mannequin, no skeleton overlay. One continuous shot with no cuts and no close-up inserts; '
         '<Picture 2> is only a reference for her face and never appears on screen.',
