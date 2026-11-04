@@ -1,0 +1,19 @@
+{
+ "photo": "Home_Stacey_Mainroom-3-1 (2).png",
+ "size": [1536, 864],
+ "room": "a bedroom with lilac walls lit by low warm sunlight with window shadows, a low wide bed with beige and pink pillows, two wooden nightstands with glowing rattan lamps and a light woven floor",
+ "scenes": [
+  {"name": "M3_bed_sit", "pose": "sit_upright", "seat": [0.40, 0.79], "yaw": "camera",
+   "action": "sitting on the edge of the low bed with her hands resting on her thighs",
+   "anchor": "the low bed reaches just below her knees"},
+  {"name": "M3_bed_lie", "pose": "lie_back", "seat": [0.56, 0.75], "head": [0.42, 0.74],
+   "action": "lying on her back across the bed, her head towards the left nightstand, her knees slightly bent",
+   "anchor": "the bed is wider than she is tall"},
+  {"name": "M3_back_stand", "pose": "stand_back", "feet": [0.75, 0.93], "yaw": "camera",
+   "action": "standing with her back to the camera at the foot of the bed, facing the bed",
+   "anchor": "the right nightstand reaches her upper thigh"},
+  {"name": "M3_lamp_face", "pose": "stand_hand_face", "feet": [0.14, 0.86], "yaw": "camera",
+   "action": "standing next to the left nightstand, her right hand touching her right cheek, her left arm relaxed at her side",
+   "anchor": "the nightstand reaches her upper thigh"}
+ ]
+}

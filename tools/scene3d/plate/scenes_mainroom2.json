@@ -1,0 +1,19 @@
+{
+ "photo": "Home_Stacey_Mainroom-2-1.png",
+ "size": [1536, 864],
+ "room": "a bright empty stretching room with lilac walls, a light wooden floor, a pink yoga mat on the floor, rolled exercise mats and a foam roller against the wall, a pink dumbbell, a tall leaning mirror and sheer curtains by a large window",
+ "scenes": [
+  {"name": "M2_mat_stand", "pose": "stand_one_hand_hip", "feet": [0.50, 0.83], "yaw": "camera",
+   "action": "standing on the pink yoga mat with only her left hand on her hip, her right arm hanging straight down",
+   "anchor": "the rolled mats against the wall reach her waist"},
+  {"name": "M2_mat_crouch", "pose": "crouch", "feet": [0.58, 0.83], "yaw": "camera",
+   "action": "crouching low on the pink yoga mat, her forearms resting on her knees",
+   "anchor": "crouched, her head is about as high as the top of the rolled mats behind her"},
+  {"name": "M2_mat_lie", "pose": "lie_back", "seat": [0.52, 0.825], "head": [0.36, 0.82],
+   "action": "lying on her back on the pink yoga mat with her knees slightly bent, her head towards the mirror",
+   "anchor": "the yoga mat is about as long as she is"},
+  {"name": "M2_mirror_face", "pose": "stand_hand_face", "feet": [0.35, 0.90], "yaw": "camera",
+   "action": "standing in front of the tall leaning mirror, her right hand touching her right cheek, her left arm relaxed at her side",
+   "anchor": "the top of the leaning mirror is above her head"}
+ ]
+}

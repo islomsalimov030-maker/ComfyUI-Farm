@@ -16,6 +16,9 @@ B (inpaint): Fun ControlNet in inpaint mode - source_video = the photo, mask = t
   goes but the room drifts - hence the composite.)
 A results are composited onto the photo the same way (A*c): the camera is the photo camera, so the body should land
 inside the mask; outside it the room stays pixel-exact.
+Round 4 (05.11): A7 = A5 with the REAL depth of the body (Blender Z pass depth_char.png, same inv_norm) instead of
+  the flat silhouette; A8 = A7 with the body relief x3 around the placement depth; A5h = A5 with pose 0.7 to 50 %.
+  --size 2304x1296 runs the same graphs at ~3 MP (file suffix _<width>); props: scene "props"[].desc go into the prompt.
 Outputs: ComfyUI output/plate3d_ab/<scene>/<variant>_s<seed>_*.png, sheets in /workspace/farm/scene3d/sheets/ab_<scene>.jpg,
 run log /workspace/farm/scene3d/ab_runs.json (variant, seed, prompt_id, seconds, status).
 """
@@ -84,8 +87,11 @@ def base_graph(seed, W, H, prompt, refs):
     return g
 
 
+SIZE = [1536, 864]   # set from --size / spec in main()
+
+
 def folder(scene, m):
-    return node("LoadImagesFromFolderKJ", folder=f"input/plate3d/{scene}/control/{m}", width=1536, height=864,
+    return node("LoadImagesFromFolderKJ", folder=f"input/plate3d/{scene}/control/{m}", width=SIZE[0], height=SIZE[1],
                 keep_aspect_ratio="stretch", image_load_cap=5, start_index=0, include_subfolders=False)
 
 
@@ -120,6 +126,11 @@ def prompt_a(spec, sc):
         "overall_soundscape:", "N/A", "non_diegetic_music:", "N/A"])
 
 
+def prop_text(sc):
+    d = [p["desc"] for p in sc.get("props", []) if p.get("desc")]
+    return (" Also in the frame: " + "; ".join(d) + ".") if d else ""
+
+
 def prompt_a2(spec, sc):
     """Round 3: <Picture 1> is the EMPTY room - the round-2 prompt ('the frame is exactly <Picture 1>') let H3 drop
     the person in 4 of 17 frames."""
@@ -138,7 +149,7 @@ def prompt_a2(spec, sc):
         "<Subject 1> (appears in the frame): fully_preserved - her face, hair, body proportions and outfit are retained.",
         "detailed_description:",
         f"A photorealistic live-action still, {STATIC} The room is {spec['room']}, exactly as in <Picture 1>. "
-        f"<Subject 1> is clearly visible in the frame, {sc['action']}. {TAIL} True-to-life scale: she is an adult "
+        f"<Subject 1> is clearly visible in the frame, {sc['action']}.{prop_text(sc)} {TAIL} True-to-life scale: she is an adult "
         f"woman of normal height and she is never enlarged to fill the frame. Scale anchor: {sc['anchor']}. "
         "One continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and "
         "never appears on screen.",
@@ -195,12 +206,21 @@ def variants(spec, sc, seed, W, H):
                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
         "A6": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=1.0)),
                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.7))],
+        # round 4: real body depth (3/4 turn, back, hands), relief x3, stronger early pose
+        "A7": [("ap_depth", dict(control_video=["ctl_dbody", 0], strength=1.0, end_percent=1.0)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+        "A8": [("ap_depth", dict(control_video=["ctl_dbody3", 0], strength=1.0, end_percent=1.0)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+        "A5h": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=1.0)),
+                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.5))],
     }.items():
-        pr = prompt_a2(spec, sc) if v in ("A3n", "A5", "A6") else prompt_a(spec, sc)
+        pr = prompt_a2(spec, sc) if v in ("A3n", "A5", "A6", "A7", "A8", "A5h") else prompt_a(spec, sc)
         g = base_graph(seed, W, H, pr, ["ref_room", "ref_char"])
         g["ctl_pose"] = folder(name, "pose")
         g["ctl_depth"] = folder(name, "depth")
         g["ctl_dperson"] = folder(name, "depth_person")
+        g["ctl_dbody"] = folder(name, "depth_body")
+        g["ctl_dbody3"] = folder(name, "depth_body3")
         chain(g, applies)
         out[v] = g
     for v, (st, room) in {"B1": (0.7, False), "B2": (0.5, False), "B3": (0.7, True)}.items():
@@ -215,14 +235,25 @@ def variants(spec, sc, seed, W, H):
         chain(g, [("ap_inp", dict(control_video=["ctl_pose", 0], mask=["m_mask", 0], source_video=["src_rep", 0],
                                   strength=st, end_percent={0.7: 0.7, 0.5: 0.4}[st]))])
         out[v] = g
+    tag = "" if (W, H) == (1536, 864) else f"_{W}"
     for v, g in out.items():
-        g["save"] = node("SaveImage", images=["sel", 0], filename_prefix=f"plate3d_ab/{name}/{v}_s{seed}")
-        g["photo"] = node("LoadImage", image="plate3d_rgb.png")
-        g["soft_img"] = node("LoadImage", image=f"plate3d_{name}_mask_soft.png")
+        # unused control folders would still be loaded (and fail if missing): keep only those the chain uses
+        used = json.dumps({k: n for k, n in g.items() if k.startswith("ap_")})
+        for k in ("ctl_pose", "ctl_depth", "ctl_dperson", "ctl_dbody", "ctl_dbody3"):
+            if k in g and f'"{k}"' not in used:
+                del g[k]
+        g["save"] = node("SaveImage", images=["sel", 0], filename_prefix=f"plate3d_ab/{name}/{v}{tag}_s{seed}")
+        g["photo0"] = node("LoadImage", image="plate3d_rgb.png")
+        g["photo"] = node("ImageScale", image=["photo0", 0], upscale_method="lanczos", width=W, height=H,
+                          crop="disabled")
+        g["soft_img0"] = node("LoadImage", image=f"plate3d_{name}_mask_soft.png")
+        g["soft_img"] = node("ImageScale", image=["soft_img0", 0], upscale_method="bilinear", width=W, height=H,
+                             crop="disabled")
         g["soft"] = node("ImageToMask", image=["soft_img", 0], channel="red")
         g["comp"] = node("ImageCompositeMasked", destination=["photo", 0], source=["sel", 0], x=0, y=0,
                          resize_source=False, mask=["soft", 0])
-        g["save_comp"] = node("SaveImage", images=["comp", 0], filename_prefix=f"plate3d_ab/{name}/{v}c_s{seed}")
+        g["save_comp"] = node("SaveImage", images=["comp", 0],
+                              filename_prefix=f"plate3d_ab/{name}/{v}{tag}c_s{seed}")
     return out
 
 
@@ -267,6 +298,28 @@ def person_depth(maps, d, m):
     for i in range(1, 6):
         dep.convert("RGB").save(os.path.join(out, f"depth_{i:05d}.png"))
     print(f"[ab] {os.path.basename(d)}: person at {z:.2f} m -> depth value {val}", flush=True)
+    # round 4: the real body depth from Blender (depth_char.png, 16 bit, same inv_norm), and its relief x3
+    dc_path = os.path.join(d, "depth_char.png")
+    if not os.path.exists(dc_path):
+        return
+    import numpy as np
+    a16 = np.asarray(Image.open(dc_path)).astype(np.float32)
+    if a16.ndim == 3:
+        a16 = a16[..., 0]
+    dc8 = Image.fromarray(np.clip(a16 / (257.0 if a16.max() > 255 else 1.0), 0, 255).round().astype(np.uint8))
+    base = Image.open(os.path.join(d, "depth_loc8.png")).convert("L")
+    for sub, k in (("depth_body", 1.0), ("depth_body3", 3.0)):
+        body = dc8.point(lambda p, k=k: max(0, min(255, round(val + k * (p - val)))))
+        dep = base.copy()
+        dep.paste(body, mask=m)
+        o = os.path.join(d, "control", sub)
+        os.makedirs(o, exist_ok=True)
+        for i in range(1, 6):
+            dep.convert("RGB").save(os.path.join(o, f"depth_{i:05d}.png"))
+    inside = [p for p, mm in zip(dc8.getdata(), m.getdata()) if mm]
+    if inside:
+        print(f"[ab] {os.path.basename(d)}: body depth inside the mask {min(inside)}-{max(inside)} "
+              f"(flat value {val})", flush=True)
 
 
 def post(g):
@@ -278,13 +331,24 @@ def post(g):
     return json.load(r)["prompt_id"]
 
 
-def wait(pid, timeout=300):
+def wait(pid, timeout=600):
+    """Round 3 bug: a job could finish without showing up in /history - stop waiting once it has left the queue
+    and is still missing from history 15 s later ('lost'; its files are usually saved anyway)."""
     t0 = time.time()
+    gone = None
     while time.time() - t0 < timeout:
         h = json.load(u.urlopen(f"{URL}/history/{pid}"))
         if pid in h:
             st = h[pid].get("status", {})
             return st.get("status_str", "?"), round(time.time() - t0)
+        q = json.load(u.urlopen(f"{URL}/queue"))
+        queued = any(it[1] == pid for it in q.get("queue_running", []) + q.get("queue_pending", []))
+        if queued:
+            gone = None
+        elif gone is None:
+            gone = time.time()
+        elif time.time() - gone > 15:
+            return "lost", round(time.time() - t0)
         time.sleep(3)
     return "timeout", timeout
 
@@ -319,9 +383,13 @@ def main():
     ap.add_argument("--only", default="")
     ap.add_argument("--variants", default="A1,A2,A3,B1,B2,B3")
     ap.add_argument("--sheet-tag", default="ab", help="sheet file prefix")
+    ap.add_argument("--size", default="", help="WxH override, e.g. 2304x1296 (~3 MP)")
+    ap.add_argument("--face", action="store_true", help="run face_sim.py on the outputs at the end")
     a = ap.parse_args()
     spec = json.load(open(a.spec, encoding="utf-8"))
-    W, H = spec["size"]
+    W, H = map(int, a.size.split("x")) if a.size else spec["size"]
+    SIZE[:] = [W, H]
+    tag = "" if (W, H) == (1536, 864) else f"_{W}"
     seeds = [int(s) for s in a.seeds.split(",")]
     vs = a.variants.split(",")
     scenes = [s for s in spec["scenes"] if not a.only or s["name"] in a.only.split(",")]
@@ -332,7 +400,7 @@ def main():
         for s in seeds:
             for v, g in variants(spec, sc, s, W, H).items():
                 if v in vs:
-                    jobs.append((sc["name"], v, s, post(g)))
+                    jobs.append((sc["name"], v + tag, s, post(g)))
     print(f"[ab] queued {len(jobs)}")
     log = []
     for scene, v, s, pid in jobs:
@@ -341,7 +409,13 @@ def main():
         print(f"[ab] {scene} {v} s{s}: {st} ({sec} s)", flush=True)
     json.dump(log, open(f"/workspace/farm/scene3d/{a.sheet_tag}_runs.json", "w"), indent=1)
     for sc in scenes:
-        print("[ab] sheet", sheet(sc["name"], seeds, vs, a.sheet_tag))
+        print("[ab] sheet", sheet(sc["name"], seeds, [v + tag for v in vs], a.sheet_tag))
+    if a.face:
+        import subprocess
+        here = os.path.dirname(os.path.abspath(__file__))
+        env = dict(os.environ, PYTHONPATH="/workspace/venvs/face_pkgs")
+        subprocess.run([os.sys.executable, os.path.join(here, "face_sim.py"), "--glob", "*/*", "--runs",
+                        f"/workspace/farm/scene3d/{a.sheet_tag}_runs.json", "--tag", a.sheet_tag], env=env)
 
 
 if __name__ == "__main__":
