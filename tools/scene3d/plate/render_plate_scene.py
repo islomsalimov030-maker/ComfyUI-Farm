@@ -37,8 +37,8 @@ from mathutils import Matrix, Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 from poses import POSES, apply_pose, place  # noqa: E402
-from render_h3_maps import (BODY25_NAMES, char_mask_material, char_objects,  # noqa: E402
-                            depth_material, keypoints_body25, render_pass, to_px, visibility)
+from render_h3_maps import (BODY25_NAMES, char_objects,  # noqa: E402
+                            depth_material, mask_material, keypoints_body25, render_pass, to_px, visibility)
 
 
 def args():
@@ -262,7 +262,9 @@ def run_scene(a, info, scene):
     render_pass(sc, f"{out}/clay.png", engine="BLENDER_WORKBENCH")
     # mask: mannequin white, the plate mesh occludes it
     sc.eevee.taa_render_samples = 8
-    render_pass(sc, f"{out}/mask.png", engine="BLENDER_EEVEE", override=char_mask_material())
+    # mask_material(): object index > 0.5 -> white; the photo mesh AND its holes stay black
+    # (char_mask_material() inverted that and made the mesh holes white, found 04.11 round 4)
+    render_pass(sc, f"{out}/mask.png", engine="BLENDER_EEVEE", override=mask_material())
     shutil.copy(os.path.join(a.plate, "depth_loc.png"), f"{out}/depth_loc.png")
     # real depth of the body: the same inverse-depth normalisation as the photo depth (map 1/z lo..hi -> 0..1)
     lo, hi = info["inv_norm"]["lo"], info["inv_norm"]["hi"]

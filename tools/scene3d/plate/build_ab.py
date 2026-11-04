@@ -270,6 +270,9 @@ def prep(maps, spec):
         # object index): the character is the minority of the frame, so make it the white part whatever the render gave
         if sum(m.histogram()[128:]) > m.width * m.height / 2:
             m = m.point(lambda p: 255 - p)
+        # ... and the inverted mask also turns the HOLES of the photo mesh (cut at depth jumps, ~13k px along
+        # furniture edges) into "character": keep only the box around the visible keypoints (+ margin)
+        m = keypoint_box(m, os.path.join(d, "pose25.json"))
         dil = m.filter(ImageFilter.MaxFilter(25))           # ~12 px around the body
         dil.convert("RGB").save(os.path.join(inp, f"plate3d_{sc['name']}_mask_dil.png"))
         soft = dil.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
@@ -280,6 +283,21 @@ def prep(maps, spec):
         pose = Image.open(os.path.join(d, "pose25.png")).convert("RGB")
         over = Image.composite(pose, over, pose.convert("L").point(lambda p: 255 if p > 20 else 0))
         over.save(os.path.join(SHEETS, f"check_{sc['name']}.jpg"), quality=88)
+
+
+def keypoint_box(m, pose_json, margin=0.25):
+    pose = json.load(open(pose_json))
+    pts = [(x, y) for x, y, v in pose["keypoints_body25"] if v]
+    if not pts:
+        return m
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    w, h = max(xs) - min(xs), max(ys) - min(ys)
+    pad = margin * max(w, h, 60)
+    box = (max(0, int(min(xs) - pad)), max(0, int(min(ys) - pad)),
+           min(m.width, int(max(xs) + pad)), min(m.height, int(max(ys) + pad)))
+    out = Image.new("L", m.size, 0)
+    out.paste(m.crop(box), box[:2])
+    return out
 
 
 def person_depth(maps, d, m):
