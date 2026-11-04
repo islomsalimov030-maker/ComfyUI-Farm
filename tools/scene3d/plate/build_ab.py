@@ -158,6 +158,11 @@ def variants(spec, sc, seed, W, H):
                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.8, end_percent=0.8))],
         "A3": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=1.0, end_percent=1.0)),
                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+        # round 2 (04.11): A3 won round 1 - photo depth on all steps keeps the room; push the pose harder
+        "A3b": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=1.0, end_percent=1.0)),
+                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.7))],
+        "A4": [("ap_depth", dict(control_video=["ctl_depth", 0], strength=0.8, end_percent=1.0)),
+               ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.7))],
     }.items():
         g = base_graph(seed, W, H, prompt_a(spec, sc), ["ref_room", "ref_char"])
         g["ctl_pose"] = folder(name, "pose")
@@ -230,7 +235,7 @@ def wait(pid, timeout=900):
     return "timeout", timeout
 
 
-def sheet(scene, seeds, variants_):
+def sheet(scene, seeds, variants_, tag="ab"):
     outdir = os.path.join(COMFY, "output", "plate3d_ab", scene)
     tiles = [(f"check {scene}", os.path.join(SHEETS, f"check_{scene}.jpg"))]
     for s in seeds:
@@ -247,7 +252,7 @@ def sheet(scene, seeds, variants_):
         dr.text((x + 4, y + 4), lab, fill="black")
         if p and os.path.exists(p):
             sh.paste(Image.open(p).convert("RGB").resize((tw, th)), (x, y + 20))
-    path = os.path.join(SHEETS, f"ab_{scene}.jpg")
+    path = os.path.join(SHEETS, f"{tag}_{scene}.jpg")
     sh.save(path, quality=85)
     return path
 
@@ -259,6 +264,7 @@ def main():
     ap.add_argument("--seeds", default="101")
     ap.add_argument("--only", default="")
     ap.add_argument("--variants", default="A1,A2,A3,B1,B2,B3")
+    ap.add_argument("--sheet-tag", default="ab", help="sheet file prefix")
     a = ap.parse_args()
     spec = json.load(open(a.spec, encoding="utf-8"))
     W, H = spec["size"]
@@ -279,9 +285,9 @@ def main():
         st, sec = wait(pid)
         log.append({"scene": scene, "variant": v, "seed": s, "prompt_id": pid, "status": st, "wait_s": sec})
         print(f"[ab] {scene} {v} s{s}: {st} ({sec} s)")
-    json.dump(log, open("/workspace/farm/scene3d/ab_runs.json", "w"), indent=1)
+    json.dump(log, open(f"/workspace/farm/scene3d/{a.sheet_tag}_runs.json", "w"), indent=1)
     for sc in scenes:
-        print("[ab] sheet", sheet(sc["name"], seeds, vs))
+        print("[ab] sheet", sheet(sc["name"], seeds, vs, a.sheet_tag))
 
 
 if __name__ == "__main__":
