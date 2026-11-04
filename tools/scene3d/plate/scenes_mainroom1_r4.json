@@ -21,8 +21,8 @@
   {"name": "P9_hip_one", "pose": "stand_one_hand_hip", "feet": [0.62, 0.94], "yaw": "camera",
    "action": "standing next to the clawfoot bathtub with only her left hand on her hip, her right arm hanging straight down at her side",
    "anchor": "the rim of the bathtub reaches her upper thigh"},
-  {"name": "P10_phone", "pose": "stand_relaxed", "feet": [0.66, 0.95], "yaw": "camera",
-   "action": "standing next to the clawfoot bathtub, holding a smartphone in her lowered right hand",
+  {"name": "P10_phone", "pose": "stand_phone", "feet": [0.66, 0.95], "yaw": "camera",
+   "action": "standing next to the clawfoot bathtub, looking at a smartphone she holds in her right hand in front of her chest, her left arm hanging relaxed",
    "anchor": "the rim of the bathtub reaches her upper thigh",
    "props": [{"file": "builtin:phone", "hand": "R", "size_m": 0.15, "rot_deg": [0, 0, 0], "offset_m": [0, -0.02, -0.03],
               "desc": "a black smartphone held in her right hand"}]}

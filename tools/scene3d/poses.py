@@ -22,6 +22,11 @@ def _arms_down(deg=40, fwd=0, elbow=12):
             ("lowerarm01.L", "X", -elbow), ("lowerarm01.R", "X", -elbow)]
 
 
+def HANG(side):
+    """Arm hanging beside the thigh with a small gap (knuckles 11 cm out from the hip joint, 17 cm below)."""
+    return ("@reach", side, f"upperleg01.{side}", (0.11, 0.0, -0.17))
+
+
 def _sit(thigh=88, knee=88, spread=6):
     return [("upperleg01.L", "X", -thigh), ("upperleg01.R", "X", -thigh),
             ("upperleg01.L", "Z", -spread), ("upperleg01.R", "Z", spread),
@@ -37,26 +42,31 @@ POSES = {
     # hands on the thighs: grid search (wrist -> mid-thigh), the rest forearm already points forward
     "sit_upright": {"contact": "seat", "steps": _sit() + _arms_down(45, 10, 10)},
     "sit_lean_back": {"contact": "seat", "steps": _sit(80, 75, 8) + [("spine05", "X", 10)] + _arms_down(45, 5, 20)},
-    # round 4 (05.11): hard poses
-    "stand_back": {"contact": "floor", "yaw_add": 180, "steps": _arms_down(40, 4, 14) + [
-        ("upperleg01.R", "X", -4), ("lowerleg01.R", "X", 8), ("head", "Z", 20)]},
+    # round 4: hard poses. Arms by @reach (targets in armature space, offset x mirrored for R).
+    # NB the up-vector of spine/head tilts FORWARD with X +deg (probe 04.11), the old sheet line above is for limbs.
+    "stand_back": {"contact": "floor", "yaw_add": 180, "steps": [
+        HANG("L"), HANG("R"), ("upperleg01.R", "X", -4), ("lowerleg01.R", "X", 8), ("head", "Z", 20)]},
     "crouch": {"contact": "floor", "steps": [
         ("upperleg01.L", "X", -100), ("upperleg01.R", "X", -100),
         ("upperleg01.L", "Z", -12), ("upperleg01.R", "Z", 12),
         ("lowerleg01.L", "X", 128), ("lowerleg01.R", "X", 128),
         ("foot.L", "X", -28), ("foot.R", "X", -28),
-        ("spine05", "X", -22), ("head", "X", 14)] + _arms_down(45, 45, 35)},
-    "lie_back": {"contact": "lie", "steps": _arms_down(50, 0, 10) + [
+        ("spine05", "X", 32), ("head", "X", -22),
+        ("@reach", "L", "lowerleg01.L", (0.02, -0.10, -0.04)), ("@reach", "R", "lowerleg01.R", (0.02, -0.10, -0.04))]},
+    "lie_back": {"contact": "lie", "steps": [
+        HANG("L"), HANG("R"),
         ("upperleg01.L", "X", -25), ("upperleg01.R", "X", -10),
-        ("lowerleg01.L", "X", 45), ("lowerleg01.R", "X", 15), ("head", "X", -18)]},
+        ("lowerleg01.L", "X", 45), ("lowerleg01.R", "X", 15), ("head", "X", 18)]},
     # right hand to the right cheek, left arm hanging clear of the body (so the silhouette shows one hand)
-    "stand_hand_face": {"contact": "floor", "steps": _arms_down(40, 4, 10) + [
-        ("upperarm01.L", "Y", -10),
-        ("@reach", "R", "head", (0.07, -0.07, 0.06)), ("head", "Z", -6), ("head", "X", 4)]},
-    # left hand on the hip as in stand_hand_on_hip, right arm hangs with a visible gap (round 3: both hands came out)
-    "stand_one_hand_hip": {"contact": "floor", "steps": _arms_down(40, 4, 4) + [
-        ("upperarm01.L", "Y", -18), ("lowerarm01.L", "Z", -75), ("lowerarm01.L", "X", 20),
-        ("upperarm01.R", "Y", 12), ("upperleg01.L", "Z", -4), ("head", "Z", 8)]},
+    "stand_hand_face": {"contact": "floor", "steps": [
+        HANG("L"), ("@reach", "R", "head", (0.075, -0.08, -0.03)), ("head", "Z", -6)]},
+    # left hand on the hip, right arm hangs with a visible gap (round 3: both hands came out)
+    "stand_one_hand_hip": {"contact": "floor", "steps": [
+        ("@reach", "L", "upperleg01.L", (0.07, -0.06, 0.13)), HANG("R"),
+        ("upperleg01.L", "Z", -4), ("head", "Z", 8)]},
+    # right hand in front of the chest (a phone), left arm hanging
+    "stand_phone": {"contact": "floor", "steps": [
+        HANG("L"), ("@reach", "R", "upperarm01.R", (0.10, -0.28, -0.22)), ("head", "X", 12)]},
     "stand_look_away": {"contact": "floor", "steps": _arms_down(40, 6, 18) + [
         ("head", "Z", 25), ("upperleg01.L", "X", -5), ("lowerleg01.L", "X", 10)]},
 }
@@ -75,8 +85,10 @@ def rotate(rig, bone, axis, deg):
 
 
 # reach: (bone, axis, min, max) relative to the start, degrees
-REACH_DOF = [("upperarm01", "X", -120, 40), ("upperarm01", "Y", -80, 80), ("upperarm01", "Z", -80, 80),
-             ("lowerarm01", "X", -160, 0)]
+REACH_DOF = [("upperarm01", "X", -130, 50), ("upperarm01", "Y", -110, 110), ("upperarm01", "Z", -90, 90),
+             ("lowerarm01", "X", -160, 10), ("lowerarm01", "Z", -90, 90)]
+# starts for the descent (deg per dof; Y is "arm down" for L, mirrored for R)
+REACH_STARTS = [(0, 0, 0, 0, 0), (0, 45, 0, 0, 0), (-30, 45, 0, -60, 0), (-60, 30, 20, -110, 0), (-20, 60, 0, -130, 0)]
 
 
 def reach(rig, side, anchor, offset):
@@ -89,7 +101,7 @@ def reach(rig, side, anchor, offset):
         print(f"[poses] WARNING: reach skipped, no {eff} or {anchor}")
         return
     target = pbs[anchor].head + Vector((offset[0] * sx, offset[1], offset[2]))
-    head_c = pbs["head"].head + Vector((0, -0.03, 0.09)) if "head" in pbs else None
+    head_c = pbs["head"].head + Vector((0, -0.02, 0.03)) if "head" in pbs else None
 
     def cost():
         c = (pbs[eff].head - target).length
@@ -99,27 +111,47 @@ def reach(rig, side, anchor, offset):
         return c
 
     names = [f"{b}.{side}" for b, *_ in REACH_DOF]
-    acc = [0.0] * len(REACH_DOF)
-    best = cost()
-    for step in (16, 8, 4, 2, 1):
-        improved = True
-        while improved:
-            improved = False
-            for i, (_b, axis, lo, hi) in enumerate(REACH_DOF):
-                for sgn in (1, -1):
-                    d = step * sgn
-                    if not lo <= acc[i] + d <= hi:
-                        continue
-                    saved = [pbs[n].matrix_basis.copy() for n in names]
-                    rotate(rig, names[i], axis, d)
-                    c = cost()
-                    if c < best - 1e-5:
-                        best, acc[i], improved = c, acc[i] + d, True
-                        break
-                    for n, m in zip(names, saved):
-                        pbs[n].matrix_basis = m
-                    bpy.context.view_layer.update()
-    print(f"[poses] reach {side}->{anchor}{tuple(offset)}: miss {best * 100:.1f} cm, angles {acc}")
+    base = [pbs[n].matrix_basis.copy() for n in names]
+
+    def restore(ms):
+        for n, m in zip(names, ms):
+            pbs[n].matrix_basis = m
+        bpy.context.view_layer.update()
+
+    best_all = None
+    for start in REACH_STARTS:
+        restore(base)
+        acc = [0.0] * len(REACH_DOF)
+        for i, d0 in enumerate(start):
+            d = d0 * (sx if REACH_DOF[i][1] == "Y" else 1)
+            if d:
+                rotate(rig, names[i], REACH_DOF[i][1], d)
+                acc[i] = d
+        best = cost()
+        for step in (16, 8, 4, 2, 1):
+            improved = True
+            while improved:
+                improved = False
+                for i, (_b, axis, lo, hi) in enumerate(REACH_DOF):
+                    for sgn in (1, -1):
+                        d = step * sgn
+                        if not lo <= acc[i] + d <= hi:
+                            continue
+                        saved = [pbs[n].matrix_basis.copy() for n in names]
+                        rotate(rig, names[i], axis, d)
+                        c = cost()
+                        if c < best - 1e-5:
+                            best, acc[i], improved = c, acc[i] + d, True
+                            break
+                        restore(saved)
+        if best_all is None or best < best_all[0]:
+            best_all = (best, [pbs[n].matrix_basis.copy() for n in names], list(acc))
+        if best < 0.01:
+            break
+    restore(best_all[1])
+    miss = (pbs[eff].head - target).length
+    print(f"[poses] reach {side}->{anchor}{tuple(offset)}: miss {miss * 100:.1f} cm (cost {best_all[0] * 100:.1f}), "
+          f"angles {best_all[2]}")
 
 
 def apply_pose(rig, name):
