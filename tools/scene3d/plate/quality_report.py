@@ -96,14 +96,16 @@ def main():
             draw.text((5, y + 4), Path(record['file']).name, fill='black', font=font(17))
             sheet.paste(image.resize((560, 320)), (0, y + 25))
             if head is not None and head.width and head.height:
-                head.thumbnail((240, 270), Image.Resampling.LANCZOS)
+                scale = min(240 / head.width, 270 / head.height)
+                head = head.resize((max(1, round(head.width * scale)), max(1, round(head.height * scale))),
+                                   Image.Resampling.LANCZOS)
                 sheet.paste(head, (565 + (240 - head.width) // 2, y + 30))
             draw.text((815, y + 35), '\n'.join([
                 f"people {record['people']}", f"PCK {record['pck']:.2f}",
                 f"strict {record['pck_strict']:.2f}", f"coverage {record['coverage']:.2f}",
                 f"bg/photo {bg / original_lap:.2f}", f"face {similarity:.3f}" if similarity is not None else 'face NA',
                 f'face h {height:.0f}px', 'SMALL / unreliable' if height < 40 else '',
-                'head crop x4 approx', 'visual review required']), fill='black', font=font(16), spacing=6)
+                'head crop / aspect kept', 'visual review required']), fill='black', font=font(16), spacing=6)
             print('[report]', Path(record['file']).name, json.dumps(row), flush=True)
         sheet.save(output / f'{args.group}_{scene}.jpg', quality=90)
     if rows:

@@ -13,7 +13,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 import yaml
-from rtmlib import Wholebody
 
 # COCO17 -> OpenPose18. Neck is the midpoint of the COCO shoulders.
 COCO = [0, None, 6, 8, 10, 5, 7, 9, 12, 14, 16, 11, 13, 15, 2, 1, 4, 3]
@@ -50,6 +49,8 @@ def score(target, detected, height, confidence, threshold):
 
 
 def main():
+    from rtmlib import Wholebody
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--glob', required=True)
     parser.add_argument('--maps', required=True)

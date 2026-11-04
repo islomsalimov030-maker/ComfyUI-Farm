@@ -1,0 +1,8 @@
+# Isolated diagnostic environment only. DWPose training-data UBody terms are unconfirmed for production.
+# rtmlib 0.0.13 cannot decode COCO-80 YOLOX output; pin the reviewed upstream fix.
+rtmlib @ git+https://github.com/Tau-J/rtmlib.git@03a1693e59e4f7cd84582c0fb30459b3bf18ad42
+onnxruntime==1.31.1
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+tqdm==4.70.1
+PyYAML==6.0.3

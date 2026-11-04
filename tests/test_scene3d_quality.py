@@ -2,7 +2,6 @@
 import importlib.util
 import json
 from pathlib import Path
-import sys
 
 import pytest
 import yaml
@@ -62,3 +61,21 @@ def test_bf16_inpaint_and_masked_canny(runner):
     assert graph['ap_inpaint']['inputs']['source_video'] == ['source_batch', 0]
     assert 'ap_depth' not in graph
     assert graphs['Q3_edge05']['edge_outside']['inputs']['mask'] == ['edge_mask', 0]
+
+
+def test_pose_metric_coverage_and_calibration():
+    import numpy as np
+
+    spec = importlib.util.spec_from_file_location('scene3d_pose_test', PLATE / 'pose_metrics.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    target = np.array([[20 + i * 10, 40 + i * 20, 1] for i in range(18)], dtype=float)
+    result = module.score(target, target.copy(), 768, .3, .05)
+    assert result['pck'] == result['pck_strict'] == result['coverage'] == 1
+    detected = target.copy()
+    detected[:7, 2] = 0
+    result = module.score(target, detected, 768, .3, .05)
+    assert result['pck'] == 1
+    assert result['pck_strict'] == result['coverage'] == .5
+    missing = module.score(target, None, 768, .3, .05)
+    assert missing['pck_strict'] == missing['coverage'] == 0
