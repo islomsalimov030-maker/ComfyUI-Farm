@@ -4,6 +4,13 @@ steps: 40
 cfg: 1.0
 seeds: [101, 202]
 timeout_s: 900
+qa:
+  confidence: 0.3
+  pck_distance: 0.05
+  pck_min: 0.85
+  face_min: 0.6
+  background_ratio_min: 0.8
+bf16_patch: minimax_h3_fun_controlnet_union_pruned_bf16.safetensors
 models:
   base: minimax_h3_ref2va_pruned_int8_convrot.safetensors
   eros: 10Eros_Max_h3_hybrid_beta5_int8.safetensors
@@ -23,3 +30,10 @@ recipes:
   # Q2: the same on the AIO photo fine-tune (does the Fun CN patch load and hold)
   - {name: Q2_d100_p05, model: eros, depth_end: 1.0, pose_strength: 0.5}
   - {name: Q2_d75_p08, model: eros, depth_end: 0.75, pose_strength: 0.8}
+  - {name: Q3_edge05, model: base, depth_end: 0.75, pose_strength: 0.8, canny_strength: 0.5}
+  - {name: Q3_edge10, model: base, depth_end: 0.75, pose_strength: 0.8, canny_strength: 1.0}
+  - {name: Q4_inpaint, model: base, depth_end: 1.0, pose_strength: 0.5, inpaint: true}
+  # Step 2b: static 5-frame clay reference (0.17 s), no turbo, 25 sampling steps.
+  - {name: R1_clay, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, steps: 25}
+  - {name: R2_clay_depth, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, steps: 25, control: depth}
+  - {name: R3_clay_pose, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, steps: 25, control: pose}

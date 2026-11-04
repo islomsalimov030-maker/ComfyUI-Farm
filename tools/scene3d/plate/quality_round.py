@@ -39,10 +39,108 @@ def make_graph(spec, scene, seed, recipe, config):
                             ' She wears an opaque grey athletic T-shirt and opaque full-length navy trousers.'
                             '\noverall_soundscape:\nQuiet room tone.')
     g['r2v']['inputs']['prompt'] = prompt
+    if recipe.get('canny_strength'):
+        g['edge_photo'] = ab.node('ImageScale', image=['ref_room', 0], upscale_method='lanczos',
+                                  width=w, height=h, crop='disabled')
+        g['canny'] = ab.node('Canny', image=['edge_photo', 0], low_threshold=0.4, high_threshold=0.8)
+        g['edge_mask_image'] = ab.node('LoadImage', image=f"plate3d_{scene['name']}_mask_dil.png")
+        g['edge_mask_scale'] = ab.node('ImageScale', image=['edge_mask_image', 0], upscale_method='nearest-exact',
+                                      width=w, height=h, crop='disabled')
+        g['edge_mask'] = ab.node('ImageToMask', image=['edge_mask_scale', 0], channel='red')
+        g['edge_black'] = ab.node('EmptyImage', width=w, height=h, batch_size=1, color=0)
+        g['edge_outside'] = ab.node('ImageCompositeMasked', destination=['canny', 0], source=['edge_black', 0],
+                                    x=0, y=0, resize_source=False, mask=['edge_mask', 0])
+        g['edge_batch'] = ab.node('RepeatImageBatch', image=['edge_outside', 0], amount=5)
+        g['ap_canny'] = ab.node('MiniMaxH3FunControlNetApply', model=['ap_pose', 0], model_patch=['patch', 0],
+                                vae=['vae', 0], control_video=['edge_batch', 0],
+                                strength=recipe['canny_strength'], start_percent=0.0, end_percent=1.0)
+        g['ks']['inputs']['model'] = ['ap_canny', 0]
+    if recipe.get('inpaint'):
+        g['patch']['inputs']['name'] = config['bf16_patch']
+        g['source_scale'] = ab.node('ImageScale', image=['ref_room', 0], upscale_method='lanczos',
+                                    width=w, height=h, crop='disabled')
+        g['source_batch'] = ab.node('RepeatImageBatch', image=['source_scale', 0], amount=5)
+        g['inpaint_mask_image'] = ab.node('LoadImage', image=f"plate3d_{scene['name']}_mask_dil.png")
+        g['inpaint_mask_scale'] = ab.node('ImageScale', image=['inpaint_mask_image', 0],
+                                         upscale_method='nearest-exact', width=w, height=h, crop='disabled')
+        g['inpaint_mask'] = ab.node('ImageToMask', image=['inpaint_mask_scale', 0], channel='red')
+        for name in ('ap_depth', 'ap_pose'):
+            del g[name]
+        ab.chain(g, [('ap_inpaint', dict(control_video=['ctl_pose', 0], source_video=['source_batch', 0],
+                                         mask=['inpaint_mask', 0], strength=1.0, end_percent=1.0))])
+    if recipe.get('clay_video'):
+        g['clay'] = ab.node('LoadImage', image=f"{ab.LOC[0]}/{scene['name']}/clay_plate.png")
+        g['clay_scale'] = ab.node('ImageScale', image=['clay', 0], upscale_method='lanczos',
+                                  width=w, height=h, crop='disabled')
+        g['clay_batch'] = ab.node('RepeatImageBatch', image=['clay_scale', 0], amount=5)
+        g['r2v']['inputs']['ref_videos.ref_video_0'] = ['clay_batch', 0]
+        g['r2v']['inputs']['prompt'] = clay_prompt(spec, scene)
+        g['ks']['inputs']['steps'] = recipe['steps']
+        control = recipe.get('control')
+        applies = []
+        if control == 'depth':
+            applies.append(('ap_depth', dict(control_video=['ctl_dperson', 0], strength=1.0, end_percent=1.0)))
+        elif control == 'pose':
+            applies.append(('ap_pose', dict(control_video=['ctl_pose', 0], strength=0.5, end_percent=0.5)))
+        for name in ('ap_depth', 'ap_pose'):
+            del g[name]
+        ab.chain(g, applies)
     g['save']['inputs']['filename_prefix'] = f"plate3d_quality/{scene['name']}/{recipe['name']}_s{seed}"
+    # Remove unused control loaders and patches, so R1 truly has no ControlNet load.
+    pending = ['save']
+    required = set()
+    while pending:
+        name = pending.pop()
+        if name in required:
+            continue
+        required.add(name)
+        for value in g[name]['inputs'].values():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str) and value[0] in g:
+                pending.append(value[0])
+    g = {name: n for name, n in g.items() if name in required}
     for key, node in g.items():
         node['_meta'] = {'title': f"3DA quality · {key}"}
     return g
+
+
+def clay_prompt(spec, scene):
+    return '\n'.join([
+        'subject_definitions:',
+        '<Subject 1> is the adult woman whose identity is shown in <Picture 2>; replace the clay figure in <Video 1> with her.',
+        '<Picture 1> is the exact room composition, furnishing, materials and lighting of the target photograph.',
+        '<Picture 2> supplies only the facial identity and never appears as a separate image in the shot.',
+        '<Video 1> is a clay playblast defining the camera, body pose, projected size and precise position of <Subject 1>.',
+        'summary:',
+        '[reference generation] One single photorealistic photograph. Reproduce the composition and body pose of <Video 1>, '
+        'using the real room from <Picture 1> and the facial identity from <Picture 2>.',
+        'retention_analysis:',
+        '<Video 1>: partially_preserved - preserve geometry, pose, projected body scale and camera, replace only clay appearance.',
+        '<Picture 1>: fully_preserved - retain room materials, furnishings and lighting.',
+        '<Picture 2>: attribute_transfer - transfer facial identity to <Subject 1>.',
+        'detailed_description:',
+        f'A photorealistic live-action still. [Shot 1] {ab.STATIC} The room is {spec["room"]}. '
+        f'<Subject 1> is {scene["action"]}. She wears an opaque grey athletic T-shirt and opaque full-length navy trousers. '
+        f'Preserve the exact pose and placement from <Video 1>. Scale anchor: {scene["anchor"]}. '
+        'No clay materials, no mannequin, no skeleton overlay. One continuous shot with no cuts and no close-up inserts; '
+        '<Picture 2> is only a reference for her face and never appears on screen.',
+        'Timeline: From 0.00 to 0.17 seconds the subject holds the starting pose without moving.',
+        'The lighting is preserved unchanged throughout.',
+        'Colors and saturation stay unchanged from the reference image.',
+        'overall_soundscape:', 'Quiet room tone.', 'non_diegetic_music:', 'N/A'])
+
+
+def prep_clay(maps, spec):
+    from PIL import Image
+    photo = Image.open(Path(maps) / '_plate/plate_rgb.png').convert('RGB')
+    for scene in spec['scenes']:
+        directory = Path(maps) / scene['name']
+        # Undilated render mask avoids pulling the clay background into the photograph.
+        raw = Image.open(directory / 'mask.png').convert('L').point(lambda p: 255 if p > 127 else 0)
+        if sum(raw.histogram()[128:]) > raw.width * raw.height / 2:
+            raw = raw.point(lambda p: 255 - p)
+        raw = ab.keypoint_box(raw, str(directory / 'pose25.json'))
+        clay = Image.open(directory / 'clay.png').convert('RGB')
+        Image.composite(clay, photo, raw).save(directory / 'clay_plate.png')
 
 
 def api(path):
@@ -97,6 +195,8 @@ def main():
         ab.SIZE[:] = cfg['size']
         if not args.build_only:
             ab.prep(location['maps'], spec)
+            if any(r.get('clay_video') for r in recipes):
+                prep_clay(location['maps'], spec)
         for scene in spec['scenes']:
             for recipe in recipes:
                 for seed in cfg['seeds']:
