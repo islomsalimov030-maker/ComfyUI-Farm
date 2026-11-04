@@ -44,7 +44,7 @@ def make_mannequin(src, dst):
     print("[probe] mannequin ->", dst)
 
 
-def cam(sc, loc, look, lens=35):
+def cam(sc, loc, look, lens=70):
     cd = bpy.data.cameras.new("pc")
     cd.lens = lens
     c = bpy.data.objects.new("pc", cd)

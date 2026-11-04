@@ -23,8 +23,8 @@ def _arms_down(deg=40, fwd=0, elbow=12):
 
 
 def HANG(side):
-    """Arm hanging beside the thigh with a small gap (knuckles 11 cm out from the hip joint, 17 cm below)."""
-    return ("@reach", side, f"upperleg01.{side}", (0.11, 0.0, -0.17))
+    """Arm hanging beside the thigh with a small gap (knuckles 11 cm out from the hip joint, 9 cm below)."""
+    return ("@reach", side, f"upperleg01.{side}", (0.11, 0.0, -0.09))
 
 
 def _sit(thigh=88, knee=88, spread=6):
