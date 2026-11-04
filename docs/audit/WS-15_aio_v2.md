@@ -38,9 +38,13 @@ PANEL внутри сабграфа.
 
 ## Детекторы без AGPL и InsightFace (сделано 01.11, AIO V2.2)
 - `H3FaceTrackCrop` → **`StacyFaceTrackCrop`** (StacyLoop): тот же код трекера ComfyUI-H3-FaceRefine, детектор
-  `mediapipe_face` (MediaPipe BlazeFace, Apache-2.0). Оригинальный пакет на студии не трогается.
-- `StacyAutoConfidence.detector`, `StacySettings.face_detector` = `mediapipe_face`; `StacyOcclusionDenoise.hand_model` =
-  `mediapipe_hand` (Hand Landmarker, Apache-2.0).
+  задаётся полем. Оригинальный пакет на студии не трогается.
+- MediaPipe-детекторы в StacyLoop остаются (`mediapipe_face` / `mediapipe_hand`, Apache-2.0) — переключение в
+  воркфлое одной строкой. **Сейчас в AIO V2.2 выбран YOLO** (решение пользователя 04.11):
+  `face_yolov8m.pt` для лица, `hand_yolov8s.pt` для рук. Причины: MediaPipe на студии не запускается (нет
+  libGLESv2/libEGL) и хуже ловит руку у лица (3/8 против 8/8 у YOLO, RESEARCH «WS-15 (01.11)»).
+  Лицензионный долг остаётся: веса YOLO — AGPL-3.0 (Ultralytics). Переход на MediaPipe = смена значений в
+  воркфлоу, когда починят системные библиотеки на студии.
 - InsightFace: по коду грузится только при `identity_track=True` (в AIO false) — не использовался; для страховки
   `identity_model=clip_vision`.
 - Рамки BlazeFace откалиброваны под face_yolov8m, чтобы `crop_factor` и AUTO-пороги сохранили смысл (см. RESEARCH).
@@ -54,3 +58,9 @@ PANEL внутри сабграфа.
 2. Пульты сведены — да (V2.2).
 3. Детекторы MediaPipe, InsightFace не грузится — сделано (V2.2).
 4. `h3_img2img_latent` → `de0b5df` (MIT) — вместе с п.1.
+
+## Решения пользователя (04.11)
+- Детекторы в AIO V2.2: **пока YOLO** (лицо `face_yolov8m.pt`, руки `hand_yolov8s.pt`) — MediaPipe-поддержка в StacyLoop
+  остаётся, переключение позже. Причина: MediaPipe не стартует на студии (нет libGLESv2/libEGL) и слабее на руках.
+- Данные Стейси перенесены на диск D: путь `C:\stacy-lora` → `D:\stacy-lora` (в `CLAUDE.local.md` пользователя
+  правится вручную).

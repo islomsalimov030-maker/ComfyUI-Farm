@@ -2,7 +2,7 @@
 """WS-07 серия 6: VLM-судья (Ollama, P(Yes) из logprobs — farm/qa/vlm.py) на чек-листах WS-05.
 
     python tools/ws07_vlm_eval.py --models qwen3-vl:8b-instruct,qwen3-vl:32b-instruct,qwen3.6:27b \
-        --frames C:/stacy-lora/frames/sfw_final_frames [--out /workspace/farm/experiments/s6_vlm]
+        --frames $STACY_DATA/frames/sfw_final_frames [--out /workspace/farm/experiments/s6_vlm]
 
 Набор: 26 кадров v2 + решение глаза (STACY_CONTEXT §6 / tools/ws05_baseline.EYE): Лежа-2/5 — плохо,
 Стоя-11 — к человеку, остальные — хорошо. Вопросы — постоянные чек-листа (одна женщина, без текста,

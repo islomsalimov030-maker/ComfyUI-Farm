@@ -2,8 +2,8 @@
 """SS-456: видео-петли FullHD по принятым кадрам — движок video_h3_loop@1 (StacyLoop), Саманта
 без LoRA Стейси (ARM = ref2va convrot + turbo 8, face_pass off — личность держит ключевой кадр).
 
-    python tools/ss456_video.py run C:/stacy-lora/refmod_inputs/round_456v1.yaml
-    python tools/ss456_video.py lint C:/stacy-lora/refmod_inputs/round_456v1.yaml   # только линтер
+    python tools/ss456_video.py run $STACY_DATA/refmod_inputs/round_456v1.yaml
+    python tools/ss456_video.py lint $STACY_DATA/refmod_inputs/round_456v1.yaml   # только линтер
 
 Промпты — [keyframe completion] по строкам SFW-таблицы «Дом» (Confluence, ss456_meta.json):
 фазы 0.6–2.2 с, действия ≤62 % клипа, возврат в старт, отдых ≥2 с; узел StacyPromptRetime сам

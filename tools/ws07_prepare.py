@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """WS-07 офлайн-подготовка (ПК): пакет входов для серий пода → <out>/kit (рефы, скелеты, рамки, промпты, targets.json).
 
-    .venv/Scripts/python tools/ws07_prepare.py [--src C:/stacy-lora] [--out C:/stacy-lora/_claude/ws07]
+    .venv/Scripts/python tools/ws07_prepare.py [--src $STACY_DATA] [--out $STACY_DATA/_claude/ws07]
 
 4 позы серий (бриф): Sitting-8, Standing-2, Sitting-2 и Lying-4 (Lying-7 нет среди SFW-строк листа — WS-03,
 решение команды; берём Lying-4 — лежит, есть фото-реф позы). Для каждой позы:
@@ -20,8 +20,10 @@ import shutil
 import sys
 from pathlib import Path
 
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "tools")]
+from stacy_data import stacy_data
 
 import ws07_lib as L  # noqa: E402
 from farm.prompts.lint import errors, lint  # noqa: E402
@@ -54,8 +56,8 @@ def _save(im, path: Path) -> str:
 def main() -> int:
     from PIL import Image
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default="C:/stacy-lora")
-    ap.add_argument("--out", default="C:/stacy-lora/_claude/ws07")
+    ap.add_argument("--src", default=str(stacy_data()))
+    ap.add_argument("--out", default=str(stacy_data() / "_claude" / "ws07"))
     a = ap.parse_args()
     src, kit = Path(a.src), Path(a.out) / "kit"
     refs = kit / "refs"

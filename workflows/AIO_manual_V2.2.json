@@ -10120,7 +10120,7 @@
       },
       "widgets_values": [
        -1,
-       "mediapipe_face"
+       "face_yolov8m.pt"
       ]
      },
      {
@@ -10256,7 +10256,7 @@
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop"
       },
       "widgets_values": [
-       "mediapipe_face",
+       "face_yolov8m.pt",
        0.35,
        2.5,
        768,
@@ -10703,7 +10703,7 @@
        }
       },
       "widgets_values": [
-       "mediapipe_hand",
+       "hand_yolov8s.pt",
        0.3,
        0.2,
        0.25,
@@ -12071,7 +12071,7 @@
       },
       "widgets_values": [
        "generate",
-       "mediapipe_face"
+       "face_yolov8m.pt"
       ]
      },
      {
@@ -14428,7 +14428,7 @@
       },
       "widgets_values": [
        "generate",
-       "mediapipe_face"
+       "face_yolov8m.pt"
       ]
      },
      {
@@ -15030,7 +15030,7 @@
       },
       "widgets_values": [
        -1,
-       "mediapipe_face"
+       "face_yolov8m.pt"
       ]
      },
      {
@@ -15166,7 +15166,7 @@
        "aux_id": "islomsalimov030-maker/ComfyUI-StacyLoop"
       },
       "widgets_values": [
-       "mediapipe_face",
+       "face_yolov8m.pt",
        0.35,
        2.5,
        768,
@@ -15611,7 +15611,7 @@
        }
       },
       "widgets_values": [
-       "mediapipe_hand",
+       "hand_yolov8s.pt",
        0.3,
        0.2,
        0.25,
@@ -16349,7 +16349,7 @@
       },
       "widgets_values": [
        "face pass video",
-       "mediapipe_face"
+       "face_yolov8m.pt"
       ]
      },
      {

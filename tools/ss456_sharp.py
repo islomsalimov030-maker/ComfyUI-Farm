@@ -4,7 +4,7 @@
     python tools/ss456_sharp.py gen    <jobs_min.json> <out_dir> [--job 0] [--only B,C]
     python tools/ss456_sharp.py refine <v2_refine_api.json> <out_dir> [--body 0.3] [--face 0.35,0.45] [--only A0,B]
     python tools/ss456_sharp.py sheet  <out_dir>
-    python tools/ss456_sharp.py eval   <out_dir> <face_ref_dir>   # FARM_FACE_MODELS=C:/stacy-lora/face_models
+    python tools/ss456_sharp.py eval   <out_dir> <face_ref_dir>   # FARM_FACE_MODELS=$STACY_DATA/face_models
     python tools/ss456_sharp.py batch  <v2_refine_api.json> <round.yaml> [--mp 1] [--face 0.85,0.75]
                                     # проход лица по всем кадрам раунда, выражение — из промпта сцены
 

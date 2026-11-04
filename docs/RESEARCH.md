@@ -484,3 +484,15 @@ CPU, ultralytics 8.4 + `face_yolov8m.pt` / `hand_yolov8s.pt` против mediap
   На поде `install/pod_setup.sh` уже ставит `libegl1 libgles2`.
 - Мелочь: отчёт StacySettings пишет «model: Singularity ref2va» — метка `model_10eros=false` из StacyLoop, модель
   на самом деле задаёт пульт (косметика, не влияет на генерацию).
+
+### WS-15 (04.11) — решение по детекторам и перенос данных на диск D
+- **Детекторы в AIO V2.2 — YOLO** (решение пользователя): лицо `face_yolov8m.pt`, руки `hand_yolov8s.pt`.
+  Причины: MediaPipe на студии не стартует (нет `libGLESv2.so.2`/libEGL) и на руках слабее YOLO
+  (рука у лица 3/8 против 8/8). MediaPipe-поддержка в StacyLoop остаётся (`mp_detect.py`, `StacyFaceTrackCrop`) —
+  переключение = смена значений в воркфлоу, когда админ студии поставит `libegl1 libgles2`.
+  Лицензионный долг: веса YOLO — AGPL-3.0 (Ultralytics); лица, попавшие в коммерческую раздачу, надо
+  переоценить при переходе на MediaPipe.
+- **Данные Стейси перенесены с C на D** (`D:\stacy-lora`, `C:\stacy-lora` больше нет). Чтобы одноразовые
+  утилиты `tools/` не ломались, путь вынесен в `tools/stacy_data.py`: переменная окружения `STACY_DATA`,
+  дефолт `D:/stacy-lora`, при отсутствии — поиск старого `C:/stacy-lora`. Проверено: `frames/face_metrics_final.csv`
+  на месте. Ферма (`farm/`, `web/`) путей к данным Стейси не содержит — только `tools/`.
