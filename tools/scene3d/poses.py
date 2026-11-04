@@ -40,6 +40,9 @@ POSES = {
         ("upperarm01.L", "Y", -18), ("lowerarm01.L", "Z", -75), ("lowerarm01.L", "X", 20),
         ("upperleg01.L", "Z", -4), ("head", "Z", 8)]},
     # hands on the thighs: grid search (wrist -> mid-thigh), the rest forearm already points forward
+    "sit_hands_knees": {"contact": "seat", "steps": _sit(88, 88, 2) + [
+        ("@reach", "L", "lowerleg01.L", (0.0, 0.03, 0.13)),
+        ("@reach", "R", "lowerleg01.R", (0.0, 0.03, 0.13))]},
     "sit_upright": {"contact": "seat", "steps": _sit() + _arms_down(45, 10, 10)},
     "sit_lean_back": {"contact": "seat", "steps": _sit(80, 75, 8) + [("spine05", "X", 10)] + _arms_down(45, 5, 20)},
     # round 4: hard poses. Arms by @reach (targets in armature space, offset x mirrored for R).
