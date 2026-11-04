@@ -214,8 +214,13 @@ def variants(spec, sc, seed, W, H):
                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
         "A5h": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=1.0)),
                 ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.7, end_percent=0.5))],
+        # sharpness (04.11): depth released for the last 25 % of the steps / no turbo LoRA (24 steps, cfg 4)
+        "A5e": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=0.75)),
+                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
+        "A5n": [("ap_depth", dict(control_video=["ctl_dperson", 0], strength=1.0, end_percent=1.0)),
+                ("ap_pose", dict(control_video=["ctl_pose", 0], strength=0.5, end_percent=0.5))],
     }.items():
-        pr = prompt_a2(spec, sc) if v in ("A3n", "A5", "A6", "A7", "A8", "A5h") else prompt_a(spec, sc)
+        pr = prompt_a2(spec, sc) if v in ("A3n", "A5", "A6", "A7", "A8", "A5h", "A5e", "A5n") else prompt_a(spec, sc)
         g = base_graph(seed, W, H, pr, ["ref_room", "ref_char"])
         g["ctl_pose"] = folder(name, "pose")
         g["ctl_depth"] = folder(name, "depth")
@@ -223,6 +228,10 @@ def variants(spec, sc, seed, W, H):
         g["ctl_dbody"] = folder(name, "depth_body")
         g["ctl_dbody3"] = folder(name, "depth_body3")
         chain(g, applies)
+        if v == "A5n":
+            del g["lora"]
+            g["shift"]["inputs"]["model"] = ["unet", 0]
+            g["ks"]["inputs"].update(steps=24, cfg=4.0)
         out[v] = g
     for v, (st, room) in {"B1": (0.7, False), "B2": (0.5, False), "B3": (0.7, True)}.items():
         refs = ["ref_char", "ref_room"] if room else ["ref_char"]
