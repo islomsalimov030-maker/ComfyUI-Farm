@@ -190,6 +190,10 @@ def prep(maps, spec):
     for sc in spec["scenes"]:
         d = os.path.join(maps, sc["name"])
         m = Image.open(os.path.join(d, "mask.png")).convert("L").point(lambda p: 255 if p > 127 else 0)
+        # render_h3_maps.char_mask_material() paints the ROOM white and the character black (LESS_THAN 0.5 on the
+        # object index): the character is the minority of the frame, so make it the white part whatever the render gave
+        if sum(m.histogram()[128:]) > m.width * m.height / 2:
+            m = m.point(lambda p: 255 - p)
         dil = m.filter(ImageFilter.MaxFilter(25))           # ~12 px around the body
         dil.convert("RGB").save(os.path.join(inp, f"plate3d_{sc['name']}_mask_dil.png"))
         soft = dil.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
