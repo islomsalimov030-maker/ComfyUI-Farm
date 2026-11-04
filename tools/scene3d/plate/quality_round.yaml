@@ -41,3 +41,5 @@ recipes:
   # S_R1s also runs the harmonisation pass (same ref2va, H3LatentFromImage img2img at 0.30 / 0.45) on its frame.
   - {name: S_R1s, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, steps: 25, harmonize: [0.3, 0.45]}
   - {name: S_R1sR3, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, steps: 25, control: pose}
+  # R2s: shadow playblast + Fun CN depth 1.0 to 100 % (H3 re-renders the room around the body at its distance)
+  - {name: S_R2s, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, steps: 25, control: depth}
