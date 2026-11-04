@@ -309,6 +309,12 @@ def person_depth(maps, d, m):
         a16 = a16[..., 0]
     dc8 = Image.fromarray(np.clip(a16 / (257.0 if a16.max() > 255 else 1.0), 0, 255).round().astype(np.uint8))
     base = Image.open(os.path.join(d, "depth_loc8.png")).convert("L")
+    # ~5 % of the mask pixels carry the room behind (13 vs 88 on P4, 04.11): a body is +-15 levels around the flat
+    # value at these distances, so anything farther off is replaced by the flat value
+    b = np.asarray(dc8).astype(np.float32)
+    bad = np.abs(b - val) > 25
+    nbad = int((bad & (np.asarray(m) > 0)).sum())
+    dc8 = Image.fromarray(np.where(bad, val, b).round().astype(np.uint8))
     for sub, k in (("depth_body", 1.0), ("depth_body3", 3.0)):
         body = dc8.point(lambda p, k=k: max(0, min(255, round(val + k * (p - val)))))
         dep = base.copy()
@@ -319,8 +325,9 @@ def person_depth(maps, d, m):
             dep.convert("RGB").save(os.path.join(o, f"depth_{i:05d}.png"))
     inside = [p for p, mm in zip(dc8.getdata(), m.getdata()) if mm]
     if inside:
-        print(f"[ab] {os.path.basename(d)}: body depth inside the mask {min(inside)}-{max(inside)} "
-              f"(flat value {val})", flush=True)
+        inside.sort()
+        print(f"[ab] {os.path.basename(d)}: body depth inside the mask p5 {inside[len(inside) // 20]}, "
+              f"p95 {inside[len(inside) * 19 // 20]} (flat value {val}), outliers set flat {nbad}", flush=True)
 
 
 def post(g):
