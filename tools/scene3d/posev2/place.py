@@ -42,11 +42,16 @@ def _surf(P, N=None):
     return cKDTree(P), P, N
 
 
-def build_surfaces(plate, treg, freg):
+def build_surfaces(plate, treg, freg, recline=False):
+    """Р1: опорные части — только маска target (для recline — маска ∪ спинка); пол — отдельно, если target = floor."""
     S = {k: plate.trees[k] for k in ("h", "v", "any")}
-    S["target"] = _surf(treg.points3d())
+    top = treg.points3d()
+    S["target"] = _surf(top)
     if treg.backrest is not None:
         S["back"] = _surf(treg.backrest, treg.backrest_n)
+        if recline:
+            S["target"] = _surf(np.vstack([top, treg.backrest]),
+                                np.vstack([np.tile([0, 0, 1.0], (len(top), 1)), treg.backrest_n]))
     if freg is not None and freg.mask.any():
         S["floor"] = _surf(freg.points3d())
     return S
@@ -98,7 +103,7 @@ def similarity(V0, X):
 
 
 # ------------------------------------------------------------------------------------------------ жёсткая посадка
-def rigid_fit(B, plate, T, anchor, S, cand_R=None):
+def rigid_fit(B, plate, T, anchor, S, cand_R=None, facing_xy=None):
     V, kp, reg = B["V"].copy(), B["kp"].copy(), B["reg"]
     Zup = np.array([0, 0, 1.0])
     pel = (kp[9] + kp[10]) / 2
@@ -112,6 +117,8 @@ def rigid_fit(B, plate, T, anchor, S, cand_R=None):
     tc[2] = 0
     tc /= np.linalg.norm(tc)
     want = pf.rot_z(rel) @ tc
+    if facing_xy is not None:                       # recline у спинки: «вперёд» по якорю (спиной к спинке)
+        want = np.array([facing_xy[0], facing_xy[1], 0.0])
     yaw0 = pf.signed_angle(fwd, want) if fwd is not None else 0.0
     R0 = pf.rot_z(yaw0)
     V, kp = V @ R0.T, kp @ R0.T
@@ -149,8 +156,10 @@ def rigid_fit(B, plate, T, anchor, S, cand_R=None):
             d, j = tree.query(X[idx])
             sd = np.einsum("ij,ij->i", X[idx] - P[j], N[j])
             k_n = 1.0 / math.sqrt(len(idx))
-            if role in ("support", "back"):
+            if role == "support":
                 res.append(3.0 * k_n * sd / 0.01)
+            elif role == "back":                    # мягко: не заваливать корпус ради спинки (дожимает refine)
+                res.append(k_n * np.where(d < 0.4, sd / 0.02, 0.0))
             else:
                 res.append(k_n * np.where(d < 0.4, sd / 0.03, 0.0))
         pen = np.maximum(pf.penetration(plate, X[pen_idx]) - 0.005, 0.0)
@@ -185,8 +194,18 @@ def _on(reg, Xi, plate):
     return out
 
 
-def part_label(Xi, spec, treg, freg, plate):
-    if _on(treg, Xi, plate).mean() >= 0.5:
+def _on_back(treg, Xi):
+    if treg is None or treg.backrest is None:
+        return np.zeros(len(Xi), bool)
+    d, _ = cKDTree(treg.backrest).query(Xi)
+    return d <= ON_SURF_M
+
+
+def part_label(Xi, spec, treg, freg, plate, recline=False):
+    on = _on(treg, Xi, plate)
+    if recline:
+        on = on | _on_back(treg, Xi)                 # спинка (подушки/изголовье) — часть предмета
+    if on.mean() >= 0.5:
         return spec.target_object
     if freg is not None and _on(freg, Xi, plate).mean() >= 0.5:
         return "floor"
@@ -204,7 +223,7 @@ def evaluate(X, KP, B, S, plate, spec, treg, freg, H):
                        "min_cm": round(float(sd.min()) * 100, 1)}
         if role == "support":
             sup_sd.append(sd)
-            labels[name] = part_label(X[idx], spec, treg, freg, plate)
+            labels[name] = part_label(X[idx], spec, treg, freg, plate, recline=spec.pose_class == "recline")
         elif role == "back":
             back_sd.append(sd)
     g = np.concatenate(sup_sd) if sup_sd else np.zeros(1)
@@ -229,8 +248,9 @@ def evaluate(X, KP, B, S, plate, spec, treg, freg, H):
             c = X[idx].mean(0)[None]
             dt = float(treg.dt_at(c)[0])
             inm = bool(treg.in_mask(c)[0])
-            cells[name] = {"in_mask": inm, "dt_m": round(dt, 3)}
-            cells_ok &= inm and dt >= zn.EDGE_MIN
+            on_back = spec.pose_class == "recline" and _on_back(treg, X[idx]).mean() >= 0.5
+            cells[name] = {"in_mask": inm, "dt_m": round(dt, 3), "on_backrest": bool(on_back)}
+            cells_ok &= on_back or (inm and dt >= zn.EDGE_MIN)
     geom_ok = sup_gap <= SUP_GAP_CM and max_pen <= PEN_CM and (back_gap is None or back_gap <= SUP_GAP_CM)
     # равновесие (как в pose_fit): центр масс над опорным многоугольником
     reg = B["reg"]
@@ -265,14 +285,17 @@ def status_of(ev, spec, limits_ok=True):
 
 
 # ------------------------------------------------------------------------------------------------ сдвиг в зону (Р2)
-def shift_into(X, KP, B, S, treg, H):
+def shift_into(X, KP, B, S, treg, H, recline=False):
     sup = [(n, idx) for n, idx, surf, role in B["groups"] if role == "support"]
     if not sup or not treg.mask.any():
         return X, KP, 0.0, False
 
     def ok(Xc):
         cs = np.array([Xc[idx].mean(0) for _, idx in sup])
-        return bool(np.all(treg.in_mask(cs) & (treg.dt_at(cs) >= zn.EDGE_MIN)))
+        good = treg.in_mask(cs) & (treg.dt_at(cs) >= zn.EDGE_MIN)
+        if recline:                                  # опора на спинке — тоже на предмете
+            good |= np.array([_on_back(treg, Xc[idx]).mean() >= 0.5 for _, idx in sup])
+        return bool(np.all(good))
     if ok(X):
         return X, KP, 0.0, True
     i, j = np.unravel_index(int(np.argmax(treg.dt)), treg.dt.shape)
@@ -297,8 +320,8 @@ def shift_into(X, KP, B, S, treg, H):
 
 
 # ------------------------------------------------------------------------------------------------ ориентация (Р3)
-def fit_oriented(B, plate, T, anchor, S, spec, treg, freg, ref, H, log):
-    r0 = rigid_fit(B, plate, T, anchor, S)
+def fit_oriented(B, plate, T, anchor, S, spec, treg, freg, ref, H, log, facing_xy=None):
+    r0 = rigid_fit(B, plate, T, anchor, S, facing_xy=facing_xy)
     G0 = similarity(B["V0"], r0["X"])
     o0 = ori.check(r0["KP"], spec.pose_class, H)
     cand_rep = [{"name": "identity", "ok": o0["ok"], "reproj": round(ori.reproj_error(r0["KP"], G0, ref, B25_BODY), 3)}]
@@ -307,7 +330,7 @@ def fit_oriented(B, plate, T, anchor, S, spec, treg, freg, ref, H, log):
         return r0, cand_rep, True
     best = None
     for name, R in ori.candidates(r0["KP"], r0["cam_axis"])[1:]:
-        r = rigid_fit(B, plate, T, anchor, S, cand_R=R)
+        r = rigid_fit(B, plate, T, anchor, S, cand_R=R, facing_xy=facing_xy)
         o = ori.check(r["KP"], spec.pose_class, H)
         e = ori.reproj_error(r["KP"], G0, ref, B25_BODY)
         cand_rep.append({"name": name, "ok": o["ok"], "reproj": round(e, 3)})
@@ -362,7 +385,7 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
     with_back = has_back_guess and treg.backrest is not None
     if with_back:
         B = dict(prepare_body(ref, spec, height, with_back=True), dims=B["dims"])
-    S = build_surfaces(plate, treg, freg)
+    S = build_surfaces(plate, treg, freg, recline=with_back)
     flags = list(treg.flags)
     if B["missing_support"]:
         flags.append("support_part_missing:" + ",".join(B["missing_support"]))
@@ -381,14 +404,22 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
             return {"status": "contact_fail",
                     "rep": dict(base, status="contact_fail", flags=flags + ["zone_empty"],
                                 zone={"source": zsrc, **oinfo, **zinfo, "region": treg.summary()})}
+    facing_xy = None
+    if with_back:                                   # якорь recline: facing_yaw_deg (profile) или «к камере» (proxy)
+        if zsrc == "profile":
+            yaw = math.radians(profile.anchor(oinfo["object_id"], spec.pose_class)["facing_yaw_deg"])
+            facing_xy = np.array([math.cos(yaw), math.sin(yaw)])
+        else:
+            facing_xy = -treg.cam_axes()[0]
+        flags.append("yaw_from_anchor")
     attempts, final = [], None
     for k, cell in enumerate(cells[:ATTEMPTS]):
         T = np.array([cell["xy"][0], cell["xy"][1], cell["h"]])
         r, cand_rep, o_ok = fit_oriented(B, plate, T, cell["anchor"], S, spec, treg, freg, ref, H,
-                                         lambda m: log(f"[{spec.id}] попытка {k}: {m}"))
+                                         lambda m: log(f"[{spec.id}] попытка {k}: {m}"), facing_xy=facing_xy)
         X, KP, shift = r["X"], r["KP"], 0.0
         if spec.target_object != "floor":
-            X, KP, shift, _ = shift_into(X, KP, B, S, treg, H)
+            X, KP, shift, _ = shift_into(X, KP, B, S, treg, H, recline=with_back)
         ev = evaluate(X, KP, B, S, plate, spec, treg, freg, H)
         st = status_of(ev, spec)
         rec = {"attempt": k, "cell": cell, "stage": "fit", "status": st, "shift_m": shift, "fit": r,
@@ -410,7 +441,7 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
                 X2, K2, rinfo = rr
                 shift2 = 0.0
                 if spec.target_object != "floor":
-                    X2, K2, shift2, _ = shift_into(X2, K2, B, S, treg, H)
+                    X2, K2, shift2, _ = shift_into(X2, K2, B, S, treg, H, recline=with_back)
                 ev2 = evaluate(X2, K2, B, S, plate, spec, treg, freg, H)
                 st2 = status_of(ev2, spec, rinfo["limits_ok"])
                 rec2 = dict(rec, stage="refine", status=st2, X=X2, KP=K2, ev=ev2, refine=rinfo, rigid=rec,

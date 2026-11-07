@@ -1,6 +1,6 @@
-# CONTRACTS v0.9 — договорённости между потоками
+# CONTRACTS v0.10 — договорённости между потоками
 
-> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10). v0.5 (WS-08, 2026-10-11): бот (§9), фильтр пакета на пульте, redo из `needs_human`. v0.6 (WS-04, 2026-10-12): сборщик промптов (§7) — `ctx.workflow/params`, состав `fields_json`, `llm.*` профиля (§5). v0.7 (WS-06, 2026-10-13): проверки видео и фиксеры (§8) — `ctx` фиксера с порогами и `refs`, состав `video:` порогов. v0.8 (WS-10, 2026-10-14): поля сборщика → `params_json._fields` и `QAContext.extra.prompt_fields` (§8). v0.9 (WS-10, 2026-10-23): таблица v2.1 — персонаж = персонаж + наряд, моды `farm/<базовый>_face` + `farm/<вариант>_body`, секси-вариант = отдельный шот `<ID>-X` (§10).
+> v0.2 (WS-01): формат params.yaml (§6). v0.3 (WS-02, 2026-10-11): колонки и таблица `events` (§3), уточнения машины (§4), интерфейсы плагинов (§7–§10), `prompt_id` из `idem_key`, главный выход и `aux` (§6). Только добавления — совместимо с v0.1/v0.2. v0.4 (WS-03, 2026-10-11): `shots.extra_json`, схема таблицы, связи «начать/закончить кадром», форматы якорей и слотов (§3, §10). v0.5 (WS-08, 2026-10-11): бот (§9), фильтр пакета на пульте, redo из `needs_human`. v0.6 (WS-04, 2026-10-12): сборщик промптов (§7) — `ctx.workflow/params`, состав `fields_json`, `llm.*` профиля (§5). v0.7 (WS-06, 2026-10-13): проверки видео и фиксеры (§8) — `ctx` фиксера с порогами и `refs`, состав `video:` порогов. v0.8 (WS-10, 2026-10-14): поля сборщика → `params_json._fields` и `QAContext.extra.prompt_fields` (§8). v0.9 (WS-10, 2026-10-23): таблица v2.1 — персонаж = персонаж + наряд, моды `farm/<базовый>_face` + `farm/<вариант>_body`, секси-вариант = отдельный шот `<ID>-X` (§10). v0.10 (3D-A, 2026-11-08): постановка — `ShotSpec`, профиль локации `locations/<loc_id>/profile.json`, профиль персонажа `characters/<char_id>/body.json` (§11).
 
 Этот файл позволяет потокам работать независимо. Каждый поток реализует свою часть **строго по контракту** и может подменять соседей заглушками. Изменение контракта = версия +1 и строка в `STATUS.md → Решения`. Язык кода — Python 3.12, без тяжёлых фреймворков.
 
@@ -177,3 +177,38 @@ ambience_en: "quiet room tone, distant city"
 - `resolve_inputs` кадра: `char_face_mod`/`face_mod` = `farm/<базовый>_face`, `char_body_mod` = `farm/<вариант>_body` (мод персонажа в наряде). Сборщик: наряд в промпт кадра — `outfit.desc_en`, иначе `character.outfit_en`, иначе базовый.
 - «Секси-вариант» строки Confluence — отдельный шот с суффиксом `-X`. Конвертер Confluence → v2.1 — промпт `docs/llm/confluence_to_v2.md`.
 - `tools/farm_review.py restart <ID…>` — шот в `needs_human` без ассета (упал до генерации) → `frame_gen`/`video_gen`.
+
+## 11. Постановка 3D-A: ShotSpec и профили (v0.10, 3D-A, 2026-11-08)
+Код: `tools/scene3d/posev2/{shot_spec,profiles,top_region,zone,orient,place}.py`. Посадка (fit / refine / summary) читает **только** `ShotSpec`; профили — одноразовая подготовка, при работе граф их только читает (без людей и без Claude).
+
+**ShotSpec** (`shot_spec.json` в папке прогона позы):
+```json
+{"id": "Q03_bed_kneel", "pose_class": "kneel", "target_object": "bed",
+ "support_parts": ["knee.L", "knee.R", "shin.L", "shin.R"], "instance_hint": null, "source": "table"}
+```
+- `pose_class` ∈ `stand, kneel, sit_edge, sit_tucked, sit_floor, crouch, recline, lie, all_fours`; `source` ∈ `table | vlm`.
+- Из таблицы: `pose_class` — поле строки; `target_object` — `surface` из `contacts`, отличный от `floor` (первый), иначе `floor`; `support_parts` — `part` из `contacts` с этим `surface`. Эталон 17 поз раунда — `eval/shot_spec_gold.json` (для будущей VLM).
+
+**Профиль локации** `$FARM_PROFILES|$FARM_ROOT/locations/<loc_id>/profile.json` (файлы рядом):
+```json
+{"loc_id": "mainroom3", "version": 1, "reviewed": false,
+ "scale": {"factor": 1.0, "seat_heights_m": [0.29], "scale_suspect": true},
+ "objects": [{"id": "bed_1", "name": "bed", "mask_png": "bed_1_mask.png", "top_grid_npz": "bed_1_top.npz",
+              "h0": 0.29, "front_edge_dir": [0.0, -1.0], "backrest_npz": "bed_1_backrest.npz"}],
+ "anchors": [{"id": "bed_1_recline", "object_id": "bed_1", "pose_classes": ["recline"],
+              "zone_cells_npz": "bed_1_recline.npz", "facing_yaw_deg": -90.0, "uses_backrest": true}],
+ "substitutes": {"armchair": ["sofa", "bed"], "bench": ["chair", "stool", "bed"]}}
+```
+- `top_grid_npz` — верх предмета на сетке 2 см в плоскости XY мира плиты (Z вверх): `origin, height, mask, dt, h0, backrest(+_n)`.
+- `zone_cells_npz` — ячейки якоря с метриками `xy, h, near, far, dt` (м); правило класса (§ п.6 плана 07.11f) применяется при чтении с `body_dims` персонажа — якорь не зависит от тела.
+- `facing_yaw_deg` — «вперёд» тела у якоря (от предмета к камере); сейчас используется только якорями `uses_backrest` (recline: спиной к спинке).
+- Нет `target_object` среди `objects` и нет замены в `substitutes` → статус `no_target`.
+
+**Профиль персонажа** `$FARM_PROFILES|$FARM_ROOT/characters/<char_id>/body.json`:
+```json
+{"char_id": "stacy", "version": 1, "height_m": 1.62, "shape_model": "MHR", "shape_params": [],
+ "body_dims": {"H": 1.62, "L_thigh": 0.39, "L_torso": 0.5}, "source_photos": []}
+```
+**Порядок источников:** зона — якорь из `profile.json`, если есть, иначе `height_proxy` (`top_region.py`) + правила `zone.py`; `body_dims` — из `body.json`, если есть, иначе из меша fit (рост `body.height_est`, `L_thigh` таз→колено, `L_torso` таз→шея). Телесные пороги — только через `body_dims`; пороги локации — метры.
+
+**Статус позы** (`fit.json.status`): `ok` только если `support_object == target_object`, ориентация прошла (после fit и refine), лимиты refine соблюдены и `support_gap ≤ 3 см`, проникновение ≤ 3 см, опорные части в ячейках с `dt ≥ 5 см`; иначе `wrong_surface | orient_fail | contact_fail | no_target`.
