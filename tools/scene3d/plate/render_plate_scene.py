@@ -581,7 +581,8 @@ def run_scene(a, info, scene, light=None):
         low = min(p.z for p in pose_tools._all_points(body, step=3))
         rig.location.z += hit.z - low
         bpy.context.view_layer.update()
-        solved = pose_tools.solve_contacts(rig, body, plate, contacts, cam.matrix_world.translation) if contacts else {}
+        solved = pose_tools.solve_contacts(rig, body, plate, contacts, cam.matrix_world.translation,
+                                              reach_fn=reach, rotate_fn=rotate) if contacts else {}
         feet_z = min(p.z for p in pose_tools._all_points(body, step=3))
         _write_pose_metrics(out, rig, body, plate, cam, ang0, viol0, clamp_log, contacts, solved)
         placed = {"feet_z": round(feet_z, 3)}

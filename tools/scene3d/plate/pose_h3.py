@@ -1,7 +1,8 @@
 """Pose round: the best poses of each method through H3 with the photo recipe S3 comp2 (table_server.graph: L_C2 =
 playblast <Video 1> + base ref2va 25 steps + SAM3 person in one job) -> comp2 locally. One server job per pose.
 
-  python pose_h3.py --picks A/Q01_stand_hand_face,B/Q03_bed_kneel,... [--seed 101]
+  python pose_h3.py --picks A/Q01_stand_hand_face,B/Q03_bed_kneel,... [--seed 101] [--plan full|medium]
+--plan (07.11d): same camera, photo/playblast/shadow cropped by plan_crop.py (input <loc>_<plan>_*).
 Outputs: $FARM_COMFY/output/plate3d_poses/<M>_<id>/L_C2_s<seed>_*.png, mask, comp2_s<seed>.png; runs.json.
 """
 import argparse
@@ -26,6 +27,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--picks", required=True)
     ap.add_argument("--seed", type=int, default=101)
+    ap.add_argument("--plan", choices=["", "full", "medium"], default="")
     a = ap.parse_args()
     ps = {p["id"]: p for p in pr.prompts()}
     inp, outdir = farm_env.COMFY / "input", farm_env.COMFY / "output"
@@ -37,12 +39,24 @@ def main():
         loc = f"pose_{m}_m{p['loc']}"
         spec = json.loads((pr.ROUND / m / f"spec_m{p['loc']}.json").read_text(encoding="utf-8"))
         scene = next(s for s in spec["scenes"] if s["name"] == pid)
+        if a.plan:
+            import plan_crop
+            src, locp = inp / f"{loc}_s2", f"{loc}_{a.plan}"
+            dst = inp / f"{locp}_s2"
+            (dst / "_plate").mkdir(parents=True, exist_ok=True)
+            for fn in ("plate.json",):
+                if (src / "_plate" / fn).is_file():
+                    shutil.copy(src / "_plate" / fn, dst / "_plate" / fn)
+            info = plan_crop.crop_scene(src / pid, src / "_plate" / "plate_rgb.png", dst / pid, a.plan)
+            shutil.copy(dst / pid / "plate_rgb.png", dst / "_plate" / "plate_rgb.png")
+            print(f"[poseH3] plan {a.plan} {pid}: rect {info['rect_photo']} zoom {info['zoom']}", flush=True)
+            loc = locp
         shutil.copy(inp / f"{loc}_s2" / "_plate" / "plate_rgb.png", inp / f"{loc}_rgb.png")
         g = ts.graph(loc, spec, scene, a.seed)
-        pre = f"plate3d_poses/{m}_{pid}/L_C2"
+        pre = f"plate3d_poses/{m}_{pid}{'_' + a.plan if a.plan else ''}/L_C2"
         g["save"]["inputs"]["filename_prefix"] = f"{pre}_s{a.seed}"
         g["sam_save"]["inputs"]["filename_prefix"] = f"{pre}_mask_s{a.seed}"
-        name = f"{m}_{pid}_s{a.seed}"
+        name = f"{m}_{pid}{'_' + a.plan if a.plan else ''}_s{a.seed}"
         if any(r["name"] == name and r["status"] == "success" for r in runs):
             print("[poseH3] skip", name)
             continue
@@ -60,7 +74,7 @@ def main():
         print(f"[poseH3] {name}: {status} {row['seconds']}s", flush=True)
         if status != "success":
             raise SystemExit("stop after non-success")
-        d = outdir / "plate3d_poses" / f"{m}_{pid}"
+        d = outdir / "plate3d_poses" / f"{m}_{pid}{'_' + a.plan if a.plan else ''}"
         cr.comp2(inp / f"{loc}_rgb.png", inp / f"{loc}_s2" / pid / "shadow.png",
                  sorted(d.glob(f"L_C2_s{a.seed}_*.png"))[-1], sorted(d.glob(f"L_C2_mask_s{a.seed}_*.png"))[-1],
                  d / f"comp2_s{a.seed}.png")

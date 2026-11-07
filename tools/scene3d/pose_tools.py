@@ -239,21 +239,128 @@ def contact_gaps(body, bvh, contacts, cam_pos):
     return res
 
 
-def solve_contacts(rig, body, plate, contacts, cam_pos, iters=10):
-    """Translate the rig so the contact parts touch the plate (least squares along the surface normals)."""
-    bvh = plate_bvh(plate)
+# Support priority (07.11d): the body rests on its heaviest support; other contacts are reached by the limbs.
+# Lower number = stronger support. A contact may override with "role": "support" | "secondary".
+PRIORITY = {"pelvis": 0, "back": 0, "thigh.L": 1, "thigh.R": 1, "knee.L": 1, "knee.R": 1, "shin.L": 1, "shin.R": 1,
+            "foot.L": 2, "foot.R": 2, "elbow.L": 3, "elbow.R": 3, "hand.L": 4, "hand.R": 4, "head": 5}
+LIMB_FIX_MAX = 0.35      # m; a secondary contact further than this contradicts the pose -> reported, not forced
+LEG_DOF = [("upperleg01", "X", -45, 45), ("upperleg01", "Y", -25, 25), ("upperleg01", "Z", -25, 25),
+           ("lowerleg01", "X", -70, 70)]
+
+
+def _tiers(contacts):
+    """(support, secondary). Explicit roles win; otherwise the strongest PRIORITY class present is the support."""
+    if any(c.get("role") for c in contacts):
+        sup = [c for c in contacts if c.get("role") == "support"]
+        sec = [c for c in contacts if c.get("role") != "support"]
+        if sup:
+            return sup, sec
+    best = min(PRIORITY.get(c["part"], 9) for c in contacts)
+    return ([c for c in contacts if PRIORITY.get(c["part"], 9) == best],
+            [c for c in contacts if PRIORITY.get(c["part"], 9) != best])
+
+
+def _settle_support(rig, body, bvh, sup, cam_pos, iters):
+    """Translate the rig along the mean support normal until the deepest support part touches (min gap = 0)."""
     for _ in range(iters):
-        gaps = contact_gaps(body, bvh, contacts, cam_pos)
+        gaps = contact_gaps(body, bvh, sup, cam_pos)
         if not gaps:
-            break
-        delta = Vector()
+            return
+        n = Vector()
         for gp in gaps:
-            delta -= Vector(gp["normal"]) * gp["gap_cm"] / 100
-        delta /= len(gaps)
-        if delta.length < 0.002:
-            break
-        rig.location += delta
+            n += Vector(gp["normal"])
+        n.normalize()
+        d = min(gp["gap_cm"] for gp in gaps) / 100
+        if abs(d) < 0.002:
+            return
+        rig.location -= n * d
         bpy.context.view_layer.update()
+
+
+def leg_reach(rig, side, target, rotate_fn):
+    """Coordinate descent on hip X/Y/Z + knee X so the ankle (foot.<side> head) reaches target (armature space)."""
+    pbs = rig.pose.bones
+    eff = f"foot.{side}"
+    names = [f"{b}.{side}" for b, *_ in LEG_DOF]
+    if eff not in pbs or any(n not in pbs for n in names):
+        return None
+    mods = [m for o in bpy.data.objects if o.type == "MESH" for m in o.modifiers if m.show_viewport]
+    for m in mods:
+        m.show_viewport = False
+    acc = [0.0] * len(LEG_DOF)
+    best = (pbs[eff].head - target).length
+    for step in (8, 4, 2, 1):
+        improved = True
+        while improved:
+            improved = False
+            for i, (_b, axis, lo, hi) in enumerate(LEG_DOF):
+                for sgn in (1, -1):
+                    d = step * sgn
+                    if not lo <= acc[i] + d <= hi:
+                        continue
+                    saved = [pbs[n].matrix_basis.copy() for n in names]
+                    rotate_fn(rig, names[i], axis, d)
+                    c = (pbs[eff].head - target).length
+                    if c < best - 1e-5:
+                        best, acc[i], improved = c, acc[i] + d, True
+                        break
+                    for n, mb in zip(names, saved):
+                        pbs[n].matrix_basis = mb
+                    bpy.context.view_layer.update()
+    for m in mods:
+        m.show_viewport = True
+    bpy.context.view_layer.update()
+    return best
+
+
+def _fix_secondary(rig, body, bvh, sec, cam_pos, reach_fn, rotate_fn):
+    """Move each hand/foot secondary contact onto its surface with limb IK (other parts are reported only)."""
+    log = []
+    inv = rig.matrix_world.inverted()
+    for c in sec:
+        part = c["part"]
+        if part.split(".")[0] not in ("hand", "foot"):
+            continue
+        g = contact_gaps(body, bvh, [c], cam_pos)
+        if not g:
+            continue
+        gap = g[0]["gap_cm"] / 100
+        if abs(gap) <= 0.02 or abs(gap) > LIMB_FIX_MAX:
+            log.append({"part": part, "gap_cm": round(gap * 100, 1), "fixed": False})
+            continue
+        side = part.split(".")[1]
+        shift = -Vector(g[0]["normal"]) * gap                       # world
+        pbs = rig.pose.bones
+        if part.startswith("foot"):
+            tgt_w = rig.matrix_world @ pbs[f"foot.{side}"].head + shift
+            miss = leg_reach(rig, side, inv @ tgt_w, rotate_fn)
+        else:
+            eff = pbs[f"finger3-1.{side}"]
+            tgt = inv @ (rig.matrix_world @ eff.head + shift)
+            anchor = f"upperarm01.{side}"
+            off = tgt - pbs[anchor].head
+            sx = 1 if side == "L" else -1
+            reach_fn(rig, side, anchor, (off.x * sx, off.y, off.z))
+            miss = (pbs[f"finger3-1.{side}"].head - tgt).length
+        log.append({"part": part, "gap_cm": round(gap * 100, 1), "fixed": True,
+                    "miss_cm": None if miss is None else round(miss * 100, 1)})
+    return log
+
+
+def solve_contacts(rig, body, plate, contacts, cam_pos, iters=10, reach_fn=None, rotate_fn=None):
+    """07.11d: (1) the support tier (highest PRIORITY present) is settled exactly on its surface by translating the
+    rig (deepest support part gap = 0, no averaging with other contacts); (2) secondary hand/foot contacts are moved
+    onto their surfaces by limb IK (reach_fn/rotate_fn from poses.py), then joint limits are re-clamped;
+    (3) everything is re-measured. Without reach_fn/rotate_fn only step (1) runs."""
+    bvh = plate_bvh(plate)
+    sup, sec = _tiers(contacts)
+    _settle_support(rig, body, bvh, sup, cam_pos, iters)
+    limb = []
+    if sec and reach_fn and rotate_fn:
+        limb = _fix_secondary(rig, body, bvh, sec, cam_pos, reach_fn, rotate_fn)
+        if any(x.get("fixed") for x in limb):
+            clamp(rig)
+            _settle_support(rig, body, bvh, sup, cam_pos, iters)
     gaps = contact_gaps(body, bvh, contacts, cam_pos)
     pen = 0.0
     for p in _all_points(body, step=7):
@@ -261,7 +368,8 @@ def solve_contacts(rig, body, plate, contacts, cam_pos, iters=10):
         # only supporting surfaces (floor, bed, bench tops: normal up); a body behind furniture is not "inside" it
         if d is not None and d < pen and abs(d) < 0.3 and n.z > 0.6:
             pen = d
-    return {"contacts": gaps, "max_penetration_cm": round(pen * 100, 1)}
+    return {"contacts": gaps, "max_penetration_cm": round(pen * 100, 1),
+            "support": [c["part"] for c in sup], "limb_fix": limb}
 
 
 # ---------------------------------------------------------------------------------------------- MHR70 retarget

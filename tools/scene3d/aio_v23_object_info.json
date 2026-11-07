@@ -2052,5 +2052,84 @@
    "reverse colors"
   ],
   "essentials_category": "Image Tools"
+ },
+ "GetImageSize": {
+  "_stub": "07.11d brain stub — replace from server /object_info",
+  "input": {
+   "required": {
+    "image": [
+     "IMAGE"
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image"
+   ]
+  },
+  "output": [
+   "INT",
+   "INT",
+   "INT"
+  ],
+  "output_name": [
+   "width",
+   "height",
+   "batch_size"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_images"
+ },
+ "ImageScaleToTotalPixels": {
+  "_stub": "07.11d brain stub — replace from server /object_info",
+  "input": {
+   "required": {
+    "image": [
+     "IMAGE"
+    ],
+    "upscale_method": [
+     [
+      "nearest-exact",
+      "bilinear",
+      "area",
+      "bicubic",
+      "lanczos"
+     ]
+    ],
+    "megapixels": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0.01,
+      "max": 16.0,
+      "step": 0.01
+     }
+    ],
+    "resolution_steps": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 256
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "image",
+    "upscale_method",
+    "megapixels",
+    "resolution_steps"
+   ]
+  },
+  "output": [
+   "IMAGE"
+  ],
+  "output_name": [
+   "IMAGE"
+  ],
+  "output_node": false,
+  "python_module": "comfy_extras.nodes_upscale_model"
  }
 }
