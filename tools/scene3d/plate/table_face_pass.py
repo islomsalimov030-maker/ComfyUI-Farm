@@ -108,6 +108,16 @@ def graph(source, seed, info, crop_values):
         g[t + '_save'] = node('SaveImage', images=[t + '_comp', 0], filename_prefix=f'plate3d_table_face/{source.removesuffix(".png")}_{t}')
     g['mask_image'] = node('MaskToImage', mask=['sam', 1])
     g['mask_save'] = node('SaveImage', images=['mask_image', 0], filename_prefix=f'plate3d_table_face/mask_{source.removesuffix(".png")}')
+    # 07.11 remote (studio server 0.34.6): older RMBG without model_name; no farm/stacy_* RefMods there
+    sam_inputs = {**info['SAM3Segment']['input'].get('required', {}), **info['SAM3Segment']['input'].get('optional', {})}
+    g['sam']['inputs'] = {k: v for k, v in g['sam']['inputs'].items() if k in sam_inputs}
+    if farm_env.MODS == 'none':
+        del g['mods'], g['apply']
+        g['guide']['inputs']['conditioning'] = ['prepare', 0]
+    elif farm_env.MODS:
+        names = [m.strip() for m in farm_env.MODS.split(',') if m.strip()]
+        for i in range(1, 9):
+            g['mods']['inputs'][f'mod_{i}'] = names[i - 1] if i <= len(names) else '(none)'
     for k, v in g.items():
         v['_meta'] = {'title': f'3DA table FACE · {k}'}
     return g
@@ -135,8 +145,12 @@ def main():
         src = Path(path)
         name = f'tableface_{index}_{src.parent.name}_{src.name}'
         dest = OLD / 'input' / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dest)
         g = graph(name, 101 + index, info, crop_values)
+        if farm_env.REMOTE and not a.build_only:
+            import remote_sync
+            remote_sync.upload(dest, '')
         (STATE / (name + '.api.json')).write_text(json.dumps(g, indent=2))
         if a.build_only:
             continue
@@ -162,6 +176,8 @@ def main():
                                outputs=h[pid].get('outputs', {}))
                     (STATE / 'runs.json').write_text(json.dumps(rows, indent=2))
                     print('[face]', src.name, row['status'], row['seconds'], flush=True)
+                    farm_env.download_outputs([im for o in row['outputs'].values() for im in o.get('images', [])],
+                                              OLD / 'output')
                     if row['status'] != 'success':
                         (STATE / 'failure.json').write_text(json.dumps(h[pid], indent=2))
                         raise SystemExit('Face pass failed; inspect failure.json')
