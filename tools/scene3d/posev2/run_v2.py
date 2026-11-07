@@ -100,11 +100,15 @@ def do_summary():
         rows.append({"id": p["id"], **{k: r[k] for k in ("status", "support", "support_gap_cm", "max_penetration_cm",
                                                          "pen_verts_over_2cm", "balance_ok", "contacts_from",
                                                          "angle_to_camera_deg", "camera_elevation_deg", "ref_plan")},
-                     "contacts": {k: v["gap_cm"] for k, v in r["contacts"].items()}})
+                     "contacts": {k: v["gap_cm"] for k, v in r["contacts"].items()},
+                     "refine": {k: r["refine"][k] for k in ("max_joint_delta_deg", "n_joints_over_10deg", "before")}
+                     if "refine" in r else None})
         x = rows[-1]
         print(f"{x['id']:28} {x['status']:13} опора {x['support']} {x['support_gap_cm']:+.1f} см, "
               f"прон. {x['max_penetration_cm']:.1f} см ({x['pen_verts_over_2cm']} в.), равн. {x['balance_ok']}, "
-              f"ракурс {x['angle_to_camera_deg']}, камера {x['camera_elevation_deg']}, конт. {x['contacts_from']}")
+              f"ракурс {x['angle_to_camera_deg']}, камера {x['camera_elevation_deg']}, конт. {x['contacts_from']}"
+              + (f", refine ≤{x['refine']['max_joint_delta_deg']}° (было {x['refine']['before']['status']})"
+                 if x["refine"] else ""))
     (root / "summary.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding="utf-8")
 
 

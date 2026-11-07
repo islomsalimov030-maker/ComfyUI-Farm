@@ -431,6 +431,12 @@ def fit(ref, plate, target, height, forced=None, log=print):
            "fit": {"params": [round(float(x), 4) for x in p], "cost": round(float(sol.cost), 3), "nfev": int(sol.nfev)},
            "target_world": [round(float(x), 3) for x in T],
            "keypoints_body25_px": kp25, "px_size": [plate.Wp, plate.Hp]}
+    # состояние для refine.py: аффинное преобразование камера рефа -> мир плиты (X = V0 @ M.T + b) и контакты
+    A = np.hstack([V0, np.ones((len(V0), 1))])
+    Bm = np.linalg.lstsq(A, X, rcond=None)[0]
+    rep["_state"] = {"M": Bm[:3].T, "b": Bm[3], "support": support, "target": T,
+                     "contacts": {k: (c["idx"], c["kind"]) for k, c in contacts.items()},
+                     "sup_idx": sup_idx}
     log(f"[fit] {status}: опора {support} {sup_gap:.1f} см, проникновение {max_pen:.1f} см, "
         f"ракурс {rep['angle_to_camera_deg']}, камера {rep['camera_elevation_deg']}, равновесие {balance}")
     return X, rep, reg
@@ -439,6 +445,12 @@ def fit(ref, plate, target, height, forced=None, log=print):
 def write_outputs(out, X, F, rep, plate, reg, contacts_names):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
+    st = rep.pop("_state", None)
+    if st is not None:
+        np.savez_compressed(out / "fit_state.npz", M=st["M"], b=st["b"], target=st["target"], sup_idx=st["sup_idx"],
+                            support=np.array(st["support"]),
+                            **{f"c_{k}": idx for k, (idx, kind) in st["contacts"].items()},
+                            kinds=np.array([f"{k}:{kind}" for k, (idx, kind) in st["contacts"].items()]))
     with open(out / "body.obj", "w") as fh:
         fh.write("o body\n")
         fh.writelines(f"v {x:.5f} {y:.5f} {z:.5f}\n" for x, y, z in X)

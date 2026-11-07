@@ -140,7 +140,11 @@ def main():
         stem = Path(p).stem
         np.savez_compressed(out / f"{stem}.ref.npz", verts=V.astype(np.float32), faces=faces, kp3d=kp3.astype(np.float32),
                             kp2d=kp2.astype(np.float32), scene_pts=sp, scene_nrm=sn if sn is not None else np.zeros(0),
-                            f=f, cx=cx, cy=cy, W=W, H=H, fov_y_deg=fov_y, scene_scale=scale, image=str(p))
+                            f=f, cx=cx, cy=cy, W=W, H=H, fov_y_deg=fov_y, scene_scale=scale, image=str(p),
+                            # параметры MHR — для поправки суставов (refine.py): тот же вызов, что в MHRHead.forward
+                            **{f"mhr_{k}": arr(best[k]).reshape(-1).astype(np.float32)
+                               for k in ("global_rot", "body_pose_params", "hand_pose_params", "scale_params",
+                                         "shape_params", "expr_params", "pred_cam_t") if k in best})
         # проверка глазами: вершины тела (голубые) поверх рефа
         chk = Image.fromarray((im * 255).astype(np.uint8)).convert("RGB")
         dr = ImageDraw.Draw(chk)
