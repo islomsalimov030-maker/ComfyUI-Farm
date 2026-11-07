@@ -47,6 +47,8 @@ from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
+if os.environ.get("FARM_BPY_PKGS"):   # Blender's own Python has no Pillow: pip --target dir (appended: bundled numpy wins)
+    sys.path.append(os.environ["FARM_BPY_PKGS"])
 from poses import POSES, apply_pose, place  # noqa: E402
 from render_h3_maps import (BODY25_NAMES, char_objects,  # noqa: E402
                             depth_material, mask_material, keypoints_body25, render_pass, to_px, visibility)
@@ -144,6 +146,8 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     k_emit = float(L.get("photo_emission", 1.5))
     saved = {}
     if k_emit > 0:
+        # 07.11: drop the override left by the previous pass (depth emission -> flat grey "clay" on 07.11 run 1)
+        bpy.context.view_layer.material_override = None
         # per-object clay (a view-layer override would also replace the plate's emission)
         for o in sc.objects:
             if o.type == "MESH" and o is not plate and o is not disc:
@@ -167,12 +171,27 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
         nt.links.new(tc.outputs["Window"], tex.inputs["Vector"])
         nt.links.new(tex.outputs["Color"], emi.inputs["Color"])
         nt.links.new(emi.outputs["Emission"], outn.inputs["Surface"])
+        # 07.11 fix: an EMITTING shadow catcher kills its own matte (its emission enters the shadow ratio -> no cast
+        # shadow) and floods the clay. The catcher stays clay (as in _s) and invisible to bounce rays; a copy of the
+        # plate pushed 1 % away from the camera (same Window projection) emits the photo, unseen by camera/shadows.
         saved["__plate__"] = [sl.material for sl in plate.material_slots]
         if not plate.material_slots:
-            plate.data.materials.append(em)
+            plate.data.materials.append(clay)
         for sl in plate.material_slots:
             sl.link = "OBJECT"
+            sl.material = clay
+        plate.visible_diffuse = plate.visible_glossy = plate.visible_transmission = False
+        emitter = plate.copy()
+        sc.collection.objects.link(emitter)
+        emitter.is_shadow_catcher = False
+        emitter.visible_camera = emitter.visible_shadow = False
+        c = cam.matrix_world.translation
+        emitter.matrix_world = (Matrix.Translation(c) @ Matrix.Scale(1.01, 4) @ Matrix.Translation(-c)
+                                @ plate.matrix_world)
+        for sl in emitter.material_slots:
+            sl.link = "OBJECT"
             sl.material = em
+        saved["__emitter__"] = emitter
     else:
         bpy.context.view_layer.material_override = clay
     # sun: azimuth 0 = from the camera, +90 = from the right of the frame, 180 = from behind the subject
@@ -201,6 +220,10 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     sc.render.filepath = f"{out}/playblast_rgba.png"
     bpy.ops.render.render(write_still=True)
     bpy.context.view_layer.material_override = None
+    emitter = saved.pop("__emitter__", None)
+    if emitter is not None:
+        bpy.data.objects.remove(emitter, do_unlink=True)
+        plate.visible_diffuse = plate.visible_glossy = plate.visible_transmission = True
     for name, mats in saved.items():
         o = plate if name == "__plate__" else sc.objects.get(name)
         if o is None:
