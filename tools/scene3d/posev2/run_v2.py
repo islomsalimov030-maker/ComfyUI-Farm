@@ -45,10 +45,12 @@ def do_fit(refs, only):
         target = tuple(p.get("seat") or p.get("feet"))
         X, rep, reg = pf.fit(ref, plate, target, 1.62, None, log=lambda m: print(f"[{p['id']}] {m}", flush=True))
         src = "ref"
-        if not rep["contacts"]:
-            X, rep, reg = pf.fit(ref, plate, target, 1.62, table_contacts(p),
-                                 log=lambda m: print(f"[{p['id']}] (таблица) {m}", flush=True))
-            src = "table"
+        if rep["status"] != "ok" and p.get("contacts"):     # таблица — только если реф не посадил, и только если лучше
+            X2, rep2, reg2 = pf.fit(ref, plate, target, 1.62, table_contacts(p),
+                                    log=lambda m: print(f"[{p['id']}] (таблица) {m}", flush=True))
+            score = lambda r: (r["status"] != "ok", r["support_gap_cm"] + r["max_penetration_cm"])  # noqa: E731
+            if score(rep2) < score(rep):
+                X, rep, reg, src = X2, rep2, reg2, "table"
         rep["contacts_from"] = src
         pf.write_outputs(root / p["id"], X, ref["F"], rep, plate, reg, rep["contacts"].keys())
         rows.append(p["id"])
@@ -127,9 +129,22 @@ def do_collect(conf, out):
     print(f"[v2] collect: {len(got)} рефов -> {out}: {got}", flush=True)
 
 
+def font_ru(size=13):
+    """Шрифт с кириллицей (по умолчанию PIL рисует квадраты)."""
+    from PIL import ImageFont
+    for f in ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/segoeui.ttf",
+              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"):
+        try:
+            return ImageFont.truetype(f, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
 def do_sheet(refs_img, refs, out):
     """Строка = поза: реф | реф с телом (ref_check) | посадка поверх фото (overlay) | плейбласт; подпись — fit.json."""
     from PIL import Image, ImageDraw
+    font = font_ru()
     root = pr.ROUND / M
     ids = [p for p in pr.prompts() if (root / p["id"] / "fit.json").is_file()]
     TW, TH = 330, 300
@@ -159,7 +174,7 @@ def do_sheet(refs_img, refs, out):
         txt = (f"{p['id']}  {r['status']}  опора {r['support']} {r['support_gap_cm']:+.1f}см  прон {r['max_penetration_cm']}см"
                f"  равн {r['balance_ok']}  ракурс {r['angle_to_camera_deg']}  камера {r['camera_elevation_deg']}"
                f"  конт {r.get('contacts_from')}")
-        d.text((6, y + TH + 4), txt, fill=(255, 255, 255))
+        d.text((6, y + TH + 4), txt, fill=(255, 255, 255), font=font)
     S.save(out, quality=88)
     print(f"[v2] sheet {out}: {len(ids)} строк", flush=True)
 

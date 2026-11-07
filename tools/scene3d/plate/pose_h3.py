@@ -57,8 +57,10 @@ def main():
         g["save"]["inputs"]["filename_prefix"] = f"{pre}_s{a.seed}"
         g["sam_save"]["inputs"]["filename_prefix"] = f"{pre}_mask_s{a.seed}"
         name = f"{m}_{pid}{'_' + a.plan if a.plan else ''}_s{a.seed}"
-        if any(r["name"] == name and r["status"] == "success" for r in runs):
-            print("[poseH3] skip", name)
+        pb = inp / f"{loc}_s2" / pid / "playblast.png"
+        pb_mtime = round(pb.stat().st_mtime) if pb.is_file() else None
+        if any(r["name"] == name and r["status"] == "success" and r.get("playblast_mtime") == pb_mtime for r in runs):
+            print("[poseH3] skip (тот же плейбласт)", name)
             continue
         pending = next((r for r in runs if r["name"] == name and r["status"] == "submitted"), None)
         if pending:                                   # 07.11d: resume a job sent before a connection drop
@@ -82,7 +84,8 @@ def main():
             raise SystemExit("Queue is occupied; refusing to add work")
         t0 = time.monotonic()
         pid_ = ab.post(g)
-        row = dict(name=name, method=m, id=pid, status="submitted", prompt_id=pid_, seconds=None)
+        row = dict(name=name, method=m, id=pid, status="submitted", prompt_id=pid_, seconds=None,
+                   playblast_mtime=pb_mtime)
         runs.append(row)
         runs_path.write_text(json.dumps(runs, indent=1))      # recorded before waiting: a rerun resumes, not resubmits
         status, result = qr.wait(pid_, 1200)

@@ -382,7 +382,14 @@ def fit(ref, plate, target, height, forced=None, log=print):
     if support == ["lowest"]:
         sup_gap = float(np.median(X[sup_idx, 2] - T[2])) * 100
     else:
-        sup_gap = max(abs(rep_c[k]["gap_cm"]) for k in support)
+        gaps_all = []
+        for k in support:                                 # зазор опоры — по самым низким 30 % вершин опорных регионов
+            tree, P, N = plate.trees[contacts[k]["kind"] if contacts[k]["kind"] in ("h", "v") else "any"]
+            Xi = X[contacts[k]["idx"]]
+            d, j = tree.query(Xi)
+            gaps_all.append(np.einsum("ij,ij->i", Xi - P[j], N[j]))
+        g = np.concatenate(gaps_all)
+        sup_gap = abs(float(np.median(g[g <= np.percentile(g, 30)]))) * 100
     # равновесие: центр масс над опорным многоугольником (горизонтальные контакты в пределах 3 см)
     pts = []
     for k, c in contacts.items():
