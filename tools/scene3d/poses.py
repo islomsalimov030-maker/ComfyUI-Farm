@@ -209,6 +209,11 @@ def _world_verts(obj, groups=None, min_w=0.3):
             continue
         pts.append(ev.matrix_world @ v.co)
     ev.to_mesh_clear()
+    if not groups and obj.parent is not None:
+        # rigid parts parented to the same rig (07.11: the neutral mannequin's egg head) count for contacts too
+        for o in obj.parent.children:
+            if o is not obj and o.type == "MESH" and o.parent_type == "BONE":
+                pts += [o.matrix_world @ v.co for v in o.data.vertices]
     return pts
 
 
