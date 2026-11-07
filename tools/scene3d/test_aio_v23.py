@@ -61,18 +61,22 @@ class V23Tests(unittest.TestCase):
         n['outputs'][0]['links'].append(r['links'][0][0])
         self.assertTrue(p.validate(r))
 
-    def test_recipe_defaults_and_sampling_schedule(self):
+    def test_recipe_defaults_and_server_composite(self):
         cs=self.result['extra']['aio_v23']['controls']
-        self.assertEqual((False,False,False,25),(cs['enabled']['default'],cs['pose']['default'],cs['harmonize']['default'],cs['steps']['default']))
+        self.assertEqual((False,True,25),(cs['enabled']['default'],cs['video1']['default'],cs['steps']['default']))
+        self.assertFalse({'pose','harmonize','denoise45','pose_strength','pose_end','folder'} & set(cs))
         nodes={n.get('title'):n for g in p.graphs(self.result) for n in g['nodes'] if n['id'] in self.result['extra']['aio_v23']['added_nodes']}
+        types={n['type'] for n in nodes.values()}
+        # server variant: no Fun CN, no patch loader, no harmonisation sampler, no turbo LoRA
+        self.assertFalse(types & {'MiniMaxH3FunControlNetApply','ModelPatchLoader','LoadImagesFromFolderKJ','H3LatentFromImage','SamplerCustomAdvanced','LoraLoaderModelOnly'})
         self.assertEqual([5],nodes['3D · INPUT / playblast ×5 frames @24fps']['widgets_values'])
-        self.assertEqual([0.45],nodes['3D · HARM / denoise 0.45']['widgets_values'])
+        self.assertEqual([0.8,'multiply'],nodes['3D · COMPOSITE / photo x (1 - 0.8 shadow)']['widgets_values'])
+        self.assertEqual([4,0,True,False,6,1,1,False],nodes['3D · COMPOSITE / feather person']['widgets_values'])
         s=next(g for g in p.graphs(self.result) if g.get('id')==self.result['extra']['aio_v23']['photo_id'])
-        smp=nodes['3D · HARM / custom sigma sampler']
-        sigma=next(i for i in smp['inputs'] if i['name']=='sigmas')['link']
-        link=next(l for l in s['links'] if l['id']==sigma)
-        self.assertEqual((nodes['3D · HARM / H3LatentFromImage']['id'],1),(link['origin_id'],link['origin_slot']))
-        self.assertFalse(any(n['type']=='LoraLoaderModelOnly' for n in nodes.values()))
+        comp=nodes['3D · COMPOSITE / person onto photo']
+        dest=next(i for i in comp['inputs'] if i['name']=='destination')['link']
+        link=next(l for l in s['links'] if l['id']==dest)
+        self.assertEqual(nodes['3D · COMPOSITE / photo x (1 - 0.8 shadow)']['id'],link['origin_id'])
 
     def test_new_nodes_against_targeted_object_info(self):
         schemas=json.loads((HERE/'aio_v23_object_info.json').read_text(encoding='utf-8'))

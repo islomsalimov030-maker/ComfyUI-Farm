@@ -16,7 +16,9 @@ sys.path.insert(0, str(ROOT / 'tools'))
 from wfkit import G, check_ui, _norm
 
 PREFIX = '3D · '
-VERSION = 'aio-v23-ui-1'
+# ui-2 (07.11c): SERVER variant (studio ComfyUI 0.34.6) = winning recipe S3 comp2 only: playblast <Video 1>, base ref2va,
+# SAM3 person, person over photo x (1 - 0.8*shadow) inside the graph. No Fun CN and no harmonisation (V2.3-pod later).
+VERSION = 'aio-v23-ui-2-server'
 
 # New SFW text only; no interpolation of inherited literals.
 PROMPT = '''subject_definitions:
@@ -107,14 +109,9 @@ def patch(source):
         return idx
 
     enabled = control('enabled', 'PrimitiveBoolean', False, 'BOOLEAN', -320, 1940, '3D ВКЛ (default OFF)')
-    pose = control('pose', 'PrimitiveBoolean', False, 'BOOLEAN', 90, 1940, 'R1s+pose? OFF=R1s')
-    harm = control('harmonize', 'PrimitiveBoolean', False, 'BOOLEAN', 500, 1940, 'harmonize? OFF=R1s')
-    usevideo = control('video1', 'PrimitiveBoolean', True, 'BOOLEAN', 90, 2070, '<Video 1> ВКЛ (R1s)')
-    denoise45 = control('denoise45', 'PrimitiveBoolean', False, 'BOOLEAN', 500, 2070, 'гармонизация 0.45? OFF=0.30')
+    usevideo = control('video1', 'PrimitiveBoolean', True, 'BOOLEAN', 90, 1940, '<Video 1> ВКЛ (S3 comp2)')
     steps = control('steps', 'INTConstant', 25, 'INT', 90, 2200, 'base steps (no turbo)')
     seed = control('seed', 'INTConstant', 101, 'INT', 500, 2200, 'seed (fixed)')
-    strength = control('pose_strength', 'FloatConstant', 0.5, 'FLOAT', 90, 2330, 'pose strength (clamped 0..0.5)')
-    end = control('pose_end', 'FloatConstant', 0.5, 'FLOAT', 500, 2330, 'pose end (clamped 0..0.5)')
     # Expose local IMAGE inputs with their own LoadImage nodes; no dependence on muted PHOTO loaders.
     def image_input(key, filename, x, label):
         n = add(top, 'LoadImage', 'ВХОД / ' + label, outputs=[('IMAGE', 'IMAGE'), ('MASK', 'MASK')],
@@ -128,8 +125,8 @@ def patch(source):
     plate = image_input('plate', 'example.png', -320, '<Picture 1> фотоплита (загрузить)')
     identity = image_input('identity', 'example.png', 90, '<Picture 2> лицо SFW (загрузить)')
     clay = image_input('clay', 'example.png', 500, 'playblast.png с тенями (загрузить)')
+    shadow_in = image_input('shadow', 'example.png', 910, 'shadow.png тень вне фигуры (загрузить)')
     prompt_idx = control('prompt', 'PrimitiveStringMultiline', PROMPT, 'STRING', -320, 2970, 'SFW ref prompt (отдельно от V2.2)')
-    folder_idx = control('folder', 'PrimitiveString', '__SET_POSE_FOLDER__', 'STRING', 90, 2970, 'pose folder input/.../control/pose')
 
     def wire(idx, dst, name):
         pg.connect(-10, idx, dst, name)
@@ -176,51 +173,29 @@ def patch(source):
     mods = clone(old['w7 · RefMod → условие'],'COND / existing RefMod (unchanged recipe)',2700,5000)
     conn(cond,mods,'conditioning'); pg.connect(-10,9,mods,'mods')
     neg = clone(old['gen · пустой negative'],'COND / negative',3100,5000); conn(mods,neg,'conditioning')
-    patchloader = add(pg,'ModelPatchLoader','POSE / union patch',outputs=[('MODEL_PATCH','MODEL_PATCH')],
-                      widgets={'name':'minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors'},pos=(900,5700))
-    folder = add(pg,'LoadImagesFromFolderKJ','POSE / 5 frames (separate folder)',inputs=[('folder','STRING',True)],
-                 outputs=[('image','IMAGE'),('mask','MASK'),('count','INT'),('image_path','STRING')],
-                 widgets={'folder':'__SET_POSE_FOLDER__','width':1344,'height':768,'keep_aspect_ratio':'stretch','image_load_cap':5,'start_index':0,'include_subfolders':False},pos=(900,5900),size=(350,250))
-    wire(folder_idx,folder,'folder')
-    def clamp(idx,label,x,y):
-        n = clone(old['gen · старт 2-го прохода = total - steps'],label,x,y,['min(max(a, 0), 0.5)'])
-        wire(idx,n,'values.a'); return n
-    cs = clamp(strength,'POSE / strength clamp ≤0.5',1300,5700)
-    ce = clamp(end,'POSE / end clamp ≤0.5',1300,5900)
-    apply = add(pg,'MiniMaxH3FunControlNetApply','POSE / FunCN (optional)',
-                inputs=[('model','MODEL'),('model_patch','MODEL_PATCH'),('vae','VAE'),('control_video','IMAGE'),('strength','FLOAT',True),('end_percent','FLOAT',True)],outputs=[('MODEL','MODEL')],
-                widgets={'strength':0.5,'start_percent':0.0,'end_percent':0.5},pos=(1800,5700),size=(350,220))
-    for src,name in ((shift,'model'),(patchloader,'model_patch'),(vae,'vae'),(folder,'control_video')):conn(src,apply,name)
-    conn(cs,apply,'strength');conn(ce,apply,'end_percent')
-    posed = toggled('SELECT / R1s or R1s+pose MODEL',shift,apply,pose,2300,5700)
     ks = clone(old['gen · sampler pass 1'],'SAMPLE / base 25 steps cfg1',3500,5000,['enable',101,'fixed',25,1,'euler','simple',0,10000,'disable'])
-    for src,name in ((posed,'model'),(mods,'positive'),(neg,'negative'),(lat,'latent_image')):conn(src,ks,name)
+    for src,name in ((shift,'model'),(mods,'positive'),(neg,'negative'),(lat,'latent_image')):conn(src,ks,name)
     wire(steps,ks,'steps');wire(seed,ks,'noise_seed')
     dec = clone(old['gen · decode'],'DECODE / R1s',4000,5000);conn(ks,dec,'samples');conn(vae,dec,'vae')
     sel = clone(old['gen · выбор кадра'],'SELECT / generated frame',4500,5000);conn(dec,sel,'frames');conn(dec,sel,'recommended_index',3)
-    # New PERSON follows CURRENT RMBG 3.3 schema, not the inherited old FACE widget layout.
+    # PERSON: SERVER RMBG schema (no model_name widget; the FACE pass SAM3 of V2.2 uses the same old layout).
     person = add(pg,'SAM3Segment','COMPOSITE / SAM3 person', inputs=[('image','IMAGE')],
-                 outputs=[('IMAGE','IMAGE'),('MASK','MASK'),('MASK_IMAGE','IMAGE'),('BBOX','BBOX')],
-                 widgets={'model_name':'sam3','prompt':'person','output_mode':'Merged','confidence_threshold':0.5,'max_segments':1,'segment_pick':0,'mask_blur':0,'mask_offset':0,'device':'Auto','invert_output':False,'unload_model':False,'background':'Alpha','background_color':'#222222'},pos=(5000,5000),size=(350,430))
+                 outputs=[('IMAGE','IMAGE'),('MASK','MASK'),('MASK_IMAGE','IMAGE')],
+                 widgets={'prompt':'person','output_mode':'Merged','confidence_threshold':0.5,'max_segments':1,'segment_pick':0,'mask_blur':0,'mask_offset':0,'device':'Auto','invert_output':False,'unload_model':False,'background':'Alpha','background_color':'#222222'},pos=(5000,5000),size=(350,430))
     conn(sel,person,'image')
-    blur = clone(old['shm'],'COMPOSITE / feather person',5500,5000,[0,0,True,False,8,1,1,False]);conn(person,blur,'mask',1)
-    composite = clone(old['f85:shc'],'COMPOSITE / person onto photo',6000,5000,[0,0,False])
-    conn(bg,composite,'destination');conn(sel,composite,'source');conn(blur,composite,'mask')
-    # Harmonization has NO FunCN and uses H3LatentFromImage's sigmas, not a fresh full schedule.
-    d30 = add(pg,'FloatConstant','HARM / denoise 0.30',outputs=[('value','FLOAT')],widgets={'value':0.3},pos=(5000,5600))
-    d45 = add(pg,'FloatConstant','HARM / denoise 0.45',outputs=[('value','FLOAT')],widgets={'value':0.45},pos=(5000,5750))
-    ds = toggled('SELECT / denoise 0.30 or 0.45',d30,d45,denoise45,5500,5600)
-    hl = clone(old['face_denoise'],'HARM / H3LatentFromImage',6000,5600,[10,'simple',0.3])
-    for src,name in ((lat,'h3_latent'),(vae,'vae'),(composite,'image'),(shift,'model'),(ds,'denoise')):conn(src,hl,name)
-    noise = clone(old['face_seed'],'HARM / seed',6500,5800,[101,'fixed']);wire(seed,noise,'noise_seed')
-    guide = clone(old['11190:11120'],'HARM / cfg1 no CN',6500,5600);conn(shift,guide,'model');conn(mods,guide,'conditioning')
-    sampler = clone(old['11190:11121'],'HARM / euler',6500,5950,['euler'])
-    smp = clone(old['f85:smp'],'HARM / custom sigma sampler',7000,5600)
-    for src,name,slot in ((noise,'noise',0),(guide,'guider',0),(sampler,'sampler',0),(hl,'sigmas',1),(hl,'latent_image',0)):conn(src,smp,name,slot)
-    hd = clone(old['gen · decode'],'HARM / decode',7500,5600);conn(smp,hd,'samples');conn(vae,hd,'vae')
-    hs = clone(old['gen · выбор кадра'],'HARM / selected frame',8000,5600);conn(hd,hs,'frames');conn(hd,hs,'recommended_index',3)
-    result = toggled('SELECT / composite or harmonized',composite,hs,harm,8500,5000)
-    beforeface = toggled('SELECT / 3D OFF legacy frame',old['gen · выбор кадра'],result,enabled,9000,5000)
+    # S3 comp2: grow 4 px, blur 6 px (as composite_round.comp2 / quality_round L_C2)
+    blur = clone(old['shm'],'COMPOSITE / feather person',5500,5000,[4,0,True,False,6,1,1,False]);conn(person,blur,'mask',1)
+    # Cast/contact shadow on the photo: photo x (1 - 0.8*shadow) = ImageBlend(photo, invert(shadow), 0.8, multiply)
+    # (core: image1*(1-f) + image1*image2*f). shadow.png comes from render_plate_scene (figure rim already removed).
+    sh = scale(shadow_in, 'COMPOSITE / shadow 1344x768', 5000, 5500)
+    inv = add(pg,'ImageInvert','COMPOSITE / 1 - shadow',inputs=[('image','IMAGE')],outputs=[('IMAGE','IMAGE')],pos=(5500,5500),size=(260,60))
+    conn(sh,inv,'image')
+    blend = add(pg,'ImageBlend','COMPOSITE / photo x (1 - 0.8 shadow)',inputs=[('image1','IMAGE'),('image2','IMAGE')],
+                outputs=[('IMAGE','IMAGE')],widgets={'blend_factor':0.8,'blend_mode':'multiply'},pos=(5900,5500),size=(320,110))
+    conn(bg,blend,'image1');conn(inv,blend,'image2')
+    composite = clone(old['f85:shc'],'COMPOSITE / person onto photo',6400,5000,[0,0,False])
+    conn(blend,composite,'destination');conn(sel,composite,'source');conn(blur,composite,'mask')
+    beforeface = toggled('SELECT / 3D OFF legacy frame',old['gen · выбор кадра'],composite,enabled,9000,5000)
     # Only two legacy IMAGE consumers are redirected; all face-pass widgets/conditioning untouched.
     rewired = []
     for target,name in ((old['11190:11128'],'image'),(old['11190:11114'],'image')):
@@ -231,12 +206,12 @@ def patch(source):
     photo.setdefault('groups',[]).append({'id':max([g.get('id',0) for g in photo.get('groups',[])]+[0])+1,'title':'3D · движок (не трогать)','bounding':[50,4900,9450,1500],'color':'#31526b','flags':{}})
     inst['size'][1] += (len(photo['inputs'])-20)*20
     r['groups'].append({'id':max(g['id'] for g in r['groups'])+1,'title':'3D · отдельный пульт (default OFF)','bounding':[-350,1870,1270,1600],'color':'#31526b','flags':{}})
-    note = add(top,'MarkdownNote','README / рецепты и ограничения',widgets={'text':'''3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.
-R1s: pose OFF, harmonize OFF. R1s+pose: pose ON, harmonize OFF. Harmonize: pose OFF, harmonize ON, denoise 0.30 or 0.45. Winner is UNKNOWN. Both ON is an extra untested combination.
-Upload Picture1 photo, Picture2 SFW identity and shadowed playblast.png. Repeated 5 frames @24fps. Pose input: separate 5-frame folder. Sizes fixed 1344x768. No turbo; base ref2va 25steps cfg1.
-Existing PHOTO RefMod loader is reused. Existing FACE pass and its denoise remain unchanged. Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.
-Troubleshooting: pose drifts -> compare playblast, then optional pose<=0.5 until<=50%; pasted edge -> inspect PERSON mask/feather, try harmonize; shadow lost -> inspect playblast and composite (PERSON mask does not preserve cast shadow outside body).
-Offline UI only, NOT runtime accepted. Missing packages must be connected to next by the operator. Old FACE SAM3 widget migration needs checking; do not auto-run this inherited workflow with its old prompts. Use an independently supplied SFW prompt for runtime validation.'''},pos=(-1050,1940),size=(650,850))
+    note = add(top,'MarkdownNote','README / рецепты и ограничения',widgets={'text':'''SERVER variant (studio ComfyUI 0.34.6): recipe S3 comp2 only. No Fun CN, no harmonisation (both doubled the face / changed the room in tests). Fun CN variant = V2.3-pod later.
+3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.
+Upload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Sizes fixed 1344x768; 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.
+Chain: generation -> SAM3 person (grow 4 / blur 6) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).
+Existing PHOTO RefMod loader is reused (set the Stacy mods there). Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.
+Troubleshooting: pose drifts -> check the playblast; pasted edge -> PERSON mask/feather; shadow lost -> shadow.png must be from the SAME render as playblast.png.'''},pos=(-1050,1940),size=(650,850))
     # Preserve legacy graph state counters except newly extended photo state.
     for s0 in source['definitions']['subgraphs']:
         s = next(s for s in r['definitions']['subgraphs'] if s['id']==s0['id'])

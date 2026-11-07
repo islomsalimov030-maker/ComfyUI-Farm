@@ -300,41 +300,14 @@
  },
  "195": {
   "inputs": {
-   "value": false
-  },
-  "class_type": "PrimitiveBoolean",
-  "_meta": {
-   "title": "3D · ПУЛЬТ / R1s+pose? OFF=R1s"
-  }
- },
- "196": {
-  "inputs": {
-   "value": false
-  },
-  "class_type": "PrimitiveBoolean",
-  "_meta": {
-   "title": "3D · ПУЛЬТ / harmonize? OFF=R1s"
-  }
- },
- "197": {
-  "inputs": {
    "value": true
   },
   "class_type": "PrimitiveBoolean",
   "_meta": {
-   "title": "3D · ПУЛЬТ / <Video 1> ВКЛ (R1s)"
+   "title": "3D · ПУЛЬТ / <Video 1> ВКЛ (S3 comp2)"
   }
  },
- "198": {
-  "inputs": {
-   "value": false
-  },
-  "class_type": "PrimitiveBoolean",
-  "_meta": {
-   "title": "3D · ПУЛЬТ / гармонизация 0.45? OFF=0.30"
-  }
- },
- "199": {
+ "196": {
   "inputs": {
    "value": 25
   },
@@ -343,7 +316,7 @@
    "title": "3D · ПУЛЬТ / base steps (no turbo)"
   }
  },
- "200": {
+ "197": {
   "inputs": {
    "value": 101
   },
@@ -352,25 +325,7 @@
    "title": "3D · ПУЛЬТ / seed (fixed)"
   }
  },
- "201": {
-  "inputs": {
-   "value": 0.5
-  },
-  "class_type": "FloatConstant",
-  "_meta": {
-   "title": "3D · ПУЛЬТ / pose strength (clamped 0..0.5)"
-  }
- },
- "202": {
-  "inputs": {
-   "value": 0.5
-  },
-  "class_type": "FloatConstant",
-  "_meta": {
-   "title": "3D · ПУЛЬТ / pose end (clamped 0..0.5)"
-  }
- },
- "203": {
+ "198": {
   "inputs": {
    "image": "example.png"
   },
@@ -379,7 +334,7 @@
    "title": "3D · ВХОД / <Picture 1> фотоплита (загрузить)"
   }
  },
- "204": {
+ "199": {
   "inputs": {
    "image": "example.png"
   },
@@ -388,7 +343,7 @@
    "title": "3D · ВХОД / <Picture 2> лицо SFW (загрузить)"
   }
  },
- "205": {
+ "200": {
   "inputs": {
    "image": "example.png"
   },
@@ -397,22 +352,22 @@
    "title": "3D · ВХОД / playblast.png с тенями (загрузить)"
   }
  },
- "206": {
+ "201": {
+  "inputs": {
+   "image": "example.png"
+  },
+  "class_type": "LoadImage",
+  "_meta": {
+   "title": "3D · ВХОД / shadow.png тень вне фигуры (загрузить)"
+  }
+ },
+ "202": {
   "inputs": {
    "value": "subject_definitions:\n<Subject 1> is the adult woman whose facial identity is supplied by <Picture 2>.\n<Picture 1> is the room photograph defining the camera, furniture, materials and lighting.\n<Picture 2> is only an identity reference, never a layout.\n<Video 1> is the shadowed clay playblast defining pose, size, placement and contact with furniture.\nsummary:\n[reference generation] One single photograph. Replace the clay figure with <Subject 1> in an opaque grey T-shirt, full-length navy trousers and white sneakers, preserving the exact room composition.\nretention_analysis:\n<Subject 1>: attribute_transfer - facial identity from <Picture 2>.\n<Picture 1>: fully_preserved - room composition, materials and lighting.\n<Picture 2>: attribute_transfer - facial identity only.\n<Video 1>: partially_preserved - geometry, pose, size and placement, not clay appearance.\ndetailed_description:\nPhotorealistic live-action still. [Shot 1] Preserve the exact pose, projected size and position from <Video 1>. True-to-life scale: keep the furniture-to-body proportions of the playblast; never enlarge her to fill the frame. She is lit by the same light as the room and casts a soft natural shadow on the floor and furniture beneath her. Preserve feet contact and the contact with furniture. No mannequin, clay texture or skeleton overlay.\nFilmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan.\nOne continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen.\nThe lighting is preserved unchanged throughout.\nColors and saturation stay unchanged from the reference image.\noverall_soundscape:\nQuiet room tone.\nnon_diegetic_music:\nN/A"
   },
   "class_type": "PrimitiveStringMultiline",
   "_meta": {
    "title": "3D · ПУЛЬТ / SFW ref prompt (отдельно от V2.2)"
-  }
- },
- "207": {
-  "inputs": {
-   "value": "__SET_POSE_FOLDER__"
-  },
-  "class_type": "PrimitiveString",
-  "_meta": {
-   "title": "3D · ПУЛЬТ / pose folder input/.../control/pose"
   }
  },
  "186:48": {
@@ -821,7 +776,7 @@
    "background": "Alpha",
    "background_color": "#222222",
    "image": [
-    "183:246",
+    "183:227",
     0
    ]
   },
@@ -871,7 +826,7 @@
    "output_padding": "16",
    "device_mode": "gpu (much faster)",
    "image": [
-    "183:246",
+    "183:227",
     0
    ],
    "mask": [
@@ -1231,7 +1186,7 @@
    "title": "маска: итог · ref2v"
   }
  },
- "183:208": {
+ "183:203": {
   "inputs": {
    "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
    "weight_dtype": "default"
@@ -1241,12 +1196,12 @@
    "title": "3D · MODEL / base ref2va (no turbo)"
   }
  },
- "183:209": {
+ "183:204": {
   "inputs": {
    "shift_video": 12,
    "shift_audio": 3,
    "model": [
-    "183:208",
+    "183:203",
     0
    ]
   },
@@ -1255,7 +1210,7 @@
    "title": "3D · MODEL / shift"
   }
  },
- "183:210": {
+ "183:205": {
   "inputs": {
    "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
    "type": "minimax",
@@ -1266,7 +1221,7 @@
    "title": "3D · MODEL / Qwen3-VL"
   }
  },
- "183:211": {
+ "183:206": {
   "inputs": {
    "vae_name": "minimax_h3_video_vae_fp16.safetensors"
   },
@@ -1275,7 +1230,7 @@
    "title": "3D · MODEL / H3 video VAE"
   }
  },
- "183:212": {
+ "183:207": {
   "inputs": {
    "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
   },
@@ -1284,14 +1239,14 @@
    "title": "3D · MODEL / H3 audio VAE"
   }
  },
- "183:213": {
+ "183:208": {
   "inputs": {
    "upscale_method": "lanczos",
    "width": 1344,
    "height": 768,
    "crop": "disabled",
    "image": [
-    "203",
+    "198",
     0
    ]
   },
@@ -1300,14 +1255,14 @@
    "title": "3D · INPUT / фотоплита 1344x768"
   }
  },
- "183:214": {
+ "183:209": {
   "inputs": {
    "upscale_method": "lanczos",
    "width": 1344,
    "height": 768,
    "crop": "disabled",
    "image": [
-    "205",
+    "200",
     0
    ]
   },
@@ -1316,11 +1271,11 @@
    "title": "3D · INPUT / playblast 1344x768"
   }
  },
- "183:215": {
+ "183:210": {
   "inputs": {
    "amount": 5,
    "image": [
-    "183:214",
+    "183:209",
     0
    ]
   },
@@ -1329,10 +1284,10 @@
    "title": "3D · INPUT / playblast ×5 frames @24fps"
   }
  },
- "183:216": {
+ "183:211": {
   "inputs": {
    "prompt": [
-    "183:218",
+    "183:213",
     0
    ],
    "width": 1344,
@@ -1340,23 +1295,23 @@
    "length": 5,
    "ref_image_size": "match",
    "clip": [
-    "183:210",
+    "183:205",
     0
    ],
    "vae": [
-    "183:211",
+    "183:206",
     0
    ],
    "audio_vae": [
-    "183:212",
+    "183:207",
     0
    ],
    "ref_images.ref_image_0": [
-    "183:213",
+    "183:208",
     0
    ],
    "ref_images.ref_image_1": [
-    "204",
+    "199",
     0
    ]
   },
@@ -1365,10 +1320,10 @@
    "title": "3D · COND / без Video 1"
   }
  },
- "183:217": {
+ "183:212": {
   "inputs": {
    "prompt": [
-    "206",
+    "202",
     0
    ],
    "width": 1344,
@@ -1376,27 +1331,27 @@
    "length": 5,
    "ref_image_size": "match",
    "clip": [
-    "183:210",
+    "183:205",
     0
    ],
    "vae": [
-    "183:211",
+    "183:206",
     0
    ],
    "audio_vae": [
-    "183:212",
+    "183:207",
     0
    ],
    "ref_images.ref_image_0": [
-    "183:213",
+    "183:208",
     0
    ],
    "ref_images.ref_image_1": [
-    "204",
+    "199",
     0
    ],
    "ref_videos.ref_video_0": [
-    "183:215",
+    "183:210",
     0
    ]
   },
@@ -1405,7 +1360,7 @@
    "title": "3D · COND / с Video 1 (R1s)"
   }
  },
- "183:218": {
+ "183:213": {
   "inputs": {
    "value": "subject_definitions:\n<Subject 1> is the adult woman whose facial identity is supplied by <Picture 2>.\n<Picture 1> is the room photograph defining the camera, furniture, materials and lighting.\n<Picture 2> is only an identity reference, never a layout.\nsummary:\n[reference generation] One single photograph. Place the woman naturally in the room with <Subject 1> in an opaque grey T-shirt, full-length navy trousers and white sneakers, preserving the exact room composition.\nretention_analysis:\n<Subject 1>: attribute_transfer - facial identity from <Picture 2>.\n<Picture 1>: fully_preserved - room composition, materials and lighting.\n<Picture 2>: attribute_transfer - facial identity only.\ndetailed_description:\nPhotorealistic live-action still. [Shot 1] Preserve the exact pose, projected size and position from <Picture 1>. True-to-life scale: keep the furniture-to-body proportions of the room photograph; never enlarge her to fill the frame. She is lit by the same light as the room and casts a soft natural shadow on the floor and furniture beneath her. Preserve feet contact and the contact with furniture. No mannequin, clay texture or skeleton overlay.\nFilmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan.\nOne continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen.\nThe lighting is preserved unchanged throughout.\nColors and saturation stay unchanged from the reference image.\noverall_soundscape:\nQuiet room tone.\nnon_diegetic_music:\nN/A"
   },
@@ -1414,18 +1369,18 @@
    "title": "3D · COND / SFW fallback without Video1"
   }
  },
- "183:219": {
+ "183:214": {
   "inputs": {
    "switch": [
-    "197",
+    "195",
     0
    ],
    "on_false": [
-    "183:216",
+    "183:211",
     0
    ],
    "on_true": [
-    "183:217",
+    "183:212",
     0
    ]
   },
@@ -1434,18 +1389,18 @@
    "title": "3D · SELECT / Video1 conditioning"
   }
  },
- "183:220": {
+ "183:215": {
   "inputs": {
    "switch": [
-    "197",
+    "195",
     0
    ],
    "on_false": [
-    "183:216",
+    "183:211",
     1
    ],
    "on_true": [
-    "183:217",
+    "183:212",
     1
    ]
   },
@@ -1454,7 +1409,7 @@
    "title": "3D · SELECT / Video1 latent"
   }
  },
- "183:221": {
+ "183:216": {
   "inputs": {
    "override": false,
    "retention": 1,
@@ -1468,7 +1423,7 @@
    "max_total_tokens": 16384,
    "save_preset_as": "",
    "conditioning": [
-    "183:219",
+    "183:214",
     0
    ],
    "mods": [
@@ -1481,10 +1436,10 @@
    "title": "3D · COND / existing RefMod (unchanged recipe)"
   }
  },
- "183:222": {
+ "183:217": {
   "inputs": {
    "conditioning": [
-    "183:221",
+    "183:216",
     0
    ]
   },
@@ -1493,122 +1448,15 @@
    "title": "3D · COND / negative"
   }
  },
- "183:223": {
-  "inputs": {
-   "name": "minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"
-  },
-  "class_type": "ModelPatchLoader",
-  "_meta": {
-   "title": "3D · POSE / union patch"
-  }
- },
- "183:224": {
-  "inputs": {
-   "folder": [
-    "207",
-    0
-   ],
-   "width": 1344,
-   "height": 768,
-   "keep_aspect_ratio": "stretch",
-   "image_load_cap": 5,
-   "start_index": 0,
-   "include_subfolders": false
-  },
-  "class_type": "LoadImagesFromFolderKJ",
-  "_meta": {
-   "title": "3D · POSE / 5 frames (separate folder)"
-  }
- },
- "183:225": {
-  "inputs": {
-   "expression": "min(max(a, 0), 0.5)",
-   "values.a": [
-    "201",
-    0
-   ]
-  },
-  "class_type": "ComfyMathExpression",
-  "_meta": {
-   "title": "3D · POSE / strength clamp ≤0.5"
-  }
- },
- "183:226": {
-  "inputs": {
-   "expression": "min(max(a, 0), 0.5)",
-   "values.a": [
-    "202",
-    0
-   ]
-  },
-  "class_type": "ComfyMathExpression",
-  "_meta": {
-   "title": "3D · POSE / end clamp ≤0.5"
-  }
- },
- "183:227": {
-  "inputs": {
-   "UNKNOWN": 0.5,
-   "UNKNOWN_1": 0,
-   "UNKNOWN_2": 0.5,
-   "model": [
-    "183:209",
-    0
-   ],
-   "model_patch": [
-    "183:223",
-    0
-   ],
-   "vae": [
-    "183:211",
-    0
-   ],
-   "control_video": [
-    "183:224",
-    0
-   ],
-   "strength": [
-    "183:225",
-    0
-   ],
-   "end_percent": [
-    "183:226",
-    0
-   ]
-  },
-  "_meta": {
-   "title": "3D · POSE / FunCN (optional)"
-  }
- },
- "183:228": {
-  "inputs": {
-   "switch": [
-    "195",
-    0
-   ],
-   "on_false": [
-    "183:209",
-    0
-   ],
-   "on_true": [
-    "183:227",
-    0
-   ]
-  },
-  "class_type": "LazySwitchKJ",
-  "_meta": {
-   "title": "3D · SELECT / R1s or R1s+pose MODEL"
-  }
- },
- "183:229": {
+ "183:218": {
   "inputs": {
    "add_noise": "enable",
    "noise_seed": [
-    "200",
+    "197",
     0
    ],
    "steps": [
-    "199",
+    "196",
     0
    ],
    "cfg": 1,
@@ -1618,19 +1466,19 @@
    "end_at_step": 10000,
    "return_with_leftover_noise": "disable",
    "model": [
-    "183:228",
+    "183:204",
     0
    ],
    "positive": [
-    "183:221",
+    "183:216",
     0
    ],
    "negative": [
-    "183:222",
+    "183:217",
     0
    ],
    "latent_image": [
-    "183:220",
+    "183:215",
     0
    ]
   },
@@ -1639,14 +1487,14 @@
    "title": "3D · SAMPLE / base 25 steps cfg1"
   }
  },
- "183:230": {
+ "183:219": {
   "inputs": {
    "samples": [
-    "183:229",
+    "183:218",
     0
    ],
    "vae": [
-    "183:211",
+    "183:206",
     0
    ]
   },
@@ -1655,7 +1503,7 @@
    "title": "3D · DECODE / R1s"
   }
  },
- "183:231": {
+ "183:220": {
   "inputs": {
    "strategy": "decode_recommended",
    "manual_index": 0,
@@ -1666,11 +1514,11 @@
    "top_k": 4,
    "emit_candidate_batch": false,
    "frames": [
-    "183:230",
+    "183:219",
     0
    ],
    "recommended_index": [
-    "183:230",
+    "183:219",
     3
    ]
   },
@@ -1679,22 +1527,22 @@
    "title": "3D · SELECT / generated frame"
   }
  },
- "183:232": {
+ "183:221": {
   "inputs": {
-   "prompt": "sam3",
-   "output_mode": "person",
-   "confidence_threshold": "Merged",
-   "max_segments": 0.5,
-   "segment_pick": 1,
+   "prompt": "person",
+   "output_mode": "Merged",
+   "confidence_threshold": 0.5,
+   "max_segments": 1,
+   "segment_pick": 0,
    "mask_blur": 0,
    "mask_offset": 0,
-   "device": 0,
-   "invert_output": "Auto",
+   "device": "Auto",
+   "invert_output": false,
    "unload_model": false,
-   "background": false,
-   "background_color": "Alpha",
+   "background": "Alpha",
+   "background_color": "#222222",
    "image": [
-    "183:231",
+    "183:220",
     0
    ]
   },
@@ -1703,18 +1551,18 @@
    "title": "3D · COMPOSITE / SAM3 person"
   }
  },
- "183:233": {
+ "183:222": {
   "inputs": {
-   "expand": 0,
+   "expand": 4,
    "incremental_expandrate": 0,
    "tapered_corners": true,
    "flip_input": false,
-   "blur_radius": 8,
+   "blur_radius": 6,
    "lerp_alpha": 1,
    "decay_factor": 1,
    "fill_holes": false,
    "mask": [
-    "183:232",
+    "183:221",
     1
    ]
   },
@@ -1723,21 +1571,67 @@
    "title": "3D · COMPOSITE / feather person"
   }
  },
- "183:234": {
+ "183:223": {
+  "inputs": {
+   "upscale_method": "lanczos",
+   "width": 1344,
+   "height": 768,
+   "crop": "disabled",
+   "image": [
+    "201",
+    0
+   ]
+  },
+  "class_type": "ImageScale",
+  "_meta": {
+   "title": "3D · COMPOSITE / shadow 1344x768"
+  }
+ },
+ "183:224": {
+  "inputs": {
+   "image": [
+    "183:223",
+    0
+   ]
+  },
+  "class_type": "ImageInvert",
+  "_meta": {
+   "title": "3D · COMPOSITE / 1 - shadow"
+  }
+ },
+ "183:225": {
+  "inputs": {
+   "blend_factor": 0.8,
+   "blend_mode": "multiply",
+   "image1": [
+    "183:208",
+    0
+   ],
+   "image2": [
+    "183:224",
+    0
+   ]
+  },
+  "class_type": "ImageBlend",
+  "_meta": {
+   "title": "3D · COMPOSITE / photo x (1 - 0.8 shadow)"
+  }
+ },
+ "183:226": {
   "inputs": {
    "x": 0,
    "y": 0,
    "resize_source": false,
    "destination": [
-    "183:213",
+    "183:225",
     0
    ],
    "source": [
-    "183:231",
+    "183:220",
     0
    ],
    "mask": [
-    "183:233",
+    "183:222",
     0
    ]
   },
@@ -1746,200 +1640,7 @@
    "title": "3D · COMPOSITE / person onto photo"
   }
  },
- "183:235": {
-  "inputs": {
-   "value": 0.3
-  },
-  "class_type": "FloatConstant",
-  "_meta": {
-   "title": "3D · HARM / denoise 0.30"
-  }
- },
- "183:236": {
-  "inputs": {
-   "value": 0.45
-  },
-  "class_type": "FloatConstant",
-  "_meta": {
-   "title": "3D · HARM / denoise 0.45"
-  }
- },
- "183:237": {
-  "inputs": {
-   "switch": [
-    "198",
-    0
-   ],
-   "on_false": [
-    "183:235",
-    0
-   ],
-   "on_true": [
-    "183:236",
-    0
-   ]
-  },
-  "class_type": "LazySwitchKJ",
-  "_meta": {
-   "title": "3D · SELECT / denoise 0.30 or 0.45"
-  }
- },
- "183:238": {
-  "inputs": {
-   "steps": 10,
-   "scheduler": "simple",
-   "denoise": [
-    "183:237",
-    0
-   ],
-   "h3_latent": [
-    "183:220",
-    0
-   ],
-   "vae": [
-    "183:211",
-    0
-   ],
-   "image": [
-    "183:234",
-    0
-   ],
-   "model": [
-    "183:209",
-    0
-   ]
-  },
-  "class_type": "H3LatentFromImage",
-  "_meta": {
-   "title": "3D · HARM / H3LatentFromImage"
-  }
- },
- "183:239": {
-  "inputs": {
-   "noise_seed": [
-    "200",
-    0
-   ]
-  },
-  "class_type": "RandomNoise",
-  "_meta": {
-   "title": "3D · HARM / seed"
-  }
- },
- "183:240": {
-  "inputs": {
-   "model": [
-    "183:209",
-    0
-   ],
-   "conditioning": [
-    "183:221",
-    0
-   ]
-  },
-  "class_type": "BasicGuider",
-  "_meta": {
-   "title": "3D · HARM / cfg1 no CN"
-  }
- },
- "183:241": {
-  "inputs": {
-   "sampler_name": "euler"
-  },
-  "class_type": "KSamplerSelect",
-  "_meta": {
-   "title": "3D · HARM / euler"
-  }
- },
- "183:242": {
-  "inputs": {
-   "noise": [
-    "183:239",
-    0
-   ],
-   "guider": [
-    "183:240",
-    0
-   ],
-   "sampler": [
-    "183:241",
-    0
-   ],
-   "sigmas": [
-    "183:238",
-    1
-   ],
-   "latent_image": [
-    "183:238",
-    0
-   ]
-  },
-  "class_type": "SamplerCustomAdvanced",
-  "_meta": {
-   "title": "3D · HARM / custom sigma sampler"
-  }
- },
- "183:243": {
-  "inputs": {
-   "samples": [
-    "183:242",
-    0
-   ],
-   "vae": [
-    "183:211",
-    0
-   ]
-  },
-  "class_type": "H3ImageDecode",
-  "_meta": {
-   "title": "3D · HARM / decode"
-  }
- },
- "183:244": {
-  "inputs": {
-   "strategy": "decode_recommended",
-   "manual_index": 0,
-   "skip_first_frames": 0,
-   "candidate_start": 0,
-   "candidate_end": 1,
-   "similarity_weight": 0.25,
-   "top_k": 4,
-   "emit_candidate_batch": false,
-   "frames": [
-    "183:243",
-    0
-   ],
-   "recommended_index": [
-    "183:243",
-    3
-   ]
-  },
-  "class_type": "H3ImageFrameSelector",
-  "_meta": {
-   "title": "3D · HARM / selected frame"
-  }
- },
- "183:245": {
-  "inputs": {
-   "switch": [
-    "196",
-    0
-   ],
-   "on_false": [
-    "183:234",
-    0
-   ],
-   "on_true": [
-    "183:244",
-    0
-   ]
-  },
-  "class_type": "LazySwitchKJ",
-  "_meta": {
-   "title": "3D · SELECT / composite or harmonized"
-  }
- },
- "183:246": {
+ "183:227": {
   "inputs": {
    "switch": [
     "194",
@@ -1950,7 +1651,7 @@
     0
    ],
    "on_true": [
-    "183:245",
+    "183:226",
     0
    ]
   },
