@@ -254,7 +254,10 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     al = rgba[..., 3] / 255.0
     sh = np.where(al < 0.08, 0, al) * prox * L.get("shadow_opacity", 0.8)
     rgba[..., 3] = np.where(m, al, sh) * 255
-    Image.fromarray((np.where(m, 0, sh) * 255).clip(0, 255).astype(np.uint8), "L").save(f"{out}/shadow.png")
+    # shadow.png: also drop the 2 px anti-aliased rim of the figure (07.11: it drew a dark outline of the mannequin
+    # around the generated person in the composite branch)
+    rim = np.asarray(char.point(lambda p: 255 if p > 127 else 0).filter(ImageFilter.MaxFilter(5))) > 127
+    Image.fromarray((np.where(rim, 0, sh) * 255).clip(0, 255).astype(np.uint8), "L").save(f"{out}/shadow.png")
     layer = Image.fromarray(rgba.clip(0, 255).astype(np.uint8), "RGBA")
     Image.alpha_composite(base, layer).convert("RGB").save(f"{out}/playblast.png")
     print(f"[plate] playblast ({dev}, {a.samples} spp): sun az {L['azimuth_deg']:.0f} el {L['elevation_deg']:.0f} "

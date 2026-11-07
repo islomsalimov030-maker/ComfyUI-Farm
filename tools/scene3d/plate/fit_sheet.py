@@ -26,20 +26,17 @@ def tiles(scene, loc, seed):
     return [('photo', inp / f'{loc}_rgb.png'), ('playblast _s2', inp / f'{loc}_s2' / scene / 'playblast.png'),
             ('L_R0', first(q, f'L_R0_s{seed}_*.png')), ('L_R1', first(q, f'L_R1_s{seed}_*.png')),
             ('L_R1 harm .25', first(q, f'L_R1_h25_s{seed}_*.png')), ('L_R1 harm .35', first(q, f'L_R1_h35_s{seed}_*.png')),
-            ('S3 comp', first(c, f'comp_s{seed}_*.png')), ('S3 .25', first(c, f'S3_h25_s{seed}_*.png')),
+            ('S3 comp', first(c, f'comp_s{seed}_*.png')), ('S3 comp2 (no halo)', first(c, f'comp2_s{seed}.png')),('S3 .25', first(c, f'S3_h25_s{seed}_*.png')),
             ('S3 .35', first(c, f'S3_h35_s{seed}_*.png')), ('S3b .35', first(c, f'S3b_h35_s{seed}_*.png')),
             ('S3b .5', first(c, f'S3b_h50_s{seed}_*.png'))]
 
 
 def anchors(loc, scene):
     pose = json.loads((farm_env.COMFY / 'input' / loc / scene / 'pose25.json').read_text())
-    kp = pose['keypoints_body25']
-    w, h = pose.get('width'), pose.get('height')
-    vis = lambda ids: [(kp[i][0], kp[i][1]) for i in ids if i < len(kp) and kp[i][2]]
-    head = vis([0, 15, 16, 17, 18]) or vis([1])
-    feet = vis([11, 14, 19, 20, 21, 22, 23, 24]) or vis([10, 13])
-    mean = lambda pts: (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)) if pts else None
-    return mean(head), mean(feet), (w, h)
+    (hx, hy), (fx, fy) = pose['head_top_px'], pose['feet_px']   # photo pixels (render size = plate size)
+    size = Image.open(farm_env.COMFY / 'input' / loc / scene / 'mask.png').size
+    head_h = abs(fy - hy) / 7.5
+    return (hx, hy + 0.6 * head_h), (fx, fy - 0.3 * head_h), size
 
 
 def crop(im, center, src_size):
@@ -64,7 +61,7 @@ def main():
         for p in a.metrics.split(','):
             if Path(p).is_file():
                 for r in json.loads(Path(p).read_text()):
-                    met[Path(r['file']).name] = r
+                    met[(Path(r['file']).parent.name, Path(r['file']).name)] = r
     head, feet, src = anchors(a.loc, a.scene)
     seeds = [int(s) for s in a.seeds.split(',')]
     blocks = []
@@ -85,7 +82,7 @@ def main():
             block.paste(im.resize((TW, TH), Image.LANCZOS), (x, y))
             block.paste(crop(im, head, src), (x, y + TH))
             block.paste(crop(im, feet, src), (x + C, y + TH))
-            r = met.get(Path(path).name)
+            r = met.get((Path(path).parent.name, Path(path).name))
             txt = label
             if r:
                 fs = r.get('face_similarity')

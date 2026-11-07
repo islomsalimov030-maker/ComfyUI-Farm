@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-from PIL import Image
+from PIL import Image, ImageFilter
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -56,6 +56,9 @@ def prep_inputs(loc, scene, seed, gen_path, suffix='_s2'):
     gen = Image.open(gen_path).convert('RGB')
     photo = Image.open(inp / f'{loc}_rgb.png').convert('RGB').resize(gen.size, Image.LANCZOS)
     sh = Image.open(inp / f'{loc}{suffix}' / scene / 'shadow.png').convert('L').resize(gen.size, Image.BILINEAR)
+    # 07.11: shadow.png keeps a 1-2 px outline of the clay silhouette (anti-aliased edge) -> a dark halo around the
+    # generated figure, which never matches the mannequin exactly. Opening removes thin lines, keeps shadow blobs.
+    sh = sh.filter(ImageFilter.MinFilter(5)).filter(ImageFilter.MaxFilter(5))
     s = np.asarray(sh, dtype=np.float32) / 255.0
     p = np.asarray(photo, dtype=np.float32) * (1.0 - 0.8 * s)[..., None]
     out = inp / 'plate3d_comp'
@@ -127,7 +130,22 @@ def main():
     ap.add_argument('--pick', nargs='+', required=True, help='scene:seed:recipe (source generation)')
     ap.add_argument('--no-s3b', action='store_true')
     ap.add_argument('--build-only', action='store_true')
+    ap.add_argument('--recomp-local', action='store_true',
+                    help='no server: rebuild comp locally from photo_sh and the downloaded SAM3 mask -> comp2_s<seed>.png')
     a = ap.parse_args()
+    if a.recomp_local:
+        cfg = yaml.safe_load(Path(a.config).read_text(encoding='utf-8'))
+        for pick in a.pick:
+            scene_name, seed, recipe = pick.split(':')
+            loc = Path(next(L for L in cfg['locations'] if scene_name in L['scenes'])['maps']).name
+            names = prep_inputs(loc, scene_name, int(seed), gen_file(scene_name, recipe, int(seed)))
+            inp, out = farm_env.COMFY / 'input', farm_env.COMFY / 'output' / 'plate3d_comp' / scene_name
+            m = np.asarray(Image.open(sorted(out.glob(f'mask_s{seed}_*.png'))[-1]).convert('L'), np.float32)[..., None] / 255
+            g = np.asarray(Image.open(inp / names['gen']).convert('RGB'), np.float32)
+            p = np.asarray(Image.open(inp / names['photo_sh']).convert('RGB'), np.float32)
+            Image.fromarray((g * m + p * (1 - m)).round().clip(0, 255).astype(np.uint8)).save(out / f'comp2_s{seed}.png')
+            print('[comp] local', out / f'comp2_s{seed}.png', flush=True)
+        return
     cfg = yaml.safe_load(Path(a.config).read_text(encoding='utf-8'))
     STATE.mkdir(parents=True, exist_ok=True)
     manifest = STATE / 'runs.json'
