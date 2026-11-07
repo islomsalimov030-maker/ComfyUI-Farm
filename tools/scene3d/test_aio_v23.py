@@ -71,8 +71,7 @@ class V23Tests(unittest.TestCase):
         self.assertFalse(types & {'MiniMaxH3FunControlNetApply','ModelPatchLoader','LoadImagesFromFolderKJ','H3LatentFromImage','SamplerCustomAdvanced','LoraLoaderModelOnly'})
         self.assertEqual([5],nodes['3D · INPUT / playblast ×5 frames @24fps']['widgets_values'])
         self.assertEqual([0.8,'multiply'],nodes['3D · COMPOSITE / photo x (1 - 0.8 shadow)']['widgets_values'])
-        self.assertEqual([6,0,True,False,9,1,1,False],nodes['3D · COMPOSITE / feather person']['widgets_values'])
-        self.assertIn('3D · COMPOSITE / кадр → размер V2.2',nodes)
+        self.assertEqual([4,0,True,False,6,1,1,False],nodes['3D · COMPOSITE / feather person']['widgets_values'])
         s=next(g for g in p.graphs(self.result) if g.get('id')==self.result['extra']['aio_v23']['photo_id'])
         comp=nodes['3D · COMPOSITE / person onto photo']
         dest=next(i for i in comp['inputs'] if i['name']=='destination')['link']

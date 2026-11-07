@@ -541,6 +541,8 @@ def run_scene(a, info, scene, light=None):
     for o in chars:
         o.pass_index = 1
     bpy.context.view_layer.update()
+    if scene.get("body_obj"):            # 07.11e Постановка v2: меш тела уже посажен pose_fit.py (мир плиты)
+        return _run_body_obj(a, sc, info, cam, plate, light, out, scene, chars)
 
     # 07.11c pose round: external pose file (methods A/B/C) -> registered as a pose named after the scene
     spec = None
@@ -616,6 +618,32 @@ def run_scene(a, info, scene, light=None):
                          contact, placed)
 
 
+def _run_body_obj(a, sc, info, cam, plate, light, out, scene, chars):
+    for o in chars:                       # манекен не рендерится; его материалы/свет сцены остаются
+        o.hide_render = True
+        o.hide_viewport = True
+    before = set(bpy.data.objects)
+    bpy.ops.wm.obj_import(filepath=scene["body_obj"], forward_axis="Y", up_axis="Z")
+    body = [o for o in bpy.data.objects if o not in before][0]
+    body.name = "body_v2"
+    body.pass_index = 1
+    body.color = chars[0].color if chars else (0.8, 0.8, 0.8, 1)
+    for poly in body.data.polygons:
+        poly.use_smooth = True
+    bpy.context.view_layer.update()
+    zs = [(body.matrix_world @ v.co) for v in body.data.vertices]
+    low = min(p.z for p in zs)
+    cx = sum(p.x for p in zs) / len(zs)
+    cy = sum(p.y for p in zs) / len(zs)
+    hit = Vector((cx, cy, low))
+    placed = {"feet_z": round(low, 3)}
+    fit_json = os.path.join(os.path.dirname(scene["body_obj"]), "fit.json")
+    if os.path.isfile(fit_json):
+        shutil.copy(fit_json, f"{out}/pose_fit.json")
+    return _finish_scene(a, sc, info, cam, plate, light, out, scene, None, body, {body.name}, hit, 0.0, 0, 0,
+                         "body_obj", placed)
+
+
 def _write_pose_metrics(out, rig, body, plate, cam, ang0, viol0, clamp_log, contacts, solved):
     ang1 = pose_tools.measure(rig)
     res = {"angles_before": ang0, "violations_before": {k: list(v) for k, v in viol0.items()},
@@ -653,6 +681,14 @@ def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, 
 
     W, H = info["size"]
     size = (W, H)
+    if rig is None:                       # Постановка v2: без рига ключевые точки BODY-25 не считаем
+        res = {"scene": scene, "size": [W, H], "plate": a.plate, "hit_world": list(hit), "contact": contact,
+               "placed": placed, "cam_to_char_m": (cam.matrix_world.translation - hit).length}
+        with open(f"{out}/pose25.json", "w", encoding="utf-8") as f:
+            json.dump(res, f, indent=1)
+        bpy.ops.wm.save_as_mainfile(filepath=f"{out}/scene.blend")
+        print(f"[plate] {scene['name']}: body_obj, low z {placed['feet_z']}, dist {res['cam_to_char_m']:.2f} m")
+        return
     pts, top_z = keypoints_body25(body, rig)
     vis = visibility(sc, cam, pts, names)
     kp = []

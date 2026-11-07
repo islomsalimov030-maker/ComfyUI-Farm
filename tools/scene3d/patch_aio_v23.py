@@ -18,7 +18,7 @@ from wfkit import G, check_ui, _norm
 PREFIX = '3D · '
 # ui-2 (07.11c): SERVER variant (studio ComfyUI 0.34.6) = winning recipe S3 comp2 only: playblast <Video 1>, base ref2va,
 # SAM3 person, person over photo x (1 - 0.8*shadow) inside the graph. No Fun CN and no harmonisation (V2.3-pod later).
-VERSION = 'aio-v23-ui-3-server'
+VERSION = 'aio-v23-ui-4-server'  # 07.11e: = ui-2 (вклейка 1344x768); ui-3 (2 Мп) дважды ронял сервер 502
 
 # New SFW text only; no interpolation of inherited literals.
 PROMPT = '''subject_definitions:
@@ -182,31 +182,19 @@ def patch(source):
     person = add(pg,'SAM3Segment','COMPOSITE / SAM3 person', inputs=[('image','IMAGE')],
                  outputs=[('IMAGE','IMAGE'),('MASK','MASK'),('MASK_IMAGE','IMAGE')],
                  widgets={'prompt':'person','output_mode':'Merged','confidence_threshold':0.5,'max_segments':1,'segment_pick':0,'mask_blur':0,'mask_offset':0,'device':'Auto','invert_output':False,'unload_model':False,'background':'Alpha','background_color':'#222222'},pos=(5000,5000),size=(350,430))
-    # Output size = V2.2 size (07.11d): room photo -> V2.2 megapixels (2 MP, own aspect); the 1344x768 generation,
-    # the shadow and the photo are composited at that size (the 1344x768 aspect squeeze is undone by the upscale).
-    mp = clone(old['gen · плита → мегапиксели'],'COMPOSITE / фото → мегапиксели V2.2',4300,4700)
-    wire(plate,mp,'image'); wire(next(i for i,x in enumerate(photo['inputs']) if x['name']=='megapixels'),mp,'megapixels')
-    size = clone(old['11190:11116'],'COMPOSITE / размер выхода',4700,4700); conn(mp,size,'image')
-    def to_out(label,x,y,src=None,idx=None):
-        n = clone(old['маска: к размеру исходника · ref2v'],label,x,y,['lanczos',512,512,'disabled'])
-        if src is not None: conn(src,n,'image')
-        else: wire(idx,n,'image')
-        conn(size,n,'width',0); conn(size,n,'height',1)
-        return n
-    big = to_out('COMPOSITE / кадр → размер V2.2',4700,5000,src=sel)
-    conn(big,person,'image')
-    # S3 comp2 feather scaled to ~2 MP (x1.43): grow 6 px, blur 9 px
-    blur = clone(old['shm'],'COMPOSITE / feather person',5500,5000,[6,0,True,False,9,1,1,False]);conn(person,blur,'mask',1)
+    conn(sel,person,'image')
+    # S3 comp2: grow 4 px, blur 6 px (as composite_round.comp2 / quality_round L_C2)
+    blur = clone(old['shm'],'COMPOSITE / feather person',5500,5000,[4,0,True,False,6,1,1,False]);conn(person,blur,'mask',1)
     # Cast/contact shadow on the photo: photo x (1 - 0.8*shadow) = ImageBlend(photo, invert(shadow), 0.8, multiply)
     # (core: image1*(1-f) + image1*image2*f). shadow.png comes from render_plate_scene (figure rim already removed).
-    sh = to_out('COMPOSITE / shadow → размер V2.2', 5000, 5500, idx=shadow_in)
+    sh = scale(shadow_in, 'COMPOSITE / shadow 1344x768', 5000, 5500)
     inv = add(pg,'ImageInvert','COMPOSITE / 1 - shadow',inputs=[('image','IMAGE')],outputs=[('IMAGE','IMAGE')],pos=(5500,5500),size=(260,60))
     conn(sh,inv,'image')
     blend = add(pg,'ImageBlend','COMPOSITE / photo x (1 - 0.8 shadow)',inputs=[('image1','IMAGE'),('image2','IMAGE')],
                 outputs=[('IMAGE','IMAGE')],widgets={'blend_factor':0.8,'blend_mode':'multiply'},pos=(5900,5500),size=(320,110))
-    conn(mp,blend,'image1');conn(inv,blend,'image2')
+    conn(bg,blend,'image1');conn(inv,blend,'image2')
     composite = clone(old['f85:shc'],'COMPOSITE / person onto photo',6400,5000,[0,0,False])
-    conn(blend,composite,'destination');conn(big,composite,'source');conn(blur,composite,'mask')
+    conn(blend,composite,'destination');conn(sel,composite,'source');conn(blur,composite,'mask')
     beforeface = toggled('SELECT / 3D OFF legacy frame',old['gen · выбор кадра'],composite,enabled,9000,5000)
     # Only two legacy IMAGE consumers are redirected; all face-pass widgets/conditioning untouched.
     rewired = []
@@ -220,8 +208,8 @@ def patch(source):
     r['groups'].append({'id':max(g['id'] for g in r['groups'])+1,'title':'3D · отдельный пульт (default OFF)','bounding':[-350,1870,1270,1600],'color':'#31526b','flags':{}})
     note = add(top,'MarkdownNote','README / рецепты и ограничения',widgets={'text':'''SERVER variant (studio ComfyUI 0.34.6): recipe S3 comp2 only. No Fun CN, no harmonisation (both doubled the face / changed the room in tests). Fun CN variant = V2.3-pod later.
 3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.
-Upload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Generation 1344x768; composite and output at the V2.2 megapixels size (2 MP); 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.
-Chain: generation -> upscale to V2.2 size -> SAM3 person (grow 6 / blur 9) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).
+Upload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Sizes fixed 1344x768; 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.
+Chain: generation -> SAM3 person (grow 4 / blur 6) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).
 Existing PHOTO RefMod loader is reused (set the Stacy mods there). Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.
 Troubleshooting: pose drifts -> check the playblast; pasted edge -> PERSON mask/feather; shadow lost -> shadow.png must be from the SAME render as playblast.png.'''},pos=(-1050,1940),size=(650,850))
     # Preserve legacy graph state counters except newly extended photo state.

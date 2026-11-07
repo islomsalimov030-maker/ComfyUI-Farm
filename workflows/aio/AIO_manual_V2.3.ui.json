@@ -1,8 +1,8 @@
 {
  "id": "d5c069b2-8cb4-4df4-9b42-40552eac6a0e",
  "revision": 0,
- "last_node_id": 231,
- "last_link_id": 873,
+ "last_node_id": 228,
+ "last_link_id": 865,
  "nodes": [
   {
    "id": 1,
@@ -2849,7 +2849,7 @@
    ],
    "properties": {
     "Node name for S&R": "PrimitiveBoolean",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ПУЛЬТ / 3D ВКЛ (default OFF)",
    "widgets_values": [
@@ -2885,7 +2885,7 @@
    ],
    "properties": {
     "Node name for S&R": "PrimitiveBoolean",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ПУЛЬТ / <Video 1> ВКЛ (S3 comp2)",
    "widgets_values": [
@@ -2921,7 +2921,7 @@
    ],
    "properties": {
     "Node name for S&R": "INTConstant",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ПУЛЬТ / base steps (no turbo)",
    "widgets_values": [
@@ -2957,7 +2957,7 @@
    ],
    "properties": {
     "Node name for S&R": "INTConstant",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ПУЛЬТ / seed (fixed)",
    "widgets_values": [
@@ -2998,7 +2998,7 @@
    ],
    "properties": {
     "Node name for S&R": "LoadImage",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ВХОД / <Picture 1> фотоплита (загрузить)",
    "widgets_values": [
@@ -3041,7 +3041,7 @@
    ],
    "properties": {
     "Node name for S&R": "LoadImage",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ВХОД / <Picture 2> лицо SFW (загрузить)",
    "widgets_values": [
@@ -3084,7 +3084,7 @@
    ],
    "properties": {
     "Node name for S&R": "LoadImage",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ВХОД / playblast.png с тенями (загрузить)",
    "widgets_values": [
@@ -3127,7 +3127,7 @@
    ],
    "properties": {
     "Node name for S&R": "LoadImage",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ВХОД / shadow.png тень вне фигуры (загрузить)",
    "widgets_values": [
@@ -3165,7 +3165,7 @@
    ],
    "properties": {
     "Node name for S&R": "PrimitiveStringMultiline",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · ПУЛЬТ / SFW ref prompt (отдельно от V2.2)",
    "widgets_values": [
@@ -3176,7 +3176,7 @@
    }
   },
   {
-   "id": 231,
+   "id": 228,
    "type": "MarkdownNote",
    "pos": [
     -1050,
@@ -3193,14 +3193,14 @@
    "outputs": [],
    "properties": {
     "Node name for S&R": "MarkdownNote",
-    "aio_v23": "aio-v23-ui-3-server"
+    "aio_v23": "aio-v23-ui-4-server"
    },
    "title": "3D · README / рецепты и ограничения",
    "widgets_values": [
-    "SERVER variant (studio ComfyUI 0.34.6): recipe S3 comp2 only. No Fun CN, no harmonisation (both doubled the face / changed the room in tests). Fun CN variant = V2.3-pod later.\n3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.\nUpload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Generation 1344x768; composite and output at the V2.2 megapixels size (2 MP); 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.\nChain: generation -> upscale to V2.2 size -> SAM3 person (grow 6 / blur 9) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).\nExisting PHOTO RefMod loader is reused (set the Stacy mods there). Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.\nTroubleshooting: pose drifts -> check the playblast; pasted edge -> PERSON mask/feather; shadow lost -> shadow.png must be from the SAME render as playblast.png."
+    "SERVER variant (studio ComfyUI 0.34.6): recipe S3 comp2 only. No Fun CN, no harmonisation (both doubled the face / changed the room in tests). Fun CN variant = V2.3-pod later.\n3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.\nUpload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Sizes fixed 1344x768; 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.\nChain: generation -> SAM3 person (grow 4 / blur 6) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).\nExisting PHOTO RefMod loader is reused (set the Stacy mods there). Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.\nTroubleshooting: pose drifts -> check the playblast; pasted edge -> PERSON mask/feather; shadow lost -> shadow.png must be from the SAME render as playblast.png."
    ],
    "widgets_values_named": {
-    "text": "SERVER variant (studio ComfyUI 0.34.6): recipe S3 comp2 only. No Fun CN, no harmonisation (both doubled the face / changed the room in tests). Fun CN variant = V2.3-pod later.\n3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.\nUpload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Generation 1344x768; composite and output at the V2.2 megapixels size (2 MP); 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.\nChain: generation -> upscale to V2.2 size -> SAM3 person (grow 6 / blur 9) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).\nExisting PHOTO RefMod loader is reused (set the Stacy mods there). Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.\nTroubleshooting: pose drifts -> check the playblast; pasted edge -> PERSON mask/feather; shadow lost -> shadow.png must be from the SAME render as playblast.png."
+    "text": "SERVER variant (studio ComfyUI 0.34.6): recipe S3 comp2 only. No Fun CN, no harmonisation (both doubled the face / changed the room in tests). Fun CN variant = V2.3-pod later.\n3D default OFF: legacy V2.2 photo/video/face controls are unchanged. Enable PHOTO as in V2.2, then 3D ВКЛ.\nUpload: Picture1 room photo, Picture2 SFW identity, playblast.png (Video 1, clay + shadows, render_plate_scene.py) and shadow.png from the same render folder. Sizes fixed 1344x768; 5 frames @24fps; base ref2va 25 steps cfg1, no turbo.\nChain: generation -> SAM3 person (grow 4 / blur 6) -> person over photo x (1 - 0.8 shadow) -> existing FACE pass (its denoise unchanged; profile / face down: 0.35 only).\nExisting PHOTO RefMod loader is reused (set the Stacy mods there). Legacy mask editor applies after face pass; disable mask mode for 3D acceptance.\nTroubleshooting: pose drifts -> check the playblast; pasted edge -> PERSON mask/feather; shadow lost -> shadow.png must be from the SAME render as playblast.png."
    }
   }
  ],
@@ -3975,8 +3975,8 @@
     "version": 1,
     "state": {
      "lastGroupId": 5,
-     "lastNodeId": 231,
-     "lastLinkId": 873,
+     "lastNodeId": 228,
+     "lastLinkId": 865,
      "lastRerouteId": 0
     },
     "revision": 0,
@@ -4045,8 +4045,7 @@
       "name": "megapixels",
       "type": "FLOAT",
       "linkIds": [
-       375,
-       853
+       375
       ],
       "localized_name": "megapixels",
       "pos": [
@@ -4268,11 +4267,11 @@
       ]
      },
      {
-      "id": "41d6579c-9769-5b08-92a7-4438fa4a5103",
+      "id": "95c132be-e4fd-5b96-a189-844b5e99c1be",
       "name": "v23_enabled",
       "type": "BOOLEAN",
       "linkIds": [
-       871
+       863
       ],
       "localized_name": "v23_enabled",
       "label": "v23_enabled",
@@ -4282,7 +4281,7 @@
       ]
      },
      {
-      "id": "b097f4c2-2e07-5edd-8e4c-4bf4bb61610c",
+      "id": "7059796d-2fad-5d4b-bb71-49481a8a782f",
       "name": "v23_video1",
       "type": "BOOLEAN",
       "linkIds": [
@@ -4297,7 +4296,7 @@
       ]
      },
      {
-      "id": "8130924e-2a35-5bf4-ab51-a42a149a2290",
+      "id": "716b5623-c11b-56d5-95e8-a1e0d65e7299",
       "name": "v23_steps",
       "type": "INT",
       "linkIds": [
@@ -4311,7 +4310,7 @@
       ]
      },
      {
-      "id": "ea4cad01-60f8-567c-9cc4-a049153c735d",
+      "id": "1a5277f9-80f1-5e5d-838c-ec59ec31648a",
       "name": "v23_seed",
       "type": "INT",
       "linkIds": [
@@ -4325,12 +4324,11 @@
       ]
      },
      {
-      "id": "f52cacbe-fe05-5664-91c5-03df1c792cb8",
+      "id": "cb5a9e2e-7539-5934-a00c-1e399054f61b",
       "name": "v23_plate",
       "type": "IMAGE",
       "linkIds": [
-       817,
-       852
+       817
       ],
       "localized_name": "v23_plate",
       "label": "v23_plate",
@@ -4340,7 +4338,7 @@
       ]
      },
      {
-      "id": "034980da-03bf-5ff1-a6f4-244c6c579f38",
+      "id": "158f4855-8fac-5809-9424-83f6e1ede410",
       "name": "v23_identity",
       "type": "IMAGE",
       "linkIds": [
@@ -4355,7 +4353,7 @@
       ]
      },
      {
-      "id": "8ab9602e-b3ec-5f2f-8b27-9b6f06c37b0a",
+      "id": "6974bdc8-6f45-5d2d-bd49-2ac76b65f77e",
       "name": "v23_clay",
       "type": "IMAGE",
       "linkIds": [
@@ -4369,11 +4367,11 @@
       ]
      },
      {
-      "id": "11972f7d-8c45-55c9-95b2-b2b143bdcbe0",
+      "id": "49ffcf1c-5feb-56e0-b86e-7a60f08a35b0",
       "name": "v23_shadow",
       "type": "IMAGE",
       "linkIds": [
-       860
+       854
       ],
       "localized_name": "v23_shadow",
       "label": "v23_shadow",
@@ -4383,7 +4381,7 @@
       ]
      },
      {
-      "id": "7ba97e1a-0306-5dac-863e-737d68e79531",
+      "id": "32613bda-0ca4-5a16-9282-77f17501b158",
       "name": "v23_prompt",
       "type": "STRING",
       "linkIds": [
@@ -5134,7 +5132,7 @@
         "name": "selected_image",
         "type": "IMAGE",
         "links": [
-         869
+         861
         ]
        },
        {
@@ -5625,7 +5623,7 @@
         "localized_name": "image",
         "name": "image",
         "type": "IMAGE",
-        "link": 872
+        "link": 864
        }
       ],
       "outputs": [
@@ -5746,7 +5744,7 @@
         "localized_name": "image",
         "name": "image",
         "type": "IMAGE",
-        "link": 873
+        "link": 865
        },
        {
         "localized_name": "mask",
@@ -6976,7 +6974,7 @@
       ],
       "properties": {
        "Node name for S&R": "UNETLoader",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · MODEL / base ref2va (no turbo)",
       "widgets_values": [
@@ -7030,7 +7028,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        12,
@@ -7073,7 +7071,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
@@ -7118,7 +7116,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "minimax_h3_video_vae_fp16.safetensors"
@@ -7160,7 +7158,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "minimax_h3_audio_vae_fp32.safetensors"
@@ -7193,13 +7191,14 @@
         "type": "IMAGE",
         "links": [
          823,
-         828
+         828,
+         856
         ]
        }
       ],
       "properties": {
        "Node name for S&R": "ImageScale",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · INPUT / фотоплита 1344x768",
       "widgets_values": [
@@ -7247,7 +7246,7 @@
       ],
       "properties": {
        "Node name for S&R": "ImageScale",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · INPUT / playblast 1344x768",
       "widgets_values": [
@@ -7295,7 +7294,7 @@
       ],
       "properties": {
        "Node name for S&R": "RepeatImageBatch",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · INPUT / playblast ×5 frames @24fps",
       "widgets_values": [
@@ -7418,7 +7417,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "",
@@ -7541,7 +7540,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "",
@@ -7577,7 +7576,7 @@
       ],
       "properties": {
        "Node name for S&R": "PrimitiveStringMultiline",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · COND / SFW fallback without Video1",
       "widgets_values": [
@@ -7644,7 +7643,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        false
@@ -7707,7 +7706,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        false
@@ -7768,7 +7767,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        false,
@@ -7827,7 +7826,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       }
      },
      {
@@ -7908,7 +7907,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "enable",
@@ -7992,7 +7991,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "color": "#25534d",
       "bgcolor": "#102a27"
@@ -8039,7 +8038,8 @@
         "name": "selected_image",
         "type": "IMAGE",
         "links": [
-         855
+         852,
+         859
         ]
        },
        {
@@ -8078,7 +8078,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        "decode_recommended",
@@ -8111,7 +8111,7 @@
        {
         "name": "image",
         "type": "IMAGE",
-        "link": 858
+        "link": 852
        }
       ],
       "outputs": [
@@ -8124,7 +8124,7 @@
         "name": "MASK",
         "type": "MASK",
         "links": [
-         859
+         853
         ]
        },
        {
@@ -8135,7 +8135,7 @@
       ],
       "properties": {
        "Node name for S&R": "SAM3Segment",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · COMPOSITE / SAM3 person",
       "widgets_values": [
@@ -8169,197 +8169,6 @@
      },
      {
       "id": 222,
-      "type": "ImageScaleToTotalPixels",
-      "pos": [
-       4300,
-       4700
-      ],
-      "size": [
-       276.4927734375,
-       106
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-       {
-        "localized_name": "image",
-        "name": "image",
-        "type": "IMAGE",
-        "link": 852
-       },
-       {
-        "localized_name": "megapixels",
-        "name": "megapixels",
-        "type": "FLOAT",
-        "widget": {
-         "name": "megapixels"
-        },
-        "link": 853
-       }
-      ],
-      "outputs": [
-       {
-        "localized_name": "IMAGE",
-        "name": "IMAGE",
-        "type": "IMAGE",
-        "links": [
-         854,
-         864
-        ]
-       }
-      ],
-      "title": "3D · COMPOSITE / фото → мегапиксели V2.2",
-      "properties": {
-       "cnr_id": "comfy-core",
-       "ver": "0.34.0",
-       "Node name for S&R": "ImageScaleToTotalPixels",
-       "ue_properties": {
-        "widget_ue_connectable": {},
-        "input_ue_unconnectable": {},
-        "version": "7.8"
-       },
-       "aio_v23": "aio-v23-ui-3-server"
-      },
-      "widgets_values": [
-       "lanczos",
-       1,
-       32
-      ]
-     },
-     {
-      "id": 223,
-      "type": "GetImageSize",
-      "pos": [
-       4700,
-       4700
-      ],
-      "size": [
-       140,
-       66
-      ],
-      "flags": {},
-      "order": 23,
-      "mode": 0,
-      "inputs": [
-       {
-        "localized_name": "image",
-        "name": "image",
-        "type": "IMAGE",
-        "link": 854
-       }
-      ],
-      "outputs": [
-       {
-        "localized_name": "width",
-        "name": "width",
-        "type": "INT",
-        "links": [
-         856,
-         861
-        ]
-       },
-       {
-        "localized_name": "height",
-        "name": "height",
-        "type": "INT",
-        "links": [
-         857,
-         862
-        ]
-       },
-       {
-        "localized_name": "batch_size",
-        "name": "batch_size",
-        "type": "INT",
-        "links": []
-       }
-      ],
-      "title": "3D · COMPOSITE / размер выхода",
-      "properties": {
-       "cnr_id": "comfy-core",
-       "ver": "0.34.0",
-       "Node name for S&R": "GetImageSize",
-       "ue_properties": {
-        "widget_ue_connectable": {},
-        "input_ue_unconnectable": {},
-        "version": "7.8"
-       },
-       "aio_v23": "aio-v23-ui-3-server"
-      }
-     },
-     {
-      "id": 224,
-      "type": "ImageScale",
-      "pos": [
-       4700,
-       5000
-      ],
-      "size": [
-       270,
-       130
-      ],
-      "flags": {},
-      "order": 36,
-      "mode": 0,
-      "inputs": [
-       {
-        "localized_name": "image",
-        "name": "image",
-        "type": "IMAGE",
-        "link": 855
-       },
-       {
-        "localized_name": "width",
-        "name": "width",
-        "type": "INT",
-        "widget": {
-         "name": "width"
-        },
-        "link": 856
-       },
-       {
-        "localized_name": "height",
-        "name": "height",
-        "type": "INT",
-        "widget": {
-         "name": "height"
-        },
-        "link": 857
-       }
-      ],
-      "outputs": [
-       {
-        "localized_name": "IMAGE",
-        "name": "IMAGE",
-        "type": "IMAGE",
-        "links": [
-         858,
-         867
-        ]
-       }
-      ],
-      "title": "3D · COMPOSITE / кадр → размер V2.2",
-      "properties": {
-       "cnr_id": "comfy-core",
-       "ver": "0.34.0",
-       "Node name for S&R": "ImageScale",
-       "ue_properties": {
-        "widget_ue_connectable": {},
-        "input_ue_unconnectable": {},
-        "version": "7.8"
-       },
-       "aio_v23": "aio-v23-ui-3-server"
-      },
-      "widgets_values": [
-       "lanczos",
-       512,
-       512,
-       "disabled"
-      ]
-     },
-     {
-      "id": 225,
       "type": "GrowMaskWithBlur",
       "pos": [
        5500,
@@ -8377,7 +8186,7 @@
         "localized_name": "mask",
         "name": "mask",
         "type": "MASK",
-        "link": 859
+        "link": 853
        }
       ],
       "outputs": [
@@ -8386,7 +8195,7 @@
         "name": "mask",
         "type": "MASK",
         "links": [
-         868
+         860
         ]
        },
        {
@@ -8406,90 +8215,69 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
-       6,
+       4,
        0,
        true,
        false,
-       9,
+       6,
        1,
        1,
        false
       ]
      },
      {
-      "id": 226,
+      "id": 223,
       "type": "ImageScale",
       "pos": [
        5000,
        5500
       ],
       "size": [
-       270,
-       130
+       320,
+       100
       ],
       "flags": {},
-      "order": 36,
+      "order": 0,
       "mode": 0,
       "inputs": [
        {
-        "localized_name": "image",
         "name": "image",
         "type": "IMAGE",
-        "link": 860
-       },
-       {
-        "localized_name": "width",
-        "name": "width",
-        "type": "INT",
-        "widget": {
-         "name": "width"
-        },
-        "link": 861
-       },
-       {
-        "localized_name": "height",
-        "name": "height",
-        "type": "INT",
-        "widget": {
-         "name": "height"
-        },
-        "link": 862
+        "link": 854
        }
       ],
       "outputs": [
        {
-        "localized_name": "IMAGE",
         "name": "IMAGE",
         "type": "IMAGE",
         "links": [
-         863
+         855
         ]
        }
       ],
-      "title": "3D · COMPOSITE / shadow → размер V2.2",
       "properties": {
-       "cnr_id": "comfy-core",
-       "ver": "0.34.0",
        "Node name for S&R": "ImageScale",
-       "ue_properties": {
-        "widget_ue_connectable": {},
-        "input_ue_unconnectable": {},
-        "version": "7.8"
-       },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
+      "title": "3D · COMPOSITE / shadow 1344x768",
       "widgets_values": [
        "lanczos",
-       512,
-       512,
+       1344,
+       768,
        "disabled"
-      ]
+      ],
+      "widgets_values_named": {
+       "upscale_method": "lanczos",
+       "width": 1344,
+       "height": 768,
+       "crop": "disabled"
+      }
      },
      {
-      "id": 227,
+      "id": 224,
       "type": "ImageInvert",
       "pos": [
        5500,
@@ -8506,7 +8294,7 @@
        {
         "name": "image",
         "type": "IMAGE",
-        "link": 863
+        "link": 855
        }
       ],
       "outputs": [
@@ -8514,18 +8302,18 @@
         "name": "IMAGE",
         "type": "IMAGE",
         "links": [
-         865
+         857
         ]
        }
       ],
       "properties": {
        "Node name for S&R": "ImageInvert",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · COMPOSITE / 1 - shadow"
      },
      {
-      "id": 228,
+      "id": 225,
       "type": "ImageBlend",
       "pos": [
        5900,
@@ -8542,12 +8330,12 @@
        {
         "name": "image1",
         "type": "IMAGE",
-        "link": 864
+        "link": 856
        },
        {
         "name": "image2",
         "type": "IMAGE",
-        "link": 865
+        "link": 857
        }
       ],
       "outputs": [
@@ -8555,13 +8343,13 @@
         "name": "IMAGE",
         "type": "IMAGE",
         "links": [
-         866
+         858
         ]
        }
       ],
       "properties": {
        "Node name for S&R": "ImageBlend",
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "title": "3D · COMPOSITE / photo x (1 - 0.8 shadow)",
       "widgets_values": [
@@ -8574,7 +8362,7 @@
       }
      },
      {
-      "id": 229,
+      "id": 226,
       "type": "ImageCompositeMasked",
       "pos": [
        6400,
@@ -8592,20 +8380,20 @@
         "localized_name": "destination",
         "name": "destination",
         "type": "IMAGE",
-        "link": 866
+        "link": 858
        },
        {
         "localized_name": "source",
         "name": "source",
         "type": "IMAGE",
-        "link": 867
+        "link": 859
        },
        {
         "localized_name": "mask",
         "name": "mask",
         "shape": 7,
         "type": "MASK",
-        "link": 868
+        "link": 860
        }
       ],
       "outputs": [
@@ -8614,7 +8402,7 @@
         "name": "IMAGE",
         "type": "IMAGE",
         "links": [
-         870
+         862
         ]
        }
       ],
@@ -8628,7 +8416,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        0,
@@ -8637,7 +8425,7 @@
       ]
      },
      {
-      "id": 230,
+      "id": 227,
       "type": "LazySwitchKJ",
       "pos": [
        9000,
@@ -8655,13 +8443,13 @@
         "localized_name": "on_false",
         "name": "on_false",
         "type": "*",
-        "link": 869
+        "link": 861
        },
        {
         "localized_name": "on_true",
         "name": "on_true",
         "type": "*",
-        "link": 870
+        "link": 862
        },
        {
         "localized_name": "switch",
@@ -8670,7 +8458,7 @@
         "widget": {
          "name": "switch"
         },
-        "link": 871
+        "link": 863
        }
       ],
       "outputs": [
@@ -8679,8 +8467,8 @@
         "name": "*",
         "type": "*",
         "links": [
-         872,
-         873
+         864,
+         865
         ]
        }
       ],
@@ -8694,7 +8482,7 @@
         "input_ue_unconnectable": {},
         "version": "7.8"
        },
-       "aio_v23": "aio-v23-ui-3-server"
+       "aio_v23": "aio-v23-ui-4-server"
       },
       "widgets_values": [
        false
@@ -9630,31 +9418,31 @@
      },
      {
       "id": 852,
-      "origin_id": -10,
-      "origin_slot": 24,
-      "target_id": 222,
+      "origin_id": 220,
+      "origin_slot": 0,
+      "target_id": 221,
       "target_slot": 0,
       "type": "IMAGE"
      },
      {
       "id": 853,
-      "origin_id": -10,
-      "origin_slot": 3,
+      "origin_id": 221,
+      "origin_slot": 1,
       "target_id": 222,
-      "target_slot": 1,
-      "type": "FLOAT"
+      "target_slot": 0,
+      "type": "MASK"
      },
      {
       "id": 854,
-      "origin_id": 222,
-      "origin_slot": 0,
+      "origin_id": -10,
+      "origin_slot": 27,
       "target_id": 223,
       "target_slot": 0,
       "type": "IMAGE"
      },
      {
       "id": 855,
-      "origin_id": 220,
+      "origin_id": 223,
       "origin_slot": 0,
       "target_id": 224,
       "target_slot": 0,
@@ -9662,143 +9450,79 @@
      },
      {
       "id": 856,
-      "origin_id": 223,
+      "origin_id": 208,
       "origin_slot": 0,
-      "target_id": 224,
-      "target_slot": 1,
-      "type": "INT"
+      "target_id": 225,
+      "target_slot": 0,
+      "type": "IMAGE"
      },
      {
       "id": 857,
-      "origin_id": 223,
-      "origin_slot": 1,
-      "target_id": 224,
-      "target_slot": 2,
-      "type": "INT"
+      "origin_id": 224,
+      "origin_slot": 0,
+      "target_id": 225,
+      "target_slot": 1,
+      "type": "IMAGE"
      },
      {
       "id": 858,
-      "origin_id": 224,
+      "origin_id": 225,
       "origin_slot": 0,
-      "target_id": 221,
+      "target_id": 226,
       "target_slot": 0,
       "type": "IMAGE"
      },
      {
       "id": 859,
-      "origin_id": 221,
-      "origin_slot": 1,
-      "target_id": 225,
-      "target_slot": 0,
-      "type": "MASK"
-     },
-     {
-      "id": 860,
-      "origin_id": -10,
-      "origin_slot": 27,
-      "target_id": 226,
-      "target_slot": 0,
-      "type": "IMAGE"
-     },
-     {
-      "id": 861,
-      "origin_id": 223,
+      "origin_id": 220,
       "origin_slot": 0,
       "target_id": 226,
       "target_slot": 1,
-      "type": "INT"
+      "type": "IMAGE"
      },
      {
-      "id": 862,
-      "origin_id": 223,
-      "origin_slot": 1,
+      "id": 860,
+      "origin_id": 222,
+      "origin_slot": 0,
       "target_id": 226,
       "target_slot": 2,
-      "type": "INT"
+      "type": "MASK"
      },
      {
-      "id": 863,
-      "origin_id": 226,
+      "id": 861,
+      "origin_id": 15,
       "origin_slot": 0,
       "target_id": 227,
       "target_slot": 0,
       "type": "IMAGE"
      },
      {
-      "id": 864,
-      "origin_id": 222,
+      "id": 862,
+      "origin_id": 226,
       "origin_slot": 0,
-      "target_id": 228,
-      "target_slot": 0,
-      "type": "IMAGE"
-     },
-     {
-      "id": 865,
-      "origin_id": 227,
-      "origin_slot": 0,
-      "target_id": 228,
+      "target_id": 227,
       "target_slot": 1,
       "type": "IMAGE"
      },
      {
-      "id": 866,
-      "origin_id": 228,
-      "origin_slot": 0,
-      "target_id": 229,
-      "target_slot": 0,
-      "type": "IMAGE"
-     },
-     {
-      "id": 867,
-      "origin_id": 224,
-      "origin_slot": 0,
-      "target_id": 229,
-      "target_slot": 1,
-      "type": "IMAGE"
-     },
-     {
-      "id": 868,
-      "origin_id": 225,
-      "origin_slot": 0,
-      "target_id": 229,
-      "target_slot": 2,
-      "type": "MASK"
-     },
-     {
-      "id": 869,
-      "origin_id": 15,
-      "origin_slot": 0,
-      "target_id": 230,
-      "target_slot": 0,
-      "type": "IMAGE"
-     },
-     {
-      "id": 870,
-      "origin_id": 229,
-      "origin_slot": 0,
-      "target_id": 230,
-      "target_slot": 1,
-      "type": "IMAGE"
-     },
-     {
-      "id": 871,
+      "id": 863,
       "origin_id": -10,
       "origin_slot": 20,
-      "target_id": 230,
+      "target_id": 227,
       "target_slot": 2,
       "type": "BOOLEAN"
      },
      {
-      "id": 872,
-      "origin_id": 230,
+      "id": 864,
+      "origin_id": 227,
       "origin_slot": 0,
       "target_id": 24,
       "target_slot": 0,
       "type": "IMAGE"
      },
      {
-      "id": 873,
-      "origin_id": 230,
+      "id": 865,
+      "origin_id": 227,
       "origin_slot": 0,
       "target_id": 26,
       "target_slot": 0,
@@ -20696,7 +20420,7 @@
   "VHS_MetadataImage": true,
   "VHS_KeepIntermediate": true,
   "aio_v23": {
-   "version": "aio-v23-ui-3-server",
+   "version": "aio-v23-ui-4-server",
    "source_sha256": "70b8bfce8a8fe3244affc95e6d0cff0e11692763bfaa655b16ae6b5c501b7419",
    "photo_id": "43521446-c686-4e05-84c5-16aa0a0e24a9",
    "added_nodes": [
@@ -20734,10 +20458,7 @@
     225,
     226,
     227,
-    228,
-    229,
-    230,
-    231
+    228
    ],
    "controls": {
     "enabled": {

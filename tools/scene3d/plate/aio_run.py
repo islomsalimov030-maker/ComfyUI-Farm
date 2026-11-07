@@ -105,8 +105,18 @@ def main():
     t0 = time.monotonic()
     pid = ab.post(g)
     print('[aio] submitted', a.tag, a.row, pid, flush=True)
+    dropped = 0
     while time.monotonic() - t0 < 1500:
-        h = qr.api('/history/' + pid)
+        try:                                    # 07.11e: обрыв связи / 5xx (перезапуск сервера) не роняет скрипт
+            h = qr.api('/history/' + pid)
+            if dropped and pid not in h and not qr._queued(pid):
+                raise SystemExit(f'[aio] lost: задачи {pid} нет ни в истории, ни в очереди (сервер перезапускался)')
+            dropped = 0
+        except (OSError, ValueError) as e:
+            dropped += 1
+            print(f'[aio] connection problem {dropped}: {e}', flush=True)
+            time.sleep(15)
+            continue
         if pid in h:
             st = h[pid].get('status', {})
             if st.get('status_str') == 'error':
