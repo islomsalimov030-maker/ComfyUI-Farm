@@ -25,3 +25,5 @@ locations:
 recipes:
   - {name: L_R0, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s, steps: 25}
   - {name: L_R1, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, harmonize: [0.25, 0.35]}
+  # 07.11b recipe of the photo = S3 comp2: L_R1 without harmonisation + SAM3 person mask in the same job
+  - {name: L_C2, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, sam: true}

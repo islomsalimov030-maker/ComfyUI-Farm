@@ -70,6 +70,22 @@ def prep_inputs(loc, scene, seed, gen_path, suffix='_s2'):
     return names
 
 
+def comp2(photo_path, shadow_path, gen_path, mask_path, out_path):
+    """S3 comp2 (the photo recipe, 07.11b): person from the generation by its SAM3 mask (grown 4 / blurred 6 on the
+    server) over photo x (1 - 0.8 * shadow), shadow opened 5 px (no mannequin outline). Pure local pixel work."""
+    gen = Image.open(gen_path).convert('RGB')
+    photo = Image.open(photo_path).convert('RGB').resize(gen.size, Image.LANCZOS)
+    sh = Image.open(shadow_path).convert('L').resize(gen.size, Image.BILINEAR)
+    sh = sh.filter(ImageFilter.MinFilter(5)).filter(ImageFilter.MaxFilter(5))
+    s = np.asarray(sh, np.float32)[..., None] / 255.0
+    m = np.asarray(Image.open(mask_path).convert('L').resize(gen.size, Image.BILINEAR), np.float32)[..., None] / 255
+    p = np.asarray(photo, np.float32) * (1.0 - 0.8 * s)
+    g = np.asarray(gen, np.float32)
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray((g * m + p * (1 - m)).round().clip(0, 255).astype(np.uint8)).save(out_path)
+    return out_path
+
+
 def make_graph(spec, scene, seed, cfg, names, s3b=True):
     recipe = next(r for r in cfg['recipes'] if r['name'] == 'L_R1')
     recipe = {k: v for k, v in recipe.items() if k != 'harmonize'}

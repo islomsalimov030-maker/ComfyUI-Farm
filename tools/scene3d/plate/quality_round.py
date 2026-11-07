@@ -110,6 +110,19 @@ def make_graph(spec, scene, seed, recipe, config):
                                 **{k: v for k, v in g['sel']['inputs'].items() if k not in ('frames', 'recommended_index')})
         g[f'{t}_save'] = ab.node('SaveImage', images=[f'{t}_sel', 0],
                                  filename_prefix=f"plate3d_quality/{scene['name']}/{recipe['name']}_{t}_s{seed}")
+    if recipe.get('sam'):
+        # S3 comp2 (07.11b): person mask in the same job (SAM3 person, AIO V2.2 settings, grow 4 / blur 6);
+        # the composite onto the photo + shadow.png is done locally (composite_round.comp2)
+        g['sam'] = ab.node('SAM3Segment', image=['sel', 0], prompt='person', output_mode='Merged',
+                           confidence_threshold=0.5, max_segments=1, segment_pick=0, mask_blur=0, mask_offset=0,
+                           device='Auto', invert_output=False, unload_model=False, background='Alpha',
+                           background_color='#222222')
+        g['sam_grow'] = ab.node('GrowMaskWithBlur', mask=['sam', 1], expand=4, incremental_expandrate=0.0,
+                                tapered_corners=True, flip_input=False, blur_radius=6.0, lerp_alpha=1.0,
+                                decay_factor=1.0, fill_holes=False)
+        g['sam_img'] = ab.node('MaskToImage', mask=['sam_grow', 0])
+        g['sam_save'] = ab.node('SaveImage', images=['sam_img', 0],
+                                filename_prefix=g['save']['inputs']['filename_prefix'].replace(f"_s{seed}", f"_mask_s{seed}"))
     # Remove unused control loaders and patches, so R1 truly has no ControlNet load.
     pending = [k for k, n in g.items() if n['class_type'] == 'SaveImage']
     required = set()
@@ -230,6 +243,8 @@ def main():
     parser.add_argument('--group', default='Q1')
     parser.add_argument('--pilot', action='store_true')
     parser.add_argument('--build-only', action='store_true')
+    parser.add_argument('--recipes', default='', help='comma list: only these recipe names')
+    parser.add_argument('--scenes', default='', help='comma list: only these scenes')
     args = parser.parse_args()
     cfg = yaml.safe_load(Path(args.config).read_text(encoding='utf-8'))
     for location in cfg.get('locations', []):   # pod paths in the yaml -> FARM_COMFY on a local PC
@@ -237,13 +252,17 @@ def main():
     STATE.mkdir(parents=True, exist_ok=True)
     manifest = STATE / f'{args.group}_runs.json'
     rows = json.loads(manifest.read_text()) if manifest.exists() else []
-    recipes = [r for r in cfg['recipes'] if r['name'].startswith(args.group + '_')]
+    recipes = [r for r in cfg['recipes'] if r['name'].startswith(args.group + '_')
+               and (not args.recipes or r['name'] in args.recipes.split(','))]
     if not recipes:
         raise SystemExit(f'No recipes for {args.group}')
     jobs = []
     for location in cfg['locations']:
         spec = json.loads((HERE / location['spec']).read_text(encoding='utf-8'))
-        spec['scenes'] = [s for s in spec['scenes'] if s['name'] in location['scenes']]
+        spec['scenes'] = [s for s in spec['scenes'] if s['name'] in location['scenes']
+                          and (not args.scenes or s['name'] in args.scenes.split(','))]
+        if not spec['scenes']:
+            continue
         ab.LOC[:] = [Path(location['maps']).name]
         ab.SIZE[:] = cfg['size']
         if not args.build_only:

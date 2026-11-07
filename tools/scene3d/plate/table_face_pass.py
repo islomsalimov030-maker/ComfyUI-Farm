@@ -43,7 +43,7 @@ def defaults(kind, info):
     return result
 
 
-def graph(source, seed, info, crop_values):
+def graph(source, seed, info, crop_values, prefix='plate3d_table_face'):
     g = {
         'source': node('LoadImage', image=source),
         'sam': node('SAM3Segment', image=['source', 0], model_name='sam3', prompt='face',
@@ -105,9 +105,9 @@ def graph(source, seed, info, crop_values):
         g[t + '_sharp'] = node('ImageSharpen', image=[t + '_stitch', 0], sharpen_radius=1, sigma=1.0, alpha=0.1)
         g[t + '_comp'] = node('ImageCompositeMasked', destination=[t + '_stitch', 0], source=[t + '_sharp', 0],
                              mask=[t + '_blur', 0], x=0, y=0, resize_source=False)
-        g[t + '_save'] = node('SaveImage', images=[t + '_comp', 0], filename_prefix=f'plate3d_table_face/{source.removesuffix(".png")}_{t}')
+        g[t + '_save'] = node('SaveImage', images=[t + '_comp', 0], filename_prefix=f'{prefix}/{source.removesuffix(".png")}_{t}')
     g['mask_image'] = node('MaskToImage', mask=['sam', 1])
-    g['mask_save'] = node('SaveImage', images=['mask_image', 0], filename_prefix=f'plate3d_table_face/mask_{source.removesuffix(".png")}')
+    g['mask_save'] = node('SaveImage', images=['mask_image', 0], filename_prefix=f'{prefix}/mask_{source.removesuffix(".png")}')
     # 07.11 remote (studio server 0.34.6): older RMBG without model_name; no farm/stacy_* RefMods there
     sam_inputs = {**info['SAM3Segment']['input'].get('required', {}), **info['SAM3Segment']['input'].get('optional', {})}
     g['sam']['inputs'] = {k: v for k, v in g['sam']['inputs'].items() if k in sam_inputs}
@@ -128,6 +128,7 @@ def main():
     p.add_argument('--ui', required=True)
     p.add_argument('--image', action='append', required=True, help='absolute source PNG; one selected candidate per row')
     p.add_argument('--build-only', action='store_true')
+    p.add_argument('--prefix', default='plate3d_table_face', help='output subfolder (07.11b: one per run)')
     a = p.parse_args()
     STATE.mkdir(parents=True, exist_ok=True)
     info = request('/object_info')
@@ -143,11 +144,11 @@ def main():
     started = time.time()
     for index, path in enumerate(a.image):
         src = Path(path)
-        name = f'tableface_{index}_{src.parent.name}_{src.name}'
+        name = f'tableface_{a.prefix.split("/")[-1]}_{index}_{src.parent.name}_{src.name}'
         dest = OLD / 'input' / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dest)
-        g = graph(name, 101 + index, info, crop_values)
+        g = graph(name, 101 + index, info, crop_values, a.prefix)
         if farm_env.REMOTE and not a.build_only:
             import remote_sync
             remote_sync.upload(dest, '')

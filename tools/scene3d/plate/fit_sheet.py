@@ -55,6 +55,7 @@ def main():
     ap.add_argument('--seeds', default='101,202')
     ap.add_argument('--metrics', default='', help='json list of rows with file, pck_strict, face_similarity, people')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--tiles', default='', help='custom columns "label=path;label=path", {seed} and {C} (FARM_COMFY) expand')
     a = ap.parse_args()
     met = {}
     if a.metrics:
@@ -66,7 +67,9 @@ def main():
     seeds = [int(s) for s in a.seeds.split(',')]
     blocks = []
     for seed in seeds:
-        ts = tiles(a.scene, a.loc, seed)
+        ts = tiles(a.scene, a.loc, seed) if not a.tiles else [
+            (lab, Path(pth.format(seed=seed, C=farm_env.COMFY.as_posix())))
+            for lab, pth in (x.split('=', 1) for x in a.tiles.split(';'))]
         rows = (len(ts) + COLS - 1) // COLS
         block = Image.new('RGB', (COLS * TW, rows * (TH + C + 20) + 24), (18, 18, 18))
         d = ImageDraw.Draw(block)
