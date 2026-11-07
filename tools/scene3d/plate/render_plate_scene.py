@@ -681,9 +681,16 @@ def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, 
 
     W, H = info["size"]
     size = (W, H)
-    if rig is None:                       # Постановка v2: без рига ключевые точки BODY-25 не считаем
+    if rig is None:                       # Постановка v2: ключевые точки BODY-25 посчитал pose_fit.py (fit.json)
         res = {"scene": scene, "size": [W, H], "plate": a.plate, "hit_world": list(hit), "contact": contact,
                "placed": placed, "cam_to_char_m": (cam.matrix_world.translation - hit).length}
+        fj = f"{out}/pose_fit.json"
+        if os.path.isfile(fj):
+            with open(fj, encoding="utf-8") as f:
+                fit = json.load(f)
+            kx, ky = W / fit["px_size"][0], H / fit["px_size"][1]
+            res["keypoints_body25"] = [[x * kx, y * ky, v] for x, y, v in fit["keypoints_body25_px"]]
+            res["keypoint_names"] = BODY25_NAMES
         with open(f"{out}/pose25.json", "w", encoding="utf-8") as f:
             json.dump(res, f, indent=1)
         bpy.ops.wm.save_as_mainfile(filepath=f"{out}/scene.blend")

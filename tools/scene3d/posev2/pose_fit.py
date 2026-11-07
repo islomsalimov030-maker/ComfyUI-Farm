@@ -31,6 +31,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from body import PRIORITY, facing, height_est, regions  # noqa: E402
 
 CONTACT_M = 0.03
+# MHR70 -> BODY-25 (первые 18 точек в порядке render_h3_maps.BODY25_NAMES)
+MHR_TO_B25 = [0, 69, 6, 8, 41, 5, 7, 62, 10, 12, 14, 9, 11, 13, 2, 1, 4, 3]
+CONTACT_DETECT_M = 0.04   # порог поиска контактов на рефе (поза SAM у стоп/кистей бывает на 2–4 см выше поверхности)
+# доли массы сегментов (Dempster/Winter, округлённо) — центр масс по регионам, а не по вершинам (голова плотная)
+MASS = {"head": 0.08, "torso": 0.30, "pelvis": 0.14, "thigh.L": 0.10, "thigh.R": 0.10, "knee.L": 0.01, "knee.R": 0.01,
+        "shin.L": 0.045, "shin.R": 0.045, "foot.L": 0.014, "foot.R": 0.014, "arm.L": 0.027, "arm.R": 0.027,
+        "forearm.L": 0.016, "forearm.R": 0.016, "hand.L": 0.006, "hand.R": 0.006}
 
 
 # ------------------------------------------------------------------------------------------------ geometry helpers
@@ -158,7 +165,42 @@ def penetration(plate, X):
 
 
 # ------------------------------------------------------------------------------------------------ reference analysis
-def ref_contacts(ref, reg, forced):
+def ref_planes(S, max_planes=6, thr=0.02, seed=0, body=None):
+    """Плоскости сцены рефа (RANSAC, последовательно): пол, кровать, сиденье, стены. Отдельные «летающие» точки
+    на краю силуэта и остатки тела в MoGe в плоскости не собираются — поэтому контакты считаем только с плоскостями."""
+    rng = np.random.default_rng(seed)
+    pts = S.copy()
+    planes = []
+    min_in = max(400, int(0.03 * len(S)))
+    for _ in range(max_planes):
+        if len(pts) < min_in:
+            break
+        best = None
+        for _ in range(300):
+            q = pts[rng.choice(len(pts), 3, replace=False)]
+            n = np.cross(q[1] - q[0], q[2] - q[0])
+            if np.linalg.norm(n) < 1e-9:
+                continue
+            n /= np.linalg.norm(n)
+            inl = np.abs((pts - q[0]) @ n) < thr
+            if best is None or inl.sum() > best[1].sum():
+                best = (n, inl)
+        if best is None or best[1].sum() < min_in:
+            break
+        P = pts[best[1]]
+        c = P.mean(0)
+        n = np.linalg.svd(P - c, full_matrices=False)[2][-1]
+        if n @ (-c) < 0:                                                  # нормаль к камере (камера в начале)
+            n = -n
+        pts = pts[~best[1]]
+        if body is not None and np.median(body.query(P)[0]) < 0.05:     # «плоскость» из остатков тела — не сцена
+            continue
+        sub = P[rng.choice(len(P), min(len(P), 4000), replace=False)]
+        planes.append({"n": n, "d": float(-n @ c), "tree": cKDTree(sub), "n_in": int(len(P))})
+    return planes
+
+
+def ref_contacts(ref, reg, forced, up=None, planes=None):
     V = ref["V"]
     out = {}
     if forced:
@@ -168,26 +210,25 @@ def ref_contacts(ref, reg, forced):
             if len(idx):
                 out[name] = {"idx": idx, "kind": kind, "normal": None, "n": int(len(idx)), "surface": surf}
         return out
-    if not len(ref["S"]):
+    if not planes:
         return out
-    tree = cKDTree(ref["S"])
-    d, j = tree.query(V, distance_upper_bound=0.2)
-    near = d < CONTACT_M
-    for name in np.unique(reg[near]):
-        idx = np.where(near & (reg == name))[0]
-        if len(idx) < max(8, int(0.02 * (reg == name).sum())):
+    for pi, pl in enumerate(planes):
+        h = V @ pl["n"] + pl["d"]                                         # высота над плоскостью (+ со стороны камеры)
+        near = (h > -0.05) & (h < CONTACT_DETECT_M)
+        if near.sum() == 0:
             continue
-        if ref["N"] is not None:
-            n = ref["N"][j[idx]].mean(0)
-        else:
-            pts = ref["S"][tree.query_ball_point(V[idx].mean(0), 0.08)]
-            n = np.linalg.svd(pts - pts.mean(0))[2][-1] if len(pts) > 10 else np.zeros(3)
-        if np.linalg.norm(n) < 1e-6:
-            continue
-        n = n / np.linalg.norm(n)
-        if n @ (V.mean(0) - V[idx].mean(0)) < 0:                          # нормаль к телу
-            n = -n
-        out[str(name)] = {"idx": idx, "kind": None, "normal": n, "n": int(len(idx))}
+        dxy, _ = pl["tree"].query(V[near])                                # в пределах самой поверхности
+        idx_all = np.where(near)[0][dxy < 0.15]
+        nz = abs(pl["n"] @ up) if up is not None else 1.0
+        kind = "h" if nz > 0.85 else ("v" if nz < 0.35 else "any")
+        for name in np.unique(reg[idx_all]):
+            idx = idx_all[reg[idx_all] == name]
+            if len(idx) < max(8, int(0.01 * (reg == name).sum())):
+                continue
+            prev = out.get(str(name))
+            if prev is None or len(idx) > prev["n"]:
+                out[str(name)] = {"idx": idx, "kind": kind, "normal": pl["n"], "n": int(len(idx)),
+                                  "surface": f"p{pi}"}
     return out
 
 
@@ -219,20 +260,18 @@ def plane_up(V, contacts, up):
     return up, True
 
 
-def ref_up(ref, contacts):
-    cand = [c["normal"] * c["n"] for c in contacts.values()
-            if c["normal"] is not None and c["normal"] @ np.array([0, -1.0, 0]) > 0.5]
-    if cand:
-        up = np.sum(cand, 0)
-        return up / np.linalg.norm(up), "contacts"
-    S, N = ref["S"], ref["N"]
-    if len(S) > 500 and N is not None:
-        Ns = np.where((N[:, 1] > 0)[:, None], -N, N)                  # знак нормалей MoGe не гарантирован
-        m = Ns[:, 1] < -0.85
-        if m.sum() > 300:
-            up = Ns[m].mean(0)
-            return up / np.linalg.norm(up), "scene"
-    up, ok = plane_up(ref["V"], contacts, np.array([0, -1.0, 0]))
+def ref_up(ref, planes, contacts):
+    """«Вверх» рефа: самая большая плоскость с нормалью в пределах 45° от «вверх» камеры (пол, кровать);
+    иначе — плоскость по низу заданных контактов; иначе — «вверх» камеры."""
+    cam_up = np.array([0, -1.0, 0])
+    cands = []
+    for pl in planes or []:
+        n = pl["n"] if pl["n"] @ cam_up > 0 else -pl["n"]
+        if n @ cam_up > math.cos(math.radians(45)):
+            cands.append((pl["n_in"], n))
+    if cands:
+        return max(cands, key=lambda t: t[0])[1], "plane"
+    up, ok = plane_up(ref["V"], contacts, cam_up)
     return (up, "contact_plane") if ok else (up, "camera")
 
 
@@ -240,8 +279,10 @@ def ref_up(ref, contacts):
 def fit(ref, plate, target, height, forced=None, log=print):
     V0, kp0 = ref["V"], ref["kp"]
     reg = regions(V0, kp0)
-    contacts = ref_contacts(ref, reg, forced)
-    up, up_src = ref_up(ref, contacts)
+    planes = ref_planes(ref["S"], body=cKDTree(V0)) if (len(ref["S"]) and not forced) else []
+    forced_c = ref_contacts(ref, reg, forced) if forced else {}
+    up, up_src = ref_up(ref, planes, forced_c)
+    contacts = forced_c if forced else ref_contacts(ref, reg, None, up, planes)
     f = np.array([0, 0, 1.0]) - up[2] * up
     f /= np.linalg.norm(f)
     Rref = np.stack([np.cross(f, up), f, up])
@@ -266,9 +307,11 @@ def fit(ref, plate, target, height, forced=None, log=print):
     rel = signed_angle(to_cam, fwd) if fwd is not None else 0.0
     elev_ref = math.degrees(math.atan2(-pel[2], math.hypot(pel[0], pel[1])))
     # опорный регион
-    if contacts:
-        best = min(PRIORITY.get(k, 9) for k in contacts)
-        support = [k for k in contacts if PRIORITY.get(k, 9) == best]
+    hor = {k: c for k, c in contacts.items() if c["kind"] == "h"}          # опора — только горизонтальные контакты
+    pool = hor or contacts
+    if pool:
+        best = min(PRIORITY.get(k, 9) for k in pool)
+        support = [k for k in pool if PRIORITY.get(k, 9) == best]
     else:
         support = []
     if support:
@@ -291,7 +334,7 @@ def fit(ref, plate, target, height, forced=None, log=print):
     kp = kp - pivot + T
     pivot = T.copy()
 
-    tilt = 0.05 if up_src in ("contacts", "scene", "contact_plane") else 0.3     # насколько доверяем «вверх» рефа
+    tilt = 0.05 if up_src in ("plane", "contact_plane") else 0.3     # насколько доверяем «вверх» рефа
     rng = np.random.default_rng(0)
     pen_idx = rng.choice(len(V), min(2500, len(V)), replace=False)
     groups = []
@@ -345,14 +388,17 @@ def fit(ref, plate, target, height, forced=None, log=print):
     for k, c in contacts.items():
         if c["kind"] == "h" and abs(rep_c[k]["gap_cm"]) < 3:
             pts.append(X[c["idx"], :2])
-    com = X.mean(0)
+    com = sum(MASS.get(r, 0.0) * X[reg == r].mean(0) for r in np.unique(reg) if (reg == r).any()) / \
+        sum(MASS.get(r, 0.0) for r in np.unique(reg))
     balance = None
     if pts:
         P2 = np.concatenate(pts)
+        inside = False
         try:
-            balance = bool(Delaunay(P2).find_simplex(com[:2]) >= 0)
+            inside = bool(Delaunay(P2).find_simplex(com[:2]) >= 0)
         except Exception:
-            balance = bool(np.min(np.linalg.norm(P2 - com[:2], axis=1)) < 0.05)
+            pass
+        balance = inside or bool(np.min(np.linalg.norm(P2 - com[:2], axis=1)) < 0.04)
     pel_p = (KP[9] + KP[10]) / 2
     fwd_p = facing(KP, Zup)
     tc = plate.C - pel_p
@@ -362,15 +408,22 @@ def fit(ref, plate, target, height, forced=None, log=print):
     elev_p = math.degrees(math.atan2(plate.h - pel_p[2], math.hypot(*(plate.C - pel_p)[:2])))
     xs, ys = ref["V"][:, 0] / ref["V"][:, 2] * ref["f"] + ref["cx"], ref["V"][:, 1] / ref["V"][:, 2] * ref["f"] + ref["cy"]
     status = "ok" if sup_gap <= 3 and max_pen <= 3 else "pose_mismatch"
+    # BODY-25 (первые 18: тело, глаза, уши) в пикселях фото — для PCK, как у манекена; кисти нулями
+    ku, kv, kz = plate.project(KP[MHR_TO_B25])
+    kzp = plate.depth_at(ku, kv)
+    kp25 = [[round(float(a), 1), round(float(b), 1),
+             int(0 <= a < plate.Wp and 0 <= b < plate.Hp and z > 0 and z <= zp + 0.02)]
+            for a, b, z, zp in zip(ku, kv, kz, kzp)] + [[0.0, 0.0, 0]] * 30
     rep = {"status": status, "support": support, "support_gap_cm": round(sup_gap, 1),
            "max_penetration_cm": round(max_pen, 1), "pen_verts_over_2cm": int((pen > 0.02).sum()),
-           "balance_ok": balance, "contacts": rep_c, "up_from": up_src, "height_scale": round(s, 3),
+           "balance_ok": balance, "contacts": rep_c, "up_from": up_src, "ref_planes": len(planes), "height_scale": round(s, 3),
            "angle_to_camera_deg": {"ref": round(math.degrees(rel), 1), "plate": round(math.degrees(rel_p), 1)},
            "camera_elevation_deg": {"ref": round(elev_ref, 1), "plate": round(elev_p, 1)},
            "ref_plan": {"body_h_frac": round(float((ys.max() - ys.min()) / ref["H"]), 3),
                         "body_w_frac": round(float((xs.max() - xs.min()) / ref["W"]), 3)},
            "fit": {"params": [round(float(x), 4) for x in p], "cost": round(float(sol.cost), 3), "nfev": int(sol.nfev)},
-           "target_world": [round(float(x), 3) for x in T]}
+           "target_world": [round(float(x), 3) for x in T],
+           "keypoints_body25_px": kp25, "px_size": [plate.Wp, plate.Hp]}
     log(f"[fit] {status}: опора {support} {sup_gap:.1f} см, проникновение {max_pen:.1f} см, "
         f"ракурс {rep['angle_to_camera_deg']}, камера {rep['camera_elevation_deg']}, равновесие {balance}")
     return X, rep, reg
