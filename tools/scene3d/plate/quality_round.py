@@ -208,6 +208,8 @@ def wait(prompt_id, timeout):
                 return 'error', item
             if status.get('completed') and status.get('status_str') == 'success':
                 images = item.get('outputs', {}).get('save', {}).get('images', [])
+                farm_env.download_outputs([im for out in item.get('outputs', {}).values()
+                                           for im in out.get('images', [])])
                 if images and all((Path(ab.COMFY) / 'output' / im.get('subfolder', '') / im['filename']).is_file()
                                   for im in images):
                     return 'success', {'images': images}

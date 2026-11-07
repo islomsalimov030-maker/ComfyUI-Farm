@@ -48,3 +48,6 @@ recipes:
   - {name: L_S0, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s, steps: 25, control: pose}
   - {name: L_S1, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, control: pose}
   - {name: L_S2, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, control: [pose, depth], clay_depth_end: 0.3}
+  # 07.11 studio server (ComfyUI 0.34.6, no Fun CN): playblast <Video 1> only; L_R1 also runs the harmonisation pass
+  - {name: L_R0, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s, steps: 25}
+  - {name: L_R1, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, harmonize: [0.25, 0.35]}

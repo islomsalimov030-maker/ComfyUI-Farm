@@ -39,7 +39,7 @@ URL = farm_env.URL
 COMFY = str(farm_env.COMFY)
 SHEETS = str(farm_env.ROOT / "sheets")
 FACE = "0003.png"
-MODS = ("farm/stacy_face", "farm/stacy_body")
+MODS = ("farm/stacy_face", "farm/stacy_body")   # remote: FARM_MODS overrides in farm_env.prepare()
 PATCH = "minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"
 STATIC = ("filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, "
           "with no camera movement, no zoom and no pan.")
@@ -362,6 +362,7 @@ def person_depth(maps, d, m):
 
 def post(g):
     try:
+        g = farm_env.prepare(g)
         r = u.urlopen(u.Request(URL + "/prompt", data=json.dumps({"prompt": g}).encode(),
                                 headers={"Content-Type": "application/json"}))
     except u.HTTPError as e:  # graph rejected: print why and stop, nothing else gets queued
