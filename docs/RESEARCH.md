@@ -273,3 +273,17 @@
 - 07.11b 3D-A: проход лица с модом лица: при лице 40–55 px денойз .35 сходство не поднимает (.24–.46), .85 даёт .61–.92, но меняет поворот головы/положение кисти и может перенести одежду из мода тела. Профиль и лицо вниз facenet не оценивает.
 - 07.11b 3D-A: H3 ref2va не воспроизводит позу «лёжа на спине с книгой над грудью» по клею-плейбласту (PCK strict 0–.64 на 4 сидах); стоя/сидя/присед — .71–1.0.
 - 07.11b 3D-A: экспорт AIO фронтендом можно делать на сервере студии (`comfy-browser`: loadfile + graphToPrompt, без очереди); вывод `eval` режется на ~20 КБ — брать кусками через window-переменную.
+
+### 07.11c · лицензии раунда поз (проверено до использования; тексты: raw LICENSE с GitHub/HF API)
+| компонент | лицензия | коммерция | ограничения | ссылка |
+|---|---|---|---|---|
+| SAM 3D Body (код + веса `facebook/sam-3d-body-dinov3`, gated) | SAM License (Meta, 19.11.2025) | ✅ royalty-free, use/distribute/modify | запрещено ITAR/военное/ядерное/шпионаж/оружие; раздача — только с текстом лицензии; без reverse engineering | [LICENSE](https://github.com/facebookresearch/sam-3d-body/blob/main/LICENSE) |
+| `Comfy-Org/sam-3d-body` (репак для ComfyUI: `detection/sam_3d_body_dinov3_int8_convrot.safetensors` 1.86 ГБ, bf16 2.64 ГБ) | sam-license (как оригинал) | ✅ | те же; кладётся в `models/detection/` | [HF](https://huggingface.co/Comfy-Org/sam-3d-body) |
+| MHR (Momentum Human Rig) | Apache-2.0 | ✅ | — | [LICENSE](https://github.com/facebookresearch/MHR/blob/main/LICENSE) |
+| DINOv3-бэкбон внутри весов SAM 3D Body | распространяется в составе SAM Materials (SAM License) | ✅ | отдельно DINOv3 не скачиваем | — |
+| Z-Image Turbo (`Tongyi-MAI/Z-Image-Turbo`) | Apache-2.0 | ✅ | — | [HF](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) |
+| NVIDIA Kimodo (`nvidia/Kimodo-*-RP-*`) | не проверялась (D не делался) | ⚠️ по плану мозга «non-commercial research» — только тест | — | — |
+- 07.11c 3D-A: SAM 3D Body в ядре ComfyUI 0.44.2 (`comfy_extras/nodes_sam3d_body.py`), веса Comfy-Org int8 1.86 ГБ в `models/detection`: на RTX 3060 Ti 1.2–1.3 с/кадр (с уточнением кистей); вне исполнителя ComfyUI нужен `torch.inference_mode()`. Выход: 70 точек MHR70 (`pred_keypoints_3d`, камера: y вниз) + параметры MHR.
+- 07.11c 3D-A: постановка позы по промпту: LLM qwen3:8b → JSON костей MPFB — 5/24 по соответствию; Z-Image Turbo → SAM 3D Body → ретаргет направлений — 18/24; H3 (S3 comp2) сохраняет позу плейбласта в 8/9 (теряет «на коленях на кровати»).
+- 07.11c 3D-A: Z-Image Turbo на сервере: 12 картинок 832×1216 (8 шагов, res_multistep, shift 3) одной задачей — 54 с.
+- 07.11c 3D-A: фронтенд ComfyUI при `loadGraphData` с тем же именем открывает уже существующую вкладку (localStorage) — для экспорта новой версии файла грузить под новым именем.

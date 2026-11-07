@@ -49,7 +49,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 if os.environ.get("FARM_BPY_PKGS"):   # Blender's own Python has no Pillow: pip --target dir (appended: bundled numpy wins)
     sys.path.append(os.environ["FARM_BPY_PKGS"])
-from poses import POSES, apply_pose, place  # noqa: E402
+from poses import POSES, apply_pose, place, reach, rotate  # noqa: E402
+import pose_tools  # noqa: E402
 from render_h3_maps import (BODY25_NAMES, char_objects,  # noqa: E402
                             depth_material, mask_material, keypoints_body25, render_pass, to_px, visibility)
 
@@ -541,10 +542,17 @@ def run_scene(a, info, scene, light=None):
         o.pass_index = 1
     bpy.context.view_layer.update()
 
+    # 07.11c pose round: external pose file (methods A/B/C) -> registered as a pose named after the scene
+    spec = None
+    if scene.get("pose_file"):
+        with open(scene["pose_file"], encoding="utf-8") as f:
+            spec = json.load(f)
+        scene["pose"] = "file:" + scene["name"]
+        POSES[scene["pose"]] = {"contact": spec.get("contact", "solve"), "yaw_add": spec.get("yaw_add", 0), "steps": []}
     # target point from the photo pixel
     key = "seat" if scene.get("seat") else "feet"
     u, v = scene[key]
-    if key == "seat" and POSES[scene["pose"]]["contact"] == "seat":   # lie may be on the floor (a mat)
+    if key == "seat" and POSES[scene["pose"]]["contact"] in ("seat", "solve"):   # lie may be on the floor (a mat)
         hit, v_used = seat_hit(sc, info, cam, u, v, names)
     else:
         org, dirn = pixel_ray(info, cam, u, v)
@@ -556,7 +564,31 @@ def run_scene(a, info, scene, light=None):
         to_cam = cam.matrix_world.translation - hit
         yaw = math.degrees(math.atan2(to_cam.x, -to_cam.y))  # yaw 0 faces -Y
     yaw += scene.get("yaw_add", 0) + POSES[scene["pose"]].get("yaw_add", 0)
-    contact = apply_pose(rig, scene["pose"])
+    if spec is not None:
+        contact = pose_tools.apply_pose_file(rig, spec, reach, rotate)
+    else:
+        contact = apply_pose(rig, scene["pose"])
+    # joint limits (07.11c): measure, warn, clamp (scene "no_clamp": true keeps the pose as is, report only)
+    ang0 = pose_tools.measure(rig)
+    viol0 = pose_tools.violations(ang0)
+    clamp_log = [] if scene.get("no_clamp") else pose_tools.clamp(rig)
+    # the PROMPT contacts (same for every method) drive the solver and the metric; method A's own list is kept in its file
+    contacts = scene.get("contacts") or (spec or {}).get("contacts") or []
+    if contact == "solve":
+        rig.rotation_euler = (0, 0, math.radians(yaw))
+        rig.location = (hit.x, hit.y, hit.z)
+        bpy.context.view_layer.update()
+        low = min(p.z for p in pose_tools._all_points(body, step=3))
+        rig.location.z += hit.z - low
+        bpy.context.view_layer.update()
+        solved = pose_tools.solve_contacts(rig, body, plate, contacts, cam.matrix_world.translation) if contacts else {}
+        feet_z = min(p.z for p in pose_tools._all_points(body, step=3))
+        _write_pose_metrics(out, rig, body, plate, cam, ang0, viol0, clamp_log, contacts, solved)
+        placed = {"feet_z": round(feet_z, 3)}
+        props = place_props(sc, info, cam, scene, rig, names)
+        names |= {o.name for o in props}
+        return _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, hit, yaw, u, v_used,
+                             contact, placed)
     seat_z = hit.z if key == "seat" else 0.0
     if key == "seat" and contact not in ("seat", "lie"):
         raise SystemExit(f"{scene['name']}: seat point given for a standing pose")
@@ -573,6 +605,30 @@ def run_scene(a, info, scene, light=None):
     props = place_props(sc, info, cam, scene, rig, names)
     names |= {o.name for o in props}
 
+    if contacts:
+        solved = {"contacts": pose_tools.contact_gaps(body, pose_tools.plate_bvh(plate), contacts,
+                                                      cam.matrix_world.translation)}
+    else:
+        solved = {}
+    _write_pose_metrics(out, rig, body, plate, cam, ang0, viol0, clamp_log, contacts, solved)
+    return _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, hit, yaw, u, v_used,
+                         contact, placed)
+
+
+def _write_pose_metrics(out, rig, body, plate, cam, ang0, viol0, clamp_log, contacts, solved):
+    ang1 = pose_tools.measure(rig)
+    res = {"angles_before": ang0, "violations_before": {k: list(v) for k, v in viol0.items()},
+           "clamp": clamp_log, "angles": ang1,
+           "violations_after": {k: list(v) for k, v in pose_tools.violations(ang1).items()},
+           "bones": pose_tools.bone_lengths(rig), "contacts_req": contacts, **solved}
+    with open(f"{out}/pose_metrics.json", "w", encoding="utf-8") as f:
+        json.dump(res, f, indent=1)
+    gaps = ", ".join(f"{c['part']} {c['gap_cm']:+.1f}" for c in solved.get("contacts", []))
+    print(f"[pose] limits: {len(viol0)} violations, {len(clamp_log)} clamped; bones dev "
+          f"{res['bones']['max_dev_mm']} mm; contacts [{gaps}] pen {solved.get('max_penetration_cm', '-')} cm")
+
+
+def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, hit, yaw, u, v_used, contact, placed):
     # clay pass (plate grey, mannequin light)
     sc.render.engine = "BLENDER_WORKBENCH"
     sc.display.shading.light = "STUDIO"
