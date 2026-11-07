@@ -3,6 +3,7 @@
 Use --pilot for the first graph only. A timeout stops the runner, never adds more GPU work.
 Existing 4b graphs and images are left unchanged. See quality_round.yaml for the matrix.
 """
+import sys
 import argparse
 import copy
 import json
@@ -16,7 +17,9 @@ import yaml
 import build_ab as ab
 
 HERE = Path(__file__).resolve().parent
-STATE = Path('/workspace/farm/scene3d/quality_round')
+sys.path.insert(0, str(HERE))
+import farm_env  # noqa: E402
+STATE = farm_env.ROOT / 'quality_round'
 
 
 def make_graph(spec, scene, seed, recipe, config):
@@ -70,7 +73,7 @@ def make_graph(spec, scene, seed, recipe, config):
                                          mask=['inpaint_mask', 0], strength=1.0, end_percent=1.0))])
     if recipe.get('clay_video'):
         # playblast: Cycles clay + cast/contact shadows over the photo (render_plate_scene.py, maps <LOC>_s)
-        src = (f"{ab.LOC[0]}_s/{scene['name']}/playblast.png" if recipe.get('playblast')
+        src = (f"{ab.LOC[0]}{recipe.get('playblast_suffix', '_s')}/{scene['name']}/playblast.png" if recipe.get('playblast')
                else f"{ab.LOC[0]}/{scene['name']}/clay_plate.png")
         g['clay'] = ab.node('LoadImage', image=src)
         g['clay_scale'] = ab.node('ImageScale', image=['clay', 0], upscale_method='lanczos',
@@ -81,9 +84,11 @@ def make_graph(spec, scene, seed, recipe, config):
         g['ks']['inputs']['steps'] = recipe['steps']
         control = recipe.get('control')
         applies = []
-        if control == 'depth':
-            applies.append(('ap_depth', dict(control_video=['ctl_dperson', 0], strength=1.0, end_percent=1.0)))
-        elif control == 'pose':
+        controls = control if isinstance(control, list) else [control] if control else []
+        if 'depth' in controls:   # clay_depth_end < 1: depth only in the first part of the steps (07.11, S2)
+            applies.append(('ap_depth', dict(control_video=['ctl_dperson', 0], strength=1.0,
+                                             end_percent=recipe.get('clay_depth_end', 1.0))))
+        if 'pose' in controls:
             applies.append(('ap_pose', dict(control_video=['ctl_pose', 0], strength=0.5, end_percent=0.5)))
         for name in ('ap_depth', 'ap_pose'):
             del g[name]
@@ -122,11 +127,32 @@ def make_graph(spec, scene, seed, recipe, config):
     return g
 
 
+def light_sentence(light):
+    """Concrete key-light wording from the spec light (07.11): direction relative to the frame, warmth, hardness."""
+    if not light:
+        return ''
+    az = float(light.get('azimuth_deg', 0)) % 360
+    side = ('from the right of the frame' if 30 <= az < 150 else 'from behind her, against the camera' if 150 <= az < 210
+            else 'from the left of the frame' if 210 <= az < 330 else 'from the camera side')
+    if 100 <= az < 150 or 210 <= az < 260:
+        side += ' and slightly behind her'
+    r, g, b = (light.get('color') or [1, 1, 1])[:3]
+    warm = 'warm golden' if r - b > 0.3 else 'cool bluish' if b - r > 0.1 else 'neutral white'
+    el = float(light.get('elevation_deg', 30))
+    low = 'low ' if el < 25 else ''
+    hard = 'crisp' if float(light.get('softness_deg', 8)) <= 5 else 'soft-edged'
+    return (f'The key light is the {low}{warm} daylight of the room coming {side}: it lights the same side of her body '
+            f'and hair as it lights the furniture, the opposite side of her body falls into the same soft shade as the '
+            f'room, and her body casts a {hard} shadow on the floor and furniture in the same direction as the shadows '
+            f'of the furniture in <Picture 1>.')
+
+
 def clay_prompt(spec, scene, shadow=False):
     outfit = ('She wears an opaque grey athletic T-shirt and opaque full-length navy trousers.' if not shadow else
-              'She wears an opaque grey athletic T-shirt, opaque full-length navy trousers and white sneakers. '
-              'She is lit by the same light as the room in <Picture 1> and casts a soft natural shadow '
-              'on the floor and furniture beneath her.')
+              'She wears an opaque grey athletic T-shirt, opaque full-length navy trousers and white sneakers. ' +
+              (light_sentence(scene.get('light') or spec.get('light')) or
+               'She is lit by the same light as the room in <Picture 1> and casts a soft natural shadow '
+               'on the floor and furniture beneath her.'))
     return '\n'.join([
         'subject_definitions:',
         '<Subject 1> is the adult woman whose identity is shown in <Picture 2>; replace the clay figure in <Video 1> with her.',
@@ -204,6 +230,8 @@ def main():
     parser.add_argument('--build-only', action='store_true')
     args = parser.parse_args()
     cfg = yaml.safe_load(Path(args.config).read_text(encoding='utf-8'))
+    for location in cfg.get('locations', []):   # pod paths in the yaml -> FARM_COMFY on a local PC
+        location['maps'] = location['maps'].replace('/workspace/ComfyUI-next', str(farm_env.COMFY).replace('\\', '/'))
     STATE.mkdir(parents=True, exist_ok=True)
     manifest = STATE / f'{args.group}_runs.json'
     rows = json.loads(manifest.read_text()) if manifest.exists() else []

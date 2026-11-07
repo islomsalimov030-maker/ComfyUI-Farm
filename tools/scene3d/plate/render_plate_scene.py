@@ -30,6 +30,10 @@ playblast (05.11): Cycles (OptiX/CUDA if present, else CPU), 64 samples + denois
    "elevation_deg", "strength", "color": [r, g, b], "ambient", "softness_deg"}, or {"key_dir": left|right|back|front|top,
    "temp": warm|neutral|cool} (plate card), else the brightest area of the photo. Out: playblast_rgba.png and
   playblast.png = photo + clay + its cast/contact shadows (alpha_composite) in the photo camera.
+  07.11: light "photo_emission": k (default 1.5, 0 = off) - the photo mesh also EMITS the photo itself (projected from
+  the camera, Window coords), so the clay gets the room's real bounce light, colour and window rim light (image-based
+  lighting from the plate); world ambient is then scaled by 0.3. Also writes shadow.png (L, cast/contact shadow
+  opacity outside the figure) for the composite branch.
 """
 import argparse
 import json
@@ -58,6 +62,8 @@ def args():
     ap.add_argument("--only", default="")
     ap.add_argument("--samples", type=int, default=64, help="Cycles samples of the playblast pass")
     ap.add_argument("--no-playblast", action="store_true")
+    ap.add_argument("--photo-emission", type=float, default=None,
+                    help="override light.photo_emission (0 = the 05.11 playblast, 1.5 = photo-lit clay)")
     return ap.parse_args(argv)
 
 
@@ -112,6 +118,8 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     (the MoGe relief under the feet is noisy and catches almost none)."""
     photo = os.path.join(a.plate, "plate_rgb.png")
     L = resolve_light(light, photo)
+    if a.photo_emission is not None:
+        L["photo_emission"] = a.photo_emission
     sc.render.engine = "CYCLES"
     dev = use_gpu(sc)
     sc.cycles.samples = a.samples
@@ -133,7 +141,40 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     bsdf = clay.node_tree.nodes["Principled BSDF"]
     bsdf.inputs["Base Color"].default_value = (0.6, 0.6, 0.6, 1)
     bsdf.inputs["Roughness"].default_value = 0.6
-    bpy.context.view_layer.material_override = clay
+    k_emit = float(L.get("photo_emission", 1.5))
+    saved = {}
+    if k_emit > 0:
+        # per-object clay (a view-layer override would also replace the plate's emission)
+        for o in sc.objects:
+            if o.type == "MESH" and o is not plate and o is not disc:
+                saved[o.name] = [sl.material for sl in o.material_slots]
+                if not o.material_slots:
+                    o.data.materials.append(clay)
+                for sl in o.material_slots:
+                    sl.link = "OBJECT"
+                    sl.material = clay
+        em = bpy.data.materials.new("plate_emit")
+        em.use_nodes = True
+        nt = em.node_tree
+        nt.nodes.clear()
+        tc = nt.nodes.new("ShaderNodeTexCoord")
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = bpy.data.images.load(photo)
+        tex.extension = "EXTEND"
+        emi = nt.nodes.new("ShaderNodeEmission")
+        emi.inputs["Strength"].default_value = k_emit
+        outn = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(tc.outputs["Window"], tex.inputs["Vector"])
+        nt.links.new(tex.outputs["Color"], emi.inputs["Color"])
+        nt.links.new(emi.outputs["Emission"], outn.inputs["Surface"])
+        saved["__plate__"] = [sl.material for sl in plate.material_slots]
+        if not plate.material_slots:
+            plate.data.materials.append(em)
+        for sl in plate.material_slots:
+            sl.link = "OBJECT"
+            sl.material = em
+    else:
+        bpy.context.view_layer.material_override = clay
     # sun: azimuth 0 = from the camera, +90 = from the right of the frame, 180 = from behind the subject
     fwd = cam.matrix_world.to_3x3() @ Vector((0, 0, -1))
     fwd = Vector((fwd.x, fwd.y, 0)).normalized()
@@ -153,13 +194,20 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     bg = world.node_tree.nodes.get("Background") or world.node_tree.nodes.new("ShaderNodeBackground")
     amb = L.get("ambient_color", L["color"])
     bg.inputs["Color"].default_value = (amb[0], amb[1], amb[2], 1)
-    bg.inputs["Strength"].default_value = L["ambient"]
+    bg.inputs["Strength"].default_value = L["ambient"] * (0.3 if k_emit > 0 else 1.0)
     s = sc.render.image_settings
     s.file_format, s.color_mode, s.color_depth = "PNG", "RGBA", "8"
     sc.view_settings.view_transform = "Standard"
     sc.render.filepath = f"{out}/playblast_rgba.png"
     bpy.ops.render.render(write_still=True)
     bpy.context.view_layer.material_override = None
+    for name, mats in saved.items():
+        o = plate if name == "__plate__" else sc.objects.get(name)
+        if o is None:
+            continue
+        for sl, mat in zip(o.material_slots, mats):
+            sl.material = mat
+            sl.link = "DATA"
     plate.is_shadow_catcher = False
     plate.visible_shadow = True
     if disc is not None:
@@ -183,10 +231,11 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     al = rgba[..., 3] / 255.0
     sh = np.where(al < 0.08, 0, al) * prox * L.get("shadow_opacity", 0.8)
     rgba[..., 3] = np.where(m, al, sh) * 255
+    Image.fromarray((np.where(m, 0, sh) * 255).clip(0, 255).astype(np.uint8), "L").save(f"{out}/shadow.png")
     layer = Image.fromarray(rgba.clip(0, 255).astype(np.uint8), "RGBA")
     Image.alpha_composite(base, layer).convert("RGB").save(f"{out}/playblast.png")
     print(f"[plate] playblast ({dev}, {a.samples} spp): sun az {L['azimuth_deg']:.0f} el {L['elevation_deg']:.0f} "
-          f"strength {L['strength']}, ambient {L['ambient']}")
+          f"strength {L['strength']}, ambient {L['ambient']}, photo emission {k_emit}")
 
 
 def setup_plate_camera(sc, info):

@@ -5,6 +5,7 @@ No ComfyUI extension, OpenPose code or model download is invoked here.
 PCK follows pose_eval.py (body joints visible in both, best direct/LR-swapped labels)
 with coverage and stricter PCK over all target-visible joints reported separately.
 """
+import os
 import argparse
 import glob
 import json
@@ -55,7 +56,7 @@ def main():
     parser.add_argument('--glob', required=True)
     parser.add_argument('--maps', required=True)
     parser.add_argument('--out', required=True)
-    parser.add_argument('--weights', default='/workspace/models/dwpose')
+    parser.add_argument('--weights', default=os.environ.get('FARM_DWPOSE', '/workspace/models/dwpose'))
     parser.add_argument('--thresholds', required=True)
     args = parser.parse_args()
     config = yaml.safe_load(Path(args.thresholds).read_text())['qa']

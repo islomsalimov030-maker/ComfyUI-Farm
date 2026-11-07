@@ -8,7 +8,10 @@ import os
 import numpy as np
 from PIL import Image
 
-OUT = "/workspace/ComfyUI-next/output/plate3d_ab"
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import farm_env  # noqa: E402
+OUT = str(farm_env.COMFY / "output/plate3d_ab")
 
 
 def lap(a):
@@ -21,7 +24,7 @@ ap.add_argument("--maps", required=True)
 ap.add_argument("--glob", default="*/A*_s*_*")
 a = ap.parse_args()
 loc = os.path.basename(os.path.normpath(a.maps))
-photo = np.asarray(Image.open(f"/workspace/ComfyUI-next/input/{loc}_rgb.png").convert("L"), np.float32)
+photo = np.asarray(Image.open(str(farm_env.COMFY / f"input/{loc}_rgb.png")).convert("L"), np.float32)
 print(f"[sharp] photo {lap(photo):.0f}")
 for f in sorted(glob.glob(os.path.join(OUT, a.glob + ".png"))):
     sc = os.path.basename(os.path.dirname(f))
@@ -29,7 +32,7 @@ for f in sorted(glob.glob(os.path.join(OUT, a.glob + ".png"))):
         continue
     im = Image.open(f).convert("L")
     g = np.asarray(im.resize((photo.shape[1], photo.shape[0])), np.float32)
-    m = Image.open(f"/workspace/ComfyUI-next/input/plate3d_{sc}_mask_soft.png").convert("L").resize(im.size)
+    m = Image.open(str(farm_env.COMFY / f"input/plate3d_{sc}_mask_soft.png")).convert("L").resize(im.size)
     bb = m.getbbox()
     box = np.asarray(im.crop(bb), np.float32) if bb else g
     print(f"[sharp] {sc:16s} {os.path.basename(f)[:20]:20s} frame {lap(g):5.0f}  person box {lap(box):5.0f}")

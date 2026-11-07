@@ -4,6 +4,7 @@ Run after the table candidate batch on 8189 finishes. Reuses SAM3(face),
 CropAndStitch, FL2VA, face RefMod, H3LatentFromImage, colour match and stitch.
 The original UI is never modified; literal widgets are mapped using object_info.
 """
+import sys
 import argparse
 import copy
 import json
@@ -13,9 +14,11 @@ import time
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[3]
-STATE = Path('/workspace/farm/scene3d/table_face')
-OLD = Path('/workspace/ComfyUI')
-URL = 'http://127.0.0.1:8188'
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import farm_env  # noqa: E402
+STATE = farm_env.ROOT / 'table_face'
+OLD = farm_env.COMFY_OLD
+URL = farm_env.URL_OLD
 
 
 def request(path, body=None, url=URL):
@@ -139,10 +142,10 @@ def main():
             continue
         if any(r['source'] == str(src) and r['status'] == 'success' for r in rows):
             continue
-        for port in (8188, 8189):
-            q = request('/queue', url=f'http://127.0.0.1:{port}')
+        for u in sorted({farm_env.URL, farm_env.URL_OLD}):
+            q = request('/queue', url=u)
             if q['queue_running'] or q['queue_pending']:
-                raise SystemExit(f'Queue {port} occupied: not submitting concurrent GPU work')
+                raise SystemExit(f'Queue {u} occupied: not submitting concurrent GPU work')
         begin = time.monotonic()
         result = request('/prompt', {'prompt': g})
         pid = result['prompt_id']

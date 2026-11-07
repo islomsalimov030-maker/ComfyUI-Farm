@@ -43,3 +43,8 @@ recipes:
   - {name: S_R1sR3, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, steps: 25, control: pose}
   # R2s: shadow playblast + Fun CN depth 1.0 to 100 % (H3 re-renders the room around the body at its distance)
   - {name: S_R2s, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, steps: 25, control: depth}
+  # 07.11 local PC, integration of the figure into the room (light/shadow). Playblasts: <maps>_s = photo_emission 0
+  # (05.11), <maps>_s2 = photo-lit clay (render_plate_scene.py --photo-emission 1.5). Prompt: light_sentence().
+  - {name: L_S0, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s, steps: 25, control: pose}
+  - {name: L_S1, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, control: pose}
+  - {name: L_S2, model: base, depth_end: 1.0, pose_strength: 0.5, clay_video: true, playblast: true, playblast_suffix: _s2, steps: 25, control: [pose, depth], clay_depth_end: 0.3}

@@ -22,8 +22,11 @@ import torch
 from facenet_pytorch import MTCNN, InceptionResnetV1
 from PIL import Image
 
-OUT = "/workspace/ComfyUI-next/output/plate3d_ab"
-REF = "/workspace/ComfyUI-next/input/0003.png"
+import sys  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import farm_env  # noqa: E402
+OUT = str(farm_env.COMFY / "output/plate3d_ab")
+REF = str(farm_env.COMFY / "input/0003.png")
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 mtcnn = MTCNN(image_size=160, margin=20, keep_all=True, min_face_size=15, device=dev)
 net = InceptionResnetV1(pretrained="vggface2").eval().to(dev)
@@ -117,7 +120,7 @@ def main():
         mean = sum(ok) / len(ok) if ok else float("nan")
         print(f"[face] {v:8s}: n {len(rs)}, mean sim {mean:.3f} (faces >= 40 px: {len(ok)}), "
               f"no face {none}, >1 face {multi}")
-    path = f"/workspace/farm/scene3d/face_{a.tag}.json"
+    path = str(farm_env.ROOT / f"face_{a.tag}.json")
     json.dump(rows, open(path, "w"), indent=1)
     print("[face] ->", path)
 

@@ -17,9 +17,11 @@ import build_ab as ab
 import quality_round as qr
 
 HERE = Path(__file__).resolve().parent
-ROOT = Path('/workspace/farm/scene3d')
+sys.path.insert(0, str(HERE))
+import farm_env  # noqa: E402
+ROOT = farm_env.ROOT
 STATE = ROOT / 'table_round'
-COMFY = Path('/workspace/ComfyUI-next')
+COMFY = farm_env.COMFY
 SEEDS = (101, 202, 303, 404)
 VARIANT = 'T_R1s_pose05'
 SIZE = (1344, 768)
@@ -37,7 +39,6 @@ def save(data, path):
 
 
 def request(path, data=None):
-    assert ab.URL == 'http://127.0.0.1:8189'
     req = urllib.request.Request(ab.URL + path, data=None if data is None else json.dumps(data).encode(),
                                  headers={'Content-Type': 'application/json'})
     with urllib.request.urlopen(req, timeout=45) as response:
@@ -68,9 +69,9 @@ def setup_sit():
 
 
 def render_sit():
-    cmd = ['/workspace/venvs/bpy/bin/python', '-u', str(HERE / 'render_plate_scene.py'), '--',
+    cmd = farm_env.bpy_cmd(HERE / 'render_plate_scene.py') + [
            '--plate', str(ROOT / 'plate/mainroom3'), '--spec', str(ROOT / 'table_specs/mainroom3.json'),
-           '--mannequin', str(ROOT / 'stacy_mannequin_162_pod.blend'), '--out',
+           '--mannequin', os.environ.get('FARM_MANNEQUIN', str(ROOT / 'stacy_mannequin_162_pod.blend')), '--out',
            str(COMFY / 'input/table3d_m3'), '--only', SIT, '--samples', '32']
     subprocess.run(cmd, check=True)
 
@@ -184,7 +185,7 @@ def generate(budget):
 
 
 def metrics():
-    env = dict(os.environ, CUDA_VISIBLE_DEVICES='', PYTHONPATH='/workspace/venvs/face_pkgs',
+    env = dict(os.environ, CUDA_VISIBLE_DEVICES='', PYTHONPATH=farm_env.FACE_PKGS,
                OMP_NUM_THREADS='2', MKL_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2')
     for number in (1, 2, 3):
         maps = COMFY / f'input/table3d_m{number}'
@@ -192,7 +193,7 @@ def metrics():
         paths = []
         for scene in spec['scenes']:
             dest = STATE / f'pose_{scene["name"]}.json'
-            subprocess.run(['/workspace/venvs/pose_eval/bin/python', '-I', '-u', str(HERE / 'pose_metrics.py'),
+            subprocess.run([farm_env.PY_POSE, '-I', '-u', str(HERE / 'pose_metrics.py'),
                             '--glob', str(COMFY / f'output/plate3d_table/{scene["name"]}/*.png'),
                             '--maps', str(maps), '--thresholds', str(HERE / 'quality_round.yaml'),
                             '--out', str(dest)], check=True, env=env)

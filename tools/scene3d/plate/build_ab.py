@@ -22,6 +22,7 @@ Round 4 (05.11): A7 = A5 with the REAL depth of the body (Blender Z pass depth_c
 Outputs: ComfyUI output/plate3d_ab/<scene>/<variant>_s<seed>_*.png, sheets in /workspace/farm/scene3d/sheets/ab_<scene>.jpg,
 run log /workspace/farm/scene3d/ab_runs.json (variant, seed, prompt_id, seconds, status).
 """
+import sys
 import argparse
 import copy
 import json
@@ -32,9 +33,11 @@ import urllib.request as u
 
 from PIL import Image, ImageDraw, ImageFilter
 
-URL = "http://127.0.0.1:8189"
-COMFY = "/workspace/ComfyUI-next"
-SHEETS = "/workspace/farm/scene3d/sheets"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import farm_env  # noqa: E402
+URL = farm_env.URL
+COMFY = str(farm_env.COMFY)
+SHEETS = str(farm_env.ROOT / "sheets")
 FACE = "0003.png"
 MODS = ("farm/stacy_face", "farm/stacy_body")
 PATCH = "minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"
@@ -443,15 +446,15 @@ def main():
         st, sec = wait(pid)
         log.append({"scene": scene, "variant": v, "seed": s, "prompt_id": pid, "status": st, "wait_s": sec})
         print(f"[ab] {scene} {v} s{s}: {st} ({sec} s)", flush=True)
-    json.dump(log, open(f"/workspace/farm/scene3d/{a.sheet_tag}_runs.json", "w"), indent=1)
+    json.dump(log, open(str(farm_env.ROOT / f"{a.sheet_tag}_runs.json"), "w"), indent=1)
     for sc in scenes:
         print("[ab] sheet", sheet(sc["name"], seeds, [v + tag for v in vs], a.sheet_tag))
     if a.face:
         import subprocess
         here = os.path.dirname(os.path.abspath(__file__))
-        env = dict(os.environ, PYTHONPATH="/workspace/venvs/face_pkgs")
+        env = dict(os.environ, PYTHONPATH=farm_env.FACE_PKGS)
         subprocess.run([os.sys.executable, os.path.join(here, "face_sim.py"), "--glob", "*/*", "--runs",
-                        f"/workspace/farm/scene3d/{a.sheet_tag}_runs.json", "--tag", a.sheet_tag], env=env)
+                        str(farm_env.ROOT / f"{a.sheet_tag}_runs.json"), "--tag", a.sheet_tag], env=env)
 
 
 if __name__ == "__main__":
