@@ -2,7 +2,7 @@
  "photo": "Home_Stacey_Mainroom-3-1 (2).png",
  "size": [1536, 864],
  "room": "a bedroom with lilac walls lit by low warm sunlight with window shadows, a low wide bed with beige and pink pillows, two wooden nightstands with glowing rattan lamps and a light woven floor",
- "light": {"azimuth_deg": -50, "elevation_deg": 35, "strength": 3.5, "color": [1.0, 0.75, 0.5], "ambient": 0.3, "ambient_color": [0.85, 0.75, 0.95], "softness_deg": 3, "note": "low warm sun from upper left, window-frame shadows on the back wall"},
+ "light": {"azimuth_deg": -50, "elevation_deg": 35, "strength": 3.5, "color": [1.0, 0.75, 0.5], "ambient": 0.3, "ambient_color": [0.85, 0.75, 0.95], "softness_deg": 3, "gobo": true, "gobo_key_strength": 6.0, "note": "low warm sun from upper left, window-frame shadows on the back wall"},
  "scenes": [
   {"name": "M3_bed_sit", "pose": "sit_upright", "seat": [0.40, 0.79], "yaw": "camera",
    "action": "sitting on the edge of the low bed with her hands resting on her thighs",

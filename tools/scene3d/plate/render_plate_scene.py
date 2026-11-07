@@ -114,6 +114,109 @@ def use_gpu(sc):
     return "CPU"
 
 
+def add_window_gobo(sc, cam, plate, disc, sun, to_light, photo, L):
+    """07.11 (M3): sun patches through the window on the FIGURE, like the patches on the wall of the photo.
+    The exact window is out of frame, so the pattern cannot be traced; it is CLONED: the wall band of the photo
+    (rows 'gobo_rows' of the frame, default top 45 %) -> local luminance ratio (albedo cancels) -> transmittance of a
+    blocker plane facing the sun 'gobo_dist_m' in front of the figure, scaled to the wall band's size in metres (so the
+    panes and bars keep their size and slant). Light linking: the gobo-shaded sun lights only the figure; an unshaded
+    copy lights the catchers (plate/disc), so the photo's own patches are not darkened twice."""
+    import numpy as np
+    from PIL import Image, ImageFilter
+    figure = [o for o in sc.objects if o.type == "MESH" and o not in (plate, disc) and o.visible_camera]
+    pts = [o.matrix_world @ Vector(c) for o in figure for c in o.bound_box]
+    centre = sum(pts, Vector()) / len(pts)
+    r0, r1 = L.get("gobo_rows", [0.0, 0.45])
+    g = Image.open(photo).convert("L")
+    W, H = g.size
+    band = g.crop((0, int(r0 * H), W, int(r1 * H)))
+    fine = np.asarray(band.filter(ImageFilter.GaussianBlur(2)), np.float32) + 1.0
+    broad = np.asarray(band.filter(ImageFilter.GaussianBlur(max(band.size) / 6)), np.float32) + 1.0
+    ratio = fine / broad
+    lo, hi = np.percentile(ratio, L.get("gobo_lo_pct", 20)), np.percentile(ratio, L.get("gobo_hi_pct", 80))
+    t = np.clip((ratio - lo) / max(hi - lo, 1e-6), 0, 1)
+    # size of the band on the wall: rays through its corners onto the photo mesh
+    dg = bpy.context.evaluated_depsgraph_get()
+    info = json.load(open(os.path.join(os.path.dirname(photo), "plate.json")))
+    corners = []
+    for (u, v) in ((0.02, r0 + 0.02), (0.98, r0 + 0.02), (0.02, r1 - 0.02)):
+        org, d = pixel_ray(info, cam, u, v)
+        hit = sc.ray_cast(dg, org, d, distance=50.0)
+        corners.append(hit[1] if hit[0] else None)
+    if None in corners:
+        print("[plate] gobo: wall band not on the mesh, skipped")
+        return []
+    w_m = (corners[1] - corners[0]).length / 0.96
+    h_m = (corners[2] - corners[0]).length / max(r1 - r0 - 0.04, 1e-3)
+    u_ax = to_light.cross(Vector((0, 0, 1)))
+    if u_ax.length < 1e-3:
+        u_ax = Vector((1, 0, 0))
+    u_ax.normalize()
+    v_ax = u_ax.cross(to_light).normalized()
+    origin = centre + to_light * float(L.get("gobo_dist_m", 1.0))
+    rig = next((o for o in sc.objects if o.type == "ARMATURE"), None)
+    if L.get("gobo_face_lit", True) and rig is not None and "head" in rig.pose.bones:
+        # slide the pattern so the nearest bright pane lands on her face (identity needs a lit face)
+        head = rig.matrix_world @ rig.pose.bones["head"].head
+        rel = head - origin
+        hu, hv = rel.dot(u_ax) / w_m + 0.5, rel.dot(v_ax) / h_m + 0.5          # texture coords of the face
+        rows, cols = t.shape
+        ys, xs = np.nonzero(t > 0.75)
+        if len(xs):
+            fu, fv = xs / cols, 1.0 - ys / rows                                   # t row 0 = top of the band
+            k = int(np.argmin((fu - hu) ** 2 * w_m ** 2 + (fv - hv) ** 2 * h_m ** 2))
+            origin = origin + u_ax * (hu - fu[k]) * w_m + v_ax * (hv - fv[k]) * h_m
+    img = bpy.data.images.new("gobo", t.shape[1], t.shape[0], alpha=False)
+    rgba = np.repeat(np.flipud(t)[..., None], 4, axis=2)
+    rgba[..., 3] = 1
+    img.pixels.foreach_set(rgba.astype(np.float32).ravel())
+    bpy.ops.mesh.primitive_plane_add(size=1.0, location=origin)
+    gobo = bpy.context.active_object
+    gobo.name = "gobo"
+    gobo.scale = (w_m, h_m, 1)
+    gobo.rotation_euler = Matrix((u_ax, v_ax, to_light)).transposed().to_euler()
+    m = bpy.data.materials.new("gobo")
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = img
+    tex.extension = "REPEAT"
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    dark = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    dark.inputs["Color"].default_value = (0, 0, 0, 1)
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    outn = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(tex.outputs["Color"], mix.inputs["Fac"])
+    nt.links.new(dark.outputs["BSDF"], mix.inputs[1])
+    nt.links.new(tr.outputs["BSDF"], mix.inputs[2])
+    nt.links.new(mix.outputs["Shader"], outn.inputs["Surface"])
+    gobo.data.materials.append(m)
+    gobo.visible_camera = gobo.visible_diffuse = gobo.visible_glossy = gobo.visible_transmission = False
+    fig_col = bpy.data.collections.new("gobo_receivers")
+    for o in figure:
+        fig_col.objects.link(o)
+    cat_col = bpy.data.collections.new("gobo_catchers")
+    for o in (plate, disc):
+        if o is not None:
+            cat_col.objects.link(o)
+    sun.light_linking.receiver_collection = fig_col
+    sun2 = sun.copy()
+    sc.collection.objects.link(sun2)
+    sun2.light_linking.receiver_collection = cat_col
+    blk = bpy.data.collections.new("gobo_blockers_plain")
+    for o in figure:
+        blk.objects.link(o)
+    sun2.light_linking.blocker_collection = blk
+    if L.get("gobo_key_strength"):
+        sun.data = sun.data.copy()
+        sun.data.energy = float(L["gobo_key_strength"])
+    print(f"[plate] gobo: wall band {w_m:.2f} x {h_m:.2f} m, open {float((t > 0.5).mean()):.2f}")
+    Image.fromarray((t * 255).astype(np.uint8)).save(os.path.join(os.path.dirname(sc.render.filepath) or ".",
+                                                                   "gobo_debug.png"))
+    return [gobo, sun2]
+
+
 def render_playblast(a, sc, cam, plate, light, out, feet=None):
     """Clay mannequin + props lit like the photo, photo mesh = shadow catcher, over the photo.
     feet = (x, y, z) of the floor contact: a flat 0.8 m disc catcher there gives a clean contact shadow
@@ -207,6 +310,7 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     sun = bpy.data.objects.new("sun", sd)
     sc.collection.objects.link(sun)
     sun.rotation_euler = to_light.to_track_quat("Z", "Y").to_euler()   # the lamp shines along its -Z
+    gobo_objs = add_window_gobo(sc, cam, plate, disc, sun, to_light, photo, L) if L.get("gobo") else []
     world = sc.world or bpy.data.worlds.new("w")
     sc.world = world
     world.use_nodes = True
@@ -220,6 +324,8 @@ def render_playblast(a, sc, cam, plate, light, out, feet=None):
     sc.render.filepath = f"{out}/playblast_rgba.png"
     bpy.ops.render.render(write_still=True)
     bpy.context.view_layer.material_override = None
+    for o in gobo_objs:
+        bpy.data.objects.remove(o, do_unlink=True)
     emitter = saved.pop("__emitter__", None)
     if emitter is not None:
         bpy.data.objects.remove(emitter, do_unlink=True)
