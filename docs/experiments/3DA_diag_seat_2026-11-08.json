@@ -1,0 +1,350 @@
+{
+ "Q02_bed_cross_legs": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "pelvis:bed",
+   "foot.L:floor"
+  ],
+  "seat_px": [
+   0.4,
+   0.79
+  ],
+  "depth_raw_m": 2.08,
+  "z_raw_m": 0.21,
+  "seat_after": {
+   "v": 0.748,
+   "z": 0.28
+  },
+  "top_bbox": {
+   "x": [
+    -1.05,
+    1.19
+   ],
+   "y_horiz": [
+    2.04,
+    2.87
+   ],
+   "z_top_med": 0.31,
+   "n_pts": 3912
+  },
+  "support": [
+   "pelvis"
+  ],
+  "contacts_from": "ref",
+  "status": "ok",
+  "surf_fit": {
+   "surface_z_m": 0.3,
+   "frac_on_top": 1.0,
+   "label": "верх объекта",
+   "gap_med_cm": 1.4
+  },
+  "surf_refine": null
+ },
+ "Q03_bed_kneel": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "knee.L:bed",
+   "knee.R:bed",
+   "shin.L:bed",
+   "shin.R:bed"
+  ],
+  "seat_px": [
+   0.5,
+   0.76
+  ],
+  "depth_raw_m": 2.09,
+  "z_raw_m": 0.26,
+  "seat_after": {
+   "v": 0.752,
+   "z": 0.28
+  },
+  "top_bbox": {
+   "x": [
+    -1.05,
+    1.19
+   ],
+   "y_horiz": [
+    2.04,
+    2.87
+   ],
+   "z_top_med": 0.31,
+   "n_pts": 3912
+  },
+  "support": [
+   "knee.L",
+   "knee.R",
+   "shin.L",
+   "shin.R"
+  ],
+  "contacts_from": "table",
+  "status": "pose_mismatch",
+  "surf_fit": {
+   "surface_z_m": 0.26,
+   "frac_on_top": 0.64,
+   "label": "верх объекта",
+   "gap_med_cm": 2.9
+  },
+  "surf_refine": {
+   "surface_z_m": -0.01,
+   "frac_on_top": 0.0,
+   "label": "пол",
+   "gap_med_cm": 1.1
+  },
+  "refine_groups_deg": {
+   "spine": 0.0,
+   "neck/head": 0.0,
+   "arms": 0.0,
+   "legs": 28.8
+  },
+  "refine_param_max_deg": 22.8,
+  "refine_repro_vs_body_obj_cm": 0.0
+ },
+ "Q04_bed_side_lie": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "pelvis:bed",
+   "elbow.L:bed",
+   "thigh.L:bed"
+  ],
+  "seat_px": [
+   0.56,
+   0.75
+  ],
+  "depth_raw_m": 2.1,
+  "z_raw_m": 0.28,
+  "seat_after": {
+   "v": 0.75,
+   "z": 0.28
+  },
+  "top_bbox": {
+   "x": [
+    -1.05,
+    1.19
+   ],
+   "y_horiz": [
+    2.04,
+    2.87
+   ],
+   "z_top_med": 0.31,
+   "n_pts": 3912
+  },
+  "support": [
+   "pelvis",
+   "torso"
+  ],
+  "contacts_from": "ref",
+  "status": "ok",
+  "surf_fit": {
+   "surface_z_m": 0.23,
+   "frac_on_top": 0.35,
+   "label": "др. поверхность (стенка/край)",
+   "gap_med_cm": 3.9
+  },
+  "surf_refine": null
+ },
+ "Q08_bed_recline_elbows": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "pelvis:bed",
+   "elbow.L:bed",
+   "elbow.R:bed"
+  ],
+  "seat_px": [
+   0.5,
+   0.77
+  ],
+  "depth_raw_m": 2.09,
+  "z_raw_m": 0.24,
+  "seat_after": {
+   "v": 0.752,
+   "z": 0.28
+  },
+  "top_bbox": {
+   "x": [
+    -1.05,
+    1.19
+   ],
+   "y_horiz": [
+    2.04,
+    2.87
+   ],
+   "z_top_med": 0.31,
+   "n_pts": 3912
+  },
+  "support": [
+   "pelvis"
+  ],
+  "contacts_from": "table",
+  "status": "ok",
+  "surf_fit": {
+   "surface_z_m": 0.29,
+   "frac_on_top": 0.98,
+   "label": "верх объекта",
+   "gap_med_cm": 1.0
+  },
+  "surf_refine": {
+   "surface_z_m": 0.26,
+   "frac_on_top": 0.73,
+   "label": "верх объекта",
+   "gap_med_cm": 1.1
+  },
+  "refine_groups_deg": {
+   "spine": 9.8,
+   "neck/head": 8.8,
+   "arms": 12.0,
+   "legs": 9.9
+  },
+  "refine_param_max_deg": 8.5,
+  "refine_repro_vs_body_obj_cm": 0.0
+ },
+ "T01_sofa_legs_tucked": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "pelvis:bed",
+   "shin.L:bed"
+  ],
+  "seat_px": [
+   0.5,
+   0.77
+  ],
+  "depth_raw_m": 2.09,
+  "z_raw_m": 0.24,
+  "seat_after": {
+   "v": 0.752,
+   "z": 0.28
+  },
+  "top_bbox": {
+   "x": [
+    -1.05,
+    1.19
+   ],
+   "y_horiz": [
+    2.04,
+    2.87
+   ],
+   "z_top_med": 0.31,
+   "n_pts": 3912
+  },
+  "support": [
+   "pelvis"
+  ],
+  "contacts_from": "table",
+  "status": "ok",
+  "surf_fit": {
+   "surface_z_m": 0.28,
+   "frac_on_top": 0.85,
+   "label": "верх объекта",
+   "gap_med_cm": 1.5
+  },
+  "surf_refine": null
+ },
+ "T03_armchair_side_sit": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "pelvis:bed",
+   "foot.L:floor"
+  ],
+  "seat_px": [
+   0.4,
+   0.79
+  ],
+  "depth_raw_m": 2.08,
+  "z_raw_m": 0.21,
+  "seat_after": {
+   "v": 0.748,
+   "z": 0.28
+  },
+  "top_bbox": {
+   "x": [
+    -1.05,
+    1.19
+   ],
+   "y_horiz": [
+    2.04,
+    2.87
+   ],
+   "z_top_med": 0.31,
+   "n_pts": 3912
+  },
+  "support": [
+   "pelvis"
+  ],
+  "contacts_from": "table",
+  "status": "ok",
+  "surf_fit": {
+   "surface_z_m": 0.23,
+   "frac_on_top": 0.38,
+   "label": "др. поверхность (стенка/край)",
+   "gap_med_cm": 3.7
+  },
+  "surf_refine": {
+   "surface_z_m": 0.24,
+   "frac_on_top": 0.5,
+   "label": "верх объекта",
+   "gap_med_cm": 2.7
+  },
+  "refine_groups_deg": {
+   "spine": 1.0,
+   "neck/head": 0.4,
+   "arms": 0.9,
+   "legs": 37.8
+  },
+  "refine_param_max_deg": 23.7,
+  "refine_repro_vs_body_obj_cm": 0.0
+ },
+ "Q11_bench_side_sit": {
+  "pixel_src": "pose_round_prompts.json:seat → run_v2.do_fit(seat=True) → Plate.seat_point",
+  "table_contacts": [
+   "pelvis:bench",
+   "foot.L:floor",
+   "foot.R:floor"
+  ],
+  "seat_px": [
+   0.76,
+   0.825
+  ],
+  "depth_raw_m": 5.9,
+  "z_raw_m": 0.03,
+  "seat_after": {
+   "v": 0.779,
+   "z": 0.34
+  },
+  "top_bbox": {
+   "x": [
+    1.32,
+    1.73
+   ],
+   "y_horiz": [
+    5.01,
+    5.34
+   ],
+   "z_top_med": 0.35,
+   "n_pts": 76
+  },
+  "support": [
+   "pelvis"
+  ],
+  "contacts_from": "ref",
+  "status": "ok",
+  "surf_fit": {
+   "surface_z_m": 0.35,
+   "frac_on_top": 0.92,
+   "label": "верх объекта",
+   "gap_med_cm": 2.2
+  },
+  "surf_refine": {
+   "surface_z_m": 0.35,
+   "frac_on_top": 0.79,
+   "label": "верх объекта",
+   "gap_med_cm": 3.1
+  },
+  "refine_groups_deg": {
+   "spine": 14.0,
+   "neck/head": 13.1,
+   "arms": 7.7,
+   "legs": 17.0
+  },
+  "refine_param_max_deg": 8.4,
+  "refine_repro_vs_body_obj_cm": 0.23
+ }
+}
