@@ -1,0 +1,36 @@
+image C:/Users/user/Downloads/3DA_pose_refs/T04_floor_sit_knees_up.png 330x502 predict 1.17s vram_peak 2.09 GB
+MHR_POSE_DATA: dict[5]
+  frames: list[1]
+    [0]: list[1]
+      [0]: dict[21]
+        bbox: ndarray shape (4,) float32
+        focal_length: float32 shape () float32
+        pred_keypoints_3d: ndarray shape (70, 3) float32
+        pred_keypoints_2d: ndarray shape (70, 2) float32
+        pred_vertices: ndarray shape (18439, 3) float32
+        pred_cam_t: ndarray shape (3,) float32
+        pred_pose_raw: ndarray shape (266,) float32
+        global_rot: ndarray shape (3,) float32
+        body_pose_params: ndarray shape (133,) float32
+        hand_pose_params: ndarray shape (108,) float32
+        scale_params: ndarray shape (28,) float32
+        shape_params: ndarray shape (45,) float32
+        expr_params: ndarray shape (72,) float32
+        mask: NoneType = None
+        pred_joint_coords: ndarray shape (127, 3) float32
+        pred_global_rots: ndarray shape (127, 3, 3) float32
+        mhr_model_params: ndarray shape (204,) float32
+        pred_face_keypoints_3d: ndarray shape (238, 3) float32
+        pred_face_keypoints_2d: ndarray shape (238, 2) float32
+        lhand_bbox: ndarray shape (4,) float32
+        rhand_bbox: ndarray shape (4,) float32
+  faces: ndarray shape (36874, 3) int64
+  image_size: tuple[2]
+    [0]: int = 502
+  canonical_colors: dict[5]
+    positions: ndarray shape (18439, 3) float32
+    norm: ndarray shape (18439, 3) float32
+    face_mask: ndarray shape (18439,) bool
+    head_mask: ndarray shape (18439,) bool
+    face_region_rgb: ndarray shape (18439, 3) float32
+  hand_vert_mask: ndarray shape (18439,) bool

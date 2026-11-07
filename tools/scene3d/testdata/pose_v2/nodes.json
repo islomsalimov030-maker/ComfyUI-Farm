@@ -1,0 +1,1621 @@
+{
+ "CameraAngle": {
+  "INPUT_TYPES": {
+   "required": {
+    "horizontal_angle": [
+     "INT",
+     {
+      "tooltip": "Azimuth around the subject in degrees. 0 is the front, 90 the right side, 180 the back.",
+      "default": 0,
+      "min": 0,
+      "max": 360,
+      "step": 1
+     }
+    ],
+    "vertical_angle": [
+     "INT",
+     {
+      "tooltip": "Elevation in degrees. Negative looks up from below, positive looks down from above.",
+      "default": 0,
+      "min": -30,
+      "max": 60,
+      "step": 1
+     }
+    ],
+    "zoom": [
+     "FLOAT",
+     {
+      "tooltip": "Lens zoom on the subject: 0 is a wide shot, 10 a close-up. Carried into camera_info.zoom.",
+      "default": 5.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.1
+     }
+    ]
+   },
+   "optional": {
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Optional reference image shown on the front of the subject cube in the 3D preview."
+     }
+    ],
+    "view": [
+     "STRING",
+     {
+      "widgetType": "CAMERA_ANGLE_VIEW",
+      "default": "",
+      "socketless": true,
+      "multiline": false
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='CameraAngle', display_name='Compose Camera Angle Prompt', category='3d', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC4110>, <comfy_api.latest._io.Input object at 0x0000",
+  "RETURN_TYPES": "['LOAD3D_CAMERA', 'STRING']",
+  "RETURN_NAMES": "['camera_info', 'prompt']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'3d'"
+ },
+ "CreateCameraInfo": {
+  "INPUT_TYPES": {
+   "required": {
+    "mode": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "tooltip": "How to define the camera: orbit angles, an explicit position, or a position + quaternion.",
+      "options": [
+       {
+        "key": "orbit",
+        "inputs": {
+         "required": {
+          "yaw": [
+           "FLOAT",
+           {
+            "default": 35.0,
+            "min": -360.0,
+            "max": 360.0,
+            "step": 1.0
+           }
+          ],
+          "pitch": [
+           "FLOAT",
+           {
+            "default": 30.0,
+            "min": -89.0,
+            "max": 89.0,
+            "step": 1.0
+           }
+          ],
+          "distance": [
+           "FLOAT",
+           {
+            "tooltip": "Camera distance from the target.",
+            "default": 4.0,
+            "min": 0.01,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "look_at",
+        "inputs": {
+         "required": {
+          "position_x": [
+           "FLOAT",
+           {
+            "tooltip": "Camera position in world space (right-handed, Y-up).",
+            "default": 4.0,
+            "min": -1000.0,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ],
+          "position_y": [
+           "FLOAT",
+           {
+            "default": 4.0,
+            "min": -1000.0,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ],
+          "position_z": [
+           "FLOAT",
+           {
+            "default": 4.0,
+            "min": -1000.0,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "quaternion",
+        "inputs": {
+         "required": {
+          "position_x": [
+           "FLOAT",
+           {
+            "tooltip": "Camera position in world space (right-handed, Y-up).",
+            "default": 4.0,
+            "min": -1000.0,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ],
+          "position_y": [
+           "FLOAT",
+           {
+            "default": 4.0,
+            "min": -1000.0,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ],
+          "position_z": [
+           "FLOAT",
+           {
+            "default": 4.0,
+            "min": -1000.0,
+            "max": 1000.0,
+            "step": 0.01
+           }
+          ],
+          "quat_x": [
+           "FLOAT",
+           {
+            "default": 0.0,
+            "min": -1.0,
+            "max": 1.0,
+            "step": 0.001
+           }
+          ],
+          "quat_y": [
+           "FLOAT",
+           {
+            "default": 0.0,
+            "min": -1.0,
+            "max": 1.0,
+            "step": 0.001
+           }
+          ],
+          "quat_z": [
+           "FLOAT",
+           {
+            "default": 0.0,
+            "min": -1.0,
+            "max": 1.0,
+            "step": 0.001
+           }
+          ],
+          "quat_w": [
+           "FLOAT",
+           {
+            "tooltip": "Camera world-rotation quaternion (three.js: looks down local -Z). Normalized for you.",
+            "default": 1.0,
+            "min": -1.0,
+            "max": 1.0,
+            "step": 0.001
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "target_x": [
+     "FLOAT",
+     {
+      "tooltip": "Look-at point (orbit pivot / aim). In orbit mode, move it to pan/translate the whole camera. Ignored in quaternion mode. Defaults to the origin.",
+      "advanced": true,
+      "default": 0.0,
+      "min": -1000.0,
+      "max": 1000.0,
+      "step": 0.01
+     }
+    ],
+    "target_y": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.0,
+      "min": -1000.0,
+      "max": 1000.0,
+      "step": 0.01
+     }
+    ],
+    "target_z": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.0,
+      "min": -1000.0,
+      "max": 1000.0,
+      "step": 0.01
+     }
+    ],
+    "roll": [
+     "FLOAT",
+     {
+      "tooltip": "Camera roll about the view axis, degrees.",
+      "default": 0.0,
+      "min": -180.0,
+      "max": 180.0,
+      "step": 1.0
+     }
+    ],
+    "fov": [
+     "FLOAT",
+     {
+      "tooltip": "Vertical field of view in degrees.",
+      "default": 35.0,
+      "min": 1.0,
+      "max": 120.0,
+      "step": 1.0
+     }
+    ],
+    "zoom": [
+     "FLOAT",
+     {
+      "tooltip": "Digital zoom (focal-length multiplier). >1 zooms in without moving the camera.",
+      "default": 1.0,
+      "min": 0.01,
+      "max": 100.0,
+      "step": 0.01
+     }
+    ],
+    "camera_type": [
+     "COMBO",
+     {
+      "tooltip": "Projection used by Render Splat: perspective (foreshortening) or orthographic (parallel).",
+      "multiselect": false,
+      "options": [
+       "perspective",
+       "orthographic"
+      ]
+     }
+    ]
+   },
+   "optional": {
+    "camera_info_state": [
+     "CAMERA_INFO_STATE",
+     {
+      "socketless": true
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='CreateCameraInfo', display_name='Create Camera Info', category='3d', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC4B90>, <comfy_api.latest._io.Input object at 0x00000214",
+  "RETURN_TYPES": "['LOAD3D_CAMERA']",
+  "RETURN_NAMES": "['camera_info']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'3d'"
+ },
+ "Load3D": {
+  "INPUT_TYPES": {
+   "required": {
+    "model_file": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "none"
+      ],
+      "file_upload": true
+     }
+    ],
+    "image": [
+     "LOAD_3D",
+     {}
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 1024,
+      "min": 1,
+      "max": 4096,
+      "step": 1
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 1024,
+      "min": 1,
+      "max": 4096,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='Load3D', display_name='Load 3D & Animation', category='3d', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC4BC0>, <comfy_api.latest._io.Input object at 0x00000214C5FC4D70>",
+  "RETURN_TYPES": "['IMAGE', 'MASK', 'STRING', 'IMAGE', 'LOAD3D_CAMERA', 'VIDEO', 'FILE_3D', 'LOAD3D_MODEL_INFO']",
+  "RETURN_NAMES": "['image', 'mask', 'mesh_path', 'normal', 'camera_info', 'recording_video', 'model_3d', 'model_3d_info']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'3d'"
+ },
+ "Load3DAdvanced": {
+  "INPUT_TYPES": {
+   "required": {
+    "model_file": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "none"
+      ],
+      "file_upload": true
+     }
+    ],
+    "viewport_state": [
+     "LOAD_3D",
+     {}
+    ],
+    "width": [
+     "INT",
+     {
+      "tooltip": "Render width of the viewport in pixels.",
+      "default": 1024,
+      "min": 1,
+      "max": 4096,
+      "step": 1
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "tooltip": "Render height of the viewport in pixels.",
+      "default": 1024,
+      "min": 1,
+      "max": 4096,
+      "step": 1
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='Load3DAdvanced', display_name='Load 3D (Advanced)', category='3d', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC4EC0>, <comfy_api.latest._io.Input object at 0x00000214C5",
+  "RETURN_TYPES": "['FILE_3D', 'LOAD3D_MODEL_INFO', 'LOAD3D_CAMERA', 'INT', 'INT']",
+  "RETURN_NAMES": "['model_3d', 'model_3d_info', 'camera_info', 'width', 'height']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'3d'"
+ },
+ "LoadMoGeModel": {
+  "INPUT_TYPES": {
+   "required": {
+    "model_name": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": []
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='LoadMoGeModel', display_name='Load MoGe Model', category='model/loaders', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC4FB0>], outputs=[<comfy_api.latest._io.Output obje",
+  "RETURN_TYPES": "['MOGE_MODEL']",
+  "RETURN_NAMES": "['MOGE_MODEL']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'model/loaders'"
+ },
+ "MinimaxHailuo03MaxCameraControlNode": {
+  "INPUT_TYPES": {
+   "required": {
+    "model": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "tooltip": "Model to use for video generation.",
+      "options": [
+       {
+        "key": "MiniMax H3 Max",
+        "inputs": {
+         "required": {
+          "image": [
+           "IMAGE",
+           {
+            "tooltip": "First frame of the video, at least 256x256 pixels, aspect ratio between 0.4 and 2.5."
+           }
+          ],
+          "prompt": [
+           "STRING",
+           {
+            "tooltip": "Optional. When empty, the scene stays frozen and only the camera moves.",
+            "default": "",
+            "multiline": true
+           }
+          ],
+          "azimuth": [
+           "INT",
+           {
+            "tooltip": "Horizontal orbit around the subject at the end of the video, in degrees from the image. Positive values move the camera to the right, so the subject turns toward the left of the frame. It is a target: a 90 degree orbit often lands between 30 and 90 degrees. Ignored when camera_info is connected.",
+            "default": 90,
+            "min": -360,
+            "max": 360,
+            "step": 1
+           }
+          ],
+          "elevation": [
+           "INT",
+           {
+            "tooltip": "Vertical camera angle at the end of the video, in degrees. Positive values look down from above, negative values look up from below. Ignored when camera_info is connected.",
+            "default": 0,
+            "min": -90,
+            "max": 90,
+            "step": 1
+           }
+          ],
+          "distance": [
+           "FLOAT",
+           {
+            "tooltip": "Camera distance at the end of the video relative to the image: 1 keeps it, below 1 moves closer, above 1 pulls back.",
+            "default": 1.0,
+            "min": 0.1,
+            "max": 10.0,
+            "step": 0.05
+           }
+          ],
+          "duration": [
+           "INT",
+           {
+            "default": 5,
+            "min": 1,
+            "max": 15,
+            "step": 1,
+            "display": "slider"
+           }
+          ],
+          "resolution": [
+           "COMBO",
+           {
+            "default": "768P",
+            "multiselect": false,
+            "options": [
+             "480P",
+             "768P",
+             "1080P"
+            ]
+           }
+          ],
+          "prompt_expansion_mode": [
+           "COMBO",
+           {
+            "tooltip": "How much effort is spent rewriting the prompt before generation.",
+            "default": "balanced",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "balanced",
+             "quality"
+            ]
+           }
+          ],
+          "seed": [
+           "INT",
+           {
+            "tooltip": "Random seed. The same request with the same seed gives similar, but not guaranteed identical, results.",
+            "default": 42,
+            "min": 0,
+            "max": 4294967295,
+            "step": 1,
+            "control_after_generate": true,
+            "display": "number"
+           }
+          ]
+         },
+         "optional": {
+          "camera_info": [
+           "LOAD3D_CAMERA",
+           {
+            "tooltip": "Optional end camera, e.g. from Create Camera Info or Compose Camera Angle Prompt, with the image as the front view. When connected, it sets the azimuth and elevation."
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "hidden": {
+    "auth_token_comfy_org": [
+     "AUTH_TOKEN_COMFY_ORG"
+    ],
+    "api_key_comfy_org": [
+     "API_KEY_COMFY_ORG"
+    ],
+    "unique_id": [
+     "UNIQUE_ID"
+    ],
+    "comfy_usage_source": [
+     "COMFY_USAGE_SOURCE"
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='MinimaxHailuo03MaxCameraControlNode', display_name='MiniMax H3 Max Camera Control', category='partner/video/MiniMax', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC56D0>]",
+  "RETURN_TYPES": "['VIDEO']",
+  "RETURN_NAMES": "['VIDEO']",
+  "FUNCTION": "'EXECUTE_NORMALIZED_ASYNC'",
+  "CATEGORY": "'partner/video/MiniMax'"
+ },
+ "MoGeGeometryToFOV": {
+  "INPUT_TYPES": {
+   "required": {
+    "moge_geometry": [
+     "MOGE_GEOMETRY",
+     {}
+    ],
+    "axis": [
+     "COMBO",
+     {
+      "tooltip": "'vertical' (fov_y), 'horizontal' (fov_x), or 'diagonal'.",
+      "default": "vertical",
+      "multiselect": false,
+      "options": [
+       "vertical",
+       "horizontal",
+       "diagonal"
+      ]
+     }
+    ],
+    "unit": [
+     "COMBO",
+     {
+      "tooltip": "Output unit for the FOV.",
+      "default": "degrees",
+      "multiselect": false,
+      "options": [
+       "degrees",
+       "radians"
+      ]
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='MoGeGeometryToFOV', display_name='Get FoV from MoGe Geometry', category='image/geometry estimation', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC5520>, <comfy_api.lates",
+  "RETURN_TYPES": "['FLOAT', 'FLOAT']",
+  "RETURN_NAMES": "['fov', 'focal_pixels']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/geometry estimation'"
+ },
+ "MoGeInference": {
+  "INPUT_TYPES": {
+   "required": {
+    "moge_model": [
+     "MOGE_MODEL",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "resolution_level": [
+     "INT",
+     {
+      "tooltip": "0 = fastest, 9 = most detail.",
+      "default": 9,
+      "min": 0,
+      "max": 9
+     }
+    ],
+    "fov_x_degrees": [
+     "FLOAT",
+     {
+      "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points.",
+      "advanced": true,
+      "default": 0.0,
+      "min": 0.0,
+      "max": 170.0,
+      "step": 0.1
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "Images per inference call. Lower if you OOM on a long video / image set.",
+      "default": 4,
+      "min": 1,
+      "max": 64
+     }
+    ],
+    "force_projection": [
+     "BOOLEAN",
+     {
+      "advanced": true,
+      "default": true
+     }
+    ],
+    "apply_mask": [
+     "BOOLEAN",
+     {
+      "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately.",
+      "advanced": true,
+      "default": true
+     }
+    ],
+    "refine_steps": [
+     "INT",
+     {
+      "tooltip": "MoGe-3 only: sparse volumetric refinement passes over the predicted depth. More passes sharpen fine detail and edges at a roughly linear cost. 0 disables refinement. Ignored by MoGe-1 / MoGe-2.",
+      "advanced": true,
+      "default": 3,
+      "min": 0,
+      "max": 8
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='MoGeInference', display_name='Run MoGe Inference', category='image/geometry estimation', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC5910>, <comfy_api.latest._io.Input ",
+  "RETURN_TYPES": "['MOGE_GEOMETRY']",
+  "RETURN_NAMES": "['moge_geometry']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/geometry estimation'"
+ },
+ "MoGePanoramaInference": {
+  "INPUT_TYPES": {
+   "required": {
+    "moge_model": [
+     "MOGE_MODEL",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {
+      "tooltip": "Equirectangular panorama (any aspect)."
+     }
+    ],
+    "resolution_level": [
+     "INT",
+     {
+      "tooltip": "Per-view detail (0 = fastest, 9 = most detailed).",
+      "default": 9,
+      "min": 0,
+      "max": 9
+     }
+    ],
+    "split_resolution": [
+     "INT",
+     {
+      "tooltip": "Resolution of each perspective split.",
+      "default": 512,
+      "min": 256,
+      "max": 1024
+     }
+    ],
+    "merge_resolution": [
+     "INT",
+     {
+      "tooltip": "Long-side resolution of the merged equirect distance map.",
+      "default": 1920,
+      "min": 256,
+      "max": 8192
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "Views per inference batch (12 splits total).",
+      "default": 4,
+      "min": 1,
+      "max": 12
+     }
+    ],
+    "refine_steps": [
+     "INT",
+     {
+      "tooltip": "MoGe-3 only: sparse volumetric refinement passes over the predicted depth. More passes sharpen fine detail and edges at a roughly linear cost. 0 disables refinement. Ignored by MoGe-1 / MoGe-2.",
+      "advanced": true,
+      "default": 3,
+      "min": 0,
+      "max": 8
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='MoGePanoramaInference', display_name='Run MoGe Panorama Inference', category='image/geometry estimation', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC5B20>, <comfy_api.",
+  "RETURN_TYPES": "['MOGE_GEOMETRY']",
+  "RETURN_NAMES": "['moge_geometry']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/geometry estimation'"
+ },
+ "MoGePointMapToMesh": {
+  "INPUT_TYPES": {
+   "required": {
+    "moge_geometry": [
+     "MOGE_GEOMETRY",
+     {}
+    ],
+    "batch_index": [
+     "INT",
+     {
+      "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH.",
+      "default": 0,
+      "min": 0,
+      "max": 4096
+     }
+    ],
+    "decimation": [
+     "INT",
+     {
+      "tooltip": "Vertex stride; 1 = full resolution.",
+      "default": 1,
+      "min": 1,
+      "max": 8
+     }
+    ],
+    "discontinuity_threshold": [
+     "FLOAT",
+     {
+      "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off.",
+      "default": 0.04,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+     }
+    ],
+    "texture": [
+     "BOOLEAN",
+     {
+      "tooltip": "Carry the source image through as the baseColor texture.",
+      "default": true
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='MoGePointMapToMesh', display_name='Convert MoGe Point Map to Mesh', category='image/geometry estimation', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC5CD0>, <comfy_api.",
+  "RETURN_TYPES": "['MESH']",
+  "RETURN_NAMES": "['MESH']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/geometry estimation'"
+ },
+ "MoGeRender": {
+  "INPUT_TYPES": {
+   "required": {
+    "moge_geometry": [
+     "MOGE_GEOMETRY",
+     {}
+    ],
+    "output": [
+     "COMBO",
+     {
+      "tooltip": "DirectX vs OpenGL controls the normal-map green-channel convention. DirectX: green = -Y down (Unreal). OpenGL: green = +Y up (Blender, Substance, Unity, glTF).",
+      "default": "depth",
+      "multiselect": false,
+      "options": [
+       "depth",
+       "depth_colored",
+       "normal_opengl",
+       "normal_directx",
+       "mask"
+      ]
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='MoGeRender', display_name='Render MoGe Geometry', category='image/geometry estimation', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC5EB0>, <comfy_api.latest._io.Input o",
+  "RETURN_TYPES": "['IMAGE']",
+  "RETURN_NAMES": "['IMAGE']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/geometry estimation'"
+ },
+ "SAM3DBody_FaceExpression": {
+  "INPUT_TYPES": {
+   "required": {
+    "sam3d_body_model": [
+     "SAM3D_BODY_MODEL",
+     {}
+    ],
+    "mhr_pose_data": [
+     "MHR_POSE_DATA",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "tooltip": "Global multiplier on all blendshapes. >1 exaggerates.",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.05
+     }
+    ],
+    "mouth_strength": [
+     "FLOAT",
+     {
+      "tooltip": "Multiplier on mouth/jaw shapes. MediaPipe's jawOpen saturates near 1.0.",
+      "advanced": true,
+      "default": 1.0,
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.05
+     }
+    ],
+    "eye_strength": [
+     "FLOAT",
+     {
+      "tooltip": "Multiplier on eye shapes. MediaPipe rarely exceeds 0.5; 2-3x often needed.",
+      "advanced": true,
+      "default": 2.0,
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.05
+     }
+    ],
+    "brow_strength": [
+     "FLOAT",
+     {
+      "tooltip": "Multiplier on brow/cheek/sneer shapes. MediaPipe outputs ~0.1-0.3; 2-3x.",
+      "advanced": true,
+      "default": 2.0,
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.05
+     }
+    ],
+    "input_threshold": [
+     "FLOAT",
+     {
+      "tooltip": "Deadzone on MediaPipe's raw output (below = zero, above = linear remap). ",
+      "advanced": true,
+      "default": 0.02,
+      "min": 0.0,
+      "max": 0.5,
+      "step": 0.01
+     }
+    ],
+    "blendshape_smooth_window": [
+     "INT",
+     {
+      "tooltip": "Gaussian window on MediaPipe's per-frame signal before MHR mapping. MediaPipe's raw output swings 30-70% frame-to-frame on static faces. 1 = disabled. Use odd values.",
+      "advanced": true,
+      "default": 7,
+      "min": 1,
+      "max": 31,
+      "step": 2
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='SAM3DBody_FaceExpression', display_name='Face Expression to SAM3D Body', category='image/detection', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC60C0>, <comfy_api.lates",
+  "RETURN_TYPES": "['MHR_POSE_DATA']",
+  "RETURN_NAMES": "['mhr_pose_data']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/detection'"
+ },
+ "SAM3DBody_Loader": {
+  "INPUT_TYPES": {
+   "required": {
+    "model_file": [
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "sam_3d_body_dinov3_int8_convrot.safetensors"
+      ]
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='SAM3DBody_Loader', display_name='Load SAM3D Body Model', category='image/detection', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC61B0>], outputs=[<comfy_api.latest._io.",
+  "RETURN_TYPES": "['SAM3D_BODY_MODEL']",
+  "RETURN_NAMES": "['sam3d_body_model']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/detection'"
+ },
+ "SAM3DBody_Predict": {
+  "INPUT_TYPES": {
+   "required": {
+    "sam3d_body_model": [
+     "SAM3D_BODY_MODEL",
+     {}
+    ],
+    "image": [
+     "IMAGE",
+     {}
+    ],
+    "run_hand_refinement": [
+     "BOOLEAN",
+     {
+      "tooltip": "Improves hand pose at the cost of extra inference time and memory use",
+      "default": true
+     }
+    ],
+    "fov": [
+     "FLOAT",
+     {
+      "tooltip": "Vertical FoV in degrees. Affects predicted depth and absolute scale. 0 = fall back to ~53° (16:9).",
+      "advanced": true
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "tooltip": "Max person crops to process as a batch. Larger values use more VRAM for faster inference.",
+      "advanced": true,
+      "default": 64,
+      "min": 1,
+      "max": 512,
+      "step": 1
+     }
+    ]
+   },
+   "optional": {
+    "track_data": [
+     "SAM3_TRACK_DATA",
+     {
+      "tooltip": "Tracking data from SAM3 Video Track, required for multi-person detection"
+     }
+    ],
+    "bboxes": [
+     "BOUNDING_BOX",
+     {
+      "tooltip": "Per-frame bounding boxes used for better detection. Can be used as an alternative to tracking data. ",
+      "default": {
+       "x": 0,
+       "y": 0,
+       "width": 512,
+       "height": 512
+      },
+      "socketless": true,
+      "forceInput": true
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='SAM3DBody_Predict', display_name='Run SAM3D Body Prediction', category='image/detection', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC63C0>, <comfy_api.latest._io.Input",
+  "RETURN_TYPES": "['MHR_POSE_DATA']",
+  "RETURN_NAMES": "['mhr_pose_data']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/detection'"
+ },
+ "SAM3DBody_Render": {
+  "INPUT_TYPES": {
+   "required": {
+    "pose_data": [
+     "MHR_POSE_DATA,KIMODO_POSE_DATA",
+     {
+      "tooltip": "MHR pose data, or external Y-up rig pose data (KimodoSample). All render styles work for external rigs that carry OpenPose joint maps in their _skeleton_override (KimodoSample does)."
+     }
+    ],
+    "width": [
+     "INT",
+     {
+      "tooltip": "Output width in pixels. 0 = use pose data's native image_size. If only one of width/height is set, the other is derived preserving the original aspect.",
+      "default": 0,
+      "min": 0,
+      "max": 16384,
+      "step": 8
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "tooltip": "Output height in pixels. 0 = use pose data's native image_size. If only one of width/height is set, the other is derived preserving the original aspect.",
+      "default": 0,
+      "min": 0,
+      "max": 16384,
+      "step": 8
+     }
+    ],
+    "render_style": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "tooltip": "'mesh' = 3D MHR mesh rasterized through the camera. 'silhouette' = binary mask of the mesh. 'openpose_2d' = flat 2D skeleton 'openpose_3d' = openpose skeleton as flat-shaded 3D model 'scail' = SCAIL 3D capsules ",
+      "options": [
+       {
+        "key": "mesh",
+        "inputs": {
+         "required": {
+          "shader": [
+           "COMFY_DYNAMICCOMBO_V3",
+           {
+            "tooltip": "Preset shader. 'normals' = current surface normal in camera space (OpenGL Y+ normal-map convention: +X→R, +Y→G, +Z→B). 'rainbow' = RealisDance style body-Y jet; the 'rainbow_face_*' variants override face verts with normal/per-region colors; 'depth' = linear gray.",
+            "options": [
+             {
+              "key": "default",
+              "inputs": {
+               "required": {}
+              }
+             },
+             {
+              "key": "normals",
+              "inputs": {
+               "required": {}
+              }
+             },
+             {
+              "key": "rainbow",
+              "inputs": {
+               "required": {
+                "rainbow_tilt_z": [
+                 "FLOAT",
+                 {
+                  "tooltip": "Rotate rainbow jet axis around Z (forward). Differentiates left/right.",
+                  "default": -35.0,
+                  "min": -90.0,
+                  "max": 90.0,
+                  "step": 0.5
+                 }
+                ],
+                "rainbow_tilt_x": [
+                 "FLOAT",
+                 {
+                  "tooltip": "Rotate rainbow jet axis around X (right). Differentiates front/back.",
+                  "default": 0.0,
+                  "min": -90.0,
+                  "max": 90.0,
+                  "step": 0.5
+                 }
+                ]
+               }
+              }
+             },
+             {
+              "key": "rainbow_face_normal",
+              "inputs": {
+               "required": {
+                "rainbow_tilt_z": [
+                 "FLOAT",
+                 {
+                  "tooltip": "Rotate rainbow jet axis around Z (forward). Differentiates left/right.",
+                  "default": -35.0,
+                  "min": -90.0,
+                  "max": 90.0,
+                  "step": 0.5
+                 }
+                ],
+                "rainbow_tilt_x": [
+                 "FLOAT",
+                 {
+                  "tooltip": "Rotate rainbow jet axis around X (right). Differentiates front/back.",
+                  "default": 0.0,
+                  "min": -90.0,
+                  "max": 90.0,
+                  "step": 0.5
+                 }
+                ]
+               }
+              }
+             },
+             {
+              "key": "rainbow_face_semantic",
+              "inputs": {
+               "required": {
+                "rainbow_tilt_z": [
+                 "FLOAT",
+                 {
+                  "tooltip": "Rotate rainbow jet axis around Z (forward). Differentiates left/right.",
+                  "default": -35.0,
+                  "min": -90.0,
+                  "max": 90.0,
+                  "step": 0.5
+                 }
+                ],
+                "rainbow_tilt_x": [
+                 "FLOAT",
+                 {
+                  "tooltip": "Rotate rainbow jet axis around X (right). Differentiates front/back.",
+                  "default": 0.0,
+                  "min": -90.0,
+                  "max": 90.0,
+                  "step": 0.5
+                 }
+                ]
+               }
+              }
+             },
+             {
+              "key": "depth",
+              "inputs": {
+               "required": {}
+              }
+             }
+            ]
+           }
+          ],
+          "opacity": [
+           "FLOAT",
+           {
+            "tooltip": "Mesh alpha over the background image, or over black when none is connected.",
+            "default": 1.0,
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01
+           }
+          ],
+          "person_palette_falloff": [
+           "FLOAT",
+           {
+            "tooltip": "Per-person desaturation toward white: track k gets a (1 - falloff^k) pastel mix (SCAIL 'softer second person'). 1.0 = off.",
+            "default": 0.6,
+            "min": 0.1,
+            "max": 1.0,
+            "step": 0.05
+           }
+          ],
+          "region": [
+           "COMBO",
+           {
+            "tooltip": "'hands_only' filters faces via the precomputed `hand_vert_mask` (LBS weights against canonical hand KPs) — isolates the hand mesh for debugging. Falls back to full mesh if the mask is missing.",
+            "default": "full_body",
+            "multiselect": false,
+            "options": [
+             "full_body",
+             "hands_only"
+            ]
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "silhouette",
+        "inputs": {
+         "required": {}
+        }
+       },
+       {
+        "key": "openpose_2d",
+        "inputs": {
+         "required": {
+          "marker_radius_px": [
+           "INT",
+           {
+            "tooltip": "Body keypoint dot radius (px).",
+            "default": 4,
+            "min": 1,
+            "max": 32,
+            "step": 1
+           }
+          ],
+          "stick_width_px": [
+           "INT",
+           {
+            "tooltip": "Body limb ellipse half-width (px). DWPose default = 4.",
+            "default": 4,
+            "min": 1,
+            "max": 32,
+            "step": 1
+           }
+          ],
+          "limb_alpha": [
+           "FLOAT",
+           {
+            "tooltip": "Per-limb alpha. DWPose default = 0.6.",
+            "default": 0.6,
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+           }
+          ],
+          "face_style": [
+           "COMBO",
+           {
+            "tooltip": "'full' = all face landmarks (sapiens-238 if present, else rig-fallback ~30). 'eyes_mouth' = rig-fallback subset (~12 dots: eyes + outer lips only). 'disabled' = no face dots.",
+            "default": "disabled",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "full",
+             "eyes_mouth"
+            ]
+           }
+          ],
+          "hand_style": [
+           "COMBO",
+           {
+            "tooltip": "Draw 21+21 hand keypoints + sticks. 'disabled' = no hands. 'dwpose' = solid-blue dots; 'openpose' = rainbow dots.",
+            "default": "disabled",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "dwpose",
+             "openpose"
+            ]
+           }
+          ],
+          "person_palette_falloff": [
+           "FLOAT",
+           {
+            "tooltip": "Per-person desaturation: track k blends toward white by 1 - falloff^k. Track 0 stays vivid; 1.0 disables falloff.",
+            "default": 0.6,
+            "min": 0.1,
+            "max": 1.0,
+            "step": 0.05
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "openpose_3d",
+        "inputs": {
+         "required": {
+          "radius_m": [
+           "FLOAT",
+           {
+            "tooltip": "Limb capsule radius in meters (thin = stick-like).",
+            "default": 0.015,
+            "min": 0.004,
+            "max": 0.1,
+            "step": 0.001
+           }
+          ],
+          "include_hands": [
+           "BOOLEAN",
+           {
+            "tooltip": "Draw 21+21 hand keypoints as 3D capsules.",
+            "default": true
+           }
+          ],
+          "person_palette_falloff": [
+           "FLOAT",
+           {
+            "tooltip": "Per-person desaturation: track k blends toward white by 1 - falloff^k. Track 0 stays vivid; 1.0 disables falloff.",
+            "default": 0.6,
+            "min": 0.1,
+            "max": 1.0,
+            "step": 0.05
+           }
+          ]
+         }
+        }
+       },
+       {
+        "key": "scail",
+        "inputs": {
+         "required": {
+          "radius_m": [
+           "FLOAT",
+           {
+            "tooltip": "Capsule radius in meters (SCAIL reference: ~0.022 m).",
+            "default": 0.022,
+            "min": 0.005,
+            "max": 0.2,
+            "step": 0.001
+           }
+          ],
+          "hand_style": [
+           "COMBO",
+           {
+            "tooltip": "Composite 2D OpenPose hands on top of the 3D capsule body (matches SCAIL — no 3D hand capsules). 'disabled' = no hands. 'dwpose' = solid-blue hand dots; 'openpose' = rainbow dots. Sticks stay rainbow per-finger either way.",
+            "default": "dwpose",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "dwpose",
+             "openpose"
+            ]
+           }
+          ],
+          "face_style": [
+           "COMBO",
+           {
+            "tooltip": "'full' = all face landmarks (sapiens-238 if present, else rig-fallback ~30). 'eyes_mouth' = rig-fallback subset (~12 dots: eyes + outer lips only). 'disabled' = no face dots.",
+            "default": "disabled",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "full",
+             "eyes_mouth"
+            ]
+           }
+          ],
+          "person_palette_falloff": [
+           "FLOAT",
+           {
+            "tooltip": "Per-person desaturation: track k blends toward white by 1 - falloff^k. Track 0 stays vivid; 1.0 disables falloff.",
+            "default": 0.6,
+            "min": 0.1,
+            "max": 1.0,
+            "step": 0.05
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "optional": {
+    "background": [
+     "IMAGE",
+     {
+      "tooltip": "Per-frame background. Omitted = black canvas."
+     }
+    ],
+    "camera_info": [
+     "LOAD3D_CAMERA",
+     {
+      "tooltip": "Free 6DOF camera override. When wired, the pose is re-projected through this camera (position/target/zoom/rotation/FoV) instead of the predicted one. "
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='SAM3DBody_Render', display_name='Render 3D Body Pose', category='image/detection', inputs=[<comfy_api.latest._io.MultiType.Input object at 0x00000214C5FC6EA0>, <comfy_api.latest._io.In",
+  "RETURN_TYPES": "['IMAGE']",
+  "RETURN_NAMES": "['image']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/detection'"
+ },
+ "SAM3DBody_Smooth": {
+  "INPUT_TYPES": {
+   "required": {
+    "mhr_pose_data": [
+     "MHR_POSE_DATA",
+     {}
+    ],
+    "strength": [
+     "FLOAT",
+     {
+      "tooltip": "Smoothing strength. 0 = raw, 1 = smoothed.",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+     }
+    ],
+    "method": [
+     "COMBO",
+     {
+      "tooltip": "gaussian: symmetric weighted average, best general-purpose smoother.\nsavgol: sliding polynomial fit, preserves sharp peaks.",
+      "default": "savgol",
+      "multiselect": false,
+      "options": [
+       "gaussian",
+       "savgol"
+      ]
+     }
+    ],
+    "window": [
+     "INT",
+     {
+      "tooltip": "Temporal window in frames (odd values).",
+      "advanced": true,
+      "default": 7,
+      "min": 1,
+      "max": 51,
+      "step": 2
+     }
+    ],
+    "rotation_threshold_degrees": [
+     "FLOAT",
+     {
+      "tooltip": "Disables smoothing for this root rotation rate (degree/frame) to preserve fast spins. 30° suits most content, low values might disable smoothing on ordinary jitter and silently impacts quality. 0 = disable.",
+      "advanced": true,
+      "default": 30.0,
+      "min": 0.0,
+      "max": 90.0,
+      "step": 1.0
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='SAM3DBody_Smooth', display_name='Smooth SAM3D Body Pose Data', category='image/detection', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC6F30>, <comfy_api.latest._io.Inpu",
+  "RETURN_TYPES": "['MHR_POSE_DATA']",
+  "RETURN_NAMES": "['mhr_pose_data']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'image/detection'"
+ },
+ "SaveGLB": {
+  "INPUT_TYPES": {
+   "required": {
+    "mesh": [
+     "MESH,FILE_3D_GLB,FILE_3D_GLTF,FILE_3D_OBJ,FILE_3D_FBX,FILE_3D_STL,FILE_3D_USDZ,FILE_3D_PLY,FILE_3D_SPLAT,FILE_3D_SPZ,FILE_3D_KSPLAT,FILE_3D_SPLAT_ANY,FILE_3D_POINT_CLOUD_ANY,FILE_3D",
+     {
+      "tooltip": "Mesh or 3D file to save"
+     }
+    ],
+    "filename_prefix": [
+     "STRING",
+     {
+      "default": "3d/ComfyUI",
+      "multiline": false
+     }
+    ]
+   },
+   "hidden": {
+    "prompt": [
+     "PROMPT"
+    ],
+    "extra_pnginfo": [
+     "EXTRA_PNGINFO"
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='SaveGLB', display_name='Save 3D Model', category='3d', inputs=[<comfy_api.latest._io.MultiType.Input object at 0x00000214C5FC7110>, <comfy_api.latest._io.Input object at 0x00000214C5FC",
+  "RETURN_TYPES": "[]",
+  "RETURN_NAMES": "[]",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'3d'"
+ },
+ "WanCameraEmbedding": {
+  "INPUT_TYPES": {
+   "required": {
+    "camera_pose": [
+     "COMBO",
+     {
+      "default": "Static",
+      "multiselect": false,
+      "options": [
+       "Static",
+       "Pan Up",
+       "Pan Down",
+       "Pan Left",
+       "Pan Right",
+       "Zoom In",
+       "Zoom Out",
+       "Anti Clockwise (ACW)",
+       "ClockWise (CW)"
+      ]
+     }
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 832,
+      "min": 16,
+      "max": 16384,
+      "step": 16
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 480,
+      "min": 16,
+      "max": 16384,
+      "step": 16
+     }
+    ],
+    "length": [
+     "INT",
+     {
+      "default": 81,
+      "min": 1,
+      "max": 16384,
+      "step": 4
+     }
+    ]
+   },
+   "optional": {
+    "speed": [
+     "FLOAT",
+     {
+      "default": 1.0,
+      "min": 0,
+      "max": 10.0,
+      "step": 0.1
+     }
+    ],
+    "fx": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 1e-09
+     }
+    ],
+    "fy": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 1e-09
+     }
+    ],
+    "cx": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+     }
+    ],
+    "cy": [
+     "FLOAT",
+     {
+      "advanced": true,
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+     }
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='WanCameraEmbedding', display_name=None, category='model/conditioning/wan/camera', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC77A0>, <comfy_api.latest._io.Input object ",
+  "RETURN_TYPES": "['WAN_CAMERA_EMBEDDING', 'INT', 'INT', 'INT']",
+  "RETURN_NAMES": "['camera_embedding', 'width', 'height', 'length']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'model/conditioning/wan/camera'"
+ },
+ "WanCameraImageToVideo": {
+  "INPUT_TYPES": {
+   "required": {
+    "positive": [
+     "CONDITIONING",
+     {}
+    ],
+    "negative": [
+     "CONDITIONING",
+     {}
+    ],
+    "vae": [
+     "VAE",
+     {}
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 832,
+      "min": 16,
+      "max": 16384,
+      "step": 16
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 480,
+      "min": 16,
+      "max": 16384,
+      "step": 16
+     }
+    ],
+    "length": [
+     "INT",
+     {
+      "default": 81,
+      "min": 1,
+      "max": 16384,
+      "step": 4
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "default": 1,
+      "min": 1,
+      "max": 4096
+     }
+    ]
+   },
+   "optional": {
+    "clip_vision_output": [
+     "CLIP_VISION_OUTPUT",
+     {}
+    ],
+    "start_image": [
+     "IMAGE",
+     {}
+    ],
+    "camera_conditions": [
+     "WAN_CAMERA_EMBEDDING",
+     {}
+    ]
+   }
+  },
+  "define_schema": "Schema(node_id='WanCameraImageToVideo', display_name=None, category='model/conditioning/wan/camera', inputs=[<comfy_api.latest._io.Input object at 0x00000214C5FC7A40>, <comfy_api.latest._io.Input obje",
+  "RETURN_TYPES": "['CONDITIONING', 'CONDITIONING', 'LATENT']",
+  "RETURN_NAMES": "['positive', 'negative', 'latent']",
+  "FUNCTION": "'EXECUTE_NORMALIZED'",
+  "CATEGORY": "'model/conditioning/wan/camera'"
+ }
+}
