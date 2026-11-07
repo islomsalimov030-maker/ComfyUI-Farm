@@ -1,41 +1,415 @@
 {
- "note": "3D-A pose round 07.11c: 12 SFW prompts of increasing difficulty (docs/coord/3DA_ROUND_POSES_2026-11-07.md). loc: plate mainroom<N>; key feet|seat = photo pixel; contacts = parts that must touch a surface.",
+ "note": "3D-A pose round 07.11c: 12 SFW prompts of increasing difficulty (docs/coord/3DA_ROUND_POSES_2026-11-07.md). loc: plate mainroom<N>; key feet|seat = photo pixel; contacts = parts that must touch a surface. T01–T05 (07.11d): позы SFW-таблицы Confluence «Таблицы SFW для Стейси…» (pageId 91595952) с референсами для способа C.",
  "prompts": [
-  {"id": "Q01_stand_hand_face", "ru": "стоя вполоборота, рука у лица", "loc": 1, "feet": [0.9, 0.92], "yaw_add": -40,
+  {
+   "id": "Q01_stand_hand_face",
+   "ru": "стоя вполоборота, рука у лица",
+   "loc": 1,
+   "feet": [
+    0.9,
+    0.92
+   ],
+   "yaw_add": -40,
    "action": "standing in a three-quarter turn, her right hand gently touching her cheek, the left arm relaxed",
-   "anchor": "the round table reaches her upper thigh", "contacts": [{"part": "foot.L", "surface": "floor"}, {"part": "foot.R", "surface": "floor"}]},
-  {"id": "Q02_bed_cross_legs", "ru": "сидя на краю кровати, нога на ногу", "loc": 3, "seat": [0.4, 0.79], "yaw_add": 0,
+   "anchor": "the round table reaches her upper thigh",
+   "contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q02_bed_cross_legs",
+   "ru": "сидя на краю кровати, нога на ногу",
+   "loc": 3,
+   "seat": [
+    0.4,
+    0.79
+   ],
+   "yaw_add": 0,
    "action": "sitting on the edge of the bed with her right leg crossed over the left knee, hands resting on her knee",
-   "anchor": "the low bed reaches just below her knees", "contacts": [{"part": "pelvis", "surface": "bed"}, {"part": "foot.L", "surface": "floor"}]},
-  {"id": "Q03_bed_kneel", "ru": "на коленях на кровати, руки на бёдрах", "loc": 3, "seat": [0.5, 0.76], "yaw_add": 0,
+   "anchor": "the low bed reaches just below her knees",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "bed"
+    },
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q03_bed_kneel",
+   "ru": "на коленях на кровати, руки на бёдрах",
+   "loc": 3,
+   "seat": [
+    0.5,
+    0.76
+   ],
+   "yaw_add": 0,
    "action": "kneeling upright on the bed, sitting back on her heels, both hands resting on her thighs",
-   "anchor": "the bed is wider than she is tall", "contacts": [{"part": "knee.L", "surface": "bed"}, {"part": "knee.R", "surface": "bed"}, {"part": "shin.L", "surface": "bed"}, {"part": "shin.R", "surface": "bed"}]},
-  {"id": "Q04_bed_side_lie", "ru": "лёжа на боку, голова на руке", "loc": 3, "seat": [0.56, 0.75], "yaw_add": 0,
+   "anchor": "the bed is wider than she is tall",
+   "contacts": [
+    {
+     "part": "knee.L",
+     "surface": "bed"
+    },
+    {
+     "part": "knee.R",
+     "surface": "bed"
+    },
+    {
+     "part": "shin.L",
+     "surface": "bed"
+    },
+    {
+     "part": "shin.R",
+     "surface": "bed"
+    }
+   ]
+  },
+  {
+   "id": "Q04_bed_side_lie",
+   "ru": "лёжа на боку, голова на руке",
+   "loc": 3,
+   "seat": [
+    0.56,
+    0.75
+   ],
+   "yaw_add": 0,
    "action": "lying on her side on the bed facing the camera, her head propped on her bent arm, legs slightly bent",
-   "anchor": "the bed is wider than she is tall", "contacts": [{"part": "pelvis", "surface": "bed"}, {"part": "elbow.L", "surface": "bed"}, {"part": "thigh.L", "surface": "bed"}]},
-  {"id": "Q05_crouch_shoelace", "ru": "присед, завязывает шнурок", "loc": 2, "feet": [0.58, 0.83], "yaw_add": -30,
+   "anchor": "the bed is wider than she is tall",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "bed"
+    },
+    {
+     "part": "elbow.L",
+     "surface": "bed"
+    },
+    {
+     "part": "thigh.L",
+     "surface": "bed"
+    }
+   ]
+  },
+  {
+   "id": "Q05_crouch_shoelace",
+   "ru": "присед, завязывает шнурок",
+   "loc": 2,
+   "feet": [
+    0.58,
+    0.83
+   ],
+   "yaw_add": -30,
    "action": "crouching down on the mat, tying the shoelace of her right sneaker with both hands, head lowered",
-   "anchor": "crouched, her head is about as high as the top of the rolled mats behind her", "contacts": [{"part": "foot.L", "surface": "floor"}, {"part": "foot.R", "surface": "floor"}]},
-  {"id": "Q06_floor_hug_knees", "ru": "сидя на полу, обняв колени", "loc": 2, "feet": [0.55, 0.84], "yaw_add": 0,
+   "anchor": "crouched, her head is about as high as the top of the rolled mats behind her",
+   "contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q06_floor_hug_knees",
+   "ru": "сидя на полу, обняв колени",
+   "loc": 2,
+   "feet": [
+    0.55,
+    0.84
+   ],
+   "yaw_add": 0,
    "action": "sitting on the floor with her knees pulled up to her chest, arms wrapped around her shins",
-   "anchor": "seated, her head is lower than the top of the rolled mats behind her", "contacts": [{"part": "pelvis", "surface": "floor"}, {"part": "foot.L", "surface": "floor"}, {"part": "foot.R", "surface": "floor"}]},
-  {"id": "Q07_stretch_arms_up", "ru": "потягивается стоя, руки вверх", "loc": 1, "feet": [0.62, 0.94], "yaw_add": 0,
+   "anchor": "seated, her head is lower than the top of the rolled mats behind her",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q07_stretch_arms_up",
+   "ru": "потягивается стоя, руки вверх",
+   "loc": 1,
+   "feet": [
+    0.62,
+    0.94
+   ],
+   "yaw_add": 0,
    "action": "standing and stretching with both arms raised straight above her head, fingers interlaced",
-   "anchor": "the rim of the bathtub reaches her upper thigh", "contacts": [{"part": "foot.L", "surface": "floor"}, {"part": "foot.R", "surface": "floor"}]},
-  {"id": "Q08_bed_recline_elbows", "ru": "полулёжа, опираясь на локти", "loc": 3, "seat": [0.5, 0.77], "yaw_add": 0,
+   "anchor": "the rim of the bathtub reaches her upper thigh",
+   "contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q08_bed_recline_elbows",
+   "ru": "полулёжа, опираясь на локти",
+   "loc": 3,
+   "seat": [
+    0.5,
+    0.77
+   ],
+   "yaw_add": 0,
    "action": "half-lying on the bed, leaning back on both elbows, legs stretched out towards the camera",
-   "anchor": "the bed is wider than she is tall", "contacts": [{"part": "pelvis", "surface": "bed"}, {"part": "elbow.L", "surface": "bed"}, {"part": "elbow.R", "surface": "bed"}]},
-  {"id": "Q09_lean_wall", "ru": "стоя, опираясь рукой о стену", "loc": 2, "feet": [0.5, 0.83], "yaw_add": 70,
+   "anchor": "the bed is wider than she is tall",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "bed"
+    },
+    {
+     "part": "elbow.L",
+     "surface": "bed"
+    },
+    {
+     "part": "elbow.R",
+     "surface": "bed"
+    }
+   ]
+  },
+  {
+   "id": "Q09_lean_wall",
+   "ru": "стоя, опираясь рукой о стену",
+   "loc": 2,
+   "feet": [
+    0.5,
+    0.83
+   ],
+   "yaw_add": 70,
    "action": "standing and leaning sideways with her right hand pressed flat against the wall, weight on one leg",
-   "anchor": "the rolled mats against the wall reach her waist", "contacts": [{"part": "foot.L", "surface": "floor"}, {"part": "foot.R", "surface": "floor"}, {"part": "hand.R", "surface": "wall"}]},
-  {"id": "Q10_all_fours_cat", "ru": "на четвереньках на коврике (йога «кошка»)", "loc": 2, "feet": [0.55, 0.83], "yaw_add": 90,
+   "anchor": "the rolled mats against the wall reach her waist",
+   "contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    },
+    {
+     "part": "hand.R",
+     "surface": "wall"
+    }
+   ]
+  },
+  {
+   "id": "Q10_all_fours_cat",
+   "ru": "на четвереньках на коврике (йога «кошка»)",
+   "loc": 2,
+   "feet": [
+    0.55,
+    0.83
+   ],
+   "yaw_add": 90,
    "action": "on all fours on the yoga mat in the cat pose, hands under her shoulders, knees under her hips, back rounded",
-   "anchor": "the yoga mat is about as long as she is", "contacts": [{"part": "hand.L", "surface": "floor"}, {"part": "hand.R", "surface": "floor"}, {"part": "knee.L", "surface": "floor"}, {"part": "knee.R", "surface": "floor"}]},
-  {"id": "Q11_bench_side_sit", "ru": "сидя на лавке боком", "loc": 1, "seat": [0.76, 0.825], "yaw_add": 80,
+   "anchor": "the yoga mat is about as long as she is",
+   "contacts": [
+    {
+     "part": "hand.L",
+     "surface": "floor"
+    },
+    {
+     "part": "hand.R",
+     "surface": "floor"
+    },
+    {
+     "part": "knee.L",
+     "surface": "floor"
+    },
+    {
+     "part": "knee.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q11_bench_side_sit",
+   "ru": "сидя на лавке боком",
+   "loc": 1,
+   "seat": [
+    0.76,
+    0.825
+   ],
+   "yaw_add": 80,
    "action": "sitting sideways on the wooden bench, one hand resting on the bench beside her, looking towards the camera",
-   "anchor": "the bench seat reaches just below her knees", "contacts": [{"part": "pelvis", "surface": "bench"}, {"part": "foot.L", "surface": "floor"}, {"part": "foot.R", "surface": "floor"}]},
-  {"id": "Q12_one_leg_ankle", "ru": "стоя на одной ноге, держит другую за щиколотку", "loc": 1, "feet": [0.66, 0.95], "yaw_add": 30,
+   "anchor": "the bench seat reaches just below her knees",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "bench"
+    },
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "Q12_one_leg_ankle",
+   "ru": "стоя на одной ноге, держит другую за щиколотку",
+   "loc": 1,
+   "feet": [
+    0.66,
+    0.95
+   ],
+   "yaw_add": 30,
    "action": "standing on her left leg, her right knee bent behind her, holding her right ankle with her right hand, a quad stretch",
-   "anchor": "the rim of the bathtub reaches her upper thigh", "contacts": [{"part": "foot.L", "surface": "floor"}]}
+   "anchor": "the rim of the bathtub reaches her upper thigh",
+   "contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "T01_sofa_legs_tucked",
+   "ru": "сидя, ноги поджаты набок (Confluence Сидя-3, реф S200)",
+   "loc": 3,
+   "seat": [
+    0.5,
+    0.77
+   ],
+   "yaw_add": 0,
+   "action": "sitting on the bed with her legs tucked to one side, leaning on one hand, her head slightly tilted towards the camera",
+   "anchor": "the bed is wider than she is tall",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "bed"
+    },
+    {
+     "part": "shin.L",
+     "surface": "bed"
+    }
+   ]
+  },
+  {
+   "id": "T02_kneel_lunge",
+   "ru": "на одном колене, другая стопа впереди (Confluence Стоя-12, реф S229)",
+   "loc": 2,
+   "feet": [
+    0.55,
+    0.83
+   ],
+   "yaw_add": 0,
+   "action": "kneeling on one knee on the yoga mat with the other foot planted in front of her, hands resting on the front knee",
+   "anchor": "the yoga mat is about as long as she is",
+   "contacts": [
+    {
+     "part": "knee.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "T03_armchair_side_sit",
+   "ru": "полусидя боком, ноги вытянуты (Confluence Сидя-6, реф S225)",
+   "loc": 3,
+   "seat": [
+    0.4,
+    0.79
+   ],
+   "yaw_add": 30,
+   "action": "sitting sideways on the edge of the bed, leaning back on one elbow, her legs stretched out and crossed at the ankles",
+   "anchor": "the low bed reaches just below her knees",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "bed"
+    },
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "T04_floor_sit_knees_up",
+   "ru": "сидя на полу, колени согнуты, стопы врозь (Confluence Сидя-7, реф S224)",
+   "loc": 2,
+   "feet": [
+    0.55,
+    0.84
+   ],
+   "yaw_add": 0,
+   "action": "sitting on the floor with her knees bent and her feet flat and apart, hands resting on her knees",
+   "anchor": "seated, her head is lower than the top of the rolled mats behind her",
+   "contacts": [
+    {
+     "part": "pelvis",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
+  },
+  {
+   "id": "T05_barre_standing_split",
+   "ru": "вертикальный шпагат стоя у стены (Confluence Стоя-11, реф S222)",
+   "loc": 2,
+   "feet": [
+    0.5,
+    0.83
+   ],
+   "yaw_add": 70,
+   "action": "standing on one leg beside the wall, the other leg raised high in a vertical standing split, holding the raised ankle with one hand and steadying herself on the wall with the other",
+   "anchor": "the rolled mats against the wall reach her waist",
+   "contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "hand.R",
+     "surface": "wall"
+    }
+   ]
+  }
  ]
 }
