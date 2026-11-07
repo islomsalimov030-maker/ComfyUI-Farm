@@ -210,10 +210,27 @@ def api(path):
         return json.load(response)
 
 
+def _queued(prompt_id):
+    q = api('/queue')
+    return any(prompt_id in json.dumps(x) for x in q.get('queue_running', []) + q.get('queue_pending', []))
+
+
 def wait(prompt_id, timeout):
+    """07.11d: survives connection drops / 5xx (server restart). After a drop the job is looked up again; if it is
+    neither in history nor in the queue it is reported 'lost' (never resubmitted here)."""
     start = time.monotonic()
+    dropped = 0
     while time.monotonic() - start < timeout:
-        history = api('/history/' + prompt_id)
+        try:
+            history = api('/history/' + prompt_id)
+            if dropped and prompt_id not in history and not _queued(prompt_id):
+                return 'lost', {'prompt_id': prompt_id}
+            dropped = 0
+        except (OSError, ValueError) as e:            # URLError/HTTPError(502)/WinError 10054/10060/timeout/bad JSON
+            dropped += 1
+            print(f'[wait] connection problem {dropped}: {e}', flush=True)
+            time.sleep(15)
+            continue
         if prompt_id in history:
             item = history[prompt_id]
             status = item.get('status', {})

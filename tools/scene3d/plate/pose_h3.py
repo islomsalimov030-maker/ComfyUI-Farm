@@ -60,6 +60,21 @@ def main():
         if any(r["name"] == name and r["status"] == "success" for r in runs):
             print("[poseH3] skip", name)
             continue
+        pending = next((r for r in runs if r["name"] == name and r["status"] == "submitted"), None)
+        if pending:                                   # 07.11d: resume a job sent before a connection drop
+            print(f"[poseH3] resume {name} {pending['prompt_id']}", flush=True)
+            status, result = qr.wait(pending["prompt_id"], 1200)
+            if status != "lost":
+                pending.update(status=status)
+                runs_path.write_text(json.dumps(runs, indent=1))
+                if status != "success":
+                    raise SystemExit(f"stop after {status}")
+                d = outdir / "plate3d_poses" / f"{m}_{pid}{'_' + a.plan if a.plan else ''}"
+                cr.comp2(inp / f"{loc}_rgb.png", inp / f"{loc}_s2" / pid / "shadow.png",
+                         sorted(d.glob(f"L_C2_s{a.seed}_*.png"))[-1], sorted(d.glob(f"L_C2_mask_s{a.seed}_*.png"))[-1],
+                         d / f"comp2_s{a.seed}.png")
+                continue
+            runs.remove(pending)
         remote_sync.upload(inp / f"{loc}_rgb.png", "")
         remote_sync.upload(inp / f"{loc}_s2" / pid / "playblast.png", f"{loc}_s2/{pid}")
         q = qr.api("/queue")
@@ -67,9 +82,11 @@ def main():
             raise SystemExit("Queue is occupied; refusing to add work")
         t0 = time.monotonic()
         pid_ = ab.post(g)
-        status, result = qr.wait(pid_, 1200)
-        row = dict(name=name, method=m, id=pid, status=status, seconds=round(time.monotonic() - t0, 1))
+        row = dict(name=name, method=m, id=pid, status="submitted", prompt_id=pid_, seconds=None)
         runs.append(row)
+        runs_path.write_text(json.dumps(runs, indent=1))      # recorded before waiting: a rerun resumes, not resubmits
+        status, result = qr.wait(pid_, 1200)
+        row.update(status=status, seconds=round(time.monotonic() - t0, 1))
         runs_path.write_text(json.dumps(runs, indent=1))
         print(f"[poseH3] {name}: {status} {row['seconds']}s", flush=True)
         if status != "success":
