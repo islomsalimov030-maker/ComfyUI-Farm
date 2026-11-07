@@ -105,3 +105,17 @@ class RefScene(unittest.TestCase):
                    log=lambda m: None)[1]
         self.assertIn("pelvis", r["support"])
         self.assertLess(r["support_gap_cm"], 2.0)
+
+
+class Seat(unittest.TestCase):
+    def test_seat_pixel_on_front_face_goes_to_bed_top(self):
+        import numpy as np
+        tmp = tempfile.mkdtemp()
+        tsp.make(os.path.join(tmp, "plate"))
+        plate = pf.Plate(os.path.join(tmp, "plate"))
+        P, v = plate.seat_point(0.5, 0.65)                                   # передняя стенка кровати
+        self.assertAlmostEqual(float(P[2]), 0.5, delta=0.03)
+        P, v = plate.seat_point(0.5, 0.45)                                   # уже верх кровати — без сдвига
+        self.assertAlmostEqual(float(P[2]), 0.5, delta=0.03)
+        self.assertEqual(v, 0.45)
+        self.assertTrue(np.isfinite(P).all())

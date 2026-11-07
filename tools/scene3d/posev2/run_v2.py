@@ -43,11 +43,13 @@ def do_fit(refs, only):
         ref = pf.load_ref(rf)
         plate = pf.Plate(pr.PLATE.format(p["loc"]))
         target = tuple(p.get("seat") or p.get("feet"))
-        X, rep, reg = pf.fit(ref, plate, target, 1.62, None, log=lambda m: print(f"[{p['id']}] {m}", flush=True))
+        seat = "seat" in p
+        X, rep, reg = pf.fit(ref, plate, target, 1.62, None, log=lambda m: print(f"[{p['id']}] {m}", flush=True),
+                             seat=seat)
         src = "ref"
         if rep["status"] != "ok" and p.get("contacts"):     # таблица — только если реф не посадил, и только если лучше
             X2, rep2, reg2 = pf.fit(ref, plate, target, 1.62, table_contacts(p),
-                                    log=lambda m: print(f"[{p['id']}] (таблица) {m}", flush=True))
+                                    log=lambda m: print(f"[{p['id']}] (таблица) {m}", flush=True), seat=seat)
             score = lambda r: (r["status"] != "ok", r["support_gap_cm"] + r["max_penetration_cm"])  # noqa: E731
             if score(rep2) < score(rep):
                 X, rep, reg, src = X2, rep2, reg2, "table"

@@ -139,6 +139,26 @@ class Plate:
         z = self.Z[iv, iu]
         return np.where(inside, z, np.inf)
 
+    def seat_point(self, fu, fv):
+        """Пиксель сиденья/кровати → верх сиденья. Разметка часто ложится на пол под сиденьем или на его переднюю
+        стенку: тогда идём вверх по столбцу до горизонтальной поверхности 0.25–1.0 м. Нет такой — пол (сидя на полу/коврике)."""
+        tree, Pp, N = self.trees["any"]
+        horiz = lambda Q: N[tree.query(Q)[1]][2] > 0.6  # noqa: E731
+        P = self.pixel_point(fu, fv)
+        if 0.25 <= P[2] <= 1.0 and horiz(P):
+            return P, fv
+        for i in range(1, 200):
+            vv = fv - i * 0.002
+            try:
+                Q = self.pixel_point(fu, vv)
+            except SystemExit:
+                continue
+            if 0.25 <= Q[2] <= 1.0 and horiz(Q):
+                return Q, vv
+            if Q[2] > 1.2:                                                  # ушли выше мебели
+                break
+        return P, fv
+
     def pixel_point(self, fu, fv):
         u, v = fu * self.Wp, fv * self.Hp
         z = float(self.depth_at(np.array([u]), np.array([v]))[0])
@@ -276,7 +296,7 @@ def ref_up(ref, planes, contacts):
 
 
 # ------------------------------------------------------------------------------------------------ fit
-def fit(ref, plate, target, height, forced=None, log=print):
+def fit(ref, plate, target, height, forced=None, log=print, seat=False):
     V0, kp0 = ref["V"], ref["kp"]
     reg = regions(V0, kp0)
     planes = ref_planes(ref["S"], body=cKDTree(V0)) if (len(ref["S"]) and not forced) else []
@@ -307,6 +327,13 @@ def fit(ref, plate, target, height, forced=None, log=print):
     rel = signed_angle(to_cam, fwd) if fwd is not None else 0.0
     elev_ref = math.degrees(math.atan2(-pel[2], math.hypot(pel[0], pel[1])))
     # опорный регион
+    if seat and not any(PRIORITY.get(k, 9) <= 1 for k, c in contacts.items() if c["kind"] == "h"):
+        # строка таблицы «сиденье»: опора — таз на сиденье, даже если на рефе его контакт не найден
+        idx = np.where(reg == "pelvis")[0]
+        h = V[idx, 2]
+        contacts["pelvis"] = {"idx": idx[h <= np.percentile(h, 15)], "kind": "h", "normal": None, "n": int(len(idx)),
+                              "surface": "seat"}
+        log("[fit] сиденье по таблице: опора — таз")
     hor = {k: c for k, c in contacts.items() if c["kind"] == "h"}          # опора — только горизонтальные контакты
     pool = hor or contacts
     if pool:
@@ -319,7 +346,12 @@ def fit(ref, plate, target, height, forced=None, log=print):
     else:                                                               # без контактов: самые низкие 2 % вершин
         sup_idx = np.argsort(V[:, 2])[: max(20, len(V) // 50)]
         support = ["lowest"]
-    T = plate.pixel_point(*target)
+    if seat:
+        T, v_used = plate.seat_point(*target)
+        if v_used != target[1]:
+            log(f"[fit] пиксель сиденья {target} не на верх сиденья — поднят до v {v_used:.3f} (z {T[2]:.2f} м)")
+    else:
+        T = plate.pixel_point(*target)
     # начальная посадка: ракурс к камере фото как в рефе
     to_cam_p = plate.C - T
     to_cam_p[2] = 0
@@ -429,7 +461,7 @@ def fit(ref, plate, target, height, forced=None, log=print):
            "ref_plan": {"body_h_frac": round(float((ys.max() - ys.min()) / ref["H"]), 3),
                         "body_w_frac": round(float((xs.max() - xs.min()) / ref["W"]), 3)},
            "fit": {"params": [round(float(x), 4) for x in p], "cost": round(float(sol.cost), 3), "nfev": int(sol.nfev)},
-           "target_world": [round(float(x), 3) for x in T],
+           "target_world": [round(float(x), 3) for x in T], "seat": bool(seat),
            "keypoints_body25_px": kp25, "px_size": [plate.Wp, plate.Hp]}
     # состояние для refine.py: аффинное преобразование камера рефа -> мир плиты (X = V0 @ M.T + b) и контакты
     A = np.hstack([V0, np.ones((len(V0), 1))])
