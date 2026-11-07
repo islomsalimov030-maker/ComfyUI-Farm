@@ -2054,60 +2054,101 @@
   "essentials_category": "Image Tools"
  },
  "GetImageSize": {
-  "_stub": "07.11d brain stub — replace from server /object_info",
   "input": {
    "required": {
     "image": [
-     "IMAGE"
+     "IMAGE",
+     {}
+    ]
+   },
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
     ]
    }
   },
   "input_order": {
    "required": [
     "image"
+   ],
+   "hidden": [
+    "unique_id"
    ]
   },
+  "is_input_list": false,
   "output": [
    "INT",
    "INT",
    "INT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
   ],
   "output_name": [
    "width",
    "height",
    "batch_size"
   ],
+  "output_tooltips": [
+   null,
+   null,
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "GetImageSize",
+  "display_name": "Get Image Size",
+  "description": "Returns width and height of the image, and passes it through unchanged.",
+  "python_module": "comfy_extras.nodes_images",
+  "category": "image",
   "output_node": false,
-  "python_module": "comfy_extras.nodes_images"
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": [
+   "dimensions",
+   "resolution",
+   "image info"
+  ],
+  "essentials_category": null,
+  "has_intermediate_output": false
  },
  "ImageScaleToTotalPixels": {
-  "_stub": "07.11d brain stub — replace from server /object_info",
   "input": {
    "required": {
     "image": [
-     "IMAGE"
+     "IMAGE",
+     {}
     ],
     "upscale_method": [
-     [
-      "nearest-exact",
-      "bilinear",
-      "area",
-      "bicubic",
-      "lanczos"
-     ]
+     "COMBO",
+     {
+      "multiselect": false,
+      "options": [
+       "nearest-exact",
+       "bilinear",
+       "area",
+       "bicubic",
+       "lanczos"
+      ]
+     }
     ],
     "megapixels": [
      "FLOAT",
      {
-      "default": 1.0,
+      "default": 1,
       "min": 0.01,
-      "max": 16.0,
+      "max": 16,
       "step": 0.01
      }
     ],
     "resolution_steps": [
      "INT",
      {
+      "advanced": true,
       "default": 1,
       "min": 1,
       "max": 256
@@ -2123,13 +2164,33 @@
     "resolution_steps"
    ]
   },
+  "is_input_list": false,
   "output": [
    "IMAGE"
+  ],
+  "output_is_list": [
+   false
   ],
   "output_name": [
    "IMAGE"
   ],
+  "output_tooltips": [
+   null
+  ],
+  "output_matchtypes": null,
+  "name": "ImageScaleToTotalPixels",
+  "display_name": "Scale Image to Total Pixels",
+  "description": "",
+  "python_module": "comfy_extras.nodes_post_processing",
+  "category": "image/upscaling",
   "output_node": false,
-  "python_module": "comfy_extras.nodes_upscale_model"
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": false,
+  "price_badge": null,
+  "search_aliases": null,
+  "essentials_category": null,
+  "has_intermediate_output": false
  }
 }
