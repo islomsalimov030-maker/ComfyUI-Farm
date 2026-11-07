@@ -5,6 +5,7 @@
    "id": "Q01_stand_hand_face",
    "ru": "стоя вполоборота, рука у лица",
    "loc": 1,
+   "pose_class": "stand",
    "feet": [
     0.9,
     0.92
@@ -27,6 +28,7 @@
    "id": "Q02_bed_cross_legs",
    "ru": "сидя на краю кровати, нога на ногу",
    "loc": 3,
+   "pose_class": "sit_edge",
    "seat": [
     0.4,
     0.79
@@ -49,6 +51,7 @@
    "id": "Q03_bed_kneel",
    "ru": "на коленях на кровати, руки на бёдрах",
    "loc": 3,
+   "pose_class": "kneel",
    "seat": [
     0.5,
     0.76
@@ -79,6 +82,7 @@
    "id": "Q04_bed_side_lie",
    "ru": "лёжа на боку, голова на руке",
    "loc": 3,
+   "pose_class": "lie",
    "seat": [
     0.56,
     0.75
@@ -105,6 +109,7 @@
    "id": "Q05_crouch_shoelace",
    "ru": "присед, завязывает шнурок",
    "loc": 2,
+   "pose_class": "crouch",
    "feet": [
     0.58,
     0.83
@@ -127,6 +132,7 @@
    "id": "Q06_floor_hug_knees",
    "ru": "сидя на полу, обняв колени",
    "loc": 2,
+   "pose_class": "sit_floor",
    "feet": [
     0.55,
     0.84
@@ -153,6 +159,7 @@
    "id": "Q07_stretch_arms_up",
    "ru": "потягивается стоя, руки вверх",
    "loc": 1,
+   "pose_class": "stand",
    "feet": [
     0.62,
     0.94
@@ -175,6 +182,7 @@
    "id": "Q08_bed_recline_elbows",
    "ru": "полулёжа, опираясь на локти",
    "loc": 3,
+   "pose_class": "recline",
    "seat": [
     0.5,
     0.77
@@ -201,6 +209,7 @@
    "id": "Q09_lean_wall",
    "ru": "стоя, опираясь рукой о стену",
    "loc": 2,
+   "pose_class": "stand",
    "feet": [
     0.5,
     0.83
@@ -227,6 +236,7 @@
    "id": "Q10_all_fours_cat",
    "ru": "на четвереньках на коврике (йога «кошка»)",
    "loc": 2,
+   "pose_class": "all_fours",
    "feet": [
     0.55,
     0.83
@@ -257,6 +267,7 @@
    "id": "Q11_bench_side_sit",
    "ru": "сидя на лавке боком",
    "loc": 1,
+   "pose_class": "sit_edge",
    "seat": [
     0.76,
     0.825
@@ -283,6 +294,7 @@
    "id": "Q12_one_leg_ankle",
    "ru": "стоя на одной ноге, держит другую за щиколотку",
    "loc": 1,
+   "pose_class": "stand",
    "feet": [
     0.66,
     0.95
@@ -301,6 +313,7 @@
    "id": "T01_sofa_legs_tucked",
    "ru": "сидя, ноги поджаты набок (Confluence Сидя-3, реф S200)",
    "loc": 3,
+   "pose_class": "sit_tucked",
    "seat": [
     0.5,
     0.77
@@ -323,6 +336,7 @@
    "id": "T02_kneel_lunge",
    "ru": "на одном колене, другая стопа впереди (Confluence Стоя-12, реф S229)",
    "loc": 2,
+   "pose_class": "kneel",
    "feet": [
     0.55,
     0.83
@@ -345,6 +359,7 @@
    "id": "T03_armchair_side_sit",
    "ru": "полусидя боком, ноги вытянуты (Confluence Сидя-6, реф S225)",
    "loc": 3,
+   "pose_class": "recline",
    "seat": [
     0.4,
     0.79
@@ -367,6 +382,7 @@
    "id": "T04_floor_sit_knees_up",
    "ru": "сидя на полу, колени согнуты, стопы врозь (Confluence Сидя-7, реф S224)",
    "loc": 2,
+   "pose_class": "sit_floor",
    "feet": [
     0.55,
     0.84
@@ -393,6 +409,7 @@
    "id": "T05_barre_standing_split",
    "ru": "вертикальный шпагат стоя у стены (Confluence Стоя-11, реф S222)",
    "loc": 2,
+   "pose_class": "stand",
    "feet": [
     0.5,
     0.83

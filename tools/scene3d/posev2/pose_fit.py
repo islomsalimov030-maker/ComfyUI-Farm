@@ -65,7 +65,7 @@ def load_ref(path):
         sn = d["scene_nrm"] if d["scene_nrm"].size else None
         return dict(V=d["verts"].astype(float), F=d["faces"], kp=d["kp3d"].astype(float), S=sp.astype(float),
                     N=None if sn is None else sn.astype(float), W=int(d["W"]), H=int(d["H"]),
-                    f=float(d["f"]), cx=float(d["cx"]), cy=float(d["cy"]))
+                    f=float(d["f"]), cx=float(d["cx"]), cy=float(d["cy"]), kp2d=d["kp2d"].astype(float))
     t = d["pred_cam_t"]                                               # pose_v2_probe.py (без сцены)
     kp = d["pred_keypoints_3d"] + t
     k2 = d["pred_keypoints_2d"]
@@ -74,7 +74,18 @@ def load_ref(path):
     A[:len(x), 0], A[:len(x), 1], A[len(x):, 0], A[len(x):, 2] = x, 1, y, 1
     f, cx, cy = np.linalg.lstsq(A, np.concatenate([k2[:, 0], k2[:, 1]]), rcond=None)[0]
     return dict(V=(d["pred_vertices"] + t).astype(float), F=d["top.faces"], kp=kp.astype(float),
-                S=np.zeros((0, 3)), N=None, W=int(round(2 * cx)), H=int(round(2 * cy)), f=f, cx=cx, cy=cy)
+                S=np.zeros((0, 3)), N=None, W=int(round(2 * cx)), H=int(round(2 * cy)), f=f, cx=cx, cy=cy,
+                kp2d=k2.astype(float))
+
+
+def fit_input_hash(ref_path, plate_dir, extra):
+    """Хэш входа fit: содержимое ref.npz + plate.json + параметры (shot_spec, точка, ячейка зоны …)."""
+    import hashlib
+    h = hashlib.sha1()
+    h.update(Path(ref_path).read_bytes())
+    h.update((Path(plate_dir) / "plate.json").read_bytes())
+    h.update(json.dumps(extra, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8"))
+    return h.hexdigest()[:16]
 
 
 def load_obj_mesh(path):
@@ -115,6 +126,7 @@ class Plate:
         self.fx = (self.Wp / 2) / math.tan(math.radians(self.info["fov_x_deg"]) / 2)
         self.cx, self.cy = self.Wp / 2, self.Hp / 2
         V, F = load_obj_mesh(d / "plate_mesh.obj")
+        self.V, self.F, self.dir = V, F, d
         n, ok = vertex_normals(V, F)
         to_cam = self.C - V
         n[np.einsum("ij,ij->i", n, to_cam) < 0] *= -1                      # нормали к камере

@@ -1,18 +1,11 @@
-"""Постановка v2, шаг 3: поправка суставов через модель тела MHR (внутри SAM 3D Body, Apache-2.0), ПК + torch.
-Берёт жёсткую посадку pose_fit (fit_state.npz: аффинное «камера рефа → мир плиты», контакты) и подгоняет углы
-суставов (130 параметров позы MHR) + малый поворот/сдвиг так, чтобы опора легла на поверхность, вторичные
-контакты дотянулись, тело не входило в комнату; штраф за отход от позы рефа (10° ≈ 1 см ошибки контакта).
-
-  C:/work/ComfyUI-next/venv/Scripts/python tools/scene3d/posev2/refine.py --comfy C:/work/ComfyUI-next \
-      --refs C:/work/scene3d_work/refs_v2_npz [--only Q03,Q11] [--all] [--iters 200]
-По умолчанию — только позы со статусом pose_mismatch. Жёсткий вариант сохраняется как body_rigid.obj / fit_rigid.json.
-Нужны ref.npz с ключами mhr_* (ref_scene.py от 07.11e шаг 4) и fit_state.npz (run_v2.py fit от того же шага).
+"""Постановка v2, поправка суставов через модель тела MHR (внутри SAM 3D Body, Apache-2.0), ПК + torch.
+v2.4 (07.11f): refine_mem — для попытки place.py в памяти: опорные группы только к своим поверхностям (Р1),
+лимиты по группам костей (корпус/шея/голова ≤ 15°, руки ≤ 15°, ноги ≤ 20°) — штраф и проверка (Р4).
+Запуск — внутри `run_v2.py place --comfy C:/work/ComfyUI-next`. refine_one — v2.3, только для diag_seat.py.
 """
-import argparse
 import asyncio
 import json
 import math
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -23,7 +16,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "plate"))
 import pose_fit as pf  # noqa: E402
-import pose_round as pr  # noqa: E402
 
 W_SUP, W_SEC, W_PEN, W_PRIOR, W_RIG = 1.0, 0.3, 3.0, 0.5, 0.5
 
@@ -184,42 +176,162 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
     return Xn, new
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--comfy", required=True)
-    ap.add_argument("--model", default="sam_3d_body_dinov3_int8_convrot.safetensors")
-    ap.add_argument("--refs", required=True)
-    ap.add_argument("--only", default="")
-    ap.add_argument("--all", action="store_true")
-    ap.add_argument("--iters", type=int, default=200)
-    a = ap.parse_args()
-    only = set(x for x in a.only.split(",") if x)
-    model, head = load_head(a.comfy, a.model)
+# ------------------------------------------------------------------------------------------------ v2.4 (07.11f)
+# Группы и лимиты (п.8 Р4): угол костей MHR70 в системе таза (как diag_seat.group_angles), градусы.
+GROUPS = {"spine": [("mh", 69)], "neck/head": [(69, 0)],
+          "arms": [(5, 7), (7, 62), (6, 8), (8, 41)], "legs": [(9, 11), (11, 13), (10, 12), (12, 14)]}
+LIMITS_DEG = {"spine": 15.0, "neck/head": 15.0, "arms": 15.0, "legs": 20.0}
+W_LIM = 1.0          # на (градус сверх лимита)²
+
+
+def _frame_t(torch, K):
+    mh = (K[9] + K[10]) / 2
+    x = K[9] - K[10]
+    x = x / x.norm()
+    up = K[69] - mh
+    up = up - (up @ x) * x
+    up = up / up.norm()
+    return torch.stack([x, up, torch.linalg.cross(x, up)]), mh
+
+
+def _align_t(torch, a, b):
+    """поворот, переводящий направление b в a (без деления на |a×b|: I + [c]× + [c]×²/(1+a·b))."""
+    a = a / a.norm()
+    b = b / b.norm()
+    c = torch.linalg.cross(b, a)
+    cc = b @ a
+    Kx = torch.zeros(3, 3, dtype=a.dtype, device=a.device)
+    Kx[0, 1], Kx[0, 2], Kx[1, 0], Kx[1, 2], Kx[2, 0], Kx[2, 1] = -c[2], c[1], c[2], -c[0], -c[1], c[0]
+    return torch.eye(3, dtype=a.dtype, device=a.device) + Kx + Kx @ Kx / (1 + cc)
+
+
+def group_angles_t(torch, K0, K1):
+    """-> {группа: тензор углов костей, рад}."""
+    R0, m0 = _frame_t(torch, K0)
+    R1, m1 = _frame_t(torch, K1)
+    out = {}
+    for g, bones in GROUPS.items():
+        angs = []
+        for a, b in bones:
+            if g == "spine":
+                v0 = K0[b] - m0
+                v1 = _align_t(torch, K0[9] - K0[10], K1[9] - K1[10]) @ (K1[b] - m1)
+            else:
+                v0 = R0 @ (K0[b] - K0[a])
+                v1 = R1 @ (K1[b] - K1[a])
+            c = (v0 @ v1) / (v0.norm() * v1.norm())
+            angs.append(torch.arccos(torch.clamp(c, -0.999999, 0.999999)))
+        out[g] = torch.stack(angs)
+    return out
+
+
+def load_ctx(comfy, model="sam_3d_body_dinov3_int8_convrot.safetensors", iters=200):
+    _, head = load_head(comfy, model)
     import torch
-    dev = next(head.parameters()).device if any(True for _ in head.parameters()) else torch.device("cpu")
-    if dev.type == "cpu" and torch.cuda.is_available():
-        head = head.to("cuda")
-        dev = torch.device("cuda")
-    root = pr.ROUND / "V2"
-    for p in pr.prompts():
-        rdir = root / p["id"]
-        if (only and p["id"] not in only) or not (rdir / "fit_state.npz").is_file():
-            continue
-        rep = json.loads((rdir / "fit.json").read_text(encoding="utf-8"))
-        if not (a.all or only) and rep["status"] == "ok":
-            continue
-        ref_npz = Path(a.refs) / f"{p['id']}.ref.npz"
-        plate = pf.Plate(pr.PLATE.format(p["loc"]))
-        res = refine_one(torch, head, dev, p["id"], ref_npz, plate, rdir, a.iters, print)
-        if res is None:
-            continue
-        Xn, new = res
-        if not (rdir / "body_rigid.obj").is_file():
-            shutil.copy(rdir / "body.obj", rdir / "body_rigid.obj")
-            shutil.copy(rdir / "fit.json", rdir / "fit_rigid.json")
-        ref = pf.load_ref(ref_npz)
-        reg = pf.regions(ref["V"], ref["kp"])
-        pf.write_outputs(rdir, Xn, ref["F"], new, plate, reg, new.get("contacts", {}).keys())
+    dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    head = head.to(dev)
+    return {"torch": torch, "head": head, "dev": dev, "iters": iters}
+
+
+def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
+    """Поправка суставов MHR для попытки place.py (в памяти). Опорные группы — к своим поверхностям из S
+    (Р1: target / back / floor), лимиты по группам — штраф в оптимизации и проверка после (limits_ok).
+    -> (X, KP, info) | None."""
+    torch, head, dev, iters = ctx["torch"], ctx["head"], ctx["dev"], ctx["iters"]
+    d = np.load(ref["path"], allow_pickle=True)
+    if "mhr_body_pose_params" not in d.files:
+        log("[refine] в ref.npz нет mhr_* — пропуск")
+        return None
+    import place as pl
+    Mn, bn = pl.similarity(B["V0"], rec["X"])
+    T = lambda a: torch.tensor(np.asarray(a, np.float32), device=dev)[None]  # noqa: E731
+    gr, bp, hp = T(d["mhr_global_rot"]), T(d["mhr_body_pose_params"]), T(d["mhr_hand_pose_params"])
+    sc, sh = T(d["mhr_scale_params"]), T(d["mhr_shape_params"])
+    cam_t = torch.tensor(d["mhr_pred_cam_t"], device=dev, dtype=torch.float32)
+    M = torch.tensor(Mn, device=dev, dtype=torch.float32)
+    b = torch.tensor(bn, device=dev, dtype=torch.float32)
+    flip = torch.tensor([1.0, -1.0, -1.0], device=dev)
+    zeros_t, zeros_e = torch.zeros(1, 3, device=dev), torch.zeros(1, 72, device=dev)
+    piv = torch.tensor(np.asarray(rec["fit"]["pivot"]), device=dev, dtype=torch.float32)
+
+    def body(delta, w, dt):
+        pose = bp.clone()
+        pose[:, :130] = pose[:, :130] + delta
+        v, kp = head.mhr_forward(global_trans=zeros_t, global_rot=gr, body_pose_params=pose, hand_pose_params=hp,
+                                 scale_params=sc, shape_params=sh, expr_params=zeros_e, return_keypoints=True)
+        X = (v[0].float() * flip + cam_t) @ M.T + b
+        K = (kp[0, :70].float() * flip + cam_t) @ M.T + b
+        R = rodrigues(torch, w)
+        return (X - piv) @ R.T + piv + dt, (K - piv) @ R.T + piv + dt
+
+    with torch.no_grad():
+        X0, K0 = body(torch.zeros(1, 130, device=dev), torch.full((3,), 1e-6, device=dev), torch.zeros(3, device=dev))
+    err = float(np.abs(X0.cpu().numpy() - rec["X"]).max())
+    if err > 0.01:
+        log(f"[refine] MHR не воспроизвёл посадку (ошибка {err * 100:.1f} см) — пропуск")
+        return None
+    groups = [(n, idx, surf, role) for n, idx, surf, role in B["groups"] if surf in S]
+    rng = np.random.default_rng(0)
+    pen_idx = rng.choice(len(rec["X"]), 3000, replace=False)
+    delta = torch.zeros(1, 130, device=dev, requires_grad=True)
+    w = torch.full((3,), 1e-6, device=dev, requires_grad=True)
+    dt = torch.zeros(3, device=dev, requires_grad=True)
+    opt = torch.optim.Adam([{"params": [delta], "lr": 0.02}, {"params": [w, dt], "lr": 0.005}])
+    lim = {g: math.radians(v) for g, v in LIMITS_DEG.items()}
+    t0 = time.monotonic()
+    targets, pen_t = None, None
+    for it in range(iters):
+        X, K = body(delta, w, dt)
+        if it % 5 == 0:
+            Xn = X.detach().cpu().numpy()
+            targets = []
+            for n, idx, surf, role in groups:
+                tree, P, N = S[surf]
+                dd, j = tree.query(Xn[idx])
+                targets.append((torch.tensor(idx, device=dev), torch.tensor(P[j], device=dev, dtype=torch.float32),
+                                torch.tensor(N[j], device=dev, dtype=torch.float32), role in ("support", "back"),
+                                torch.tensor(dd < 0.4, device=dev)))
+            u, v, z = plate.project(Xn[pen_idx])
+            zp = plate.depth_at(u, v)
+            cand = pen_idx[(z - zp > 0) & (z - zp < 0.35)]
+            pen_t = None
+            if len(cand):
+                tree, P, N = plate.trees["any"]
+                _, j = tree.query(Xn[cand])
+                pen_t = (torch.tensor(cand, device=dev), torch.tensor(P[j], device=dev, dtype=torch.float32),
+                         torch.tensor(N[j], device=dev, dtype=torch.float32))
+        loss = torch.zeros((), device=dev)
+        for idx, P, N, is_sup, near in targets:
+            sd = ((X[idx] - P) * N).sum(-1)
+            loss = loss + (W_SUP * ((sd / 0.01) ** 2).mean() if is_sup else W_SEC * (((sd / 0.03) ** 2) * near).mean())
+        if pen_t is not None:
+            idx, P, N = pen_t
+            sd = ((X[idx] - P) * N).sum(-1)
+            loss = loss + W_PEN * ((torch.relu(-sd - 0.005) / 0.01) ** 2).mean() * len(idx) / 300
+        ga = group_angles_t(torch, K0, K)
+        for g, a in ga.items():
+            loss = loss + W_LIM * (torch.relu(a - lim[g] * 0.95) * 180 / math.pi).pow(2).sum()
+        loss = loss + W_PRIOR * ((delta / 0.17) ** 2).sum() + W_RIG * (((w / 0.05) ** 2).sum() + ((dt / 0.05) ** 2).sum())
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+    with torch.no_grad():
+        X, K = body(delta, w, dt)
+        ga = {g: float(a.max()) * 180 / math.pi for g, a in group_angles_t(torch, K0, K).items()}
+    groups_deg = {g: round(v, 1) for g, v in ga.items()}
+    limits_ok = all(ga[g] <= LIMITS_DEG[g] + 0.05 for g in ga)
+    info = {"iters": iters, "seconds": round(time.monotonic() - t0, 1), "groups_deg": groups_deg,
+            "limits_deg": LIMITS_DEG, "limits_ok": bool(limits_ok),
+            "max_joint_delta_deg": round(float(delta.detach().abs().max()) * 180 / math.pi, 1),
+            "rigid_deg": round(float(w.detach().norm()) * 180 / math.pi, 1),
+            "shift_cm": round(float(dt.detach().norm()) * 100, 1), "mhr_reproduction_err_mm": round(err * 1000, 2)}
+    log(f"[refine] группы {groups_deg} (лимиты {'ok' if limits_ok else 'превышены'}), {info['seconds']} с")
+    return X.cpu().numpy().astype(float), K.cpu().numpy().astype(float), info
+
+
+def main():
+    raise SystemExit("v2.4 (07.11f): refine выполняется внутри `run_v2.py place` (попытки по ячейкам зоны, лимиты "
+                     "по группам); отдельный запуск не нужен. refine_one — только для diag_seat.py (v2.3).")
 
 
 if __name__ == "__main__":

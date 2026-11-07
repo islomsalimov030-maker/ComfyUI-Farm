@@ -1,0 +1,194 @@
+{
+ "note": "3D-A v2.4 (07.11f): эталон ShotSpec 17 поз раунда, из таблицы pose_round_prompts.json; для проверки будущей VLM (source=vlm).",
+ "specs": [
+  {
+   "id": "Q01_stand_hand_face",
+   "pose_class": "stand",
+   "target_object": "floor",
+   "support_parts": [
+    "foot.L",
+    "foot.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q02_bed_cross_legs",
+   "pose_class": "sit_edge",
+   "target_object": "bed",
+   "support_parts": [
+    "pelvis"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q03_bed_kneel",
+   "pose_class": "kneel",
+   "target_object": "bed",
+   "support_parts": [
+    "knee.L",
+    "knee.R",
+    "shin.L",
+    "shin.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q04_bed_side_lie",
+   "pose_class": "lie",
+   "target_object": "bed",
+   "support_parts": [
+    "pelvis",
+    "elbow.L",
+    "thigh.L"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q05_crouch_shoelace",
+   "pose_class": "crouch",
+   "target_object": "floor",
+   "support_parts": [
+    "foot.L",
+    "foot.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q06_floor_hug_knees",
+   "pose_class": "sit_floor",
+   "target_object": "floor",
+   "support_parts": [
+    "pelvis",
+    "foot.L",
+    "foot.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q07_stretch_arms_up",
+   "pose_class": "stand",
+   "target_object": "floor",
+   "support_parts": [
+    "foot.L",
+    "foot.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q08_bed_recline_elbows",
+   "pose_class": "recline",
+   "target_object": "bed",
+   "support_parts": [
+    "pelvis",
+    "elbow.L",
+    "elbow.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q09_lean_wall",
+   "pose_class": "stand",
+   "target_object": "wall",
+   "support_parts": [
+    "hand.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q10_all_fours_cat",
+   "pose_class": "all_fours",
+   "target_object": "floor",
+   "support_parts": [
+    "hand.L",
+    "hand.R",
+    "knee.L",
+    "knee.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q11_bench_side_sit",
+   "pose_class": "sit_edge",
+   "target_object": "bench",
+   "support_parts": [
+    "pelvis"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "Q12_one_leg_ankle",
+   "pose_class": "stand",
+   "target_object": "floor",
+   "support_parts": [
+    "foot.L"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "T01_sofa_legs_tucked",
+   "pose_class": "sit_tucked",
+   "target_object": "bed",
+   "support_parts": [
+    "pelvis",
+    "shin.L"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "T02_kneel_lunge",
+   "pose_class": "kneel",
+   "target_object": "floor",
+   "support_parts": [
+    "knee.L",
+    "foot.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "T03_armchair_side_sit",
+   "pose_class": "recline",
+   "target_object": "bed",
+   "support_parts": [
+    "pelvis"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "T04_floor_sit_knees_up",
+   "pose_class": "sit_floor",
+   "target_object": "floor",
+   "support_parts": [
+    "pelvis",
+    "foot.L",
+    "foot.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  },
+  {
+   "id": "T05_barre_standing_split",
+   "pose_class": "stand",
+   "target_object": "wall",
+   "support_parts": [
+    "hand.R"
+   ],
+   "instance_hint": null,
+   "source": "table"
+  }
+ ]
+}

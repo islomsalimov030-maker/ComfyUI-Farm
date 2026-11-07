@@ -3,6 +3,8 @@
   python tools/scene3d/posev2/run_v2.py fit --refs <dir с *.ref.npz> [--only id1,id2]
   python tools/scene3d/posev2/run_v2.py render [--only ...]
   python tools/scene3d/posev2/run_v2.py summary
+  v2.4 (07.11f): profiles → черновики профилей локаций (height_proxy); place --refs … --comfy C:/work/ComfyUI-next
+  (посадка по shot_spec: Р1–Р5, refine внутри); sheet24 --refs-img … --refs … --out poses_v24.jpg (tools/rowsheet.py)
   python tools/scene3d/posev2/run_v2.py sheet --refs-img <папка рефов> --refs <папка npz> --out sheet.jpg
 Файлы: $FARM_ROOT/pose_round/V2/<id>/{body.obj, fit.json, overlay.jpg}, spec_m<N>.json;
 плейбласты: $FARM_COMFY/input/pose_V2_m<N>_s2/<id>/ — дальше pose_h3.py --picks V2/<id> как для A/B/C.
@@ -23,6 +25,8 @@ import pose_round as pr  # noqa: E402
 import pose_fit as pf  # noqa: E402
 
 M = "V2"
+CHAR_ID = "stacy"
+DEFAULT_HEIGHT = 1.62          # рост манекена Стейси (м), пока нет characters/stacy/body.json
 PART = {"back": "torso", "elbow.L": "forearm.L", "elbow.R": "forearm.R"}
 
 
@@ -59,13 +63,87 @@ def do_fit(refs, only):
     print(f"[v2] fit: {len(rows)} поз", flush=True)
 
 
+def loc_id(n):
+    return f"mainroom{n}"
+
+
+def table_seed(p, plate):
+    """точка из таблицы: seat — поднятая точка сиденья (Plate.seat_point), feet — точка пола."""
+    return plate.seat_point(*p["seat"])[0] if "seat" in p else plate.pixel_point(*p["feet"])
+
+
+def do_profiles():
+    """Черновые профили локаций текущего прогона (reviewed=false) из height_proxy + правил зоны."""
+    import profiles as prof
+    import shot_spec as ss
+    import top_region as tr
+    for n in sorted({p["loc"] for p in pr.prompts()}):
+        plate = pf.Plate(pr.PLATE.format(n))
+        seeds = {}
+        for p in pr.prompts():
+            if p["loc"] != n:
+                continue
+            spec = ss.from_table(p)
+            if spec.target_object != "floor" and "seat" in p:
+                seeds.setdefault(spec.target_object, table_seed(p, plate))
+        f = prof.write_draft(loc_id(n), plate, seeds, DEFAULT_HEIGHT, root=farm_env.ROOT)
+        lp = prof.LocationProfile(f)
+        regs = [lp.region(o) for o in lp.data["objects"]]
+        tr.debug_overlay(plate, regs, f.parent / "overlay.jpg")
+        print(f"[v2.4] profile {loc_id(n)}: " + "; ".join(
+            f"{o['id']} h0 {o['h0']} {o['summary'].get('width_m')}×{o['summary'].get('depth_m')} м, "
+            f"спинка {o['summary'].get('backrest_pts')}, {o['flags']}" for o in lp.data["objects"])
+            + f"; якоря {[(a['id'], a['pose_classes']) for a in lp.data['anchors']]}", flush=True)
+
+
+def do_place(refs, only, comfy, iters):
+    import place
+    import profiles as prof
+    import shot_spec as ss
+    ctx = None
+    if comfy:
+        import refine
+        ctx = refine.load_ctx(comfy, iters=iters)
+    body = prof.load_body(CHAR_ID, farm_env.ROOT)
+    height = float(body["height_m"]) if body else DEFAULT_HEIGHT
+    plates, profs = {}, {}
+    root = pr.ROUND / M
+    for p in pr.prompts():
+        if only and p["id"] not in only:
+            continue
+        rf = Path(refs) / f"{p['id']}.ref.npz"
+        if not rf.is_file():
+            continue
+        spec = ss.from_table(p)
+        ref = pf.load_ref(rf)
+        ref["path"] = str(rf)
+        plate = plates.setdefault(p["loc"], pf.Plate(pr.PLATE.format(p["loc"])))
+        if p["loc"] not in profs:
+            profs[p["loc"]] = prof.LocationProfile.load(loc_id(p["loc"]), farm_env.ROOT)
+        seed = table_seed(p, plate)
+        res = place.place_pose(ref, plate, spec, seed, height, profile=profs[p["loc"]],
+                               body_src="profile" if body else "proxy",
+                               dims_override=body["body_dims"] if body else None, refine_ctx=ctx,
+                               log=lambda m: print(m, flush=True))
+        z = res["rep"].get("zone", {})
+        fh = pf.fit_input_hash(rf, plate.dir, {"spec": spec.to_dict(), "height": height, "zone": z.get("source"),
+                                               "cell": z.get("cell")})
+        place.write(root / p["id"], res, ref, plate, spec, fh)
+        r = res["rep"]
+        print(f"[v2.4] {p['id']}: {r['status']} target {spec.target_object} опора {r.get('support_object')}", flush=True)
+
+
 def do_render(only):
     root = pr.ROUND / M
     for n in (1, 2, 3):
         base = json.loads((pr.HERE / pr.BASE[n]).read_text(encoding="utf-8"))
         scenes = []
         for p in pr.prompts():
-            if p["loc"] != n or (only and p["id"] not in only) or not (root / p["id"] / "body.obj").is_file():
+            if p["loc"] != n or (only and p["id"] not in only):
+                continue
+            if not (root / p["id"] / "body.obj").is_file():          # no_target и т.п.: убрать старый плейбласт
+                import shutil
+                shutil.rmtree(pr.loc_dir(M, n) / p["id"], ignore_errors=True)
                 continue
             s = {"name": p["id"], "body_obj": str(root / p["id"] / "body.obj"), "action": p["action"],
                  "anchor": p["anchor"], "contacts": p["contacts"], "yaw": "camera"}
@@ -92,6 +170,7 @@ def do_render(only):
 
 
 def do_summary():
+    """v2.4 (п.9 Р5): shot_spec, body_dims, источники зоны/тела, support_object, ориентация, refine по группам, флаги."""
     root = pr.ROUND / M
     rows = []
     for p in pr.prompts():
@@ -99,19 +178,50 @@ def do_summary():
         if not f.is_file():
             continue
         r = json.loads(f.read_text(encoding="utf-8"))
-        rows.append({"id": p["id"], **{k: r[k] for k in ("status", "support", "support_gap_cm", "max_penetration_cm",
-                                                         "pen_verts_over_2cm", "balance_ok", "contacts_from",
-                                                         "angle_to_camera_deg", "camera_elevation_deg", "ref_plan")},
-                     "contacts": {k: v["gap_cm"] for k, v in r["contacts"].items()},
-                     "refine": {k: r["refine"][k] for k in ("max_joint_delta_deg", "n_joints_over_10deg", "before")}
-                     if "refine" in r else None})
-        x = rows[-1]
-        print(f"{x['id']:28} {x['status']:13} опора {x['support']} {x['support_gap_cm']:+.1f} см, "
-              f"прон. {x['max_penetration_cm']:.1f} см ({x['pen_verts_over_2cm']} в.), равн. {x['balance_ok']}, "
-              f"ракурс {x['angle_to_camera_deg']}, камера {x['camera_elevation_deg']}, конт. {x['contacts_from']}"
-              + (f", refine ≤{x['refine']['max_joint_delta_deg']}° (было {x['refine']['before']['status']})"
-                 if x["refine"] else ""))
+        z, o, rf = r.get("zone", {}), r.get("orient_check") or {}, r.get("refine") or {}
+        row = {"id": p["id"], "status": r["status"], "shot_spec": r.get("shot_spec"), "body_dims": r.get("body_dims"),
+               "body_source": r.get("body_source"), "zone_source": z.get("source"), "zone": {
+                   k: z.get(k) for k in ("object_id", "anchor_id", "via", "rule", "band_m", "cell", "attempt", "shift_m")},
+               "support_object": r.get("support_object"), "support_parts_on": r.get("support_parts_on"),
+               "support_gap_cm": r.get("support_gap_cm"), "back_gap_cm": r.get("back_gap_cm"),
+               "max_penetration_cm": r.get("max_penetration_cm"), "cells_ok": r.get("cells_ok"),
+               "orient_check": {k: o.get(k) for k in ("candidate", "reproj_err", "conflict", "after_fit", "after_refine")},
+               "refine_groups_deg": rf.get("groups_deg"), "refine_limits_ok": rf.get("limits_ok"),
+               "stage": r.get("stage"), "attempts": r.get("attempts"), "flags": r.get("flags", []),
+               "angle_to_camera_deg": r.get("angle_to_camera_deg")}
+        rows.append(row)
+        ss = row["shot_spec"] or {}
+        print(f"{p['id']:26} {row['status']:13} {ss.get('pose_class', ''):10} target {ss.get('target_object', ''):6} "
+              f"опора {row['support_object']} {row['support_gap_cm']} см прон {row['max_penetration_cm']} см | "
+              f"зона {row['zone_source']} яч.{z.get('attempt')} сдвиг {z.get('shift_m')} | "
+              f"ориент {o.get('candidate')} {o.get('reproj_err')} | refine {row['refine_groups_deg']} | {row['flags']}")
     (root / "summary.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding="utf-8")
+
+
+def do_sheet24(refs_img, refs, out):
+    """Лист v2.4 через tools/rowsheet.py: реф | реф с телом | посадка поверх фото | плейбласт."""
+    root = pr.ROUND / M
+    spec = []
+    for p in pr.prompts():
+        f = root / p["id"] / "fit.json"
+        if not f.is_file():
+            continue
+        r = json.loads(f.read_text(encoding="utf-8"))
+        ss = r.get("shot_spec") or {}
+        o = r.get("orient_check") or {}
+        rf = r.get("refine") or {}
+        lab = (f"{p['id']}  {r['status']}  {ss.get('pose_class')} → {ss.get('target_object')}  опора "
+               f"{r.get('support_object')} {r.get('support_gap_cm')} см  прон {r.get('max_penetration_cm')} см  "
+               f"зона {r.get('zone', {}).get('source')}  ориент {o.get('candidate')}  "
+               f"refine {rf.get('groups_deg') or '—'}  {','.join(r.get('flags', []))}")
+        pb = pr.loc_dir(M, p["loc"]) / p["id"] / "playblast.png"
+        spec.append({"label": lab, "cells": [
+            [str(Path(refs_img) / f"{p['id']}.png"), "реф"], [str(Path(refs) / f"{p['id']}.ref_check.jpg"), "реф + тело"],
+            [str(root / p["id"] / "overlay.jpg") if (root / p["id"] / "overlay.jpg").is_file() else None, "посадка"],
+            [str(pb) if pb.is_file() else None, "плейбласт"]]})
+    sp = root / "sheet24_spec.json"
+    sp.write_text(json.dumps(spec, indent=1, ensure_ascii=False), encoding="utf-8")
+    subprocess.run([sys.executable, str(HERE.parents[2] / "tools" / "rowsheet.py"), str(sp), "--out", out], check=True)
 
 
 def do_collect(conf, out):
@@ -187,7 +297,9 @@ def do_sheet(refs_img, refs, out):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("cmd", choices=["collect", "fit", "render", "summary", "sheet"])
+    ap.add_argument("cmd", choices=["collect", "fit", "render", "summary", "sheet", "profiles", "place", "sheet24"])
+    ap.add_argument("--comfy", default="", help="ComfyUI с SAM 3D Body (refine внутри place); пусто — без refine")
+    ap.add_argument("--iters", type=int, default=200)
     ap.add_argument("--refs")
     ap.add_argument("--refs-img")
     ap.add_argument("--confluence")
@@ -197,4 +309,6 @@ if __name__ == "__main__":
     only = set(x for x in a.only.split(",") if x)
     {"collect": lambda: do_collect(a.confluence, a.out), "fit": lambda: do_fit(a.refs, only),
      "render": lambda: do_render(only), "summary": do_summary,
-     "sheet": lambda: do_sheet(a.refs_img, a.refs, a.out)}[a.cmd]()
+     "sheet": lambda: do_sheet(a.refs_img, a.refs, a.out), "profiles": do_profiles,
+     "place": lambda: do_place(a.refs, only, a.comfy, a.iters),
+     "sheet24": lambda: do_sheet24(a.refs_img, a.refs, a.out)}[a.cmd]()
