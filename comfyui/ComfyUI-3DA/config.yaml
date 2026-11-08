@@ -1,0 +1,22 @@
+# Only orchestration here. Heavy dependencies stay in geometry_python's env.
+repo: C:/work/ComfyUI-Farm
+python: C:/work/ComfyUI-Farm/.venv/Scripts/python.exe
+geometry_python: C:/work/ComfyUI-next/venv/Scripts/python.exe
+comfy: C:/work/ComfyUI-next
+farm_root: C:/work/scene3d_work/farm
+blender: C:/Program Files/Blender Foundation/Blender 5.0/blender.exe
+mannequin: C:/work/scene3d_work/stacy_mannequin_162.blend
+cell_px: 16
+# New rooms require explicit prepared geometry metadata; no invented furniture.
+location_hints_by_id: {}
+location_asset_dirs:
+  mainroom1: C:/work/scene3d_work/plate/mainroom1
+  mainroom2: C:/work/scene3d_work/plate/mainroom2
+  mainroom3: C:/work/scene3d_work/plate/mainroom3
+prompt_context_by_location:
+  mainroom1:
+    room: the room in <Picture 1>
+    anchor: the bench seat reaches just below her knees
+  mainroom3:
+    room: the room in <Picture 1>
+    anchor: the bed is wider than she is tall

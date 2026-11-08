@@ -1,0 +1,2 @@
+# Usually already present in ComfyUI; no SAM/MoGe/scipy/blender here.
+PyYAML>=6.0

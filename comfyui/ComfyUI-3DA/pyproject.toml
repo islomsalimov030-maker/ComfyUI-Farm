@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-3da"
+version = "0.1.0"
+description = "Manual Scene3D placement bridge to the Next Genium farm CLI"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = ["PyYAML>=6.0"]
+
+[project.urls]
+Repository = "https://github.com/islomsalimov030-maker/ComfyUI-Farm"
+
+[tool.comfy]
+PublisherId = "islomsalimov030-maker"
+DisplayName = "3DA Manual Placement"

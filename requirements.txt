@@ -1,3 +1,7 @@
+# 3D-A CPU geometry/H3 reports, verified 2026-11-09c in the farm .venv.
+# Keep separate from plate/pose_eval_requirements.txt (isolated DWPose env).
+numpy==1.26.4
+scipy==1.14.1
 pyyaml>=6.0
 httpx>=0.27
 websockets>=12.0

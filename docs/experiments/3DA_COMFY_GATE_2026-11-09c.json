@@ -1,0 +1,65 @@
+{
+  "R": {
+    "prompt_id": "cc9a06cc-2ad0-4511-8595-884479c878ed",
+    "status": "success",
+    "node_commit": "38ade3f",
+    "recipe": "C:\\work\\scene3d_work\\farm\\pose_round\\h3_v26_9d\\Q04_G0.api.json",
+    "ssim": 0.9295150028511788,
+    "outside_ssim": 0.9295150028511788,
+    "composite_outside_ssim": 1.0,
+    "outside_pixels": 1032192,
+    "outside_changed_pixels": 0,
+    "threshold": null,
+    "cell_px": 16.0,
+    "latent_info": "denoise 1.00: 25 steps, sigmas 1.000, 0.997, 0.993, 0.989, 0.984, 0.980, 0.974, 0.969, 0.962, 0.955, 0.947, 0.939, 0.929, 0.917, 0.904, 0.889, 0.871, 0.850, 0.824, 0.791, 0.750, 0.696, 0.621, 0.511, 0.333, 0.000 | latent (1, 24, 2, 48, 84) | version 0.2.0; samples=[(1, 24, 2, 48, 84), (1, 32, 2, 8)]; target_frames=[0, 1]; reference_frames=[] (conditioning minimax_refs, not samples); cell_px=16; noise_mask=[(1, 24, 2, 48, 84), (1, 32, 2, 8)]",
+    "timestamps_ms": {
+      "execution_start": 1794173759292,
+      "execution_cached": 1794173759292,
+      "execution_success": 1794173773531
+    },
+    "elapsed_s": 14.239,
+    "passed": true
+  },
+  "G0": {
+    "prompt_id": "7f10a649-b55c-4a74-84ea-15ae7bcdfd76",
+    "status": "success",
+    "node_commit": "38ade3f",
+    "recipe": "C:\\work\\scene3d_work\\farm\\pose_round\\h3_v26_9d\\Q04_G0.api.json",
+    "ssim": 0.9295146793009375,
+    "outside_ssim": 0.9295146793009375,
+    "composite_outside_ssim": 1.0,
+    "outside_pixels": 1032192,
+    "outside_changed_pixels": 0,
+    "threshold": 0.9195150028511788,
+    "cell_px": 16.0,
+    "latent_info": "denoise 1.00: 25 steps, sigmas 1.000, 0.997, 0.993, 0.989, 0.984, 0.980, 0.974, 0.969, 0.962, 0.955, 0.947, 0.939, 0.929, 0.917, 0.904, 0.889, 0.871, 0.850, 0.824, 0.791, 0.750, 0.696, 0.621, 0.511, 0.333, 0.000 | latent (1, 24, 2, 48, 84) | version 0.2.0; samples=[(1, 24, 2, 48, 84), (1, 32, 2, 8)]; target_frames=[0, 1]; reference_frames=[] (conditioning minimax_refs, not samples); cell_px=16; noise_mask=[(1, 24, 2, 48, 84), (1, 32, 2, 8)]",
+    "timestamps_ms": {
+      "execution_start": 1794173814092,
+      "execution_cached": 1794173814092,
+      "execution_success": 1794173859721
+    },
+    "elapsed_s": 45.629,
+    "passed": true
+  },
+  "G1": {
+    "prompt_id": "8e2293d5-9e84-45b4-8ed0-892250497347",
+    "status": "success",
+    "node_commit": "38ade3f",
+    "recipe": "C:\\work\\scene3d_work\\farm\\pose_round\\h3_v26_9d\\Q04_G0.api.json",
+    "ssim": 0.7959774385967503,
+    "outside_ssim": 0.9244942954965049,
+    "composite_outside_ssim": 0.9999850052751141,
+    "outside_pixels": 693385,
+    "outside_changed_pixels": 0,
+    "threshold": 0.9195150028511788,
+    "cell_px": 16.0,
+    "latent_info": "denoise 1.00: 25 steps, sigmas 1.000, 0.997, 0.993, 0.989, 0.984, 0.980, 0.974, 0.969, 0.962, 0.955, 0.947, 0.939, 0.929, 0.917, 0.904, 0.889, 0.871, 0.850, 0.824, 0.791, 0.750, 0.696, 0.621, 0.511, 0.333, 0.000 | latent (1, 24, 2, 48, 84) | version 0.2.0; samples=[(1, 24, 2, 48, 84), (1, 32, 2, 8)]; target_frames=[0, 1]; reference_frames=[] (conditioning minimax_refs, not samples); cell_px=16; noise_mask=[(1, 24, 2, 48, 84), (1, 32, 2, 8)]",
+    "timestamps_ms": {
+      "execution_start": 1794173908535,
+      "execution_cached": 1794173908535,
+      "execution_success": 1794173954209
+    },
+    "elapsed_s": 45.674,
+    "passed": true
+  }
+}
