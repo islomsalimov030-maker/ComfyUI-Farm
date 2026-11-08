@@ -29,7 +29,9 @@ cell16px подтверждён LATENT1344/84; маска D1 построена 
 
 ## 2. Геометрия
 
-Выполнение2a–2e и перепрогон17 — результат будет дописан после завершения bounded runner. Legacy-профили mainroom1/3 не содержат full object mask или explicit footprint_bbox/footprint_polygon; summary bbox grown-top не выдаётся за полный след. По правилу задания **2c для этих профилей остановлен**, остальные пункты продолжаются с диагностикой dominant_top_unavailable.
+2a/2b/2d/2e реализованы и синтетически проверены; 2c поддерживает explicit bbox/polygon. Полный geometry suite:76 passed +18 subtests,1552.56с; отдельный актуальный fast subset39+18 OK, в geometry env39 unittest OK. Дополнительные CLI/nodes/workflow CPU tests47 OK (35+7+5). Исходные H3/report23+новый gate4+split2=29 OK, latent5 OK; полная совокупность **158 уникальных тестов OK** (77 geometry текущего состава,29 H3/report/gate/split,5 latent,35 CLI,7 nodes,5 workflow), где77=76 полного прохода + добавленный после его старта floor_hint в fast subset. Это отдельные наборы, не один pytest всего репо.
+
+Реальный runner17 с `--comfy C:/work/ComfyUI-next` (MHR refine), bounded1800с, завершился **exit124/timeout30мин**. Закончены только Q01/Q02/Q03:3ok, Q03 из wrong_surface→ok; Q04 не записан, остальные14 **stale/not rerun**. T01/T03 новых статусов нет. Автоматического продолжения missing нет. Сохранён backup V2_before_2ae_20261109_032636; исходные fit не уничтожены. После timeout проверено0 процессов run_v2.py, MHR GPU освобождён. Blender render завершённых Q01/Q02/Q03: exit0, OPTIX48spp. Лист обновляется с явной пометкой stale14; остальные14 не рендерились повторно. Legacy-профили mainroom1/3 не содержат full object mask или explicit footprint_bbox/footprint_polygon; summary bbox grown-top не выдаётся за полный след. По правилу задания **2c для этих профилей остановлен**, остальные пункты продолжаются с диагностикой dominant_top_unavailable.
 
 ## 3–4. Пак и воркфлоу
 
@@ -43,7 +45,7 @@ cell16px подтверждён LATENT1344/84; маска D1 построена 
 
 ## 5. Q04 / Q11
 
-Place/end-to-end ожидают освобождения локальной GPU от17. H3 на ПК запрещён; серверный запуск самого пака ждёт установки и разрешения. Split geometry→API H3 нельзя выдавать за end-to-end server пак.
+Первые реальные Place Q04/Q11 вернули корректный status=error до GPU: `No module named 'httpx'` в isolated `geometry_python -I`. Это выявило отличие от прежнего не-изолированного import preflight; в env Comfy ничего не ставилось. Генератор существующего step9 промпта вынесен в farm-python subprocess, isolated import/35 CLI tests OK. ПовторQ04 дошёл через fresh MoGe+SAM/cache и MHR placement до Blender, но вернул error `No module named PIL`: plain node env не содержит shell FARM_BPY_PKGS. Исправлено явным config.blender_pkgs=C:/work/venvs/blender_pkgs; новых packages не ставилось. Сохранённый fitQ04 этого вызова **contact_fail** (отдельно от прежнего stale17), не допущен к H3. Результат после окончательного bounded повтора будет записан ниже. H3 на ПК запрещён; серверный запуск самого пака ждёт установки и разрешения. Split geometry→API H3 нельзя выдавать за end-to-end server пак.
 
 ## 6. Лицензии / документация
 
@@ -51,4 +53,4 @@ README_RU.md пака содержит установку, поля, стату�
 
 ## Не завершено на момент промежуточной записи
 
-Финальные тесты/статусы17, PlaceQ04/Q11, server pack install и end-to-end, итоговые manual_Q04/manual_Q11, финальный commit/push — дописать по реальному исходу, не считать завершёнными заранее.
+Остальные14/17 поз не перепрогнаны (лимит30мин); D4 legacy stop2c; auto object/anchor prep новой комнаты отсутствует, явные hints обязательны. PlaceQ04/Q11 после prompt-fix, server pack install и end-to-end, итоговые manual_Q04/manual_Q11, финальный commit/push — дописать по реальному исходу, не считать завершёнными заранее.

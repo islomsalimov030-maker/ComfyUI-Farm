@@ -5,7 +5,7 @@
 ## Установка и запуск
 1. Клонировать `ComfyUI-Farm`, скопировать эту папку в `ComfyUI/custom_nodes/ComfyUI-3DA`; перезапустить ComfyUI. Пак вложен в репозиторий: установка всего farm-repo в Manager **не** регистрирует автоматически вложенные ноды.
 2. В отдельном farm venv поставить корневые requirements (NumPy1.26.4/SciPy1.14.1); существующий geometry env должен содержать ComfyUI с SAM3DBody/MoGe и уже скачанные модели. В env ComfyUI тяжёлые зависимости пака **не ставятся**. Blender устанавливается отдельно.
-3. Исправить `config.yaml`: `repo`, `python` farm venv, `geometry_python`, `comfy` (код и модели), `farm_root` (состояние), `blender`, `mannequin` (.blend). `cell_px:16` не менять. `location_asset_dirs` связывает старый профиль с отдельно лежащими `plate.json/plate_mesh.obj/plate_rgb.png/depth_loc.png`; без него они должны быть рядом с profile.json. Секреты в config не писать.
+3. Исправить `config.yaml`: `repo`, `python` farm venv, `geometry_python`, `comfy` (код и модели), `farm_root` (состояние), `blender`, `mannequin` (.blend), `blender_pkgs` (существующие Pillow-пакеты Blender; YAML — отдельный .blender_site). `cell_px:16` не менять. `location_asset_dirs` связывает старый профиль с отдельно лежащими `plate.json/plate_mesh.obj/plate_rgb.png/depth_loc.png`; без него они должны быть рядом с profile.json. Секреты в config не писать.
 4. Открыть `workflows/3DA_manual_v1.json`: выбрать плиту, SFW-реф персонажа и позы; настроить Location/Place Pose, Queue. H3 на малой локальной GPU не запускать. На сервере нужны пак, отдельный geometry env, Blender и доступные абсолютные пути; перенос этих компонентов требует согласования.
 
 ## Поля и результаты
@@ -20,7 +20,7 @@
 | partial | Проверить флаги контакта/спинки/p95; это не полная геометрическая приёмка |
 | no_target / wrong_surface | Проверить тип, instance_hint, якорь/след объекта |
 | contact_fail / out_of_frame | Исправить профиль/выбор позы; не ослаблять пороги |
-| error | Последние30 строк stderr в status; проверить пути, модели, metadata; таймаут10мин на вызов |
+| error | Последние30 строк stderr в status; проверить пути, модели, metadata; таймаут10мин на вызов с остановкой дерева worker/geometry/Blender |
 
 При error сами ноды не роняют граф: выходы-заглушки и пустой промпт **не являются результатом**. Не отправлять такой граф на H3 повторно без устранения причины. SAM кэш — SHA256 PNG позы; смена PNG меняет кэш. Геометрия профиля сохраняет свой raster, H3-карты1344×768. Рост1.62 взят из рефа; VLM и Character Prep отсутствуют. Установка/полный end-to-end и ограничения конкретного запуска — в `docs/experiments/3DA_COMFY_PACK_2026-11-09c.md`.
 

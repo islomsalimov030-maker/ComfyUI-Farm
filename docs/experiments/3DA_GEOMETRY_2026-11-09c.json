@@ -1,0 +1,226 @@
+{
+ "runner_exit": 124,
+ "completed": 3,
+ "stale": 14,
+ "rows": [
+  {
+   "id": "Q01_stand_hand_face",
+   "rerun_2ae": true,
+   "status": "ok",
+   "fit_mtime": "2026-11-09T03:28:43.709959",
+   "stage": "fit",
+   "target_instance": "floor_1",
+   "support_object": "floor_1",
+   "flags": [],
+   "top_definition": {}
+  },
+  {
+   "id": "Q02_bed_cross_legs",
+   "rerun_2ae": true,
+   "status": "ok",
+   "fit_mtime": "2026-11-09T03:35:59.768064",
+   "stage": "fit",
+   "target_instance": "bed_1",
+   "support_object": "bed_1",
+   "flags": [
+    "dominant_top_unavailable",
+    "orient_conflict"
+   ],
+   "top_definition": {
+    "method": "blocked",
+    "reason": "stop2c: legacy profile has no explicit object footprint bbox/polygon or full object mask"
+   }
+  },
+  {
+   "id": "Q03_bed_kneel",
+   "rerun_2ae": true,
+   "status": "ok",
+   "fit_mtime": "2026-11-09T03:49:42.150761",
+   "stage": "refine",
+   "target_instance": "bed_1",
+   "support_object": "bed_1",
+   "flags": [
+    "dominant_top_unavailable"
+   ],
+   "top_definition": {
+    "method": "blocked",
+    "reason": "stop2c: legacy profile has no explicit object footprint bbox/polygon or full object mask"
+   }
+  },
+  {
+   "id": "Q04_bed_side_lie",
+   "rerun_2ae": false,
+   "status": "partial",
+   "fit_mtime": "2026-11-08T23:16:24.163844",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "other",
+   "flags": [
+    "height_conflict",
+    "orient_clamped:50.9"
+   ],
+   "top_definition": null
+  },
+  {
+   "id": "Q05_crouch_shoelace",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-09T01:27:08.874236",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [
+    "support_gap"
+   ],
+   "top_definition": {}
+  },
+  {
+   "id": "Q06_floor_hug_knees",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:21:39.361957",
+   "stage": "refine",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [],
+   "top_definition": null
+  },
+  {
+   "id": "Q07_stretch_arms_up",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:21:44.841357",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [],
+   "top_definition": null
+  },
+  {
+   "id": "Q08_bed_recline_elbows",
+   "rerun_2ae": false,
+   "status": "partial",
+   "fit_mtime": "2026-11-08T23:22:34.583961",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "other",
+   "flags": [
+    "no_back_contact",
+    "orient_conflict"
+   ],
+   "top_definition": null
+  },
+  {
+   "id": "Q09_lean_wall",
+   "rerun_2ae": false,
+   "status": "partial",
+   "fit_mtime": "2026-11-08T23:26:33.581163",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "other",
+   "flags": [
+    "height_conflict",
+    "orient_conflict"
+   ],
+   "top_definition": null
+  },
+  {
+   "id": "Q10_all_fours_cat",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:26:44.673893",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [],
+   "top_definition": null
+  },
+  {
+   "id": "Q11_bench_side_sit",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:27:21.684787",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "bench",
+   "flags": [],
+   "top_definition": null
+  },
+  {
+   "id": "Q12_one_leg_ankle",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:27:34.151411",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [
+    "table_side_mismatch"
+   ],
+   "top_definition": null
+  },
+  {
+   "id": "T01_sofa_legs_tucked",
+   "rerun_2ae": false,
+   "status": "wrong_surface",
+   "fit_mtime": "2026-11-08T23:36:50.522335",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "other",
+   "flags": [
+    "orient_clamped:21.1"
+   ],
+   "top_definition": null
+  },
+  {
+   "id": "T02_kneel_lunge",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:49:32.452655",
+   "stage": "refine",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [],
+   "top_definition": null
+  },
+  {
+   "id": "T03_armchair_side_sit",
+   "rerun_2ae": false,
+   "status": "partial",
+   "fit_mtime": "2026-11-08T23:50:55.943013",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "other",
+   "flags": [
+    "no_back_contact",
+    "orient_clamped:13.9"
+   ],
+   "top_definition": null
+  },
+  {
+   "id": "T04_floor_sit_knees_up",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-08T23:50:59.719461",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [],
+   "top_definition": null
+  },
+  {
+   "id": "T05_barre_standing_split",
+   "rerun_2ae": false,
+   "status": "ok",
+   "fit_mtime": "2026-11-09T00:07:43.639410",
+   "stage": "fit",
+   "target_instance": null,
+   "support_object": "floor",
+   "flags": [
+    "orient_clamped:46.1",
+    "table_side_mismatch"
+   ],
+   "top_definition": null
+  }
+ ]
+}

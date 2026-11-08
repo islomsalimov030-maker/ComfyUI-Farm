@@ -4,10 +4,8 @@ NOT an end-to-end test of server-installed 3DA nodes. Never runs for error or
 rejected geometry. One submission per shot, saved state prevents blind retries.
 """
 import argparse
-import copy
 import json
 from pathlib import Path
-import time
 
 import numpy as np
 from PIL import Image

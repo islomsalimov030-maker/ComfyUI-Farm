@@ -7,7 +7,6 @@ requires --execute-gpu; any failed gate blocks every later stage.
 import argparse
 import copy
 import json
-import time
 from pathlib import Path
 
 import numpy as np

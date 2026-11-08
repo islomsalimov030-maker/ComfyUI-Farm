@@ -297,6 +297,20 @@ def seed_for(profile, spec, config):
 
 
 def prompt_for(profile, config, fit):
+    """Keep step-9/httpx imports in the farm venv, never the geometry venv."""
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="3da-prompt-") as temp:
+        request_path, output_path = Path(temp) / "request.json", Path(temp) / "result.json"
+        save_json(request_path, {"config": config, "profile_data": profile.data, "fit": fit})
+        run_stage([config["python"], "-I", Path(__file__).resolve(), "place", "--request", request_path,
+                   "--output", output_path, "--prompt-worker"], "step9 prompt")
+        result = read_json(required_file(output_path, "step9 prompt result"))
+        if result.get("status") == "error":
+            raise StageError(result.get("error", "step9 prompt failed"), result.get("stderr_tail", ""))
+        return result["h3_prompt"]
+
+
+def prompt_direct(profile, config, fit):
     import table_round
     import pose_h3_v26
     context = dict(profile.data.get("prompt_context", {}))
@@ -433,6 +447,8 @@ def do_place(request, config):
     stage = time.monotonic()
     env = os.environ.copy()
     env.setdefault("SCENE3D_BLENDER_SITE", str(REPO / ".blender_site"))
+    if config.get("blender_pkgs"):
+        env["FARM_BPY_PKGS"] = config["blender_pkgs"]
     run_stage([config["blender"], "-b", "--python-exit-code", "1", "--python",
                HERE / "plate/render_plate_scene.py", "--", "--plate", plate_dir, "--spec", job / "render_spec.json",
                "--mannequin", mannequin, "--out", job / "render", "--label-pass", "--photo-emission", "2.5",
@@ -461,11 +477,17 @@ def main(argv=None):
     parser.add_argument("--output", required=True)
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--geometry-worker", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--prompt-worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     try:
         request = read_json(args.request)
         config = config_for(request)
-        if args.geometry_worker or (args.worker and args.command == "location"):
+        if args.prompt_worker:
+            from types import SimpleNamespace
+            modules(config)
+            text = prompt_direct(SimpleNamespace(data=request["profile_data"]), config, request["fit"])
+            result = {"status": "ok", "h3_prompt": text}
+        elif args.geometry_worker or (args.worker and args.command == "location"):
             result = (do_location if args.command == "location" else do_place)(request, config)
         else:
             # Node -> farm Python -> geometry Python for place+refine. Never import

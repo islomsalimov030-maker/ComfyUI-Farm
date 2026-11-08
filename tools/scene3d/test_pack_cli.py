@@ -314,7 +314,7 @@ def test_real_step9_prompt_generator_without_table(tmp_path, monkeypatch):
     monkeypatch.setattr(pose_round, "prompts", lambda: pytest.fail("must not read the 17-pose table"))
     cfg["prompt_context_by_location"] = {"room": {"anchor": "the bed reaches her knees"}}
     fit = {"shot_spec": {"pose_class": "kneel", "target_object": "bed", "secondary_contacts": []}}
-    text = cli.prompt_for(Profile(), cfg, fit)
+    text = cli.prompt_direct(Profile(), cfg, fit)
     assert "She kneels" in text
     assert "<Video 1>" in text
     assert "\nThe lighting is preserved unchanged throughout.\n" in text
@@ -322,7 +322,27 @@ def test_real_step9_prompt_generator_without_table(tmp_path, monkeypatch):
     assert "studio" not in text.lower()
     assert "locked-off" in text
     with pytest.raises(ValueError, match="scale anchor missing"):
-        cli.prompt_for(Profile(), config(tmp_path), fit)
+        cli.prompt_direct(Profile(), config(tmp_path), fit)
+
+
+def test_prompt_subprocess_uses_isolated_farm_python(tmp_path, monkeypatch):
+    cfg = config(tmp_path)
+    def run(command, stage, **kwargs):
+        assert command[0] == cfg["python"]
+        assert command[1] == "-I"
+        assert "--prompt-worker" in command
+        request = cli.read_json(command[command.index("--request") + 1])
+        assert request["profile_data"]["loc_id"] == "room"
+        cli.save_json(command[command.index("--output") + 1], {"status": "ok", "h3_prompt": "existing-generator"})
+    monkeypatch.setattr(cli, "run_stage", run)
+    assert cli.prompt_for(Profile(), cfg, {"shot_spec": {}}) == "existing-generator"
+
+
+def test_real_isolated_prompt_roundtrip(tmp_path):
+    cfg = config(tmp_path)
+    cfg["prompt_context_by_location"] = {"room": {"anchor": "the bed reaches her knees"}}
+    fit = {"shot_spec": {"pose_class": "kneel", "target_object": "bed", "secondary_contacts": []}}
+    assert "She kneels" in cli.prompt_for(Profile(), cfg, fit)
 
 
 def test_main_error_json_replaces_stale_success(tmp_path):
@@ -353,7 +373,7 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
     mannequin = tmp_path / "mannequin.blend"
     mannequin.write_bytes(b"fixture")
     cfg = config(tmp_path)
-    cfg.update(blender="blender-fixture", mannequin=str(mannequin))
+    cfg.update(blender="blender-fixture", mannequin=str(mannequin), blender_pkgs="Pillow-fixture")
     events = []
     profile = Profile()
     pf = SimpleNamespace(
@@ -389,6 +409,7 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
             (out / "pose.ref.npz").write_bytes(b"mesh-fixture")
         else:
             assert command[0] == "blender-fixture"
+            assert kw['env']['FARM_BPY_PKGS'] == 'Pillow-fixture'
             assert "render_plate_scene.py" in str(command)
             out = Path(command[command.index("--out") + 1]) / "pose"
             out.mkdir(parents=True)

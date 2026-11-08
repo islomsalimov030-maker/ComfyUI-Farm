@@ -5,6 +5,7 @@ geometry_python: C:/work/ComfyUI-next/venv/Scripts/python.exe
 comfy: C:/work/ComfyUI-next
 farm_root: C:/work/scene3d_work/farm
 blender: C:/Program Files/Blender Foundation/Blender 5.0/blender.exe
+blender_pkgs: C:/work/venvs/blender_pkgs
 mannequin: C:/work/scene3d_work/stacy_mannequin_162.blend
 cell_px: 16
 # New rooms require explicit prepared geometry metadata; no invented furniture.
