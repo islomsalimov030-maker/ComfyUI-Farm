@@ -1,0 +1,55 @@
+{
+  "mode": "local CLI geometry; server pack not installed, H3 withheld for rejected geometry",
+  "Q11": {
+    "status": "wrong_surface",
+    "timings": {
+      "reference_s": 14.812,
+      "placement_s": 367.312,
+      "render_s": 6.969,
+      "maps_s": 0.546,
+      "total_s": 391.593
+    },
+    "target_instance": "bench_1",
+    "support_object": "other",
+    "flags": [
+      "dominant_top_unavailable",
+      "height_conflict"
+    ],
+    "first_failure": {
+      "check": "support_target",
+      "ok": false,
+      "excess": 1.0,
+      "unit": "surface"
+    },
+    "h3": "not run",
+    "outside_composite_ssim": null
+  },
+  "initial_errors": {
+    "Q04": "isolated geometry import httpx, then Blender PIL path; both fixed without installs",
+    "Q11": "isolated geometry import httpx; fixed via farm prompt worker"
+  },
+  "Q04": {
+    "status": "contact_fail",
+    "timings": {
+      "reference_s": 0.047,
+      "placement_s": 375.39,
+      "render_s": 7.203,
+      "maps_s": 0.531,
+      "total_s": 385.141
+    },
+    "target_instance": "bed_1",
+    "support_object": "bed_1",
+    "flags": [
+      "dominant_top_unavailable",
+      "orient_clamped:50.9"
+    ],
+    "first_failure": {
+      "check": "support_gap:thigh.R",
+      "ok": false,
+      "excess": 0.007960298058300869,
+      "unit": "m"
+    },
+    "h3": "not run",
+    "outside_composite_ssim": null
+  }
+}
