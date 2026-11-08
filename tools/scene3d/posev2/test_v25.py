@@ -90,7 +90,10 @@ class LieFootprint(unittest.TestCase):
         tried = [a["lie_yaw_add"] for a in rep["attempts"]]
         self.assertTrue(rep["footprint"]["checked"])
         if rep["footprint"]["ok"]:
-            self.assertNotEqual(rep["orient"]["lie_yaw_add_deg"], 0)       # влез только после поворота
+            # D1: footprint is now the support_parts hull (pelvis here), not the whole low body.
+            # It may fit at zero yaw; acceptance must use measured area fraction.
+            self.assertGreaterEqual(rep["footprint"]["support_hull"]["in_mask_fraction"],
+                                    place.CFG["hull_in_mask_min"])
         else:
             self.assertTrue(any(t != 0 for t in tried) or rep["footprint"]["n_out"] > 0)
         self.assertLessEqual(abs(rep["orient"]["lie_yaw_add_deg"]), 90)

@@ -94,7 +94,14 @@ class LocationProfile:
         return None, None
 
     def region(self, obj):
-        return tr.load_npz(self.dir / obj["top_grid_npz"], source="profile")
+        reg = tr.load_npz(self.dir / obj["top_grid_npz"], source="profile")
+        reg.object_id = obj["id"]
+        if obj.get("type") != "floor" and reg.object_mask is None:
+            reg.top_diagnostics = {"method": "blocked", "reason":
+                "legacy profile has only grown top mask, no full object mask; regenerate with object_masks"}
+            if "dominant_top_unavailable" not in reg.flags:
+                reg.flags.append("dominant_top_unavailable")
+        return reg
 
     def anchor(self, obj_id, pose_class):
         for a in self.data["anchors"]:

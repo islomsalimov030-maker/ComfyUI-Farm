@@ -17,6 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "plate"))
@@ -67,6 +69,25 @@ def loc_id(n):
     return f"mainroom{n}"
 
 
+def geometry_asset_hashes(plate):
+    import hashlib
+    return {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted((plate.dir / "object_masks").glob("*.npz"))}
+
+
+def attach_geometry_assets(plate):
+    """Optional authoritative XY object masks, aligned with top_region._grid.
+
+    <plate>/object_masks/<target>.npz: mask(bool), origin(2). Never infer one
+    from the existing height-grown top: it has already discarded pillows.
+    """
+    plate.object_masks = {}
+    for path in sorted((plate.dir / "object_masks").glob("*.npz")):
+        with np.load(path, allow_pickle=False) as data:
+            plate.object_masks[path.stem] = {"mask": data["mask"].astype(bool), "origin": data["origin"]}
+    return plate
+
+
 def table_seed(p, plate):
     """точка из таблицы: seat — поднятая точка сиденья (Plate.seat_point), feet — точка пола."""
     return plate.seat_point(*p["seat"])[0] if "seat" in p else plate.pixel_point(*p["feet"])
@@ -78,7 +99,7 @@ def do_profiles():
     import shot_spec as ss
     import top_region as tr
     for n in sorted({p["loc"] for p in pr.prompts()}):
-        plate = pf.Plate(pr.PLATE.format(n))
+        plate = attach_geometry_assets(pf.Plate(pr.PLATE.format(n)))
         seeds = {}
         for p in pr.prompts():
             if p["loc"] != n:
@@ -117,7 +138,13 @@ def do_place(refs, only, comfy, iters):
         spec = ss.from_table(p)
         ref = pf.load_ref(rf)
         ref["path"] = str(rf)
-        plate = plates.setdefault(p["loc"], pf.Plate(pr.PLATE.format(p["loc"])))
+        anatomy = os.environ.get("SCENE3D_BODY_ANATOMY")
+        if anatomy:
+            ref["body_model_path"] = anatomy
+            ref["body_cache_dir"] = str(farm_env.ROOT / "characters" / CHAR_ID / "geometry_cache")
+        if p["loc"] not in plates:
+            plates[p["loc"]] = attach_geometry_assets(pf.Plate(pr.PLATE.format(p["loc"])))
+        plate = plates[p["loc"]]
         if p["loc"] not in profs:
             profs[p["loc"]] = prof.LocationProfile.load(loc_id(p["loc"]), farm_env.ROOT)
         seed = table_seed(p, plate)
@@ -127,10 +154,88 @@ def do_place(refs, only, comfy, iters):
                                log=lambda m: print(m, flush=True))
         z = res["rep"].get("zone", {})
         fh = pf.fit_input_hash(rf, plate.dir, {"spec": spec.to_dict(), "height": height, "zone": z.get("source"),
-                                               "cell": z.get("cell")})
+                                               "cell": z.get("cell"),
+                                               "placement_config_sha256": __import__("hashlib").sha256(
+                                                   __import__("placement_config").CONFIG_PATH.read_bytes()).hexdigest(),
+                                               "anatomy_sha256": __import__("hashlib").sha256(Path(anatomy).read_bytes()).hexdigest()
+                                                   if anatomy else None,
+                                               "object_mask_sha256": geometry_asset_hashes(plate),
+                                               "profile_sha256": __import__("hashlib").sha256(profs[p["loc"]].path.read_bytes()).hexdigest()
+                                                   if profs[p["loc"]] is not None else None,
+                                               "top_definition": res["rep"].get("zone_diagnostics", {}).get("top_definition")})
         place.write(root / p["id"], res, ref, plate, spec, fh)
         r = res["rep"]
         print(f"[v2.5] {p['id']}: {r['status']} target {spec.target_object} опора {r.get('support_object')}", flush=True)
+
+
+def do_diagnostics(refs, only, out):
+    """E, read-only geometry of saved placements. Never fit/refine/render or modify fit.json."""
+    import place
+    import profiles as prof
+    import shot_spec as ss
+    from body import regions
+    results = []
+    plates, profs = {}, {}
+    for p in pr.prompts():
+        if only and p["id"] not in only:
+            continue
+        d = pr.ROUND / M / p["id"]
+        rf = Path(refs) / (p["id"] + ".ref.npz")
+        required = [rf, d / "body.obj", d / "label_joints.npz", d / "fit_state.npz", d / "fit.json"]
+        missing = [str(f) for f in required if not f.is_file()]
+        if missing:
+            results.append({"id": p["id"], "blocked": "missing saved geometry", "missing": missing})
+            continue
+        ref = pf.load_ref(rf)
+        X, faces = pf.load_obj_mesh(d / "body.obj")
+        if len(X) != len(ref["V"]) or not np.array_equal(faces, ref["F"]):
+            results.append({"id": p["id"], "blocked": "saved body/ref topology mismatch"})
+            continue
+        with np.load(d / "label_joints.npz", allow_pickle=False) as data:
+            KP = data["kp"]
+        report = json.loads((d / "fit.json").read_text(encoding="utf-8"))
+        spec = ss.ShotSpec.load(d / "shot_spec.json") if (d / "shot_spec.json").is_file() else ss.from_table(p)
+        if p["loc"] not in plates:
+            plates[p["loc"]] = pf.Plate(pr.PLATE.format(p["loc"]))
+            profs[p["loc"]] = prof.LocationProfile.load(loc_id(p["loc"]), farm_env.ROOT)
+        plate, profile = plates[p["loc"]], profs[p["loc"]]
+        if profile is None:
+            results.append({"id": p["id"], "blocked": "missing location profile"})
+            continue
+        treg, freg, _, obj = place.resolve_regions(plate, spec, table_seed(p, plate), DEFAULT_HEIGHT, profile)
+        if treg is None:
+            results.append({"id": p["id"], "blocked": "missing target region"})
+            continue
+        treg = place.tr.pose_region(treg, spec.pose_class)
+        treg.wall_planes = profile.walls()
+        treg.diagnostic_surfaces = [{"id": o["id"], "soft": bool(o.get("soft", False)),
+                                     "region": profile.region(o)} for o in profile.data["objects"]
+                                    if "top_grid_npz" in o]
+        groups = []
+        with np.load(d / "fit_state.npz", allow_pickle=False) as state:
+            for desc in state["groups"]:
+                name, surf, role = str(desc).split(":")
+                groups.append((name, state["g_" + name], surf, role))
+        B = {"reg": regions(ref["V"], ref["kp"])}
+        if spec.pose_class == "kneel":
+            oriented = place.orient_body(place.prepare_body(ref, spec, report.get("height_m", DEFAULT_HEIGHT)), spec)
+            selected, _, _ = place.build_groups(oriented, spec, treg, oriented["dims"]["H"], False)
+            selection = place.zone_diagnostics(oriented, spec, treg, selected)
+        else:
+            selection = report.get("zone_diagnostics", {})
+        S = place.build_surfaces(plate, treg, freg)
+        measured = place.geometry_diagnostics(X, KP, B, spec, treg, groups, S, plate, bool(obj.get("soft")))
+        results.append({"id": p["id"], "target_object": spec.target_object,
+                        "saved_status": report["status"], "source": "saved placement, NOT a step9d rerun",
+                        "fit_hash": report.get("fit_hash"),
+                        "selection": selection, **measured})
+    text = json.dumps(results, ensure_ascii=False, indent=1)
+    if out:
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_text(text, encoding="utf-8")
+    else:
+        print(text)
+    return results
 
 
 def do_render(only):
@@ -322,7 +427,7 @@ def do_sheet(refs_img, refs, out):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("cmd", choices=["collect", "fit", "render", "summary", "sheet", "profiles", "place", "sheet24"])
+    ap.add_argument("cmd", choices=["collect", "fit", "render", "summary", "sheet", "profiles", "place", "sheet24", "diagnostics"])
     ap.add_argument("--comfy", default="", help="ComfyUI с SAM 3D Body (refine внутри place); пусто — без refine")
     from placement_config import section
     ap.add_argument("--iters", type=int, default=section("refine")["iters"])
@@ -337,4 +442,5 @@ if __name__ == "__main__":
      "render": lambda: do_render(only), "summary": do_summary,
      "sheet": lambda: do_sheet(a.refs_img, a.refs, a.out), "profiles": do_profiles,
      "place": lambda: do_place(a.refs, only, a.comfy, a.iters),
+     "diagnostics": lambda: do_diagnostics(a.refs, only, a.out),
      "sheet24": lambda: do_sheet24(a.refs_img, a.refs, a.out)}[a.cmd]()

@@ -7,6 +7,7 @@ SAM 3 / профиль локации. Мир плиты: Z вверх, сетк
 """
 from collections import deque
 from dataclasses import dataclass, field
+import json
 
 import numpy as np
 from scipy import ndimage
@@ -41,6 +42,10 @@ class TopRegion:
     backrest: np.ndarray = None   # точки спинки (N, 3) или None
     flags: list = field(default_factory=list)
     backrest_n: np.ndarray = None  # нормали точек спинки (к камере)
+    raised_mask: np.ndarray = None  # D4: all cells > dominant top + 8 cm
+    soft_backrest_mask: np.ndarray = None  # raised components adjoining a wall
+    object_mask: np.ndarray = None  # authoritative full object footprint, not a height-grown top
+    top_diagnostics: dict = field(default_factory=dict)
 
     # ---- координаты
     def cell_of(self, xy):
@@ -207,6 +212,64 @@ def _floor_seed(Hg):
     return None, None
 
 
+def dominant_top(height, object_mask, origin, wall_planes):
+    """D4. Histogram counts equal-area cells, not mesh samples. Raised non-wall areas stay excluded."""
+    valid = np.asarray(object_mask, bool) & np.isfinite(height)
+    if not valid.any():
+        raise ValueError("dominant_top: empty object mask / height samples")
+    width = CFG["dominant_bin_m"]
+    # Anchored metric bins; median in winning bin defines the plane, not the bin edge.
+    bins = np.floor(height[valid] / width).astype(np.int64)
+    ids, counts = np.unique(bins, return_counts=True)
+    winner = ids[np.argmax(counts)]
+    h0 = float(np.median(height[valid][bins == winner]))
+    raised = valid & (height > h0 + CFG["raised_top_m"])
+    soft_back = np.zeros(height.shape, bool)
+    lab, count = ndimage.label(raised)
+    for k in range(1, count + 1):
+        ij = np.argwhere(lab == k)
+        xy = origin + (ij + .5) * CELL
+        P = np.column_stack([xy, height[ij[:, 0], ij[:, 1]]])
+        if any(np.any(np.abs(P @ np.asarray(w["n"]) + w["d"]) <=
+                      CFG["backrest_wall_adjoin_m"]) for w in wall_planes):
+            soft_back[lab == k] = True
+    mask = valid & ~raised
+    dt = ndimage.distance_transform_edt(np.pad(mask, 1))[1:-1, 1:-1] * CELL
+    return h0, mask, dt, raised, soft_back
+
+
+def apply_dominant_top(reg, object_mask, wall_planes):
+    h0, mask, dt, raised, soft_back = dominant_top(reg.height, object_mask, reg.origin, wall_planes)
+    reg.h0, reg.mask, reg.dt = h0, mask, dt
+    reg.height = reg.height.copy()
+    reg.height[mask] = h0  # approved dominant-height plane, not local maxima
+    reg.object_mask = np.asarray(object_mask, bool).copy()
+    reg.raised_mask, reg.soft_backrest_mask = raised, soft_back
+    reg.top_diagnostics = {"method": "dominant_height", "bin_m": CFG["dominant_bin_m"],
+                           "raised_cells": int(raised.sum()), "soft_backrest_cells": int(soft_back.sum())}
+    if soft_back.any():
+        ij = np.argwhere(soft_back)
+        P = np.column_stack([reg.origin + (ij + .5) * CELL, reg.height[soft_back]])
+        N = np.column_stack([reg.cam_xy - P[:, :2], np.zeros(len(P))])
+        N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), np.finfo(float).tiny)
+        reg.backrest = P if reg.backrest is None else np.concatenate([reg.backrest, P])
+        reg.backrest_n = N if reg.backrest_n is None else np.concatenate([reg.backrest_n, N])
+    return reg
+
+
+def pose_region(reg, pose_class):
+    """Only kneel/lie/tucked lose the 5cm strip next to the approved soft backrest."""
+    from dataclasses import replace
+    if pose_class not in ("kneel", "lie", "sit_tucked") or getattr(reg, "soft_backrest_mask", None) is None:
+        return reg
+    mask = reg.mask.copy()
+    if reg.soft_backrest_mask.any():
+        distance = ndimage.distance_transform_edt(~reg.soft_backrest_mask) * CELL
+        mask &= distance > CFG["backrest_margin_m"]
+    dt = ndimage.distance_transform_edt(np.pad(mask, 1))[1:-1, 1:-1] * CELL
+    return replace(reg, mask=mask, dt=dt)
+
+
 def height_proxy(plate, target_object, seed, H):
     origin, shape, Hg = _grid(plate)
     flags = []
@@ -237,6 +300,15 @@ def height_proxy(plate, target_object, seed, H):
     reg = TopRegion(target_object, "height_proxy", origin, shape, Hg, mask, dt, h0, sc, plate.C[:2].copy(), None, flags)
     if target_object != "floor" and mask.any():
         reg.backrest, reg.backrest_n = _backrest(plate, reg, H)
+        asset = getattr(plate, "object_masks", {}).get(target_object)
+        if asset is None:
+            reg.top_diagnostics = {"method": "blocked", "reason":
+                                   "missing full object mask; height-grown top cannot substitute for object mask"}
+            reg.flags.append("dominant_top_unavailable")
+        else:
+            if asset["mask"].shape != shape or not np.allclose(asset["origin"], origin):
+                raise ValueError("object mask must match height_proxy grid shape/origin")
+            reg = apply_dominant_top(reg, asset["mask"], walls(plate))
     return reg
 
 
@@ -368,7 +440,10 @@ def save_npz(reg, path):
                         seed_cell=np.array(reg.seed_cell), cam_xy=reg.cam_xy, target_object=reg.target_object,
                         source=reg.source, flags=np.array(reg.flags, dtype=object),
                         backrest=np.zeros((0, 3)) if reg.backrest is None else reg.backrest,
-                        backrest_n=np.zeros((0, 3)) if reg.backrest_n is None else reg.backrest_n)
+                        backrest_n=np.zeros((0, 3)) if reg.backrest_n is None else reg.backrest_n,
+                        **{k: getattr(reg, k) for k in ("object_mask", "raised_mask", "soft_backrest_mask")
+                           if getattr(reg, k) is not None},
+                        top_diagnostics=np.array(json.dumps(reg.top_diagnostics)))
 
 
 def load_npz(path, source="profile"):
@@ -376,7 +451,9 @@ def load_npz(path, source="profile"):
     br = d["backrest"]
     return TopRegion(str(d["target_object"]), source, d["origin"], tuple(d["mask"].shape), d["height"], d["mask"],
                      d["dt"], float(d["h0"]), tuple(int(x) for x in d["seed_cell"]), d["cam_xy"],
-                     br if len(br) else None, [str(x) for x in d["flags"]], d["backrest_n"] if len(br) else None)
+                     br if len(br) else None, [str(x) for x in d["flags"]], d["backrest_n"] if len(br) else None,
+                     **{k: d[k] for k in ("object_mask", "raised_mask", "soft_backrest_mask") if k in d},
+                     top_diagnostics=json.loads(str(d["top_diagnostics"])) if "top_diagnostics" in d else {})
 
 
 def mask_png(reg, path):

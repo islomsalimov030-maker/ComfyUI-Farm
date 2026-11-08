@@ -52,6 +52,8 @@
 
 - 2026-11-08c · 3D-A H3 G0: существующая `H3LatentFromImage` при denoise≥.999 возвращает исходный latent до VAE.encode init (`__init__.py:59–60`), info не содержит shape; реальный Q04 G0 с zero noise_mask дал SSIM фона .56666, дальнейший D остановлен. Серверная ревизия отдельно не сверена, info совпадает с этой веткой. [Исходник ноды](https://github.com/islomsalimov030-maker/h3_img2img_latent/blob/main/__init__.py).
 
+- 2026-11-09a · 3D-A: A1 проверен `astropuzzo/ComfyUI-MiniMax-H3-Image-Studio` 9834e55, Unlicense (коммерция разрешена): source encode идёт в keyframe/reference conditioning, не target AV init; нужной готовой ноды не найдено. Своя MIT `h3_img2img_latent` v0.2.0 7009c37 (branch fix/always-encode-mask): always_encode+area noise_mask target video, audio0;5 CPU tests. Core0.34.6 держит refs в minimax_refs conditioning, не samples. [Image Studio](https://github.com/astropuzzo/ComfyUI-MiniMax-H3-Image-Studio), [нода](https://github.com/islomsalimov030-maker/h3_img2img_latent/tree/fix/always-encode-mask).
+
 ### 2.1. Дополнение (19.10.2026) — Z-Image / SAM3 / DyPE / CropAndStitch
 
 | Компонент | Лицензия | Вывод | Источник |

@@ -192,9 +192,10 @@ class ZoneDiagnostics(unittest.TestCase):
         self.assertAlmostEqual(d['zone_mask_area_m2'], .08)
         self.assertEqual(d['support_vertices_after_mapping'], dict.fromkeys(names[:4], 10))
         self.assertEqual(d['support_vertex_count'], 0)
-        self.assertIsNone(d['body_footprint_area_m2'])
-        self.assertIn('not defined', d['body_footprint_area_reason'])
-        self.assertFalse(place.zone_too_small(d))  # неизвестную площадь не подменяем
+        self.assertEqual(d['body_footprint_area_m2'], 0.)  # collinear XY -> degenerate approved hull
+        self.assertTrue(d['support_hull']['degenerate'])
+        self.assertIn('rejected both knees', d['zero_support_cause'])
+        self.assertFalse(place.zone_too_small(d))
         self.assertTrue(place.zone_too_small(dict(d, zone_mask_area_m2=0.)))
         self.assertTrue(place.zone_too_small(dict(d, body_footprint_area_m2=.09)))
 

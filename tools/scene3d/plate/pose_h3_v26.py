@@ -30,10 +30,10 @@ import pose_h3_v25 as base
 import pose_proxy_v26 as proxy
 
 farm_env, pr, ts, ab = base.farm_env, base.pr, base.ts, base.ab
-STATE = farm_env.ROOT / "pose_round" / "h3_v26"
-OUT_SUB = "plate3d_v26_fixed"
+STATE = farm_env.ROOT / "pose_round" / "h3_v26_9d"
+OUT_SUB = "plate3d_v26_9d"
 VARIANTS = ("D1", "D1H", "D2", "D2H", "D3", "D3H")
-DEFAULT_IDS = "Q02,Q03,Q04,Q08,T01,T03,Q09,Q11"
+DEFAULT_IDS = "Q04,Q11,T02,Q01"
 TRANSFER = "Only her body pose and placement are taken from <Video 1>; the grey mannequin itself never appears in the shot."
 
 
@@ -105,7 +105,7 @@ def silhouette(path, size=None):
     return np.asarray(im) > 127
 
 
-def do_prep(ids, body_json):
+def do_prep(ids, body_json, prepare_strength=True):
     STATE.mkdir(parents=True, exist_ok=True)
     colors = proxy.outfit_colors(body_json)
     pp_file = STATE / "prompts_v26.json"
@@ -131,18 +131,17 @@ def do_prep(ids, body_json):
         _, colour_names = proxy.colour_vertices(labels[sil], colors)
         used_zones = set(colour_names)
         missing_zones = sorted(set(colors) - used_zones)
-        grid = load_json(STATE / "latent_grid.json")
-        cell_px = grid["cell_px"] * sil.shape[1] / ts.SIZE[0]
-        for variant in ("D1", "D2", "D3"):
-            strength = cfg()[f"strength_{variant.lower()}"]
-            sm = proxy.strength_map(sil, strength, cell_px)
-            overlay = np.asarray(plate, dtype=float).copy()
-            overlay = overlay * (1 - .6 * sm[..., None]) + np.array([255, 0, 0]) * .6 * sm[..., None]
-            overlay[sil] = .5 * overlay[sil] + .5 * np.array([0, 255, 0])
-            Image.fromarray(np.rint(overlay).astype(np.uint8)).save(dst / f"{variant}_strength_overlay.png")
-            # RGB/8 is the installed LoadImage contract; 16-bit mode I may clip
-            # to 255 on conversion to RGB. Gaussian tail quantizes to zero.
-            Image.fromarray(np.rint(sm * 255).astype(np.uint8)).convert("RGB").save(dst / f"{variant}_strength.png")
+        if prepare_strength:
+            grid = load_json(STATE / "latent_grid.json")
+            cell_px = grid["cell_px"] * sil.shape[1] / ts.SIZE[0]
+            for variant in ("D1", "D2", "D3"):
+                strength = cfg()[f"strength_{variant.lower()}"]
+                sm = proxy.strength_map(sil, strength, cell_px)
+                overlay = np.asarray(plate, dtype=float).copy()
+                overlay = overlay * (1 - .6 * sm[..., None]) + np.array([255, 0, 0]) * .6 * sm[..., None]
+                overlay[sil] = .5 * overlay[sil] + .5 * np.array([0, 255, 0])
+                Image.fromarray(np.rint(overlay).astype(np.uint8)).save(dst / f"{variant}_strength_overlay.png")
+                Image.fromarray(np.rint(sm * 255).astype(np.uint8)).convert("RGB").save(dst / f"{variant}_strength.png")
         spec, scene = base.scene_of(pid)
         graph = ts.graph(loc_of(pid), spec, scene, cfg()["seed"])
         a = graph["r2v"]["inputs"]["prompt"]
@@ -158,11 +157,11 @@ def do_prep(ids, body_json):
 def sampler_branch(g, tag, cond, image, denoise, model="shift", mask=None):
     g[tag + "_lat"] = ab.node("H3LatentFromImage", h3_latent=[cond, 1], vae=["vae", 0],
                               image=[image, 0], model=[model, 0], steps=cfg()["steps"],
-                              scheduler="simple", denoise=denoise)
+                              scheduler="simple", denoise=denoise, always_encode=True)
+    g[tag + "_lat"]["_meta"] = {"title": f"H3LatentFromImage v0.2.0 · {tag}"}
     latent = [tag + "_lat", 0]
     if mask is not None:
-        g[tag + "_mask"] = ab.node("SetLatentNoiseMask", samples=latent, mask=[mask, 0])
-        latent = [tag + "_mask", 0]
+        g[tag + "_lat"]["inputs"]["mask"] = [mask, 0]
     g[tag + "_noise"] = ab.node("RandomNoise", noise_seed=cfg()["seed"])
     g[tag + "_guider"] = ab.node("BasicGuider", model=[model, 0], conditioning=[cond, 0])
     g[tag + "_sampler"] = ab.node("KSamplerSelect", sampler_name="euler")
@@ -192,7 +191,8 @@ def reachable_graph(graph):
             visit(key)
     out = {k: n for k, n in graph.items() if k in keep}
     for key, node in out.items():
-        node["_meta"] = {"title": f"3DA v26 · {key}"}
+        node["_meta"] = {"title": f"3DA v26 · {key}" +
+                          (" · h3_img2img_latent v0.2.0" if node["class_type"] == "H3LatentFromImage" else "")}
     titles = [n["_meta"]["title"] for n in out.values()]
     assert len(titles) == len(set(titles))
     return out
@@ -458,7 +458,7 @@ def do_metrics(ids, detect=False, execute_gpu=False):
             image = Image.open(path).convert("RGB")
             def open_ref(name):
                 return Image.open(directory / name).convert("RGB").resize(image.size, Image.Resampling.LANCZOS)
-            sil = silhouette(directory / "mask.png", image.size)
+            sil = silhouette(directory / "silhouette.png", image.size)
             edge = base.object_top_edge(pid, pp[pid]["plan"], image.size)
             m = image_metrics(image, open_ref("plate_rgb.png"), open_ref("playblast.png"), open_ref("proxy.png"), sil, edge)
             target, torso = target_points(pid, pp[pid]["plan"], image.size)
@@ -491,7 +491,8 @@ def do_sheet(ids, out):
     rows = []
     for pid in ids:
         directory, fit = scene_dir(pid), base.fit_of(pid)
-        cells = [[str(Path(farm_env.ROOT).parent / "refs_v2" / f"{pid}.png"), "ref"]]
+        cells = [[str(Path(farm_env.ROOT).parent / "refs_v2" / f"{pid}.png"), "ref"],
+                 [str(directory / "plate_rgb.png"), "plate"]]
         for variant in ("D1", "D2", "D3"):
             m = metrics.get(pid, {}).get(variant)
             cells.append([m["file"] if m else None, caption(variant, m)])
@@ -531,7 +532,11 @@ def do_seam(ids, out):
         ref_target[[8, 11], :2] = pelvis
         reference_path = STATE / f"{pid}_ref_seam.png"
         seam_crop(reference, ref_target).save(reference_path)
-        cells = [[str(reference_path), "ref: pelvis, 30% crop, 2x"]]
+        plate = Image.open(scene_dir(pid) / 'plate_rgb.png').convert('RGB')
+        target, _ = target_points(pid, pp[pid]['plan'], plate.size)
+        plate_path = STATE / f'{pid}_plate_seam.png'
+        seam_crop(plate, target).save(plate_path)
+        cells = [[str(reference_path), "ref: pelvis, 30% crop, 2x"], [str(plate_path), 'plate crop, 2x']]
         for variant in ("D1", "D2", "D3"):
             m = metrics.get(pid, {}).get(variant)
             if m is None:

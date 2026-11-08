@@ -66,7 +66,8 @@ def load_ref(path):
     if "verts" in d.files:                                            # ref_scene.py
         sp = d["scene_pts"]
         sn = d["scene_nrm"] if d["scene_nrm"].size else None
-        return dict(V=d["verts"].astype(float), F=d["faces"], kp=d["kp3d"].astype(float), S=sp.astype(float),
+        return dict(**{k: d[k] for k in ("part_labels", "skin_weights", "joint_names") if k in d},
+                    V=d["verts"].astype(float), F=d["faces"], kp=d["kp3d"].astype(float), S=sp.astype(float),
                     N=None if sn is None else sn.astype(float), W=int(d["W"]), H=int(d["H"]),
                     f=float(d["f"]), cx=float(d["cx"]), cy=float(d["cy"]), kp2d=d["kp2d"].astype(float))
     t = d["pred_cam_t"]                                               # pose_v2_probe.py (без сцены)

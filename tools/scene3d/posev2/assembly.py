@@ -59,9 +59,12 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
                           "height_conflict": False, "reason": "no_support_vertices"}
         # target — горизонтальная поверхность верха, signed distance сохраняет
         # сторону: при исходном проникновении тело поднимается, не опускается.
-        dz = -min(float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
+        standing = spec.pose_class in ("stand", "crouch")
+        dz = -pl.body_lowest_gap(V, S) if standing else -min(
+            float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
         V, J = V + [0, 0, dz], J + [0, 0, dz]
-        contact_min = min(float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
+        contact_min = pl.body_lowest_gap(V, S) if standing else min(
+            float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
         contact_ok = abs(contact_min) <= c["contact_tol"]
         pen = pl.penetration_stats(plate, V, treg, soft)
         moved = 0.0
@@ -73,7 +76,9 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             moved += step
             pen = pl.penetration_stats(plate, V, treg, soft)
         gaps = [float(np.median(pl._sd(S, surf, V[idx])[0])) for idx, surf in support]
-        return V, J, {"shift_z_m": float(dz), "contact_min_m": contact_min, "contact_ok": bool(contact_ok),
+        contact = pl.support_contact(V, groups, S, spec, soft)
+        return V, J, {"support_rule_ok": contact["ok"], "support_flags": contact["flags"],
+                      "shift_z_m": float(dz), "contact_min_m": contact_min, "contact_ok": bool(contact_ok),
                       "lift_from_contact_m": moved, "lift_ceiling_m": ceiling,
                       "max_gap_m": max(gaps), "part_gaps_m": gaps,
                       "penetration_ok": pen["ok"], "penetration_excess_m": pen["excess_m"],
@@ -81,8 +86,12 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
 
     V, J, info = settle(X.copy(), K.copy())
     info.update(tilt_adjust_deg=0.0, roll_adjust_deg=0.0)
-    best = (not info["penetration_ok"], max(abs(v) for v in info.get("part_gaps_m", [float("inf")])))
-    if info["penetration_ok"] and info["max_gap_m"] <= c["sup_gap_cm"] / 100:
+    def score(ii):
+        return (not ii["penetration_ok"], not ii.get("support_rule_ok", False),
+                0.0 if spec.pose_class in ("stand", "crouch") else
+                max(abs(v) for v in ii.get("part_gaps_m", [float("inf")])))
+    best = score(info)
+    if info["penetration_ok"] and info.get("support_rule_ok", False):
         return V, J, info
     f = ori.forward(K)
     if f is None:
@@ -100,7 +109,7 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             if abs(ori.roll_deg(B)) > ori.ROLL_MAX:
                 continue
             A, B, ii = settle(A, B)
-            key = (not ii["penetration_ok"], max(abs(v) for v in ii.get("part_gaps_m", [float("inf")])))
+            key = score(ii)
             if key < best:
                 best, V, J = key, A, B
                 info = dict(ii, tilt_adjust_deg=float(tilt), roll_adjust_deg=float(roll))
@@ -119,9 +128,16 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
         checks.append({"check": name, "ok": bool(ok), "excess": float(excess), "unit": unit})
     add("support_target", ev["support_object"] == spec.target_object,
         float(ev["support_object"] != spec.target_object), "surface")
-    for name, gap in ev["support_part_gaps_m"].items():
-        add("support_gap:" + name, gap <= c["sup_gap_cm"] / 100,
-            max(gap - c["sup_gap_cm"] / 100, 0.0))
+    if spec.pose_class not in ("stand", "crouch"):
+        for name, gap in ev["support_part_gaps_m"].items():
+            add("support_gap:" + name, gap <= c["sup_gap_cm"] / 100,
+                max(gap - c["sup_gap_cm"] / 100, 0.0))
+    else:
+        contact = ev.get("support_contact", {})
+        lowest = contact.get("lowest_gap_m", float("inf"))
+        add("body_lowest_contact", abs(lowest) <= c["contact_tol"], max(abs(lowest) - c["contact_tol"], 0.0))
+        add("one_foot_contact", bool(contact.get("foot_contact_parts")),
+            float(not contact.get("foot_contact_parts")), "foot")
     for name, lim in (("soft", c["pen_soft_m"]), ("hard", c["pen_hard_m"])):
         value = pen[name + "_p95_m"]
         if not pen.get("surfaces"):
@@ -139,19 +155,24 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
         (height_info or {}).get("penetration_excess_m", 0.0))
     add("support_contact", ev["support_ok"], 0.0 if ev["support_ok"] else
         max(abs(v) for v in ev["support_part_gaps_m"].values()) if ev["support_part_gaps_m"] else float("inf"))
-    add("footprint", ev["footprint"]["ok"], ev["footprint"].get("n_out", 0), "vertices")
+    hull_fraction = ev["footprint"].get("support_hull", {}).get("in_mask_fraction")
+    add("footprint", ev["footprint"]["ok"],
+        max(c["hull_in_mask_min"] - hull_fraction, 0.0) if hull_fraction is not None else
+        (0.0 if ev["footprint"]["ok"] else float("inf")), "area_fraction")
     add("cells", ev["cells_ok"], float(not ev["cells_ok"]), "cells")
     add("frame", ev["frame"]["ok"], float(not ev["frame"]["ok"]), "frame")
     add("refine_limits", limits_ok, float(not limits_ok), "limit")
     fail = next((x for x in checks if not x["ok"]), None)
     status = "ok" if fail is None else ("wrong_surface" if fail["check"] == "support_target" else
                                         "out_of_frame" if fail["check"] == "frame" else "contact_fail")
-    flags = []
+    flags = list(ev.get("support_contact", {}).get("flags", []))
+    partial_flags = []
     if (height_info or {}).get("height_conflict"):
-        flags.append("height_conflict")
+        partial_flags.append("height_conflict")
     if spec.pose_class == "recline" and not next(x["ok"] for x in checks if x["check"] == "back_contact"):
-        flags.append("no_back_contact")
-    if flags:
+        partial_flags.append("no_back_contact")
+    flags += partial_flags
+    if partial_flags:
         status = "partial"  # явные исходы п.4в / п.5б; проверки остаются красными
     return {"ok": fail is None, "first_failure": fail, "checks": checks, "status": status,
             "flags": flags, "penetration": pen}

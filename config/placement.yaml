@@ -82,6 +82,10 @@ zone:
 
 top_region:
   cell: 0.02
+  dominant_bin_m: 0.02
+  raised_top_m: 0.08
+  backrest_wall_adjoin_m: 0.03
+  backrest_margin_m: 0.05
   up_min: 0.9
   h_tol: 0.06
   step_tol: 0.03
@@ -185,6 +189,8 @@ refine:
   report_joint_deg: 10
 
 place:
+  torso_back_dot_max: -0.5
+  hull_in_mask_min: 0.9
   contact_tol: 0.01
   height_lift_step_m: 0.005
   height_lift_extra_m: 0.01

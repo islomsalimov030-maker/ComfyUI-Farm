@@ -160,6 +160,9 @@ class RunnerTests(unittest.TestCase):
                     self.assertIn("ref_videos.ref_video_0", prompt)
                     self.assertIn("DifferentialDiffusion", types)
                     self.assertEqual(lat["denoise"], 1.)
+                    self.assertNotIn("SetLatentNoiseMask", types)
+                    self.assertTrue(lat['always_encode'])
+                    self.assertEqual(lat['mask'], ['strength_mask', 0])
                     self.assertEqual(graph["init_scale"]["class_type"], "ImageCompositeMasked")
                     self.assertEqual(graph["init_scale"]["inputs"]["destination"], ["plate_scale", 0])
                     self.assertTrue(graph["silhouette_image"]["inputs"]["image"].endswith("silhouette.png"))
@@ -216,6 +219,17 @@ class RunnerTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "Saved gate exists"):
                     gate.run_g0(True)
                 post.assert_not_called()
+
+    def test_gate_rgb_ssim_and_measured_cell_info(self):
+        import pose_gate_v26 as gate
+        rng = np.random.default_rng(12)
+        a = Image.fromarray(rng.integers(0, 255, (50, 80, 3), dtype=np.uint8))
+        self.assertAlmostEqual(gate.gate_metric(a, a), 1.)
+        arr = np.asarray(a).copy(); arr[..., 0] = 255 - arr[..., 0]
+        self.assertLess(gate.gate_metric(Image.fromarray(arr), a), .98)
+        self.assertEqual(gate.parse_info({'text': ['samples=[(1,24,2,48,84)]; cell_px=16']})['cell_px'], 16)
+        with self.assertRaisesRegex(ValueError, 'No measured'):
+            gate.parse_info({'text': ['full generation from noise']})
 
     def test_blender_runner_sets_isolated_site(self):
         import os

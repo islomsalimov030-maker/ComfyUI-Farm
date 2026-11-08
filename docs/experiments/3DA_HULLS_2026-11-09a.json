@@ -1,0 +1,121 @@
+[
+ {
+  "id": "Q01_stand_hand_face",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.03509854000000003,
+  "in_mask_fraction": 0.9999999999999954
+ },
+ {
+  "id": "Q02_bed_cross_legs",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.06289250780000001,
+  "in_mask_fraction": 0.9566793687398589
+ },
+ {
+  "id": "Q03_bed_kneel",
+  "saved_status": "wrong_surface",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.16618931115,
+  "in_mask_fraction": 1.0
+ },
+ {
+  "id": "Q04_bed_side_lie",
+  "saved_status": "partial",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.11327595255000003,
+  "in_mask_fraction": 1.0
+ },
+ {
+  "id": "Q05_crouch_shoelace",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.07114220215,
+  "in_mask_fraction": 0.9999999999999992
+ },
+ {
+  "id": "Q06_floor_hug_knees",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.2369710858500001,
+  "in_mask_fraction": 0.9999999999999996
+ },
+ {
+  "id": "Q07_stretch_arms_up",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.03267243565000004,
+  "in_mask_fraction": 0.9999999999999921
+ },
+ {
+  "id": "Q08_bed_recline_elbows",
+  "saved_status": "partial",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.0896309208,
+  "in_mask_fraction": 0.9833663080534416
+ },
+ {
+  "id": "Q09_lean_wall",
+  "saved_status": "partial",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.0428012058,
+  "in_mask_fraction": 1.0
+ },
+ {
+  "id": "Q10_all_fours_cat",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.04054555404999999,
+  "in_mask_fraction": 1.0
+ },
+ {
+  "id": "Q11_bench_side_sit",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.06734824584999993,
+  "in_mask_fraction": 0.9993990992940105
+ },
+ {
+  "id": "Q12_one_leg_ankle",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.012708999500000033,
+  "in_mask_fraction": 0.9999999999999876
+ },
+ {
+  "id": "T01_sofa_legs_tucked",
+  "saved_status": "wrong_surface",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.1201722675,
+  "in_mask_fraction": 1.0
+ },
+ {
+  "id": "T02_kneel_lunge",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.06357251095000001,
+  "in_mask_fraction": 1.0
+ },
+ {
+  "id": "T03_armchair_side_sit",
+  "saved_status": "partial",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.07097424329999998,
+  "in_mask_fraction": 0.9087120156275846
+ },
+ {
+  "id": "T04_floor_sit_knees_up",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.21657942549999998,
+  "in_mask_fraction": 0.9999999999999998
+ },
+ {
+  "id": "T05_barre_standing_split",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "area_m2": 0.014202998749999998,
+  "in_mask_fraction": 0.999999999999999
+ }
+]

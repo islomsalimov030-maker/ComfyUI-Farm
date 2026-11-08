@@ -1,0 +1,481 @@
+[
+ {
+  "id": "Q03_bed_kneel",
+  "target_object": "bed",
+  "saved_status": "wrong_surface",
+  "source": "saved placement, NOT a step9d rerun",
+  "fit_hash": "d463370051b8ba41",
+  "measurement_vertices": "mapped_support_before_selection",
+  "target_h0_m": 0.2904,
+  "actual_support_surfaces": [
+   {
+    "id": "bed_1",
+    "h0_m": 0.2904,
+    "n_contact": 664,
+    "min_distance_m": 0.0019338092892904944
+   }
+  ],
+  "actual_surface": {
+   "id": "bed_1",
+   "h0_m": 0.2904,
+   "n_contact": 664,
+   "min_distance_m": 0.0019338092892904944
+  },
+  "actual_surface_reason": null,
+  "target_gap_min_m": -0.040113333333333334,
+  "target_gap_p50_m": 0.03147541666666667,
+  "hull_parts": [
+   "knee.L",
+   "knee.R",
+   "shin.L",
+   "shin.R"
+  ],
+  "penetration_per_surface": {
+   "soft:bed_1": {
+    "p95_m": 0.03765648963412288,
+    "max_m": 0.04514445931861895,
+    "threshold_m": 0.06,
+    "ok": true,
+    "n": 477
+   },
+   "soft:pillows": {
+    "p95_m": 0.03086945050458677,
+    "max_m": 0.031985248583706584,
+    "threshold_m": 0.06,
+    "ok": true,
+    "n": 89
+   }
+  },
+  "penetration_parts_per_surface": {
+   "soft:bed_1": {
+    "foot.L": {
+     "n": 160,
+     "p95_m": 0.042851177590129685,
+     "max_m": 0.04514445931861895
+    },
+    "foot.R": {
+     "n": 64,
+     "p95_m": 0.024573862988211792,
+     "max_m": 0.03056350620697837
+    },
+    "knee.L": {
+     "n": 104,
+     "p95_m": 0.03331817242656347,
+     "max_m": 0.03545688810952709
+    },
+    "knee.R": {
+     "n": 120,
+     "p95_m": 0.03699449862369426,
+     "max_m": 0.04015449856900045
+    },
+    "shin.L": {
+     "n": 12,
+     "p95_m": 0.009244730579193675,
+     "max_m": 0.009330254827404788
+    },
+    "shin.R": {
+     "n": 17,
+     "p95_m": 0.01331391532642751,
+     "max_m": 0.013366455833852323
+    }
+   },
+   "soft:pillows": {
+    "foot.L": {
+     "n": 24,
+     "p95_m": 0.022915995784704005,
+     "max_m": 0.02413462697274814
+    },
+    "foot.R": {
+     "n": 65,
+     "p95_m": 0.030994851495077712,
+     "max_m": 0.031985248583706584
+    }
+   }
+  },
+  "angles_deg": {
+   "yaw": -94.0122891061118,
+   "pitch": 14.65003659213579,
+   "roll": 1.1717283741096995
+  },
+  "top_definition": {
+   "method": "blocked",
+   "reason": "legacy profile has only grown top mask, no full object mask; regenerate with object_masks"
+  },
+  "support_hull": {
+   "area_m2": 0.16618931115,
+   "in_mask_area_m2": 0.16618931115000013,
+   "in_mask_fraction": 1.0,
+   "degenerate": false
+  },
+  "selection": {
+   "target_object": "bed",
+   "instance_hint": null,
+   "zone_mask_area_m2": 2.7832000000000003,
+   "body_footprint_area_m2": 0.13143865734466537,
+   "support_vertices_after_mapping": {
+    "knee.L": 216,
+    "knee.R": 227,
+    "shin.L": 354,
+    "shin.R": 349
+   },
+   "support_group_vertices": {},
+   "support_vertex_count": 0,
+   "kneel_selection": [
+    {
+     "part": "knee.L",
+     "min_above_body_lowest_m": 0.15827345503704315,
+     "threshold_m": 0.09720000000000001,
+     "selected": false
+    },
+    {
+     "part": "knee.R",
+     "min_above_body_lowest_m": 0.16229397882249474,
+     "threshold_m": 0.09720000000000001,
+     "selected": false
+    }
+   ],
+   "zero_support_cause": "kneel_low_h rejected both knees; no knee/shin groups"
+  }
+ },
+ {
+  "id": "Q04_bed_side_lie",
+  "target_object": "bed",
+  "saved_status": "partial",
+  "source": "saved placement, NOT a step9d rerun",
+  "fit_hash": "5c16dd1838141ea0",
+  "measurement_vertices": "selected_support",
+  "target_h0_m": 0.2904,
+  "actual_support_surfaces": [
+   {
+    "id": "bed_1",
+    "h0_m": 0.2904,
+    "n_contact": 17,
+    "min_distance_m": 0.021782841871528118
+   }
+  ],
+  "actual_surface": {
+   "id": "bed_1",
+   "h0_m": 0.2904,
+   "n_contact": 17,
+   "min_distance_m": 0.021782841871528118
+  },
+  "actual_surface_reason": null,
+  "target_gap_min_m": 0.019956666666666623,
+  "target_gap_p50_m": 0.1220772619047619,
+  "hull_parts": [
+   "pelvis",
+   "thigh.L"
+  ],
+  "penetration_per_surface": {
+   "soft:bed_1": {
+    "p95_m": 0.06711918269370247,
+    "max_m": 0.08381609163244899,
+    "threshold_m": 0.06,
+    "ok": false,
+    "n": 3004
+   }
+  },
+  "penetration_parts_per_surface": {
+   "soft:bed_1": {
+    "foot.L": {
+     "n": 616,
+     "p95_m": 0.07560957662671666,
+     "max_m": 0.08381609163244899
+    },
+    "forearm.L": {
+     "n": 41,
+     "p95_m": 0.020889971278186044,
+     "max_m": 0.021614296736117696
+    },
+    "hand.L": {
+     "n": 2019,
+     "p95_m": 0.06321518429817767,
+     "max_m": 0.06852213571143888
+    },
+    "knee.L": {
+     "n": 26,
+     "p95_m": 0.004691390131674623,
+     "max_m": 0.004717995229756355
+    },
+    "knee.R": {
+     "n": 57,
+     "p95_m": 0.07410437756689431,
+     "max_m": 0.07596957585743577
+    },
+    "shin.L": {
+     "n": 29,
+     "p95_m": 0.008498790127909144,
+     "max_m": 0.01056521216867825
+    },
+    "shin.R": {
+     "n": 104,
+     "p95_m": 0.06774611221440717,
+     "max_m": 0.07003450048452611
+    },
+    "thigh.R": {
+     "n": 112,
+     "p95_m": 0.06617794395337039,
+     "max_m": 0.07121402852553903
+    }
+   }
+  },
+  "angles_deg": {
+   "yaw": -166.08312069867011,
+   "pitch": 94.64456061712488,
+   "roll": 14.920911452194735
+  },
+  "top_definition": {
+   "method": "blocked",
+   "reason": "legacy profile has only grown top mask, no full object mask; regenerate with object_masks"
+  },
+  "support_hull": {
+   "area_m2": 0.11327595255000003,
+   "in_mask_area_m2": 0.11327595255000016,
+   "in_mask_fraction": 1.0,
+   "degenerate": false
+  },
+  "selection": {
+   "target_object": "bed",
+   "instance_hint": null,
+   "zone_mask_area_m2": 2.7832000000000003,
+   "body_footprint_area_m2": null,
+   "body_footprint_area_reason": "footprint area algorithm is not defined in CONTRACTS or step 9c",
+   "support_vertices_after_mapping": {
+    "pelvis": 842,
+    "thigh.L": 296
+   },
+   "support_group_vertices": {
+    "pelvis": 127,
+    "thigh.L": 45
+   },
+   "support_vertex_count": 172
+  }
+ },
+ {
+  "id": "Q05_crouch_shoelace",
+  "target_object": "floor",
+  "saved_status": "ok",
+  "source": "saved placement, NOT a step9d rerun",
+  "fit_hash": "9f6a30203222df1b",
+  "measurement_vertices": "selected_support",
+  "target_h0_m": 0.00085,
+  "actual_support_surfaces": [
+   {
+    "id": "floor_1",
+    "h0_m": 0.00085,
+    "n_contact": 673,
+    "min_distance_m": 0.0029872344140433145
+   }
+  ],
+  "actual_surface": {
+   "id": "floor_1",
+   "h0_m": 0.00085,
+   "n_contact": 673,
+   "min_distance_m": 0.0029872344140433145
+  },
+  "actual_surface_reason": null,
+  "target_gap_min_m": -4.336808689942018e-19,
+  "target_gap_p50_m": 0.037455,
+  "hull_parts": [
+   "foot.L",
+   "foot.R"
+  ],
+  "penetration_per_surface": {
+   "hard": {
+    "p95_m": 0.0,
+    "max_m": 0.0,
+    "threshold_m": 0.03,
+    "ok": true,
+    "n": 0
+   },
+   "hard:floor_1": {
+    "p95_m": 0.0,
+    "max_m": 0.0,
+    "threshold_m": 0.03,
+    "ok": true,
+    "n": 0
+   },
+   "hard:wall_1": {
+    "p95_m": 0.0,
+    "max_m": 0.0,
+    "threshold_m": 0.03,
+    "ok": true,
+    "n": 0
+   }
+  },
+  "penetration_parts_per_surface": {
+   "hard": {},
+   "hard:floor_1": {},
+   "hard:wall_1": {}
+  },
+  "angles_deg": {
+   "yaw": -88.99999999999999,
+   "pitch": 34.69162112330197,
+   "roll": -0.5003793412054656
+  },
+  "top_definition": {},
+  "support_hull": {
+   "area_m2": 0.07114220215,
+   "in_mask_area_m2": 0.07114220214999994,
+   "in_mask_fraction": 0.9999999999999992,
+   "degenerate": false
+  },
+  "selection": {
+   "target_object": "floor",
+   "instance_hint": null,
+   "zone_mask_area_m2": 6.3864,
+   "body_footprint_area_m2": 0.0727476393766546,
+   "support_vertices_after_mapping": {
+    "foot.L": 1194,
+    "foot.R": 745
+   },
+   "support_group_vertices": {
+    "foot.L": 582,
+    "foot.R": 380,
+    "knee.L": 197,
+    "shin.L": 37
+   },
+   "support_vertex_count": 1196,
+   "kneel_selection": [],
+   "zero_support_cause": null,
+   "measurement_vertices": "selected_support",
+   "target_h0_m": 0.00085,
+   "actual_support_surfaces": [
+    {
+     "id": "floor_1",
+     "h0_m": 0.00085,
+     "n_contact": 672,
+     "min_distance_m": 0.002989069418316728
+    }
+   ],
+   "actual_surface": {
+    "id": "floor_1",
+    "h0_m": 0.00085,
+    "n_contact": 672,
+    "min_distance_m": 0.002989069418316728
+   },
+   "actual_surface_reason": null,
+   "target_gap_min_m": -2.6020852139652106e-18,
+   "target_gap_p50_m": 0.03745360726025315,
+   "hull_parts": [
+    "foot.L",
+    "foot.R"
+   ],
+   "penetration_per_surface": {
+    "hard": {
+     "p95_m": 0.0,
+     "max_m": 0.0,
+     "threshold_m": 0.03,
+     "ok": true,
+     "n": 0
+    },
+    "hard:floor_1": {
+     "p95_m": 0.0,
+     "max_m": 0.0,
+     "threshold_m": 0.03,
+     "ok": true,
+     "n": 0
+    },
+    "hard:wall_1": {
+     "p95_m": 0.0,
+     "max_m": 0.0,
+     "threshold_m": 0.03,
+     "ok": true,
+     "n": 0
+    }
+   },
+   "penetration_parts_per_surface": {
+    "hard": {},
+    "hard:floor_1": {},
+    "hard:wall_1": {}
+   },
+   "angles_deg": {
+    "yaw": -88.99999999999999,
+    "pitch": 34.69162112330197,
+    "roll": -0.5003793412054656
+   },
+   "top_definition": {}
+  }
+ },
+ {
+  "id": "T01_sofa_legs_tucked",
+  "target_object": "bed",
+  "saved_status": "wrong_surface",
+  "source": "saved placement, NOT a step9d rerun",
+  "fit_hash": "8bc3a485b4a72cd5",
+  "measurement_vertices": "selected_support",
+  "target_h0_m": 0.2904,
+  "actual_support_surfaces": [
+   {
+    "id": "bed_1",
+    "h0_m": 0.2904,
+    "n_contact": 87,
+    "min_distance_m": 0.004441868976005491
+   }
+  ],
+  "actual_surface": {
+   "id": "bed_1",
+   "h0_m": 0.2904,
+   "n_contact": 87,
+   "min_distance_m": 0.004441868976005491
+  },
+  "actual_surface_reason": null,
+  "target_gap_min_m": -2.3809523808093758e-07,
+  "target_gap_p50_m": 0.037825714285714324,
+  "hull_parts": [
+   "pelvis",
+   "shin.L"
+  ],
+  "penetration_per_surface": {
+   "soft:bed_1": {
+    "p95_m": 0.0,
+    "max_m": 0.0,
+    "threshold_m": 0.06,
+    "ok": true,
+    "n": 0
+   },
+   "soft:pillows": {
+    "p95_m": 0.0,
+    "max_m": 0.0,
+    "threshold_m": 0.06,
+    "ok": true,
+    "n": 0
+   }
+  },
+  "penetration_parts_per_surface": {
+   "soft:bed_1": {},
+   "soft:pillows": {}
+  },
+  "angles_deg": {
+   "yaw": -136.93745272292554,
+   "pitch": 38.66581846068989,
+   "roll": -7.674329825168301
+  },
+  "top_definition": {
+   "method": "blocked",
+   "reason": "legacy profile has only grown top mask, no full object mask; regenerate with object_masks"
+  },
+  "support_hull": {
+   "area_m2": 0.1201722675,
+   "in_mask_area_m2": 0.12017226750000004,
+   "in_mask_fraction": 1.0,
+   "degenerate": false
+  },
+  "selection": {
+   "target_object": "bed",
+   "instance_hint": null,
+   "zone_mask_area_m2": 2.7832000000000003,
+   "body_footprint_area_m2": null,
+   "body_footprint_area_reason": "footprint area algorithm is not defined in CONTRACTS or step 9c",
+   "support_vertices_after_mapping": {
+    "pelvis": 730,
+    "shin.L": 385
+   },
+   "support_group_vertices": {
+    "pelvis": 110,
+    "shin.L": 58
+   },
+   "support_vertex_count": 168
+  }
+ }
+]
