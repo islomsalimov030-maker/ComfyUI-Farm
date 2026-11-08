@@ -1,0 +1,21 @@
+{
+ "G0": {
+  "prompt_id": "89193607-a8a4-4074-b119-12807c40f6f1",
+  "status": "success",
+  "ssim_outside_silhouette": 0.5666589710336186,
+  "passed": false,
+  "file": "C:\\work\\scene3d_work\\comfy_mirror\\output\\plate3d_v26_fixed\\Q04_bed_side_lie\\G0_00001_.png",
+  "silhouette_source": "Blender body-only film_transparent alpha threshold 0.5",
+  "latent_info": "denoise 1.0 -> full generation from noise (25 steps)",
+  "cell_px": null,
+  "mask_shape": [
+   768,
+   1344
+  ],
+  "latent_shape": null
+ },
+ "G1": {
+  "status": "not_run",
+  "reason": "G0 failed"
+ }
+}

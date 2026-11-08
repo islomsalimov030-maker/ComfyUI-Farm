@@ -48,6 +48,10 @@
 
 - 2026-11-08b · 3D-A шаг 9: `comp2` (`tools/scene3d/plate/composite_round.py`, `quality_round.py`) использует `SAM3Segment`; официальная **SAM License (19.11.2025)** распространяется одновременно на код и trained model weights SAM 3 (не SAM 3D Body). §1a разрешает использование/модификации/распространение без NC-оговорки: коммерческое использование допустимо при соблюдении условий, это не Apache/MIT; Trade Controls, запреты ITAR/военных/ядерных/шпионских применений и оружия (§1b.v), privacy/law, запрет reverse engineering (§1b.iv); при передаче материалов — та же лицензия и её копия, в научной публикации — acknowledgement. Источник проверен напрямую: [официальный LICENSE кода и весов](https://github.com/facebookresearch/sam3/blob/main/LICENSE). Отдельная обёртка ComfyUI-RMBG — GPL-3.0 (см. ниже); NC-флага для SAM 3 нет.
 
+- 2026-11-08c · 3D-A: PyYAML 6.0.3 — MIT, установлен только в gitignored `.blender_site` через Python Blender; import yaml и Q02 label-render проверены. [Лицензия](https://github.com/yaml/pyyaml/blob/main/LICENSE). SAM 3: **SAM License, NC не найдено, проверено 08.11** (источник выше).
+
+- 2026-11-08c · 3D-A H3 G0: существующая `H3LatentFromImage` при denoise≥.999 возвращает исходный latent до VAE.encode init (`__init__.py:59–60`), info не содержит shape; реальный Q04 G0 с zero noise_mask дал SSIM фона .56666, дальнейший D остановлен. Серверная ревизия отдельно не сверена, info совпадает с этой веткой. [Исходник ноды](https://github.com/islomsalimov030-maker/h3_img2img_latent/blob/main/__init__.py).
+
 ### 2.1. Дополнение (19.10.2026) — Z-Image / SAM3 / DyPE / CropAndStitch
 
 | Компонент | Лицензия | Вывод | Источник |

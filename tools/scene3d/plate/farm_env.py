@@ -34,6 +34,8 @@ PY = sys.executable
 
 def bpy_cmd(script):
     """Command prefix to run a bpy script: Blender executable (-b --python) if FARM_BLENDER is set, else the bpy wheel."""
+    os.environ["SCENE3D_BLENDER_SITE"] = os.environ.get(
+        "SCENE3D_BLENDER_SITE", str(Path(__file__).resolve().parents[3] / ".blender_site"))
     if BLENDER:
         return [BLENDER, "-b", "--python", str(script), "--"]
     return [PY_BPY, "-u", str(script), "--"]

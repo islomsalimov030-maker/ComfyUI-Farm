@@ -139,7 +139,7 @@ def do_render(only):
         base = json.loads((pr.HERE / pr.BASE[n]).read_text(encoding="utf-8"))
         scenes = []
         for p in pr.prompts():
-            if p["loc"] != n or (only and p["id"] not in only):
+            if p["loc"] != n:
                 continue
             if not (root / p["id"] / "body.obj").is_file():          # no_target и т.п.: убрать старый плейбласт
                 import shutil
@@ -154,13 +154,16 @@ def do_render(only):
         base["scenes"] = scenes
         spec = root / f"spec_m{n}.json"
         spec.write_text(json.dumps(base, indent=1), encoding="utf-8")
+        render_ids = [s["name"] for s in scenes if not only or s["name"] in only]
+        if not render_ids:
+            continue
         out = pr.loc_dir(M, n)
         (out / "_plate").mkdir(parents=True, exist_ok=True)
         for fn in ("plate_rgb.png", "plate.json"):
             (out / "_plate" / fn).write_bytes((Path(pr.PLATE.format(n)) / fn).read_bytes())
         cmd = farm_env.bpy_cmd(pr.HERE / "render_plate_scene.py") + [
             "--plate", pr.PLATE.format(n), "--spec", str(spec), "--mannequin", os.environ["FARM_MANNEQUIN"],
-            "--out", str(out), "--label-pass", "--photo-emission", "2.5", "--samples", "48"]
+            "--out", str(out), "--only", ",".join(render_ids), "--label-pass", "--photo-emission", "2.5", "--samples", "48"]
         if farm_env.BLENDER:
             cmd[1:1] = ["--python-exit-code", "1"]
         r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -170,6 +173,8 @@ def do_render(only):
         if r.returncode or "Traceback (most recent call last)" in r.stdout + r.stderr:
             raise RuntimeError(f"render m{n} failed ({r.returncode}):\n{(r.stdout + r.stderr)[-4000:]}")
         for scene in scenes:
+            if scene["name"] not in render_ids:
+                continue
             if not (out / scene["name"] / "labels.png").is_file():
                 raise FileNotFoundError(out / scene["name"] / "labels.png")
 
@@ -191,7 +196,7 @@ def line25(pid, r):
             f"lie+{o.get('lie_yaw_add_deg')} кадр {fr.get('ok')} попыток {len(r.get('attempts', []))} сдвиг {z.get('shift_m')} | "
             f"прон p95 {pen.get('p95_cm')} max {pen.get('max_cm')} (soft {pen.get('soft_p95_cm')}/hard {pen.get('hard_p95_cm')}) | "
             f"refine {rf.get('groups_deg')} | провал {diagnostic} | высота {r.get('height_adjust')} "
-            f"откаты {r.get('refine_root_clamps')} | {r.get('flags')}")
+            f"откаты {r.get('refine_root_clamps')} | {r.get('flags')} | зона {r.get('zone_diagnostics')}")
 
 
 def do_summary():
@@ -206,7 +211,8 @@ def do_summary():
         keep = ("status", "shot_spec", "body_dims", "body_source", "support", "support_info", "secondary",
                 "support_object", "support_parts_on", "support_gap_cm", "back_gap_cm", "wall_gap_cm", "penetration",
                 "footprint", "frame", "frame_tries", "orient", "angle_to_camera_deg", "stage", "attempts", "flags",
-                "target_info", "validation", "height_adjust", "refine_root_clamps")
+                "target_info", "validation", "height_adjust", "refine_root_clamps", "zone_diagnostics",
+                "back_contact_gap_m")
         row = {"id": p["id"], **{k: r.get(k) for k in keep},
                "zone": {k: r.get("zone", {}).get(k) for k in ("source", "object_id", "anchor_id", "via", "rule",
                                                                  "band_m", "cell", "attempt", "shift_m", "sides",

@@ -329,7 +329,19 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
             "rigid_deg": round(float(w.detach().norm()) * 180 / math.pi, 1),
             "shift_cm": round(float(dt.detach().norm()) * 100, 1), "mhr_reproduction_err_mm": round(err * 1000, 2)}
     log(f"[refine] группы {groups_deg} (лимиты {'ok' if limits_ok else 'превышены'}), {info['seconds']} с")
-    return X.cpu().numpy().astype(float), K.cpu().numpy().astype(float), info
+    Xn, Kn = X.cpu().numpy().astype(float), K.cpu().numpy().astype(float)
+    return clamp_refine_roll(Xn, Kn, info)
+
+
+def clamp_refine_roll(X, K, info):
+    """Ни один возврат refine_mem не пропускает неограниченный крен."""
+    import orient as ori
+    before = ori.roll_deg(K)
+    X, K = ori.clamp_roll(X, K)
+    info["roll_before_clamp_deg"] = before
+    info["roll_final_deg"] = ori.roll_deg(K)
+    info["root_clamped"] = abs(before) > ori.ROLL_MAX
+    return X, K, info
 
 
 def main():

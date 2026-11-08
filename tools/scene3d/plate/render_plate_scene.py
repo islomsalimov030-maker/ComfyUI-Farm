@@ -42,6 +42,9 @@ import os
 import shutil
 import sys
 
+if os.environ.get("SCENE3D_BLENDER_SITE"):
+    sys.path.insert(0, os.environ["SCENE3D_BLENDER_SITE"])
+
 import bpy
 from mathutils import Matrix, Vector
 
@@ -65,7 +68,7 @@ def args():
     ap.add_argument("--only", default="")
     ap.add_argument("--samples", type=int, default=64, help="Cycles samples of the playblast pass")
     ap.add_argument("--no-playblast", action="store_true")
-    ap.add_argument("--label-pass", action="store_true", help="v2.6: five-zone pass; requires body_obj + label_joints.npz")
+    ap.add_argument("--label-pass", action="store_true", help="v2.6: anatomical labels; colours from body.json; requires final joints")
     ap.add_argument("--photo-emission", type=float, default=None,
                     help="override light.photo_emission (0 = the 05.11 playblast, 1.5 = photo-lit clay)")
     return ap.parse_args(argv)
@@ -678,7 +681,7 @@ def render_label_pass(sc, body, scene, out):
     with open(f"{out}/label_zones.json", "w", encoding="utf-8") as f:
         json.dump({"zones": list(proxy.ZONES), "vertex_counts": {
             z: int((labels == i).sum()) for i, z in enumerate(proxy.ZONES, 1)},
-            "blocked_test": "task requests six zones but specifies only five"}, f, indent=1)
+            "palette_source": "characters/<id>/body.json outfit_colors; missing labels use skin/fallback"}, f, indent=1)
     attr = body.data.color_attributes.get("pose_zone") or body.data.color_attributes.new(
         name="pose_zone", type="FLOAT_COLOR", domain="POINT")
     rgb = proxy.LABEL_RGB[labels].astype(float) / 255
@@ -731,6 +734,32 @@ def render_label_pass(sc, body, scene, out):
         sc.view_settings.view_transform = "Standard"
 
 
+def render_silhouette(sc, body, out):
+    """Body-only alpha, no room/shadow/props, threshold 0.5."""
+    from PIL import Image
+    hidden = [(ob, ob.hide_render) for ob in sc.objects if ob.type == "MESH" and ob is not body]
+    old = (sc.render.engine, sc.render.film_transparent,
+           sc.render.image_settings.color_mode, sc.render.filepath)
+    override = bpy.context.view_layer.material_override
+    try:
+        for ob, _ in hidden:
+            ob.hide_render = True
+        bpy.context.view_layer.material_override = None
+        sc.render.engine = "BLENDER_EEVEE"
+        sc.render.film_transparent = True
+        sc.render.image_settings.color_mode = "RGBA"
+        sc.render.image_settings.file_format = "PNG"
+        sc.render.filepath = f"{out}/silhouette_rgba.png"
+        bpy.ops.render.render(write_still=True)
+        alpha = Image.open(sc.render.filepath).getchannel("A")
+        alpha.point(lambda v: 255 if v >= 128 else 0).save(f"{out}/silhouette.png")
+    finally:
+        for ob, value in hidden:
+            ob.hide_render = value
+        sc.render.engine, sc.render.film_transparent, sc.render.image_settings.color_mode, sc.render.filepath = old
+        bpy.context.view_layer.material_override = override
+
+
 def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, hit, yaw, u, v_used, contact, placed):
     # clay pass (plate grey, mannequin light)
     sc.render.engine = "BLENDER_WORKBENCH"
@@ -754,6 +783,7 @@ def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, 
         render_playblast(a, sc, cam, plate, light, out, feet=(hit.x, hit.y, placed["feet_z"]))
     if getattr(a, "label_pass", False):
         render_label_pass(sc, body, scene, out)
+    render_silhouette(sc, body, out)
 
     W, H = info["size"]
     size = (W, H)

@@ -13,7 +13,7 @@ def orientation_checks(K, pose_class, plate, side_ref, window=None):
     tilt, roll = ori.tilt_deg(K), ori.roll_deg(K)
     lo, hi = ori.TILT_RANGE[pose_class]
     checks = [("tilt", max(lo - tilt, tilt - hi, 0.0), "deg")]
-    checks.append(("roll", max(abs(roll) - ori.ROLL_MAX, 0.0) if pose_class != "lie" else 0.0, "deg"))
+    checks.append(("roll", max(abs(roll) - ori.ROLL_MAX, 0.0), "deg"))
     got = ori.side_to_camera(K, plate.C)
     checks.append(("camera_side", float(bool(side_ref) and got != side_ref), "side"))
     if window is not None:
@@ -43,10 +43,10 @@ def clamp_root(X, K, pose_class, plate, side_ref, window=None):
 
 
 def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
-    """Подъём до p95 по материалам в пороге, затем контакт каждой опоры.
+    """Сначала min signed support contact=0, затем подъём 5 мм до p95.
 
-    При невозможном контакте — перебор наклона/крена ±10° шаг2°,
-    без выхода из диапазона класса. Неудача не ослабляет валидатор.
+    Потолок подъёма от контакта: contact_tol + 1 см. Каждый кандидат
+    наклона/крена проходит те же этапы (а)→(б), без изменения порогов.
     """
     import place as pl
     c = section("place")
@@ -55,25 +55,29 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
 
     def settle(V, J):
         if not support:
-            return V, J, {"shift_z_m": 0.0, "max_gap_m": float("inf"), "penetration_ok": False}
-        # Сперва на контакт: опустить до самого высокого из требуемых сдвигов.
-        dz = -min(float(np.median(pl._sd(S, surf, V[idx])[0])) for idx, surf in support)
+            return V, J, {"shift_z_m": 0.0, "max_gap_m": float("inf"), "penetration_ok": False,
+                          "height_conflict": False, "reason": "no_support_vertices"}
+        # target — горизонтальная поверхность верха, signed distance сохраняет
+        # сторону: при исходном проникновении тело поднимается, не опускается.
+        dz = -min(float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
         V, J = V + [0, 0, dz], J + [0, 0, dz]
+        contact_min = min(float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
+        contact_ok = abs(contact_min) <= c["contact_tol"]
         pen = pl.penetration_stats(plate, V, treg, soft)
-        # Существующий линейный шаг высоты / предел H взяты из YAML.
         moved = 0.0
-        while not pen["ok"] and moved < c["shift_max_h"] * H:
-            step = min(max(c["shift_step"], pen["excess_m"]), c["shift_max_h"] * H - moved)
-            previous = pen["excess_m"]
+        ceiling = c["contact_tol"] + c["height_lift_extra_m"]
+        step = c["height_lift_step_m"]
+        while contact_ok and not pen["ok"] and moved + step <= ceiling + np.finfo(float).eps:
             V, J = V + [0, 0, step], J + [0, 0, step]
             dz += step
             moved += step
             pen = pl.penetration_stats(plate, V, treg, soft)
-            if not pen["ok"] and pen["excess_m"] >= previous:
-                break  # вертикальный подъём не устраняет проникновение в стену
         gaps = [float(np.median(pl._sd(S, surf, V[idx])[0])) for idx, surf in support]
-        return V, J, {"shift_z_m": float(dz), "max_gap_m": max(gaps), "part_gaps_m": gaps,
-                      "penetration_ok": pen["ok"], "penetration_excess_m": pen["excess_m"]}
+        return V, J, {"shift_z_m": float(dz), "contact_min_m": contact_min, "contact_ok": bool(contact_ok),
+                      "lift_from_contact_m": moved, "lift_ceiling_m": ceiling,
+                      "max_gap_m": max(gaps), "part_gaps_m": gaps,
+                      "penetration_ok": pen["ok"], "penetration_excess_m": pen["excess_m"],
+                      "height_conflict": bool(not contact_ok or not pen["ok"])}
 
     V, J, info = settle(X.copy(), K.copy())
     info.update(tilt_adjust_deg=0.0, roll_adjust_deg=0.0)
@@ -93,7 +97,7 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             lo, hi = ori.TILT_RANGE[spec.pose_class]
             if not lo <= ori.tilt_deg(B) <= hi:
                 continue
-            if spec.pose_class != "lie" and abs(ori.roll_deg(B)) > ori.ROLL_MAX:
+            if abs(ori.roll_deg(B)) > ori.ROLL_MAX:
                 continue
             A, B, ii = settle(A, B)
             key = (not ii["penetration_ok"], max(abs(v) for v in ii.get("part_gaps_m", [float("inf")])))
@@ -103,8 +107,13 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
     return V, J, info
 
 
-def validate(K, ev, spec, plate, side_ref, window, limits_ok):
+def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=None, soft=False,
+             height_info=None):
+    import place as pl
     c = section("place")
+    # В реальной place() всегда передаётся геометрия. Ровно тот же расчёт,
+    # что у этапа высоты/evaluate, а не max или иной процентиль.
+    pen = pl.penetration_stats(plate, X, treg, soft) if X is not None else ev["penetration"]
     checks = orientation_checks(K, spec.pose_class, plate, side_ref, window)
     def add(name, ok, excess=0.0, unit="m"):
         checks.append({"check": name, "ok": bool(ok), "excess": float(excess), "unit": unit})
@@ -114,18 +123,20 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok):
         add("support_gap:" + name, gap <= c["sup_gap_cm"] / 100,
             max(gap - c["sup_gap_cm"] / 100, 0.0))
     for name, lim in (("soft", c["pen_soft_m"]), ("hard", c["pen_hard_m"])):
-        value = ev["penetration"][name + "_p95_m"]
-        add("penetration:" + name, value <= lim, max(value - lim, 0.0))
-    for name, s in ev["penetration"].get("surfaces", {}).items():
+        value = pen[name + "_p95_m"]
+        if not pen.get("surfaces"):
+            add("penetration:" + name, value <= lim, max(value - lim, 0.0))
+    for name, s in pen.get("surfaces", {}).items():
         add("penetration_surface:" + name, s["ok"], max(s["p95_m"] - s["threshold_m"], 0.0))
     if spec.pose_class == "recline":
-        # Back is a required contact, not an optional table secondary. Use the
-        # unrounded distance; penetration limits are checked per surface above.
-        gap = ev.get("back_gap_m")
-        if gap is None:
-            gap = ev.get("wall_gap_m")
-        add("back_contact", gap is not None and gap <= c["sup_gap_cm"] / 100,
-            max(gap - c["sup_gap_cm"] / 100, 0.0) if gap is not None else float("inf"))
+        # Только torso_back→спинка. Контакт руки/стены не заменяет спину.
+        gap = ev.get("back_contact_gap_m")
+        hard_ok = all(s["ok"] for n, s in pen.get("surfaces", {}).items() if n.startswith("hard"))
+        hard_ok &= pen["hard_p95_m"] <= c["pen_hard_m"] if not pen.get("surfaces") else True
+        add("back_contact", gap is not None and gap <= c["contact_tol"] and hard_ok,
+            max(gap - c["contact_tol"], 0.0) if gap is not None else float("inf"))
+    add("height_contact", not (height_info or {}).get("height_conflict", False),
+        (height_info or {}).get("penetration_excess_m", 0.0))
     add("support_contact", ev["support_ok"], 0.0 if ev["support_ok"] else
         max(abs(v) for v in ev["support_part_gaps_m"].values()) if ev["support_part_gaps_m"] else float("inf"))
     add("footprint", ev["footprint"]["ok"], ev["footprint"].get("n_out", 0), "vertices")
@@ -135,4 +146,12 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok):
     fail = next((x for x in checks if not x["ok"]), None)
     status = "ok" if fail is None else ("wrong_surface" if fail["check"] == "support_target" else
                                         "out_of_frame" if fail["check"] == "frame" else "contact_fail")
-    return {"ok": fail is None, "first_failure": fail, "checks": checks, "status": status}
+    flags = []
+    if (height_info or {}).get("height_conflict"):
+        flags.append("height_conflict")
+    if spec.pose_class == "recline" and not next(x["ok"] for x in checks if x["check"] == "back_contact"):
+        flags.append("no_back_contact")
+    if flags:
+        status = "partial"  # явные исходы п.4в / п.5б; проверки остаются красными
+    return {"ok": fail is None, "first_failure": fail, "checks": checks, "status": status,
+            "flags": flags, "penetration": pen}

@@ -64,13 +64,15 @@ class Recline(unittest.TestCase):
         H = B["dims"]["H"]
         treg = tr.top_region(p, "bed", seed, H)
         self.assertIsNotNone(treg.backrest)
-        groups, _, _ = place.build_groups(B, spec, treg, H, False)
+        groups, _, info = place.build_groups(B, spec, treg, H, False)
         sup = {g[0]: g[2] for g in groups if g[3] == "support"}
         back = {g[0]: g[2] for g in groups if g[3] == "back"}
         self.assertIn("pelvis", sup)
         self.assertTrue({"thigh.L", "thigh.R"} <= set(sup))
         self.assertTrue(all(s == "target" for s in sup.values()))         # опора — только верх
-        self.assertIn("back", back)                                       # верх спины — на спинку
+        self.assertNotIn("torso_back", back)  # в исходных данных зоны нет, эвристикой не заменяем
+        self.assertEqual(info['torso_back_vertices'], 0)
+        self.assertIn('missing torso_back', info['back_contact_unavailable'])
         self.assertTrue(all(s == "back" for s in back.values()))
         pel_z = ((B["kp"][9] + B["kp"][10]) / 2)[2]
         for n, idx, surf, role in groups:                                 # на спинке — только выше таза
@@ -151,6 +153,10 @@ class Side(unittest.TestCase):
         spec = ss.ShotSpec("T04", "sit_floor", "floor", ["pelvis", "foot.L", "foot.R"])
         rep = place.place_pose(ref_of("T04_floor_sit_knees_up"), p, spec, p.pixel_point(0.5, 0.9), 1.62,
                                log=lambda m: None)["rep"]
+        # Integration: actual place() and final validator invoke the same p95
+        # on identical final geometry, including unrounded per-surface values.
+        self.assertEqual(rep['penetration'], rep['validation']['penetration'])
+        self.assertEqual(rep['penetration']['hard_p95_m'], rep['validation']['penetration']['hard_p95_m'])
         o = rep["orient"]
         if o["side_ref"] != "side":
             self.assertIn(o["side_final"], (o["side_ref"], "side"))

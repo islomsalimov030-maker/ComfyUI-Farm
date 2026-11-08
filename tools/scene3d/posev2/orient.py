@@ -154,21 +154,37 @@ def tilt_sign_candidate(kp, cam_axis, pose_class):
     return best[1], best[2]
 
 
+def clamp_roll(V, kp):
+    """Зажать измеренный крен, не меняя наклон: поворот вокруг оси таз→шея."""
+    r = roll_deg(kp)
+    if abs(r) <= ROLL_MAX:
+        return V, kp
+    c = (kp[9] + kp[10]) / 2
+    axis_ = kp[69] - c
+    axis_ /= max(np.linalg.norm(axis_), CFG["norm_eps"])
+    lv = left_vec(kp)
+    parallel = axis_ * (axis_ @ lv)
+    a, b, offset = (lv - parallel)[2], np.cross(axis_, lv)[2], parallel[2]
+    radius = math.hypot(a, b)
+    if radius < CFG["direction_eps"]:
+        return V, kp  # вырожденные данные: валидатор не объявляет успех
+    target = math.sin(math.radians(math.copysign(ROLL_MAX, r))) * np.linalg.norm(lv)
+    if abs(target - offset) > radius:
+        return V, kp  # заданный крен недостижим без изменения наклона
+    phase = math.atan2(b, a)
+    delta = math.acos(np.clip((target - offset) / radius, -1, 1))
+    angles = [math.radians(wrap(math.degrees(phase + sign * delta))) for sign in (-1, 1)]
+    R = rot_axis(axis_, min(angles, key=abs))
+    return rot_about(V, c, R), rot_about(kp, c, R)
+
+
 def assemble_tilt_roll(V, kp, pose_class):
-    """наклон корпуса — с рефа, зажатый в диапазон класса; крен ≤ ±15° (кроме lie). Поворот вокруг центра таза.
+    """наклон корпуса — с рефа, зажатый в диапазон класса; крен ≤ ±15°. Поворот вокруг центра таза.
     -> V, kp, info{tilt_ref, tilt, roll_ref, roll, clamped_deg}."""
     c = (kp[9] + kp[10]) / 2
     t0, r0 = tilt_deg(kp), roll_deg(kp)
     info = {"tilt_ref_deg": round(t0, 1), "roll_ref_deg": round(r0, 1)}
-    if pose_class != "lie" and abs(r0) > ROLL_MAX:            # крен: поворот вокруг оси «вперёд»
-        f = forward(kp)
-        if f is not None:
-            target = math.copysign(ROLL_MAX, r0)
-            for sgn in (1, -1):                               # знак поворота подбираем по результату
-                R = rot_axis(f, sgn * math.radians(r0 - target))
-                if abs(roll_deg(rot_about(kp, c, R)) - target) < CFG["roll_match_deg"]:
-                    V, kp = rot_about(V, c, R), rot_about(kp, c, R)
-                    break
+    V, kp = clamp_roll(V, kp)
     lo, hi = TILT_RANGE[pose_class]
     t1 = tilt_deg(kp)
     tt = min(max(t1, lo), hi)
@@ -191,6 +207,8 @@ def assemble_tilt_roll(V, kp, pose_class):
                     continue
             V, kp = rot_about(V, c, R), k2
             break
+    # Наклон выше мог снова внести крен. Финальный clamp сохраняет ось корпуса.
+    V, kp = clamp_roll(V, kp)
     info.update(tilt_deg=round(tilt_deg(kp), 1), roll_deg=round(roll_deg(kp), 1))
     info["clamped_deg"] = round(abs(info["tilt_deg"] - t0) + abs(info["roll_deg"] - r0), 1)
     return V, kp, info

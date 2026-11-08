@@ -31,7 +31,7 @@ import pose_proxy_v26 as proxy
 
 farm_env, pr, ts, ab = base.farm_env, base.pr, base.ts, base.ab
 STATE = farm_env.ROOT / "pose_round" / "h3_v26"
-OUT_SUB = "plate3d_v26"
+OUT_SUB = "plate3d_v26_fixed"
 VARIANTS = ("D1", "D1H", "D2", "D2H", "D3", "D3H")
 DEFAULT_IDS = "Q02,Q03,Q04,Q08,T01,T03,Q09,Q11"
 TRANSFER = "Only her body pose and placement are taken from <Video 1>; the grey mannequin itself never appears in the shot."
@@ -119,15 +119,27 @@ def do_prep(ids, body_json):
         plan = base.plan_crop.crop_scene(src, src_root / "_plate" / "plate_rgb.png", dst, "full")
         Image.open(src / "labels.png").crop(plan["rect_render"]).save(dst / "labels.png")
         shutil.copy(dst / "plate_rgb.png", farm_env.COMFY / "input" / f"{loc_of(pid)}_rgb.png")
-        sil = silhouette(dst / "mask.png")
+        source_silhouette = src / "silhouette.png"
+        if not source_silhouette.is_file():
+            raise FileNotFoundError(source_silhouette)
+        Image.open(source_silhouette).crop(plan["rect_render"]).save(dst / "silhouette.png")
+        sil = silhouette(dst / "silhouette.png")
         labels = proxy.decode_labels(np.asarray(Image.open(dst / "labels.png").convert("RGB")), sil)
         Image.fromarray(labels).save(dst / "zone_ids.png")
         pb, plate = Image.open(dst / "playblast.png").convert("RGB"), Image.open(dst / "plate_rgb.png").convert("RGB")
         Image.fromarray(proxy.proxy_image(pb, plate, sil, labels, colors)).save(dst / "proxy.png")
-        shadow = np.asarray(Image.open(dst / "shadow.png").convert("L"), float) / 255
+        _, colour_names = proxy.colour_vertices(labels[sil], colors)
+        used_zones = set(colour_names)
+        missing_zones = sorted(set(colors) - used_zones)
+        grid = load_json(STATE / "latent_grid.json")
+        cell_px = grid["cell_px"] * sil.shape[1] / ts.SIZE[0]
         for variant in ("D1", "D2", "D3"):
             strength = cfg()[f"strength_{variant.lower()}"]
-            sm = proxy.strength_map(sil, shadow, strength)
+            sm = proxy.strength_map(sil, strength, cell_px)
+            overlay = np.asarray(plate, dtype=float).copy()
+            overlay = overlay * (1 - .6 * sm[..., None]) + np.array([255, 0, 0]) * .6 * sm[..., None]
+            overlay[sil] = .5 * overlay[sil] + .5 * np.array([0, 255, 0])
+            Image.fromarray(np.rint(overlay).astype(np.uint8)).save(dst / f"{variant}_strength_overlay.png")
             # RGB/8 is the installed LoadImage contract; 16-bit mode I may clip
             # to 255 on conversion to RGB. Gaussian tail quantizes to zero.
             Image.fromarray(np.rint(sm * 255).astype(np.uint8)).convert("RGB").save(dst / f"{variant}_strength.png")
@@ -137,9 +149,10 @@ def do_prep(ids, body_json):
         d = prompt_d(a, base.fit_of(pid))
         h = prompt_h(d)
         pp[pid] = {"plan": plan, "D": d, "H": h, "lint_D": require_lint(d, True),
-                   "lint_H": require_lint(h, False), "zones": list(proxy.ZONES)}
+                   "lint_H": require_lint(h, False), "zones": list(colors),
+                   "visible_zones": sorted(used_zones), "zones_not_visible_or_unmapped": missing_zones}
         save_json(pp_file, pp)
-        print(f"[v26] prep {pid}: D/H lint OK; five specified zones (six-zone test blocked)", flush=True)
+        print(f"[v26] prep {pid}: D/H lint OK; outfit zones {list(colors)}", flush=True)
 
 
 def sampler_branch(g, tag, cond, image, denoise, model="shift", mask=None):
@@ -174,6 +187,9 @@ def reachable_graph(graph):
             if isinstance(value, list) and len(value) == 2 and isinstance(value[1], int):
                 visit(str(value[0]))
     visit("save")
+    for key, value in graph.items():
+        if value["class_type"] == "PreviewAny":
+            visit(key)
     out = {k: n for k, n in graph.items() if k in keep}
     for key, node in out.items():
         node["_meta"] = {"title": f"3DA v26 · {key}"}
@@ -206,15 +222,26 @@ def graph_variant(pid, variant):
         sampler_branch(g, variant, "r2v", "init_scale", cfg()["harmonize_denoise"])
     else:
         init_file = "playblast.png" if variant == "D1" else "proxy.png"
-        g["init"] = ab.node("LoadImage", image=f"{loc_of(pid)}_s2/{pid}/{init_file}")
-        g["init_scale"] = ab.node("ImageScale", image=["init", 0], upscale_method="lanczos",
-                                  width=ts.SIZE[0], height=ts.SIZE[1], crop="disabled")
+        g["figure_source"] = ab.node("LoadImage", image=f"{loc_of(pid)}_s2/{pid}/{init_file}")
+        g["figure_scale"] = ab.node("ImageScale", image=["figure_source", 0], upscale_method="lanczos",
+                                    width=ts.SIZE[0], height=ts.SIZE[1], crop="disabled")
+        g["plate_scale"] = ab.node("ImageScale", image=["ref_room", 0], upscale_method="lanczos",
+                                   width=ts.SIZE[0], height=ts.SIZE[1], crop="disabled")
+        g["silhouette_image"] = ab.node("LoadImage", image=f"{loc_of(pid)}_s2/{pid}/silhouette.png")
+        g["silhouette_scale"] = ab.node("ImageScale", image=["silhouette_image", 0], upscale_method="nearest-exact",
+                                        width=ts.SIZE[0], height=ts.SIZE[1], crop="disabled")
+        g["silhouette_mask"] = ab.node("ImageToMask", image=["silhouette_scale", 0], channel="red")
+        g["init_scale"] = ab.node("ImageCompositeMasked", destination=["plate_scale", 0],
+                                  source=["figure_scale", 0], mask=["silhouette_mask", 0],
+                                  x=0, y=0, resize_source=False)
         g["strength_image"] = ab.node("LoadImage", image=f"{loc_of(pid)}_s2/{pid}/{variant}_strength.png")
         g["strength_scale"] = ab.node("ImageScale", image=["strength_image", 0], upscale_method="bilinear",
                                       width=ts.SIZE[0], height=ts.SIZE[1], crop="disabled")
         g["strength_mask"] = ab.node("ImageToMask", image=["strength_scale", 0], channel="red")
         g["regional_model"] = ab.node("DifferentialDiffusion", model=["shift", 0], strength=1.0)
         sampler_branch(g, variant, "r2v", "init_scale", cfg()["region_denoise"], "regional_model", "strength_mask")
+    g["latent_info"] = ab.node("PreviewAny", source=[variant + "_lat", 2])
+    g[variant + "_noise"]["inputs"]["control_after_generate"] = "fixed"
     g["save"] = ab.node("SaveImage", images=[variant + "_select", 0],
                         filename_prefix=f"{OUT_SUB}/{pid}/{variant}_s{cfg()['seed']}")
     return reachable_graph(g)
@@ -257,6 +284,9 @@ def wait_strict(prompt_id, timeout=1800):
                 return "error"
             if status.get("completed") and status.get("status_str") == "success":
                 outputs = item.get("outputs", {})
+                if "latent_info" in outputs:
+                    save_json(STATE / f"latent_info_{prompt_id}.json", outputs["latent_info"])
+                    print("[v26] H3LatentFromImage info: " + json.dumps(outputs["latent_info"]), flush=True)
                 images = [im for output in outputs.values() for im in output.get("images", [])]
                 farm_env.download_outputs(images)
                 saved = outputs.get("save", {}).get("images", [])
@@ -270,9 +300,16 @@ def wait_strict(prompt_id, timeout=1800):
 def do_run(ids, execute_gpu):
     if not execute_gpu:
         raise SystemExit("GPU execution not authorized: explicitly pass --execute-gpu")
-    runs_f = STATE / "runs.json"
+    gates = load_json(STATE / "gates.json")
+    if not all(gates.get(name, {}).get("passed", False) for name in ("G0", "G1")):
+        raise RuntimeError("G0/G1 not passed; D/H submission is blocked")
+    runs_f = STATE / "runs_fixed.json"
     runs = load_json(runs_f) if runs_f.is_file() else []
     for pid in ids:
+        status = base.fit_of(pid)["status"]
+        if status not in ("ok", "partial"):
+            print(f"[v26] skip {pid}: geometry status {status}", flush=True)
+            continue
         for variant in VARIANTS:
             name = f"{pid}_{variant}"
             previous = next((r for r in runs if r["name"] == name), None)
@@ -305,6 +342,7 @@ def do_run(ids, execute_gpu):
             record = {"name": name, "status": "submitted", "prompt_id": ab.post(graph), "t0": time.time()}
             runs.append(record)
             save_json(runs_f, runs)
+            print(f"[v26] submitted {name}", flush=True)
             try:
                 status = wait_strict(record["prompt_id"])
             except Exception:
@@ -313,6 +351,7 @@ def do_run(ids, execute_gpu):
                 raise
             record.update(status=status, seconds=round(time.time() - record["t0"], 1))
             save_json(runs_f, runs)
+            print(f"[v26] {name}: {status}, {record['seconds']} s", flush=True)
             if status != "success":
                 raise RuntimeError(f"{name}: {status}; stop")
     # Only after the complete authorized run, as requested. No /free during build.
@@ -391,6 +430,11 @@ def target_points(pid, plan, size):
 
 
 def do_metrics(ids, detect=False, execute_gpu=False):
+    if detect and not execute_gpu:
+        raise SystemExit("DWPose can use GPU: pass --detect --execute-gpu explicitly")
+    gates = load_json(STATE / "gates.json")
+    if not all(gates.get(name, {}).get("passed", False) for name in ("G0", "G1")):
+        raise RuntimeError("G0/G1 not passed; invalid D/H metrics must not be calculated")
     pp = load_json(STATE / "prompts_v26.json")
     files = [str(f) for pid in ids for f in outputs(pid).values()]
     det_file = STATE / "dw_det.json"
@@ -439,7 +483,7 @@ def caption(name, m):
     def num(key):
         value = m.get(key)
         return "—" if value is None else f"{value:.3g}"
-    return f"{name} " + " / ".join(num(k) for k in ("pck_lr", "bg_ssim", "obj_shift_px", "fig_same", "noise_ratio"))
+    return f"{name} " + " / ".join(num(k) for k in ("pck_lr", "bg_ssim", "obj_shift_px", "fig_same", "proxy_same", "noise_ratio"))
 
 
 def do_sheet(ids, out):
@@ -447,12 +491,11 @@ def do_sheet(ids, out):
     rows = []
     for pid in ids:
         directory, fit = scene_dir(pid), base.fit_of(pid)
-        cells = [[str(Path(farm_env.ROOT).parent / "refs_v2" / f"{pid}.png"), "ref"],
-                 [str(directory / "playblast.png"), "playblast"], [str(directory / "proxy.png"), "proxy (5 specified zones)"]]
-        for variant in VARIANTS:
+        cells = [[str(Path(farm_env.ROOT).parent / "refs_v2" / f"{pid}.png"), "ref"]]
+        for variant in ("D1", "D2", "D3"):
             m = metrics.get(pid, {}).get(variant)
             cells.append([m["file"] if m else None, caption(variant, m)])
-        rows.append({"label": f"{pid} {fit['status']} | PCK_lr / bg_ssim / obj_shift / fig_same / noise_ratio",
+        rows.append({"label": f"{pid} {fit['status']} | PCK_lr / bg_ssim / obj_shift / fig_same / proxy_same / noise_ratio",
                      "cells": cells})
     spec = STATE / "sheet_spec.json"
     save_json(spec, rows)
@@ -475,10 +518,21 @@ def do_seam(ids, out):
     metrics = load_json(STATE / "metrics.json")
     rows = []
     for pid in ids:
-        if pid.split("_")[0] not in ("Q03", "Q08"):
+        available = metrics.get(pid, {})
+        first = next((available[v] for v in ("D1", "D2", "D3") if v in available), None)
+        if first is None:
             continue
-        cells = []
-        for variant in ("D1", "D1H", "D3", "D3H"):
+        reference = Image.open(Path(farm_env.ROOT).parent / "refs_v2" / f"{pid}.png").convert("RGB")
+        ref_data = Path(farm_env.ROOT).parent / "refs_v2_npz" / f"{pid}.ref.npz"
+        with np.load(ref_data, allow_pickle=False) as ref:
+            pelvis = (ref["kp2d"][9] + ref["kp2d"][10]) / 2
+            pelvis = pelvis * np.array(reference.size) / np.array([ref["W"], ref["H"]])
+        ref_target = np.zeros((18, 3))
+        ref_target[[8, 11], :2] = pelvis
+        reference_path = STATE / f"{pid}_ref_seam.png"
+        seam_crop(reference, ref_target).save(reference_path)
+        cells = [[str(reference_path), "ref: pelvis, 30% crop, 2x"]]
+        for variant in ("D1", "D2", "D3"):
             m = metrics.get(pid, {}).get(variant)
             if m is None:
                 raise FileNotFoundError(f"seam: {pid} {variant} missing")
@@ -489,7 +543,7 @@ def do_seam(ids, out):
             cells.append([str(path), caption(variant, m)])
         rows.append({"label": f"{pid}: pelvis, 30% frame crop, 2x (no comp2)", "cells": cells})
     if not rows:
-        raise ValueError("seam sheet requires Q03 and/or Q08")
+        raise ValueError("seam sheet requires at least one generated D1/D2/D3 shot")
     spec = STATE / "seam_spec.json"
     save_json(spec, rows)
     subprocess.run([sys.executable, str(base.REPO / "tools/rowsheet.py"), str(spec), "--out", out], check=True)

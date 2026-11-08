@@ -36,11 +36,16 @@ def tpose():
 
 
 class ProxyTests(unittest.TestCase):
-    def test_five_specified_zones_tpose(self):
+    def test_all_vertices_coloured_with_profile_zones_and_fallback(self):
         points = np.array([(0, -.10, 1.74), (0, 0, 1.3), (.12, 0, .8), (.12, -.10, .02), (0, .1, 1.85)])
-        labels = proxy.vertex_zones(points, tpose())
-        self.assertEqual(set(labels), set(range(1, 6)))
-        self.assertEqual(labels.tolist(), [1, 2, 3, 4, 5])
+        labels = np.append(proxy.vertex_zones(points, tpose()), 0)
+        for keys in (proxy.ZONES, ("skin", "top"), ("top", "bottom"), ()):
+            colors = {key: np.array([100., 120., 140.]) for key in keys}
+            rgb, names = proxy.colour_vertices(labels, colors)
+            self.assertEqual(rgb.shape, (len(labels), 3))
+            self.assertTrue(np.isfinite(rgb).all())
+            self.assertEqual(set(names), set(keys) | ({"fallback"} if "skin" not in keys else set()))
+            np.testing.assert_array_equal(rgb[-1], colors.get("skin", [200, 160, 138]))
 
     def test_upper_arm_proximal_40_percent(self):
         labels = proxy.vertex_zones(np.array([(.26, 0, 1.5), (.44, 0, 1.5), (.65, 0, 1.5)]), tpose())
@@ -62,12 +67,12 @@ class ProxyTests(unittest.TestCase):
     def test_strength_dilation_gaussian_and_floor_zero(self):
         sil = np.zeros((200, 200), bool)
         sil[100, 100] = True
-        shadow = np.zeros_like(sil, float)
-        shadow[100, 110] = 1
-        m = proxy.strength_map(sil, shadow, .8)
-        self.assertAlmostEqual(m[100, 118], .8)
-        self.assertAlmostEqual(m[100, 128], .8 * np.exp(-.5))
-        self.assertLess(m[0, 0], 1e-20)
+        m = proxy.strength_map(sil, .8, 8)
+        self.assertAlmostEqual(m[100, 108], .8)
+        self.assertGreater(m[100, 116], 0)
+        self.assertLess(m[100, 116], .8)
+        self.assertEqual(m[100, 124], 0)
+        self.assertEqual(m[0, 0], 0)
         self.assertTrue(np.all((m >= 0) & (m <= .8)))
 
     def test_proxy_colour_luminance_and_shadow_preserved(self):
@@ -76,10 +81,10 @@ class ProxyTests(unittest.TestCase):
         plate = np.full_like(pb, 200)
         sil = np.array([[False, True], [False, True]])
         labels = np.where(sil, 2, 0).astype(np.uint8)
-        colors = np.zeros((6, 3)); colors[2] = (200, 120, 80)
+        colors = {"top": np.array([200, 120, 80])}
         result = proxy.proxy_image(pb, plate, sil, labels, colors)
         np.testing.assert_array_equal(result[0, 0], pb[0, 0])
-        np.testing.assert_array_equal(result[0, 1], colors[2])
+        np.testing.assert_array_equal(result[0, 1], colors["top"])
 
     def test_palette_and_outfit(self):
         labels = proxy.decode_labels(proxy.LABEL_RGB[1:][None], np.ones((1, 5), bool))
@@ -88,7 +93,9 @@ class ProxyTests(unittest.TestCase):
             f = Path(tmp) / "body.json"
             f.write_text(json.dumps({"outfit_colors": dict(zip(proxy.ZONES,
                 ["#E8C4A8", "#F2F2F2", "#8FA9C6", "#F5F5F5", "#C9A46A"]))}))
-            self.assertEqual(proxy.outfit_colors(f)[1].tolist(), [232, 196, 168])
+            self.assertEqual(proxy.outfit_colors(f)["skin"].tolist(), [232, 196, 168])
+            f.write_text(json.dumps({"outfit_colors": {"custom_zone": "#010203"}}))
+            self.assertEqual(set(proxy.outfit_colors(f)), {"custom_zone"})
 
 
 class RunnerTests(unittest.TestCase):
@@ -144,6 +151,7 @@ class RunnerTests(unittest.TestCase):
                 lat = graph[variant + "_lat"]["inputs"]
                 noise = graph[variant + "_noise"]["inputs"]
                 self.assertEqual(noise["noise_seed"], runner.cfg()["seed"])
+                self.assertEqual(noise["control_after_generate"], "fixed")
                 if variant.endswith("H"):
                     self.assertFalse(any(k.startswith("ref_videos.") for k in prompt))
                     self.assertNotIn("DifferentialDiffusion", types)
@@ -152,6 +160,10 @@ class RunnerTests(unittest.TestCase):
                     self.assertIn("ref_videos.ref_video_0", prompt)
                     self.assertIn("DifferentialDiffusion", types)
                     self.assertEqual(lat["denoise"], 1.)
+                    self.assertEqual(graph["init_scale"]["class_type"], "ImageCompositeMasked")
+                    self.assertEqual(graph["init_scale"]["inputs"]["destination"], ["plate_scale", 0])
+                    self.assertTrue(graph["silhouette_image"]["inputs"]["image"].endswith("silhouette.png"))
+                    self.assertIn("latent_info", graph)
 
     def test_metrics_full_frame_ssim_and_no_grey_left(self):
         rng = np.random.default_rng(10)
@@ -175,6 +187,42 @@ class RunnerTests(unittest.TestCase):
         target = np.zeros((18, 3)); target[8, :2] = (490, 250); target[11, :2] = (510, 250)
         crop = runner.seam_crop(Image.new("RGB", (1000, 500)), target)
         self.assertEqual(crop.size, (600, 300))
+
+    def test_rejected_geometry_never_submits(self):
+        with patch.object(runner.base, "fit_of", return_value={"status": "no_target"}), \
+             patch.object(runner, "save_json"), \
+             patch.object(runner, "load_json", side_effect=lambda path: {"G0": {"passed": True}, "G1": {"passed": True}} if str(path).endswith("gates.json") else []), \
+             patch.object(runner.ab, "post") as post, \
+             patch("urllib.request.urlopen"):
+            runner.do_run(["Q03_test"], True)
+            post.assert_not_called()
+
+    def test_failed_g0_blocks_d_submission(self):
+        with patch.object(runner, "load_json", return_value={"G0": {"passed": False}}), \
+             patch.object(runner.ab, "post") as post:
+            with self.assertRaisesRegex(RuntimeError, "G0/G1"):
+                runner.do_run(["Q04_test"], True)
+            post.assert_not_called()
+            with self.assertRaisesRegex(RuntimeError, "invalid D/H metrics"):
+                runner.do_metrics(["Q04_test"])
+
+    def test_g0_requires_optin_and_never_repeats_saved_gate(self):
+        import pose_gate_v26 as gate
+        with self.assertRaises(SystemExit):
+            gate.run_g0(False)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "gates.json").write_text('{"G0":{"passed":false}}')
+            with patch.object(runner, "STATE", Path(tmp)), patch.object(runner.ab, "post") as post:
+                with self.assertRaisesRegex(RuntimeError, "Saved gate exists"):
+                    gate.run_g0(True)
+                post.assert_not_called()
+
+    def test_blender_runner_sets_isolated_site(self):
+        import os
+        with patch.dict(os.environ, {}, clear=True):
+            runner.farm_env.bpy_cmd("render.py")
+            self.assertEqual(Path(os.environ["SCENE3D_BLENDER_SITE"]),
+                             Path(__file__).resolve().parents[3] / ".blender_site")
 
     def test_no_gpu_without_explicit_optin(self):
         with self.assertRaises(SystemExit):

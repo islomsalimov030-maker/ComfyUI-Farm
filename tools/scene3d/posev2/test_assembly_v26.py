@@ -67,20 +67,24 @@ class RefineRoot(unittest.TestCase):
 
 
 class BackContact(unittest.TestCase):
-    def test_recline_rejects_floating_back_and_accepts_wall_fallback(self):
+    def test_recline_requires_torso_back_not_secondary_wall(self):
         ev = dict(support_object='bed', support_part_gaps_m={'pelvis': 0.0},
                   penetration={'soft_p95_m': 0.0, 'hard_p95_m': 0.0},
                   support_ok=True, footprint={'ok': True}, cells_ok=True, frame={'ok': True},
-                  back_gap_m=.50, wall_gap_m=0.0)
+                  back_gap_m=.50, back_contact_gap_m=.50, wall_gap_m=0.0)
         spec = ss.ShotSpec('recline', 'recline', 'bed', ['pelvis'])
         with patch.object(assembly, 'orientation_checks', side_effect=lambda *args: []):
             bad = assembly.validate(None, ev, spec, None, None, None, True)
             self.assertFalse(bad['ok'])
             self.assertEqual(bad['first_failure']['check'], 'back_contact')
-            self.assertAlmostEqual(bad['first_failure']['excess'], .47)
-            ev['back_gap_m'] = None
+            self.assertAlmostEqual(bad['first_failure']['excess'], .49)
+            self.assertEqual(bad['status'], 'partial')
+            self.assertIn('no_back_contact', bad['flags'])
+            ev['back_contact_gap_m'] = None
+            self.assertFalse(assembly.validate(None, ev, spec, None, None, None, True)['ok'])
+            ev['back_contact_gap_m'] = .009
             self.assertTrue(assembly.validate(None, ev, spec, None, None, None, True)['ok'])
-            ev['wall_gap_m'] = None
+            ev['back_contact_gap_m'] = .01001
             self.assertFalse(assembly.validate(None, ev, spec, None, None, None, True)['ok'])
 
 

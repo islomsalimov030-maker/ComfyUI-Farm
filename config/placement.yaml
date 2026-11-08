@@ -185,6 +185,9 @@ refine:
   report_joint_deg: 10
 
 place:
+  contact_tol: 0.01
+  height_lift_step_m: 0.005
+  height_lift_extra_m: 0.01
   sup_gap_cm: 3.0
   pen_soft_m: 0.06
   pen_hard_m: 0.03

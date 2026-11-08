@@ -1,7 +1,7 @@
 """3D-A v2.6: nearest-bone vertex zones, label pass decoding, coloured proxy and D strength map.
 
-Only the FIVE zones explicitly specified by step 9 are implemented. The request for
-six zones is contradictory; no sixth zone is inferred. No models or new packages.
+Anatomical labels follow step 9; the colour palette is defined by body.json keys.
+Missing anatomical zones use skin, or #C8A08A when skin is not provided.
 The renderer supplies final MHR70 joints in world coordinates (label_joints.npz: kp).
 """
 import json
@@ -26,15 +26,33 @@ def config():
 def outfit_colors(path):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     colors = data["outfit_colors"]
-    if set(colors) != set(ZONES):
-        raise ValueError(f"outfit_colors must contain exactly {ZONES}; sixth zone is unspecified")
-    out = np.zeros((len(ZONES) + 1, 3), dtype=float)
-    for i, zone in enumerate(ZONES, 1):
-        text = colors[zone]
+    if not isinstance(colors, dict):
+        raise ValueError("outfit_colors must be a mapping of zone names to #RRGGBB")
+    out = {}
+    for zone, text in colors.items():
         if not isinstance(text, str) or len(text) != 7 or text[0] != "#":
             raise ValueError(f"invalid outfit colour {zone}: expected #RRGGBB")
-        out[i] = [int(text[k:k + 2], 16) for k in (1, 3, 5)]
+        out[zone] = np.array([int(text[k:k + 2], 16) for k in (1, 3, 5)], dtype=float)
     return out
+
+
+def colour_vertices(labels, colors):
+    """Colour every vertex; palette names are exactly body.json keys + fallback.
+
+    No assignment is invented for extra outfit keys without anatomical mapping.
+    The returned names make that limitation measurable rather than silently
+    claiming all provided zones are present on an arbitrary mesh.
+    """
+    labels = np.asarray(labels)
+    fallback_name = "skin" if "skin" in colors else "fallback"
+    fallback = colors.get("skin", np.array([200., 160., 138.]))
+    rgb = np.tile(fallback, labels.shape + (1,))
+    names = np.full(labels.shape, fallback_name, dtype=object)
+    for i, name in enumerate(ZONES, 1):
+        if name in colors:
+            take = labels == i
+            rgb[take], names[take] = colors[name], name
+    return rgb, names
 
 
 def bone_segments(kp):
@@ -131,28 +149,30 @@ def proxy_image(playblast, plate, silhouette, labels, colors):
         raise ValueError("empty mannequin silhouette")
     if pb.shape != plate.shape or labels.shape != sil.shape or pb.shape[:2] != sil.shape:
         raise ValueError("proxy inputs must have the same raster size")
-    if np.any((labels[sil] < 1) | (labels[sil] > len(ZONES))):
-        raise ValueError("unlabelled mannequin vertices/pixels")
     luminance = pb @ np.array([0.299, 0.587, 0.114])
     mean = float(luminance[sil].mean())
     if mean <= np.finfo(float).eps:
         raise ValueError("zero mannequin luminance")
     out = pb.copy()  # outside figure = plate with existing cast/contact shadows
-    out[sil] = colors[labels[sil]] * (luminance[sil] / mean)[:, None]
+    rgb, _ = colour_vertices(labels[sil], colors)
+    out[sil] = rgb * (luminance[sil] / mean)[:, None]
     return np.clip(np.rint(out), 0, 255).astype(np.uint8)
 
 
-def strength_map(silhouette, shadow, strength, cfg=None):
+def strength_map(silhouette, strength, cell_px):
+    """Silhouette only: 1-cell dilation + compact Gaussian tail over 2 cells.
+
+    Shifted normalised Gaussian reaches exactly zero at the tail boundary.
+    No shadow, plate difference, height-fraction or other region source.
+    """
     from scipy.ndimage import distance_transform_edt
-    cfg = config() if cfg is None else cfg
     sil = np.asarray(silhouette, bool)
-    reg = sil | (np.asarray(shadow, float) > cfg["shadow_threshold"])
-    if not reg.any():
-        raise ValueError("empty region for strength map")
-    h = sil.shape[0]
-    dist = distance_transform_edt(~reg)
-    outside = np.maximum(dist - cfg["strength_dilate_height"] * h, 0)
-    sigma = cfg["strength_sigma_height"] * h
-    if sigma <= 0 or not 0 < strength <= 1:
-        raise ValueError("invalid regional strength / sigma")
-    return strength * np.exp(-outside ** 2 / (2 * sigma ** 2))
+    if not sil.any():
+        raise ValueError("empty silhouette")
+    if cell_px <= 0 or not 0 < strength <= 1:
+        raise ValueError("invalid cell size / strength")
+    distance = distance_transform_edt(~sil)
+    t = np.maximum(distance - cell_px, 0) / (2 * cell_px)
+    edge = np.exp(-2.)
+    falloff = np.maximum((np.exp(-2 * t * t) - edge) / (1 - edge), 0)
+    return np.where(t >= 1, 0, strength * falloff)
