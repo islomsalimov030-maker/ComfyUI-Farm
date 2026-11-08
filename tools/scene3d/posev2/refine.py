@@ -289,7 +289,7 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
                 tree, P, N = S[surf]
                 dd, j = tree.query(Xn[idx])
                 targets.append((torch.tensor(idx, device=dev), torch.tensor(P[j], device=dev, dtype=torch.float32),
-                                torch.tensor(N[j], device=dev, dtype=torch.float32), role in ("support", "back"),
+                                torch.tensor(N[j], device=dev, dtype=torch.float32), role in ("support", "back", "wall"),
                                 torch.tensor(dd < 0.4, device=dev)))
             u, v, z = plate.project(Xn[pen_idx])
             zp = plate.depth_at(u, v)

@@ -1,0 +1,5052 @@
+{
+ "placement": [
+  {
+   "id": "Q01_stand_hand_face",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q01_stand_hand_face",
+    "pose_class": "stand",
+    "target_object": "floor",
+    "support_parts": [
+     "foot.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3871,
+    "L_torso": 0.4837
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.L",
+    "foot.R"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.L",
+     "foot.R"
+    ],
+    "table_support": [
+     "foot.L",
+     "foot.R"
+    ]
+   },
+   "secondary": [],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.L": "floor",
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -1.4,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 2.1,
+    "n_pen": 919,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 1.8,
+    "hard_max_cm": 2.1,
+    "hard_n": 919,
+    "p95_cm": 1.8,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     1321,
+     361,
+     1442,
+     798
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      2.099,
+      4.559,
+      0.001
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 5.7,
+    "tilt_set_deg": 5.7,
+    "tilt_final_deg": 9.3,
+    "roll_ref_deg": 1.8,
+    "roll_final_deg": 0.0,
+    "clamped_deg": 0.1,
+    "total_change_deg": 5.4,
+    "yaw": {
+     "ref_yaw_deg": -112.8,
+     "want_deg": -112.8,
+     "yaw_deg": -113.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -114.7
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 9.3,
+     "elev_deg": 80.7,
+     "head_minus_pelvis_m": 0.585,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 1.9,
+    "plate": 0.4
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      2.099,
+      4.559
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.4,
+     "pen_p95_cm": 1.8,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      2.0985318006511764,
+      4.5587387135454405
+     ],
+     "h": 0.001,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "Q02_bed_cross_legs",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q02_bed_cross_legs",
+    "pose_class": "sit_edge",
+    "target_object": "bed",
+    "support_parts": [
+     "pelvis"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "foot.L",
+      "surface": "floor"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3964,
+    "L_torso": 0.49
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "foot.L",
+     "surface": "floor",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.L",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.L",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "torso",
+     "surface": "v",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "bed",
+   "support_parts_on": {
+    "pelvis": "bed"
+   },
+   "support_gap_cm": -0.8,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 1.7,
+    "n_pen": 273,
+    "soft_p95_cm": 1.2,
+    "soft_max_cm": 1.3,
+    "soft_n": 62,
+    "hard_p95_cm": 1.5,
+    "hard_max_cm": 1.7,
+    "hard_n": 211,
+    "p95_cm": 1.4,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     465,
+     270,
+     751,
+     838
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      -0.33,
+      2.33,
+      0.307
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    },
+    {
+     "T": [
+      -0.266,
+      2.33,
+      0.308
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    },
+    {
+     "T": [
+      -0.378,
+      2.33,
+      0.308
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    },
+    {
+     "T": [
+      -0.126,
+      2.33,
+      0.309
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    },
+    {
+     "T": [
+      -0.394,
+      2.33,
+      0.308
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    },
+    {
+     "T": [
+      -0.27,
+      2.33,
+      0.307
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 16.7,
+    "tilt_set_deg": 16.7,
+    "tilt_final_deg": 8.4,
+    "roll_ref_deg": 5.7,
+    "roll_final_deg": 10.2,
+    "clamped_deg": 0.1,
+    "total_change_deg": 12.8,
+    "yaw": {
+     "ref_yaw_deg": -37.9,
+     "want_deg": -37.9,
+     "yaw_deg": -38.0,
+     "window_deg": -90.0,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -81.9
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 8.4,
+     "elev_deg": 81.6,
+     "head_minus_pelvis_m": 0.597,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 44.1,
+    "plate": 20.8
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.33,
+      2.33
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": 0.8,
+     "pen_p95_cm": 4.0,
+     "footprint_out": null,
+     "frame_ok": false,
+     "frame_tries": 5,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "ok",
+     "cell_xy": [
+      -0.33,
+      2.33
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -0.8,
+     "pen_p95_cm": 1.4,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 5,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 6.3,
+      "neck/head": 14.2,
+      "arms": 14.3,
+      "legs": 5.5
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "bed_1",
+    "via": "bed",
+    "type": "bed",
+    "soft": true,
+    "name": "bed",
+    "backrest_name": "pillows",
+    "anchor_id": "bed_1_edge"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bed_1",
+    "anchor_id": "bed_1_edge",
+    "via": "bed",
+    "rule": "sit_edge_side",
+    "band_m": [
+     0.0,
+     0.238
+    ],
+    "cell": {
+     "xy": [
+      -0.33000000000000007,
+      2.33
+     ],
+     "h": 0.307,
+     "near": 0.23,
+     "far": 0.82,
+     "dt": 0.2,
+     "anchor": "pelvis"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": [
+     {
+      "yaw_deg": -90.0,
+      "len_m": 2.74,
+      "access": 0.91
+     },
+     {
+      "yaw_deg": -0.0,
+      "len_m": 1.74,
+      "access": 0.29
+     },
+     {
+      "yaw_deg": 90.0,
+      "len_m": 2.74,
+      "access": 0.0
+     },
+     {
+      "yaw_deg": -180.0,
+      "len_m": 1.74,
+      "access": 0.37
+     }
+    ],
+    "side_yaw_deg": -90.0,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 6.3,
+     "neck/head": 14.2,
+     "arms": 14.3,
+     "legs": 5.5
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "Q03_bed_kneel",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q03_bed_kneel",
+    "pose_class": "kneel",
+    "target_object": "bed",
+    "support_parts": [
+     "knee.L",
+     "knee.R",
+     "shin.L",
+     "shin.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3916,
+    "L_torso": 0.4905
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.L",
+    "foot.R"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.L",
+     "foot.R"
+    ],
+    "table_support": [
+     "knee.L",
+     "knee.R",
+     "shin.L",
+     "shin.R"
+    ]
+   },
+   "secondary": [
+    {
+     "part": "knee.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "knee.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.R",
+     "surface": "h",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "bed",
+   "support_parts_on": {
+    "foot.L": "bed",
+    "foot.R": "bed"
+   },
+   "support_gap_cm": -2.8,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 4.9,
+    "n_pen": 300,
+    "soft_p95_cm": 4.3,
+    "soft_max_cm": 4.9,
+    "soft_n": 300,
+    "hard_p95_cm": 0.0,
+    "hard_max_cm": 0.0,
+    "hard_n": 0,
+    "p95_cm": 4.3,
+    "ok": true
+   },
+   "footprint": {
+    "checked": true,
+    "ok": true,
+    "n_low": 3673,
+    "n_out": 0
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     733,
+     148,
+     904,
+     585
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.47,
+      2.65,
+      0.316
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 11.6,
+    "tilt_set_deg": 11.6,
+    "tilt_final_deg": 17.6,
+    "roll_ref_deg": -1.0,
+    "roll_final_deg": 3.1,
+    "clamped_deg": 0.1,
+    "total_change_deg": 10.1,
+    "yaw": {
+     "ref_yaw_deg": -99.8,
+     "want_deg": -99.8,
+     "yaw_deg": -100.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -100.1
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": {
+     "plate_deg": -123.5,
+     "reproj_plate": 0.105,
+     "reproj_ref": 0.052,
+     "picked": "ref"
+    },
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 17.6,
+     "elev_deg": 72.4,
+     "head_minus_pelvis_m": 0.536,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 0.3,
+    "plate": -6.3
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.47,
+      2.65
+     ],
+     "shift_m": 0.04,
+     "support_object": "bed",
+     "gap_cm": -2.8,
+     "pen_p95_cm": 4.3,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [
+    "orient_conflict"
+   ],
+   "target_info": {
+    "object_id": "bed_1",
+    "via": "bed",
+    "type": "bed",
+    "soft": true,
+    "name": "bed",
+    "backrest_name": "pillows",
+    "anchor_id": "bed_1_center"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bed_1",
+    "anchor_id": "bed_1_center",
+    "via": "bed",
+    "rule": "kneel",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.46999999999999975,
+      2.65
+     ],
+     "h": 0.316,
+     "near": 0.52,
+     "far": 0.52,
+     "dt": 0.526,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.04,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "Q04_bed_side_lie",
+   "status": "contact_fail",
+   "shot_spec": {
+    "id": "Q04_bed_side_lie",
+    "pose_class": "lie",
+    "target_object": "bed",
+    "support_parts": [
+     "pelvis",
+     "thigh.L"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "elbow.L",
+      "surface": "bed"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3816,
+    "L_torso": 0.5044
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis",
+    "thigh.L"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "forearm.L",
+     "surface": "target",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "knee.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "torso",
+     "surface": "h",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "bed",
+   "support_parts_on": {
+    "pelvis": "bed",
+    "thigh.L": "bed"
+   },
+   "support_gap_cm": -4.5,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 17.7,
+    "n_pen": 2093,
+    "soft_p95_cm": 17.1,
+    "soft_max_cm": 17.7,
+    "soft_n": 2093,
+    "hard_p95_cm": 0.0,
+    "hard_max_cm": 0.0,
+    "hard_n": 0,
+    "p95_cm": 17.1,
+    "ok": false
+   },
+   "footprint": {
+    "checked": true,
+    "ok": true,
+    "n_low": 15651,
+    "n_out": 0
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     546,
+     478,
+     1124,
+     693
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.09,
+      2.65,
+      0.316
+     ],
+     "frame_ok": true,
+     "status": "wrong_surface"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 81.7,
+    "tilt_set_deg": 81.7,
+    "tilt_final_deg": 79.1,
+    "roll_ref_deg": 65.9,
+    "roll_final_deg": 2.0,
+    "clamped_deg": 0.0,
+    "total_change_deg": 2.6,
+    "yaw": {
+     "ref_yaw_deg": -82.9,
+     "want_deg": -82.9,
+     "yaw_deg": -83.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -91.9
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": {
+     "plate_deg": -105.7,
+     "reproj_plate": 0.341,
+     "reproj_ref": 0.078,
+     "picked": "ref"
+    },
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 79.1,
+     "elev_deg": 10.9,
+     "head_minus_pelvis_m": 0.053,
+     "rule": "|h(голова) − h(таз)| ≤ 0.18·H = 0.29 м"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 9.0,
+    "plate": 104.4
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      0.47,
+      2.65
+     ],
+     "shift_m": 0.0,
+     "support_object": "other",
+     "gap_cm": -4.4,
+     "pen_p95_cm": 4.3,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.47,
+      2.65
+     ],
+     "shift_m": null,
+     "support_object": "bed",
+     "gap_cm": -3.5,
+     "pen_p95_cm": 5.5,
+     "footprint_out": 2130,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 14.0,
+      "neck/head": 14.4,
+      "arms": 14.8,
+      "legs": 35.2
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 1,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      0.19,
+      2.65
+     ],
+     "shift_m": 0.78,
+     "support_object": "other",
+     "gap_cm": -5.8,
+     "pen_p95_cm": 6.3,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 1,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.19,
+      2.65
+     ],
+     "shift_m": null,
+     "support_object": "bed",
+     "gap_cm": -3.6,
+     "pen_p95_cm": 5.5,
+     "footprint_out": 2991,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 13.6,
+      "neck/head": 14.4,
+      "arms": 15.1,
+      "legs": 46.8
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 2,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      0.09,
+      2.65
+     ],
+     "shift_m": 0.0,
+     "support_object": "other",
+     "gap_cm": -4.3,
+     "pen_p95_cm": 4.2,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 2,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.09,
+      2.65
+     ],
+     "shift_m": 0.25,
+     "support_object": "bed",
+     "gap_cm": -4.5,
+     "pen_p95_cm": 17.1,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 6.2,
+      "neck/head": 8.3,
+      "arms": 18.6,
+      "legs": 21.5
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 3,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      0.31,
+      2.65
+     ],
+     "shift_m": 0.0,
+     "support_object": "other",
+     "gap_cm": -4.4,
+     "pen_p95_cm": 4.3,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 3,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.31,
+      2.65
+     ],
+     "shift_m": 0.24,
+     "support_object": "bed",
+     "gap_cm": -4.5,
+     "pen_p95_cm": 13.5,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 21.7,
+      "neck/head": 31.0,
+      "arms": 112.7,
+      "legs": 82.2
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 4,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.01,
+      2.65
+     ],
+     "shift_m": 0.02,
+     "support_object": "other",
+     "gap_cm": -4.4,
+     "pen_p95_cm": 4.3,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 4,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.01,
+      2.65
+     ],
+     "shift_m": null,
+     "support_object": "bed",
+     "gap_cm": -3.3,
+     "pen_p95_cm": 3.6,
+     "footprint_out": 2298,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 0.6,
+      "neck/head": 2.9,
+      "arms": 3.7,
+      "legs": 19.2
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [
+    "orient_conflict"
+   ],
+   "target_info": {
+    "object_id": "bed_1",
+    "via": "bed",
+    "type": "bed",
+    "soft": true,
+    "name": "bed",
+    "backrest_name": "pillows",
+    "anchor_id": "bed_1_center"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bed_1",
+    "anchor_id": "bed_1_center",
+    "via": "bed",
+    "rule": "lie",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.08999999999999986,
+      2.65
+     ],
+     "h": 0.316,
+     "near": 0.5,
+     "far": 0.74,
+     "dt": 0.52,
+     "anchor": "support"
+    },
+    "attempt": 2,
+    "shift_m": 0.25,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 6.2,
+     "neck/head": 8.3,
+     "arms": 18.6,
+     "legs": 21.5
+    },
+    "limits_ok": false
+   }
+  },
+  {
+   "id": "Q05_crouch_shoelace",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q05_crouch_shoelace",
+    "pose_class": "crouch",
+    "target_object": "floor",
+    "support_parts": [
+     "foot.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.4035,
+    "L_torso": 0.4448
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.L",
+    "foot.R",
+    "knee.L",
+    "shin.L"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.L",
+     "foot.R",
+     "knee.L",
+     "shin.L"
+    ],
+    "table_support": [
+     "foot.L",
+     "foot.R"
+    ]
+   },
+   "secondary": [
+    {
+     "part": "thigh.L",
+     "surface": "h",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.L": "floor",
+    "foot.R": "floor",
+    "knee.L": "floor",
+    "shin.L": "floor"
+   },
+   "support_gap_cm": -1.5,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 2.9,
+    "n_pen": 566,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 2.5,
+    "hard_max_cm": 2.9,
+    "hard_n": 566,
+    "p95_cm": 2.5,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     861,
+     471,
+     1029,
+     731
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.371,
+      2.818,
+      0.006
+     ],
+     "frame_ok": true,
+     "status": "contact_fail"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 33.0,
+    "tilt_set_deg": 33.0,
+    "tilt_final_deg": 34.2,
+    "roll_ref_deg": -2.1,
+    "roll_final_deg": -0.6,
+    "clamped_deg": 0.1,
+    "total_change_deg": 2.7,
+    "yaw": {
+     "ref_yaw_deg": -87.6,
+     "want_deg": -87.6,
+     "yaw_deg": -88.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -97.5
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 34.2,
+     "elev_deg": 55.8,
+     "head_minus_pelvis_m": 0.359,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 9.9,
+    "plate": 10.2
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.371,
+      2.818
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.9,
+     "pen_p95_cm": 3.1,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "ok",
+     "cell_xy": [
+      0.371,
+      2.818
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.5,
+     "pen_p95_cm": 2.5,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 0.5,
+      "neck/head": 0.1,
+      "arms": 0.1,
+      "legs": 2.4
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.3709517638800754,
+      2.8176195046373405
+     ],
+     "h": 0.006,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 0.5,
+     "neck/head": 0.1,
+     "arms": 0.1,
+     "legs": 2.4
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "Q06_floor_hug_knees",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q06_floor_hug_knees",
+    "pose_class": "sit_floor",
+    "target_object": "floor",
+    "support_parts": [
+     "pelvis",
+     "foot.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.4047,
+    "L_torso": 0.4584
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis",
+    "foot.L",
+    "foot.R"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "hand.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.L",
+     "surface": "h",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "pelvis": "floor",
+    "foot.L": "floor",
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -0.3,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 1.5,
+    "n_pen": 669,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 1.2,
+    "hard_max_cm": 1.5,
+    "hard_n": 669,
+    "p95_cm": 1.2,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     789,
+     467,
+     972,
+     718
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.225,
+      2.732,
+      0.006
+     ],
+     "frame_ok": true,
+     "status": "contact_fail"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 22.3,
+    "tilt_set_deg": 22.3,
+    "tilt_final_deg": 24.8,
+    "roll_ref_deg": 2.8,
+    "roll_final_deg": -6.7,
+    "clamped_deg": 0.1,
+    "total_change_deg": 12.0,
+    "yaw": {
+     "ref_yaw_deg": -110.9,
+     "want_deg": -110.9,
+     "yaw_deg": -111.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -94.7
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 24.8,
+     "elev_deg": 65.2,
+     "head_minus_pelvis_m": 0.525,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -16.2,
+    "plate": -9.5
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.225,
+      2.732
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -0.8,
+     "pen_p95_cm": 5.5,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "ok",
+     "cell_xy": [
+      0.225,
+      2.732
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -0.3,
+     "pen_p95_cm": 1.2,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 6.6,
+      "neck/head": 5.7,
+      "arms": 14.2,
+      "legs": 1.5
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.22470753172059255,
+      2.732384414445551
+     ],
+     "h": 0.006,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 6.6,
+     "neck/head": 5.7,
+     "arms": 14.2,
+     "legs": 1.5
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "Q07_stretch_arms_up",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q07_stretch_arms_up",
+    "pose_class": "stand",
+    "target_object": "floor",
+    "support_parts": [
+     "foot.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3866,
+    "L_torso": 0.4955
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.L",
+    "foot.R"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.L",
+     "foot.R"
+    ],
+    "table_support": [
+     "foot.L",
+     "foot.R"
+    ]
+   },
+   "secondary": [
+    {
+     "part": "shin.L",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.L",
+     "surface": "v",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.L": "floor",
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -1.4,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 2.5,
+    "n_pen": 866,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 2.1,
+    "hard_max_cm": 2.5,
+    "hard_n": 866,
+    "p95_cm": 2.1,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     884,
+     277,
+     988,
+     815
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.597,
+      4.369,
+      0.003
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 1.7,
+    "tilt_set_deg": 1.7,
+    "tilt_final_deg": 3.7,
+    "roll_ref_deg": -0.5,
+    "roll_final_deg": -0.0,
+    "clamped_deg": 0.0,
+    "total_change_deg": 2.5,
+    "yaw": {
+     "ref_yaw_deg": -98.1,
+     "want_deg": -98.1,
+     "yaw_deg": -98.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -97.8
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 3.7,
+     "elev_deg": 86.3,
+     "head_minus_pelvis_m": 0.609,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -0.3,
+    "plate": -0.6
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.597,
+      4.369
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.4,
+     "pen_p95_cm": 2.1,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.5967990156365294,
+      4.36910568407173
+     ],
+     "h": 0.003,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "Q08_bed_recline_elbows",
+   "status": "contact_fail",
+   "shot_spec": {
+    "id": "Q08_bed_recline_elbows",
+    "pose_class": "recline",
+    "target_object": "bed",
+    "support_parts": [
+     "pelvis"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "elbow.L",
+      "surface": "bed"
+     },
+     {
+      "part": "elbow.R",
+      "surface": "bed"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3788,
+    "L_torso": 0.5271
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis",
+    "thigh.L",
+    "thigh.R"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "forearm.L",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "forearm.R",
+     "surface": "target",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "torso",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "hand.L",
+     "surface": "any",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "head",
+     "surface": "any",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.L",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "knee.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "back",
+     "surface": "back",
+     "role": "back"
+    }
+   ],
+   "support_object": "bed",
+   "support_parts_on": {
+    "pelvis": "bed",
+    "thigh.L": "bed",
+    "thigh.R": "bed"
+   },
+   "support_gap_cm": -3.4,
+   "back_gap_cm": -3.0,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 11.9,
+    "n_pen": 1368,
+    "soft_p95_cm": 6.1,
+    "soft_max_cm": 10.0,
+    "soft_n": 1353,
+    "hard_p95_cm": 11.8,
+    "hard_max_cm": 11.9,
+    "hard_n": 15,
+    "p95_cm": 6.2,
+    "ok": false
+   },
+   "footprint": {
+    "checked": true,
+    "ok": true,
+    "n_low": 7130,
+    "n_out": 0
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     664,
+     406,
+     1033,
+     666
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.23,
+      2.71,
+      0.317
+     ],
+     "frame_ok": true,
+     "status": "contact_fail"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 59.6,
+    "tilt_set_deg": 59.6,
+    "tilt_final_deg": 64.9,
+    "roll_ref_deg": 5.7,
+    "roll_final_deg": 9.1,
+    "clamped_deg": 0.0,
+    "total_change_deg": 8.7,
+    "yaw": {
+     "ref_yaw_deg": -20.7,
+     "want_deg": -20.7,
+     "yaw_deg": -30.0,
+     "window_deg": -89.3,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -94.9
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": {
+     "plate_deg": -48.2,
+     "reproj_plate": 0.237,
+     "reproj_ref": 0.307,
+     "picked": "plate"
+    },
+    "recline": {
+     "tilt_deg": 57.5,
+     "back_p10_cm": -5.5,
+     "touch": true,
+     "tilts_tried": 16,
+     "tilt_after_reseat_deg": 51.8
+    },
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 64.9,
+     "elev_deg": 25.1,
+     "head_minus_pelvis_m": 0.33,
+     "rule": "над горизонталью 20–70°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 74.2,
+    "plate": 33.2
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.09,
+      2.69
+     ],
+     "shift_m": 0.0,
+     "support_object": "other",
+     "gap_cm": -4.3,
+     "pen_p95_cm": 7.2,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.09,
+      2.69
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -4.1,
+     "pen_p95_cm": 8.8,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 10.0,
+      "neck/head": 14.2,
+      "arms": 14.6,
+      "legs": 19.4
+     },
+     "limits_ok": true
+    },
+    {
+     "attempt": 1,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.19,
+      2.69
+     ],
+     "shift_m": 0.0,
+     "support_object": "other",
+     "gap_cm": -4.3,
+     "pen_p95_cm": 7.2,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 1,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.19,
+      2.69
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -4.1,
+     "pen_p95_cm": 8.8,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 9.9,
+      "neck/head": 14.3,
+      "arms": 14.9,
+      "legs": 19.7
+     },
+     "limits_ok": true
+    },
+    {
+     "attempt": 2,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.13,
+      2.71
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -4.9,
+     "pen_p95_cm": 6.1,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 2,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.13,
+      2.71
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -3.4,
+     "pen_p95_cm": 6.4,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 14.5,
+      "neck/head": 14.4,
+      "arms": 14.3,
+      "legs": 19.5
+     },
+     "limits_ok": true
+    },
+    {
+     "attempt": 3,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.23,
+      2.71
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -5.1,
+     "pen_p95_cm": 6.7,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 3,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.23,
+      2.71
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -3.4,
+     "pen_p95_cm": 6.2,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 14.5,
+      "neck/head": 14.4,
+      "arms": 14.5,
+      "legs": 19.5
+     },
+     "limits_ok": true
+    },
+    {
+     "attempt": 4,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.31,
+      2.69
+     ],
+     "shift_m": 0.6,
+     "support_object": "other",
+     "gap_cm": -6.5,
+     "pen_p95_cm": 16.2,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 4,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.31,
+      2.69
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -4.5,
+     "pen_p95_cm": 8.4,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 14.7,
+      "neck/head": 14.0,
+      "arms": 14.7,
+      "legs": 19.3
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [
+    "orient_conflict"
+   ],
+   "target_info": {
+    "object_id": "bed_1",
+    "via": "bed",
+    "type": "bed",
+    "soft": true,
+    "name": "bed",
+    "backrest_name": "pillows",
+    "anchor_id": "bed_1_recline"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bed_1",
+    "anchor_id": "bed_1_recline",
+    "via": "bed",
+    "rule": "recline",
+    "band_m": [
+     0.316,
+     0.474
+    ],
+    "cell": {
+     "xy": [
+      0.22999999999999998,
+      2.71
+     ],
+     "h": 0.317,
+     "near": 0.58,
+     "far": 0.46,
+     "dt": 0.48,
+     "anchor": "pelvis"
+    },
+    "attempt": 3,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 14.5,
+     "neck/head": 14.4,
+     "arms": 14.5,
+     "legs": 19.5
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "Q09_lean_wall",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q09_lean_wall",
+    "pose_class": "stand",
+    "target_object": "floor",
+    "support_parts": [
+     "foot.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "hand.R",
+      "surface": "wall"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3539,
+    "L_torso": 0.5189
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.L",
+    "foot.R"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.L",
+     "foot.R"
+    ],
+    "table_support": [
+     "foot.L",
+     "foot.R"
+    ]
+   },
+   "secondary": [
+    {
+     "part": "hand.R",
+     "surface": "wall",
+     "role": "wall"
+    },
+    {
+     "part": "arm.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "forearm.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.L",
+     "surface": "v",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.L": "floor",
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -1.3,
+   "back_gap_cm": null,
+   "wall_gap_cm": 0.1,
+   "penetration": {
+    "max_cm": 3.2,
+    "n_pen": 885,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 2.5,
+    "hard_max_cm": 3.2,
+    "hard_n": 885,
+    "p95_cm": 2.5,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     708,
+     206,
+     916,
+     694
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.39,
+      3.33,
+      -0.0
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 11.4,
+    "tilt_set_deg": 11.4,
+    "tilt_final_deg": 14.0,
+    "roll_ref_deg": -13.3,
+    "roll_final_deg": -16.1,
+    "clamped_deg": 0.0,
+    "total_change_deg": 5.4,
+    "yaw": {
+     "ref_yaw_deg": 140.1,
+     "want_deg": 76.1,
+     "yaw_deg": 81.0,
+     "window_deg": 140.1,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -96.7
+    },
+    "side_ref": "back",
+    "side_final": "back",
+    "conflict": {
+     "plate_deg": 104.3,
+     "reproj_plate": 0.038,
+     "reproj_ref": 0.054,
+     "picked": "plate"
+    },
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 14.0,
+     "elev_deg": 76.0,
+     "head_minus_pelvis_m": 0.641,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -123.2,
+    "plate": -161.6
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.39,
+      3.33
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.3,
+     "pen_p95_cm": 2.5,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [
+    "orient_conflict"
+   ],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "wall",
+    "band_m": [
+     0.243,
+     0.729
+    ],
+    "cell": {
+     "xy": [
+      0.3900000000000001,
+      3.33
+     ],
+     "h": -0.0,
+     "near": 0.246,
+     "far": 0.0,
+     "dt": 0.24,
+     "anchor": "pelvis_xy"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": 0,
+    "area_m2": 10.2
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "Q10_all_fours_cat",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q10_all_fours_cat",
+    "pose_class": "all_fours",
+    "target_object": "floor",
+    "support_parts": [
+     "knee.L",
+     "knee.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "hand.L",
+      "surface": "floor"
+     },
+     {
+      "part": "hand.R",
+      "surface": "floor"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3781,
+    "L_torso": 0.4912
+   },
+   "body_source": "proxy",
+   "support": [
+    "knee.L",
+    "knee.R"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "hand.L",
+     "surface": "target",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.R",
+     "surface": "target",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.R",
+     "surface": "h",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "knee.L": "floor",
+    "knee.R": "floor"
+   },
+   "support_gap_cm": -0.6,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 3.0,
+    "n_pen": 322,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 2.3,
+    "hard_max_cm": 3.0,
+    "hard_n": 322,
+    "p95_cm": 2.3,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     488,
+     538,
+     871,
+     714
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.232,
+      2.821,
+      0.005
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 102.7,
+    "tilt_set_deg": 102.7,
+    "tilt_final_deg": 104.2,
+    "roll_ref_deg": 0.9,
+    "roll_final_deg": 0.1,
+    "clamped_deg": 0.1,
+    "total_change_deg": 2.3,
+    "yaw": {
+     "ref_yaw_deg": -162.9,
+     "want_deg": -162.9,
+     "yaw_deg": -163.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -94.7
+    },
+    "side_ref": "side",
+    "side_final": "back",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 104.2,
+     "elev_deg": -14.2,
+     "head_minus_pelvis_m": -0.216,
+     "rule": "|h(голова) − h(таз)| ≤ 0.18·H = 0.29 м"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -68.2,
+    "plate": -73.2
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.232,
+      2.821
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -0.6,
+     "pen_p95_cm": 2.3,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.23206081840349915,
+      2.821381754538207
+     ],
+     "h": 0.005,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "Q11_bench_side_sit",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q11_bench_side_sit",
+    "pose_class": "sit_edge",
+    "target_object": "bench",
+    "support_parts": [
+     "pelvis"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "foot.L",
+      "surface": "floor"
+     },
+     {
+      "part": "foot.R",
+      "surface": "floor"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.4031,
+    "L_torso": 0.463
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "foot.L",
+     "surface": "floor",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor",
+     "role": "secondary"
+    },
+    {
+     "part": "knee.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "v",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.R",
+     "surface": "v",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "bench",
+   "support_parts_on": {
+    "pelvis": "bench"
+   },
+   "support_gap_cm": -1.1,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 3.0,
+    "n_pen": 433,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 1.6,
+    "hard_max_cm": 3.0,
+    "hard_n": 433,
+    "p95_cm": 1.6,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     1109,
+     468,
+     1265,
+     777
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      1.61,
+      5.23,
+      0.354
+     ],
+     "frame_ok": true,
+     "status": "contact_fail"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 14.8,
+    "tilt_set_deg": 14.8,
+    "tilt_final_deg": 4.5,
+    "roll_ref_deg": 9.4,
+    "roll_final_deg": -1.2,
+    "clamped_deg": 0.1,
+    "total_change_deg": 20.9,
+    "yaw": {
+     "ref_yaw_deg": -92.4,
+     "want_deg": -92.4,
+     "yaw_deg": -92.0,
+     "window_deg": -117.5,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -107.1
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 4.5,
+     "elev_deg": 85.5,
+     "head_minus_pelvis_m": 0.555,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 14.7,
+    "plate": 18.2
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      1.61,
+      5.23
+     ],
+     "shift_m": 0.0,
+     "support_object": "bench",
+     "gap_cm": -1.0,
+     "pen_p95_cm": 3.4,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "ok",
+     "cell_xy": [
+      1.61,
+      5.23
+     ],
+     "shift_m": 0.0,
+     "support_object": "bench",
+     "gap_cm": -1.1,
+     "pen_p95_cm": 1.6,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 8.0,
+      "neck/head": 7.5,
+      "arms": 8.0,
+      "legs": 11.9
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "bench_1",
+    "via": "bench",
+    "type": "bench",
+    "soft": false,
+    "name": "bench",
+    "backrest_name": "backrest",
+    "anchor_id": "bench_1_edge"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bench_1",
+    "anchor_id": "bench_1_edge",
+    "via": "bench",
+    "rule": "sit_edge_side",
+    "band_m": [
+     0.0,
+     0.242
+    ],
+    "cell": {
+     "xy": [
+      1.6099999999999999,
+      5.23
+     ],
+     "h": 0.354,
+     "near": 0.236,
+     "far": 0.772,
+     "dt": 0.134,
+     "anchor": "pelvis"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": [
+     {
+      "yaw_deg": -27.5,
+      "len_m": 1.08,
+      "access": 0.82
+     },
+     {
+      "yaw_deg": 62.5,
+      "len_m": 0.42,
+      "access": 0.0
+     },
+     {
+      "yaw_deg": 152.5,
+      "len_m": 1.08,
+      "access": 0.18
+     },
+     {
+      "yaw_deg": -117.5,
+      "len_m": 0.42,
+      "access": 1.0
+     }
+    ],
+    "side_yaw_deg": -117.5,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 8.0,
+     "neck/head": 7.5,
+     "arms": 8.0,
+     "legs": 11.9
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "Q12_one_leg_ankle",
+   "status": "ok",
+   "shot_spec": {
+    "id": "Q12_one_leg_ankle",
+    "pose_class": "stand",
+    "target_object": "floor",
+    "support_parts": [
+     "foot.L"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3896,
+    "L_torso": 0.4767
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.R"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.R"
+    ],
+    "table_support": [
+     "foot.L"
+    ]
+   },
+   "secondary": [],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -1.3,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 1.6,
+    "n_pen": 459,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 1.5,
+    "hard_max_cm": 1.6,
+    "hard_n": 459,
+    "p95_cm": 1.5,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     953,
+     350,
+     1137,
+     830
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.779,
+      4.263,
+      0.002
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 11.2,
+    "tilt_set_deg": 11.2,
+    "tilt_final_deg": 10.1,
+    "roll_ref_deg": -0.5,
+    "roll_final_deg": -2.1,
+    "clamped_deg": 0.0,
+    "total_change_deg": 2.7,
+    "yaw": {
+     "ref_yaw_deg": -112.5,
+     "want_deg": -112.5,
+     "yaw_deg": -113.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -100.4
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 10.1,
+     "elev_deg": 79.9,
+     "head_minus_pelvis_m": 0.573,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -12.2,
+    "plate": -12.5
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.779,
+      4.263
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.3,
+     "pen_p95_cm": 1.5,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [
+    "table_side_mismatch"
+   ],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.778993444824011,
+      4.262881049261202
+     ],
+     "h": 0.002,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "T01_sofa_legs_tucked",
+   "status": "ok",
+   "shot_spec": {
+    "id": "T01_sofa_legs_tucked",
+    "pose_class": "sit_tucked",
+    "target_object": "bed",
+    "support_parts": [
+     "pelvis",
+     "shin.L"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.376,
+    "L_torso": 0.4955
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis",
+    "shin.L"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "arm.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "foot.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "forearm.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "knee.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "torso",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "forearm.L",
+     "surface": "any",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "head",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.L",
+     "surface": "any",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "bed",
+   "support_parts_on": {
+    "pelvis": "bed",
+    "shin.L": "bed"
+   },
+   "support_gap_cm": -4.6,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 5.5,
+    "n_pen": 918,
+    "soft_p95_cm": 4.6,
+    "soft_max_cm": 5.5,
+    "soft_n": 918,
+    "hard_p95_cm": 0.0,
+    "hard_max_cm": 0.0,
+    "hard_n": 0,
+    "p95_cm": 4.6,
+    "ok": true
+   },
+   "footprint": {
+    "checked": true,
+    "ok": true,
+    "n_low": 4862,
+    "n_out": 0
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     836,
+     326,
+     1161,
+     592
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.47,
+      2.65,
+      0.316
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 52.7,
+    "tilt_set_deg": 33.2,
+    "tilt_final_deg": 27.0,
+    "roll_ref_deg": -36.1,
+    "roll_final_deg": -13.1,
+    "clamped_deg": 39.8,
+    "total_change_deg": 48.7,
+    "yaw": {
+     "ref_yaw_deg": -107.1,
+     "want_deg": -107.1,
+     "yaw_deg": -107.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -100.1
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 27.0,
+     "elev_deg": 63.0,
+     "head_minus_pelvis_m": 0.595,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -7.0,
+    "plate": -2.0
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.47,
+      2.65
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -4.6,
+     "pen_p95_cm": 4.6,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [
+    "orient_clamped:39.8"
+   ],
+   "target_info": {
+    "object_id": "bed_1",
+    "via": "bed",
+    "type": "bed",
+    "soft": true,
+    "name": "bed",
+    "backrest_name": "pillows",
+    "anchor_id": "bed_1_center"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bed_1",
+    "anchor_id": "bed_1_center",
+    "via": "bed",
+    "rule": "sit_tucked",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.46999999999999975,
+      2.65
+     ],
+     "h": 0.316,
+     "near": 0.52,
+     "far": 0.52,
+     "dt": 0.526,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "T02_kneel_lunge",
+   "status": "contact_fail",
+   "shot_spec": {
+    "id": "T02_kneel_lunge",
+    "pose_class": "kneel",
+    "target_object": "floor",
+    "support_parts": [
+     "knee.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3712,
+    "L_torso": 0.5065
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.L",
+    "foot.R",
+    "knee.L"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.L",
+     "foot.R",
+     "knee.L"
+    ],
+    "table_support": [
+     "knee.L",
+     "foot.R"
+    ]
+   },
+   "secondary": [],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.L": "floor",
+    "foot.R": "floor",
+    "knee.L": "floor"
+   },
+   "support_gap_cm": -1.4,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 3.3,
+    "n_pen": 212,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 3.1,
+    "hard_max_cm": 3.3,
+    "hard_n": 212,
+    "p95_cm": 3.1,
+    "ok": false
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     664,
+     347,
+     919,
+     796
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.232,
+      2.821,
+      0.005
+     ],
+     "frame_ok": false,
+     "status": "contact_fail"
+    },
+    {
+     "T": [
+      -0.148,
+      2.891,
+      0.004
+     ],
+     "frame_ok": true,
+     "status": "contact_fail"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 8.5,
+    "tilt_set_deg": 8.5,
+    "tilt_final_deg": 11.3,
+    "roll_ref_deg": -2.7,
+    "roll_final_deg": -5.4,
+    "clamped_deg": 0.0,
+    "total_change_deg": 5.5,
+    "yaw": {
+     "ref_yaw_deg": -70.9,
+     "want_deg": -70.9,
+     "yaw_deg": -71.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -87.1
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 11.3,
+     "elev_deg": 78.7,
+     "head_minus_pelvis_m": 0.634,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 16.1,
+    "plate": 21.3
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.232,
+      2.821
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.8,
+     "pen_p95_cm": 3.5,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 1,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      0.232,
+      2.821
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.4,
+     "pen_p95_cm": 3.1,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 1,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 0.1,
+      "neck/head": 0.1,
+      "arms": 0.1,
+      "legs": 1.9
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.23206081840349915,
+      2.821381754538207
+     ],
+     "h": 0.005,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 0.1,
+     "neck/head": 0.1,
+     "arms": 0.1,
+     "legs": 1.9
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "T03_armchair_side_sit",
+   "status": "contact_fail",
+   "shot_spec": {
+    "id": "T03_armchair_side_sit",
+    "pose_class": "recline",
+    "target_object": "bed",
+    "support_parts": [
+     "pelvis"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "foot.L",
+      "surface": "floor"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3854,
+    "L_torso": 0.4688
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis",
+    "thigh.L",
+    "thigh.R"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "foot.L",
+     "surface": "floor",
+     "role": "secondary"
+    },
+    {
+     "part": "arm.L",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "arm.R",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "forearm.L",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "forearm.R",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "hand.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "hand.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "knee.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "torso",
+     "surface": "back",
+     "role": "back"
+    },
+    {
+     "part": "knee.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "back",
+     "surface": "back",
+     "role": "back"
+    }
+   ],
+   "support_object": "bed",
+   "support_parts_on": {
+    "pelvis": "bed",
+    "thigh.L": "bed",
+    "thigh.R": "bed"
+   },
+   "support_gap_cm": -2.6,
+   "back_gap_cm": -3.0,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 12.6,
+    "n_pen": 3022,
+    "soft_p95_cm": 6.0,
+    "soft_max_cm": 9.7,
+    "soft_n": 2415,
+    "hard_p95_cm": 10.8,
+    "hard_max_cm": 12.6,
+    "hard_n": 607,
+    "p95_cm": 7.2,
+    "ok": false
+   },
+   "footprint": {
+    "checked": true,
+    "ok": true,
+    "n_low": 3632,
+    "n_out": 0
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     745,
+     367,
+     909,
+     598
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      -0.11,
+      2.73,
+      0.319
+     ],
+     "frame_ok": true,
+     "status": "wrong_surface"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 43.6,
+    "tilt_set_deg": 29.8,
+    "tilt_final_deg": 42.7,
+    "roll_ref_deg": -28.9,
+    "roll_final_deg": 3.1,
+    "clamped_deg": 27.7,
+    "total_change_deg": 32.9,
+    "yaw": {
+     "ref_yaw_deg": -28.2,
+     "want_deg": -28.2,
+     "yaw_deg": -30.0,
+     "window_deg": -89.3,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -87.7
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": {
+     "plate_deg": -5.0,
+     "reproj_plate": 0.081,
+     "reproj_ref": 0.104,
+     "picked": "plate"
+    },
+    "recline": {
+     "tilt_deg": 27.5,
+     "back_p10_cm": 2.5,
+     "touch": false,
+     "tilts_tried": 4,
+     "tilt_after_reseat_deg": 31.0
+    },
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 42.7,
+     "elev_deg": 47.3,
+     "head_minus_pelvis_m": 0.486,
+     "rule": "над горизонталью 20–70°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 59.5,
+    "plate": 79.4
+   },
+   "stage": "refine",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.33,
+      2.73
+     ],
+     "shift_m": 0.21,
+     "support_object": "other",
+     "gap_cm": -3.7,
+     "pen_p95_cm": 8.8,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 0,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.33,
+      2.73
+     ],
+     "shift_m": 0.18,
+     "support_object": "bed",
+     "gap_cm": -3.1,
+     "pen_p95_cm": 11.5,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 7.9,
+      "neck/head": 13.1,
+      "arms": 14.8,
+      "legs": 20.0
+     },
+     "limits_ok": true
+    },
+    {
+     "attempt": 1,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.43,
+      2.73
+     ],
+     "shift_m": 0.19,
+     "support_object": "other",
+     "gap_cm": -3.8,
+     "pen_p95_cm": 8.6,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 1,
+     "stage": "refine",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.43,
+      2.73
+     ],
+     "shift_m": 0.18,
+     "support_object": "other",
+     "gap_cm": -5.0,
+     "pen_p95_cm": 5.7,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 22.1,
+      "neck/head": 18.0,
+      "arms": 30.6,
+      "legs": 40.7
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 2,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.21,
+      2.73
+     ],
+     "shift_m": 0.15,
+     "support_object": "other",
+     "gap_cm": -3.7,
+     "pen_p95_cm": 9.1,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 2,
+     "stage": "refine",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.21,
+      2.73
+     ],
+     "shift_m": 0.05,
+     "support_object": "other",
+     "gap_cm": -5.2,
+     "pen_p95_cm": 7.0,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 12.1,
+      "neck/head": 13.5,
+      "arms": 16.3,
+      "legs": 20.1
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 3,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.53,
+      2.73
+     ],
+     "shift_m": 0.36,
+     "support_object": "other",
+     "gap_cm": -2.9,
+     "pen_p95_cm": 7.6,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 3,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.53,
+      2.73
+     ],
+     "shift_m": 0.15,
+     "support_object": "bed",
+     "gap_cm": -5.1,
+     "pen_p95_cm": 4.9,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 15.4,
+      "neck/head": 11.2,
+      "arms": 15.0,
+      "legs": 23.3
+     },
+     "limits_ok": false
+    },
+    {
+     "attempt": 4,
+     "stage": "fit",
+     "status": "wrong_surface",
+     "cell_xy": [
+      -0.11,
+      2.73
+     ],
+     "shift_m": 0.11,
+     "support_object": "other",
+     "gap_cm": -3.3,
+     "pen_p95_cm": 4.5,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    },
+    {
+     "attempt": 4,
+     "stage": "refine",
+     "status": "contact_fail",
+     "cell_xy": [
+      -0.11,
+      2.73
+     ],
+     "shift_m": 0.0,
+     "support_object": "bed",
+     "gap_cm": -2.6,
+     "pen_p95_cm": 7.2,
+     "footprint_out": 0,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0,
+     "groups_deg": {
+      "spine": 8.5,
+      "neck/head": 14.3,
+      "arms": 14.6,
+      "legs": 19.3
+     },
+     "limits_ok": true
+    }
+   ],
+   "flags": [
+    "orient_clamped:27.7",
+    "orient_conflict"
+   ],
+   "target_info": {
+    "object_id": "bed_1",
+    "via": "bed",
+    "type": "bed",
+    "soft": true,
+    "name": "bed",
+    "backrest_name": "pillows",
+    "anchor_id": "bed_1_recline"
+   },
+   "zone": {
+    "source": "profile",
+    "object_id": "bed_1",
+    "anchor_id": "bed_1_recline",
+    "via": "bed",
+    "rule": "recline",
+    "band_m": [
+     0.281,
+     0.422
+    ],
+    "cell": {
+     "xy": [
+      -0.11000000000000032,
+      2.73
+     ],
+     "h": 0.319,
+     "near": 0.6,
+     "far": 0.42,
+     "dt": 0.44,
+     "anchor": "pelvis"
+    },
+    "attempt": 4,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": {
+     "spine": 8.5,
+     "neck/head": 14.3,
+     "arms": 14.6,
+     "legs": 19.3
+    },
+    "limits_ok": true
+   }
+  },
+  {
+   "id": "T04_floor_sit_knees_up",
+   "status": "ok",
+   "shot_spec": {
+    "id": "T04_floor_sit_knees_up",
+    "pose_class": "sit_floor",
+    "target_object": "floor",
+    "support_parts": [
+     "pelvis",
+     "foot.L",
+     "foot.R"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": []
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.3951,
+    "L_torso": 0.4682
+   },
+   "body_source": "proxy",
+   "support": [
+    "pelvis",
+    "foot.L",
+    "foot.R"
+   ],
+   "support_info": {},
+   "secondary": [
+    {
+     "part": "knee.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "shin.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.L",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "thigh.R",
+     "surface": "h",
+     "role": "secondary"
+    },
+    {
+     "part": "torso",
+     "surface": "h",
+     "role": "secondary"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "pelvis": "floor",
+    "foot.L": "floor",
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -0.9,
+   "back_gap_cm": null,
+   "wall_gap_cm": null,
+   "penetration": {
+    "max_cm": 2.3,
+    "n_pen": 980,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 2.0,
+    "hard_max_cm": 2.3,
+    "hard_n": 980,
+    "p95_cm": 2.0,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     827,
+     458,
+     1041,
+     745
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      0.225,
+      2.732,
+      0.006
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 13.2,
+    "tilt_set_deg": 13.2,
+    "tilt_final_deg": 17.1,
+    "roll_ref_deg": -2.4,
+    "roll_final_deg": -4.9,
+    "clamped_deg": 0.0,
+    "total_change_deg": 6.4,
+    "yaw": {
+     "ref_yaw_deg": -92.9,
+     "want_deg": -92.9,
+     "yaw_deg": -93.0,
+     "window_deg": null,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -94.7
+    },
+    "side_ref": "front",
+    "side_final": "front",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 17.1,
+     "elev_deg": 72.9,
+     "head_minus_pelvis_m": 0.574,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": 1.8,
+    "plate": -0.2
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      0.225,
+      2.732
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -0.9,
+     "pen_p95_cm": 2.0,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "floor",
+    "band_m": null,
+    "cell": {
+     "xy": [
+      0.22470753172059255,
+      2.732384414445551
+     ],
+     "h": 0.006,
+     "anchor": "support"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": null,
+    "area_m2": null
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  },
+  {
+   "id": "T05_barre_standing_split",
+   "status": "ok",
+   "shot_spec": {
+    "id": "T05_barre_standing_split",
+    "pose_class": "stand",
+    "target_object": "floor",
+    "support_parts": [
+     "foot.L"
+    ],
+    "instance_hint": null,
+    "source": "table",
+    "secondary_contacts": [
+     {
+      "part": "hand.R",
+      "surface": "wall"
+     }
+    ]
+   },
+   "body_dims": {
+    "H": 1.62,
+    "L_thigh": 0.383,
+    "L_torso": 0.4649
+   },
+   "body_source": "proxy",
+   "support": [
+    "foot.R"
+   ],
+   "support_info": {
+    "body_support": [
+     "foot.R"
+    ],
+    "table_support": [
+     "foot.L"
+    ]
+   },
+   "secondary": [
+    {
+     "part": "hand.R",
+     "surface": "wall",
+     "role": "wall"
+    }
+   ],
+   "support_object": "floor",
+   "support_parts_on": {
+    "foot.R": "floor"
+   },
+   "support_gap_cm": -1.7,
+   "back_gap_cm": null,
+   "wall_gap_cm": -0.0,
+   "penetration": {
+    "max_cm": 2.2,
+    "n_pen": 783,
+    "soft_p95_cm": 0.0,
+    "soft_max_cm": 0.0,
+    "soft_n": 0,
+    "hard_p95_cm": 1.8,
+    "hard_max_cm": 2.2,
+    "hard_n": 783,
+    "p95_cm": 1.8,
+    "ok": true
+   },
+   "footprint": {
+    "checked": false,
+    "ok": true
+   },
+   "frame": {
+    "ok": true,
+    "bbox_px": [
+     629,
+     222,
+     882,
+     680
+    ],
+    "frame_px": [
+     1536,
+     864
+    ]
+   },
+   "frame_tries": [
+    {
+     "T": [
+      -0.13,
+      3.09,
+      0.004
+     ],
+     "frame_ok": true,
+     "status": "ok"
+    }
+   ],
+   "orient": {
+    "sign_candidate": "identity",
+    "tilt_ref_deg": 58.3,
+    "tilt_set_deg": 30.0,
+    "tilt_final_deg": 26.8,
+    "roll_ref_deg": 26.2,
+    "roll_final_deg": 14.4,
+    "clamped_deg": 39.8,
+    "total_change_deg": 43.3,
+    "yaw": {
+     "ref_yaw_deg": 178.7,
+     "want_deg": 157.2,
+     "yaw_deg": -171.0,
+     "window_deg": 178.7,
+     "side_conflict": false,
+     "in_window": true,
+     "tc_deg": -87.6
+    },
+    "side_ref": "front",
+    "side_final": "side",
+    "conflict": null,
+    "recline": null,
+    "lie_yaw_add_deg": 0,
+    "check": {
+     "ok": true,
+     "from_vertical_deg": 26.8,
+     "elev_deg": 63.2,
+     "head_minus_pelvis_m": 0.566,
+     "rule": "от вертикали ≤ 45°, голова выше таза"
+    }
+   },
+   "angle_to_camera_deg": {
+    "ref": -93.7,
+    "plate": -91.3
+   },
+   "stage": "fit",
+   "attempts": [
+    {
+     "attempt": 0,
+     "stage": "fit",
+     "status": "ok",
+     "cell_xy": [
+      -0.13,
+      3.09
+     ],
+     "shift_m": 0.0,
+     "support_object": "floor",
+     "gap_cm": -1.7,
+     "pen_p95_cm": 1.8,
+     "footprint_out": null,
+     "frame_ok": true,
+     "frame_tries": 0,
+     "lie_yaw_add": 0
+    }
+   ],
+   "flags": [
+    "orient_clamped:39.8",
+    "table_side_mismatch"
+   ],
+   "target_info": {
+    "object_id": "floor",
+    "type": "floor",
+    "soft": false
+   },
+   "zone": {
+    "source": "floor",
+    "object_id": "floor",
+    "anchor_id": null,
+    "via": null,
+    "rule": "wall",
+    "band_m": [
+     0.243,
+     0.729
+    ],
+    "cell": {
+     "xy": [
+      -0.13000000000000012,
+      3.09
+     ],
+     "h": 0.004,
+     "near": 0.496,
+     "far": 0.0,
+     "dt": 0.425,
+     "anchor": "pelvis_xy"
+    },
+    "attempt": 0,
+    "shift_m": 0.0,
+    "sides": null,
+    "side_yaw_deg": null,
+    "wall": 0,
+    "area_m2": 10.2
+   },
+   "refine": {
+    "groups_deg": null,
+    "limits_ok": null
+   }
+  }
+ ],
+ "h3": {
+  "Q03_bed_kneel": {
+   "playblast_conf": 0.71,
+   "A": {
+    "pck": 0.43,
+    "pck_lr": 0.43,
+    "pb_same": 0.017,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.39,
+    "obj_shift_px": 32.6,
+    "grey_left": 0.084
+   },
+   "B": {
+    "pck": 0.5,
+    "pck_lr": 0.5,
+    "pb_same": 0.018,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.402,
+    "obj_shift_px": 32.8,
+    "grey_left": 0.102
+   },
+   "C1_55": {
+    "pck": 0.86,
+    "pck_lr": 0.86,
+    "pb_same": 0.987,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.964,
+    "obj_shift_px": 2.3,
+    "grey_left": 0.025
+   },
+   "C1_70": {
+    "pck": 0.86,
+    "pck_lr": 0.86,
+    "pb_same": 0.986,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.965,
+    "obj_shift_px": 2.4,
+    "grey_left": 0.024
+   },
+   "C1_85": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.948,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.965,
+    "obj_shift_px": 2.3,
+    "grey_left": 0.02
+   },
+   "C2": {
+    "pck": 0.86,
+    "pck_lr": 0.86,
+    "pb_same": 0.939,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.916,
+    "obj_shift_px": 2.7,
+    "grey_left": 0.006
+   },
+   "playblast_people": 1
+  },
+  "Q04_bed_side_lie": {
+   "playblast_conf": null,
+   "A": {
+    "pck": 0.15,
+    "pck_lr": 0.31,
+    "pb_same": 0.031,
+    "lr_swapped": true,
+    "people": 1,
+    "bg_ssim": 0.34,
+    "obj_shift_px": 35.7,
+    "grey_left": 0.002
+   },
+   "B": {
+    "pck": 0.15,
+    "pck_lr": 0.31,
+    "pb_same": 0.023,
+    "lr_swapped": true,
+    "people": 1,
+    "bg_ssim": 0.347,
+    "obj_shift_px": 33.5,
+    "grey_left": 0.001
+   },
+   "C1_55": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.992,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.947,
+    "obj_shift_px": 1.7,
+    "grey_left": 0.051
+   },
+   "C1_70": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.992,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.95,
+    "obj_shift_px": 1.7,
+    "grey_left": 0.054
+   },
+   "C1_85": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.991,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.949,
+    "obj_shift_px": 2.1,
+    "grey_left": 0.058
+   },
+   "C2": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.788,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.885,
+    "obj_shift_px": 1.9,
+    "grey_left": 0.009
+   },
+   "playblast_people": 0
+  },
+  "Q08_bed_recline_elbows": {
+   "playblast_conf": 0.69,
+   "A": {
+    "pck": 0.1,
+    "pck_lr": 0.1,
+    "pb_same": 0.046,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.385,
+    "obj_shift_px": 36.3,
+    "grey_left": 0.01
+   },
+   "B": {
+    "pck": 0.1,
+    "pck_lr": 0.1,
+    "pb_same": 0.045,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.377,
+    "obj_shift_px": 40.9,
+    "grey_left": 0.009
+   },
+   "C1_55": {
+    "pck": 0.9,
+    "pck_lr": 0.9,
+    "pb_same": 0.992,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.953,
+    "obj_shift_px": 4.4,
+    "grey_left": 0.035
+   },
+   "C1_70": {
+    "pck": 0.9,
+    "pck_lr": 0.9,
+    "pb_same": 0.992,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.955,
+    "obj_shift_px": 4.4,
+    "grey_left": 0.041
+   },
+   "C1_85": {
+    "pck": 0.9,
+    "pck_lr": 0.9,
+    "pb_same": 0.991,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.96,
+    "obj_shift_px": 4.0,
+    "grey_left": 0.032
+   },
+   "C2": {
+    "pck": 0.8,
+    "pck_lr": 0.8,
+    "pb_same": 0.935,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.883,
+    "obj_shift_px": 4.6,
+    "grey_left": 0.028
+   },
+   "playblast_people": 1
+  },
+  "T03_armchair_side_sit": {
+   "playblast_conf": null,
+   "A": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.033,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.389,
+    "obj_shift_px": 24.5,
+    "grey_left": 0.011
+   },
+   "B": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.032,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.386,
+    "obj_shift_px": 25.3,
+    "grey_left": 0.009
+   },
+   "C1_55": {
+    "pck": 0.92,
+    "pck_lr": 0.92,
+    "pb_same": 0.991,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.956,
+    "obj_shift_px": 2.4,
+    "grey_left": 0.031
+   },
+   "C1_70": {
+    "pck": 0.92,
+    "pck_lr": 0.92,
+    "pb_same": 0.99,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.956,
+    "obj_shift_px": 2.2,
+    "grey_left": 0.037
+   },
+   "C1_85": {
+    "pck": 0.85,
+    "pck_lr": 0.85,
+    "pb_same": 0.989,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.959,
+    "obj_shift_px": 2.5,
+    "grey_left": 0.029
+   },
+   "C2": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.59,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.888,
+    "obj_shift_px": 2.9,
+    "grey_left": 0.003
+   },
+   "playblast_people": 0
+  },
+  "T01_sofa_legs_tucked": {
+   "playblast_conf": 0.7,
+   "A": {
+    "pck": 0.29,
+    "pck_lr": 0.29,
+    "pb_same": 0.049,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.392,
+    "obj_shift_px": 31.7,
+    "grey_left": 0.008
+   },
+   "B": {
+    "pck": 0.07,
+    "pck_lr": 0.07,
+    "pb_same": 0.049,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.41,
+    "obj_shift_px": 31.8,
+    "grey_left": 0.015
+   },
+   "C1_55": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.991,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.946,
+    "obj_shift_px": 5.2,
+    "grey_left": 0.001
+   },
+   "C1_70": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.991,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.949,
+    "obj_shift_px": 4.8,
+    "grey_left": 0.001
+   },
+   "C1_85": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.99,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.949,
+    "obj_shift_px": 4.4,
+    "grey_left": 0.002
+   },
+   "C2": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.762,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.881,
+    "obj_shift_px": 5.1,
+    "grey_left": 0.001
+   },
+   "playblast_people": 1
+  },
+  "Q09_lean_wall": {
+   "playblast_conf": null,
+   "A": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.074,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.937,
+    "obj_shift_px": null,
+    "grey_left": 0.014
+   },
+   "B": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.074,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.937,
+    "obj_shift_px": null,
+    "grey_left": 0.014
+   },
+   "C1_55": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.983,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.948,
+    "obj_shift_px": null,
+    "grey_left": 0.269
+   },
+   "C1_70": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.978,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.946,
+    "obj_shift_px": null,
+    "grey_left": 0.273
+   },
+   "C1_85": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.321,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.941,
+    "obj_shift_px": null,
+    "grey_left": 0.09
+   },
+   "C2": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.225,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.895,
+    "obj_shift_px": null,
+    "grey_left": 0.023
+   },
+   "playblast_people": 0
+  },
+  "T05_barre_standing_split": {
+   "playblast_conf": null,
+   "A": {
+    "pck": 0.64,
+    "pck_lr": 0.64,
+    "pb_same": 0.046,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.926,
+    "obj_shift_px": null,
+    "grey_left": 0.014
+   },
+   "B": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.051,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.927,
+    "obj_shift_px": null,
+    "grey_left": 0.012
+   },
+   "C1_55": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.976,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.956,
+    "obj_shift_px": null,
+    "grey_left": 0.26
+   },
+   "C1_70": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.968,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.954,
+    "obj_shift_px": null,
+    "grey_left": 0.26
+   },
+   "C1_85": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.974,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.955,
+    "obj_shift_px": null,
+    "grey_left": 0.273
+   },
+   "C2": {
+    "pck": 0.0,
+    "pck_lr": 0.0,
+    "pb_same": 0.951,
+    "lr_swapped": false,
+    "people": 0,
+    "bg_ssim": 0.901,
+    "obj_shift_px": null,
+    "grey_left": 0.154
+   },
+   "playblast_people": 0
+  },
+  "Q11_bench_side_sit": {
+   "playblast_conf": 0.57,
+   "A": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.056,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.876,
+    "obj_shift_px": null,
+    "grey_left": 0.001
+   },
+   "B": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.059,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.86,
+    "obj_shift_px": null,
+    "grey_left": 0.001
+   },
+   "C1_55": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.989,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.957,
+    "obj_shift_px": null,
+    "grey_left": 0.511
+   },
+   "C1_70": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.987,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.959,
+    "obj_shift_px": null,
+    "grey_left": 0.515
+   },
+   "C1_85": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.985,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.962,
+    "obj_shift_px": null,
+    "grey_left": 0.487
+   },
+   "C2": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.356,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.874,
+    "obj_shift_px": null,
+    "grey_left": 0.094
+   },
+   "playblast_people": 1
+  },
+  "Q12_one_leg_ankle": {
+   "playblast_conf": 0.61,
+   "A": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.017,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.97,
+    "obj_shift_px": null,
+    "grey_left": 0.0
+   },
+   "B": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.015,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.97,
+    "obj_shift_px": null,
+    "grey_left": 0.001
+   },
+   "C1_55": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.988,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.966,
+    "obj_shift_px": null,
+    "grey_left": 0.559
+   },
+   "C1_70": {
+    "pck": 0.93,
+    "pck_lr": 0.93,
+    "pb_same": 0.988,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.965,
+    "obj_shift_px": null,
+    "grey_left": 0.557
+   },
+   "C1_85": {
+    "pck": 0.43,
+    "pck_lr": 1.0,
+    "pb_same": 0.925,
+    "lr_swapped": true,
+    "people": 1,
+    "bg_ssim": 0.966,
+    "obj_shift_px": null,
+    "grey_left": 0.572
+   },
+   "C2": {
+    "pck": 0.21,
+    "pck_lr": 0.93,
+    "pb_same": 0.812,
+    "lr_swapped": true,
+    "people": 1,
+    "bg_ssim": 0.877,
+    "obj_shift_px": null,
+    "grey_left": 0.423
+   },
+   "playblast_people": 1
+  },
+  "T02_kneel_lunge": {
+   "playblast_conf": 0.77,
+   "A": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.043,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.954,
+    "obj_shift_px": null,
+    "grey_left": 0.012
+   },
+   "B": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.042,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.953,
+    "obj_shift_px": null,
+    "grey_left": 0.013
+   },
+   "C1_55": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.992,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.957,
+    "obj_shift_px": null,
+    "grey_left": 0.198
+   },
+   "C1_70": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.992,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.957,
+    "obj_shift_px": null,
+    "grey_left": 0.216
+   },
+   "C1_85": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.99,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.959,
+    "obj_shift_px": null,
+    "grey_left": 0.189
+   },
+   "C2": {
+    "pck": 1.0,
+    "pck_lr": 1.0,
+    "pb_same": 0.668,
+    "lr_swapped": false,
+    "people": 1,
+    "bg_ssim": 0.887,
+    "obj_shift_px": null,
+    "grey_left": 0.103
+   },
+   "playblast_people": 1
+  }
+ },
+ "c2_denoise": {
+  "Q03_bed_kneel": 0.85,
+  "Q04_bed_side_lie": 0.85,
+  "Q08_bed_recline_elbows": 0.85,
+  "T03_armchair_side_sit": 0.85,
+  "T01_sofa_legs_tucked": 0.85,
+  "Q09_lean_wall": 0.85,
+  "T05_barre_standing_split": 0.85,
+  "Q11_bench_side_sit": 0.85,
+  "Q12_one_leg_ankle": 0.85,
+  "T02_kneel_lunge": 0.85
+ },
+ "server_jobs": [
+  {
+   "name": "Q03_bed_kneel_job1",
+   "status": "success",
+   "prompt_id": "c3150e86-1db8-40d4-a5af-d09419f00cd2"
+  },
+  {
+   "name": "Q04_bed_side_lie_job1",
+   "status": "success",
+   "prompt_id": "cea8414d-5a13-4de6-b7ed-8bc1cfbf327d"
+  },
+  {
+   "name": "Q08_bed_recline_elbows_job1",
+   "status": "success",
+   "prompt_id": "a1aab1d9-ee26-49f3-9d9c-32da5d077b21"
+  },
+  {
+   "name": "T03_armchair_side_sit_job1",
+   "status": "success",
+   "prompt_id": "a4fc6bda-bed3-4fd5-a51f-b4c8756bad8c"
+  },
+  {
+   "name": "T01_sofa_legs_tucked_job1",
+   "status": "success",
+   "prompt_id": "38505d62-ff53-44b8-aeed-9d66fcc322b3"
+  },
+  {
+   "name": "Q09_lean_wall_job1",
+   "status": "success",
+   "prompt_id": "978a4c07-1c5a-4bef-a543-975526387525"
+  },
+  {
+   "name": "T05_barre_standing_split_job1",
+   "status": "success",
+   "prompt_id": "f1edd2e9-d17f-40a2-ba61-bc034e25ea82"
+  },
+  {
+   "name": "Q11_bench_side_sit_job1",
+   "status": "success",
+   "prompt_id": "46e477b9-3a2f-40bf-9a52-86b326718b54"
+  },
+  {
+   "name": "Q12_one_leg_ankle_job1",
+   "status": "success",
+   "prompt_id": "45d7561d-03aa-4420-9afa-d5a9e046fd36"
+  },
+  {
+   "name": "T02_kneel_lunge_job1",
+   "status": "success",
+   "prompt_id": "fa6000ca-ad02-4d07-846b-0f81ce0c6f34"
+  },
+  {
+   "name": "Q03_bed_kneel_c2",
+   "status": "success",
+   "prompt_id": "67147a5b-517a-4f37-bdac-c892a3c5baf1"
+  },
+  {
+   "name": "Q04_bed_side_lie_c2",
+   "status": "success",
+   "prompt_id": "cfa9d685-e873-4b69-b642-13e54b0fbc4a"
+  },
+  {
+   "name": "Q08_bed_recline_elbows_c2",
+   "status": "success",
+   "prompt_id": "b0099845-4254-4386-beaa-248b6e13f05f"
+  },
+  {
+   "name": "T03_armchair_side_sit_c2",
+   "status": "success",
+   "prompt_id": "70026160-7807-485a-ac77-0d184bc92168"
+  },
+  {
+   "name": "T01_sofa_legs_tucked_c2",
+   "status": "success",
+   "prompt_id": "3ba27e04-df7c-41ef-81aa-8849c2dce73c"
+  },
+  {
+   "name": "Q09_lean_wall_c2",
+   "status": "success",
+   "prompt_id": "a31469e6-3d47-4cca-9cfb-62bc96d7b48e"
+  },
+  {
+   "name": "T05_barre_standing_split_c2",
+   "status": "success",
+   "prompt_id": "d8eb011e-cc12-4256-9078-22b0cf73fe26"
+  },
+  {
+   "name": "Q11_bench_side_sit_c2",
+   "status": "success",
+   "prompt_id": "c1456a01-3795-4cd2-81e7-df8583dee8ec"
+  },
+  {
+   "name": "Q12_one_leg_ankle_c2",
+   "status": "success",
+   "prompt_id": "c56d03dc-9105-4bcd-89a6-8b1ce8bfcdf8"
+  },
+  {
+   "name": "T02_kneel_lunge_c2",
+   "status": "success",
+   "prompt_id": "5a410063-d3fd-4408-adf3-892c48c58e0e"
+  }
+ ]
+}

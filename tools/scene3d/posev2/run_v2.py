@@ -88,11 +88,11 @@ def do_profiles():
                 seeds.setdefault(spec.target_object, table_seed(p, plate))
         f = prof.write_draft(loc_id(n), plate, seeds, DEFAULT_HEIGHT, root=farm_env.ROOT)
         lp = prof.LocationProfile(f)
-        regs = [lp.region(o) for o in lp.data["objects"]]
+        regs = [lp.region(o) for o in lp.data["objects"] if "top_grid_npz" in o]
         tr.debug_overlay(plate, regs, f.parent / "overlay.jpg")
         print(f"[v2.4] profile {loc_id(n)}: " + "; ".join(
             f"{o['id']} h0 {o['h0']} {o['summary'].get('width_m')}×{o['summary'].get('depth_m')} м, "
-            f"спинка {o['summary'].get('backrest_pts')}, {o['flags']}" for o in lp.data["objects"])
+            f"спинка {o['summary'].get('backrest_pts')}, {o['flags']}" for o in lp.data["objects"] if "summary" in o)
             + f"; якоря {[(a['id'], a['pose_classes']) for a in lp.data['anchors']]}", flush=True)
 
 
@@ -130,7 +130,7 @@ def do_place(refs, only, comfy, iters):
                                                "cell": z.get("cell")})
         place.write(root / p["id"], res, ref, plate, spec, fh)
         r = res["rep"]
-        print(f"[v2.4] {p['id']}: {r['status']} target {spec.target_object} опора {r.get('support_object')}", flush=True)
+        print(f"[v2.5] {p['id']}: {r['status']} target {spec.target_object} опора {r.get('support_object')}", flush=True)
 
 
 def do_render(only):
@@ -169,8 +169,25 @@ def do_render(only):
             print(r.stderr[-2000:])
 
 
+def line25(pid, r):
+    """строка v2.5 (08.11a): статус, опора, ориентация, след/кадр, проникновение, флаги."""
+    ss, o, pen = r.get("shot_spec") or {}, r.get("orient") or {}, r.get("penetration") or {}
+    y = o.get("yaw") or {}
+    fp, fr = r.get("footprint") or {}, r.get("frame") or {}
+    rf = r.get("refine") or {}
+    z = r.get("zone", {})
+    return (f"{pid[:3]} {r['status']} {ss.get('pose_class')}→{ss.get('target_object')} опора {r.get('support')} "
+            f"{r.get('support_gap_cm')}см втор {[(c['part'], c['surface']) for c in r.get('secondary', []) if c['role'] in ('wall', 'back')]} "
+            f"стена {r.get('wall_gap_cm')} спинка {r.get('back_gap_cm')} | yaw реф {y.get('ref_yaw_deg')}→{y.get('yaw_deg')} "
+            f"окно {y.get('window_deg')} сторона {o.get('side_ref')}→{o.get('side_final')} наклон {o.get('tilt_ref_deg')}→"
+            f"{o.get('tilt_final_deg')} крен {o.get('roll_ref_deg')}→{o.get('roll_final_deg')} | след {fp.get('n_out')} "
+            f"lie+{o.get('lie_yaw_add_deg')} кадр {fr.get('ok')} попыток {len(r.get('attempts', []))} сдвиг {z.get('shift_m')} | "
+            f"прон p95 {pen.get('p95_cm')} max {pen.get('max_cm')} (soft {pen.get('soft_p95_cm')}/hard {pen.get('hard_p95_cm')}) | "
+            f"refine {rf.get('groups_deg')} | {r.get('flags')}")
+
+
 def do_summary():
-    """v2.4 (п.9 Р5): shot_spec, body_dims, источники зоны/тела, support_object, ориентация, refine по группам, флаги."""
+    """v2.5 (08.11a п.10): shot_spec, опора/secondary, ориентация, след, кадр, p95 проникновения, статусы и флаги."""
     root = pr.ROUND / M
     rows = []
     for p in pr.prompts():
@@ -178,23 +195,17 @@ def do_summary():
         if not f.is_file():
             continue
         r = json.loads(f.read_text(encoding="utf-8"))
-        z, o, rf = r.get("zone", {}), r.get("orient_check") or {}, r.get("refine") or {}
-        row = {"id": p["id"], "status": r["status"], "shot_spec": r.get("shot_spec"), "body_dims": r.get("body_dims"),
-               "body_source": r.get("body_source"), "zone_source": z.get("source"), "zone": {
-                   k: z.get(k) for k in ("object_id", "anchor_id", "via", "rule", "band_m", "cell", "attempt", "shift_m")},
-               "support_object": r.get("support_object"), "support_parts_on": r.get("support_parts_on"),
-               "support_gap_cm": r.get("support_gap_cm"), "back_gap_cm": r.get("back_gap_cm"),
-               "max_penetration_cm": r.get("max_penetration_cm"), "cells_ok": r.get("cells_ok"),
-               "orient_check": {k: o.get(k) for k in ("candidate", "reproj_err", "conflict", "after_fit", "after_refine")},
-               "refine_groups_deg": rf.get("groups_deg"), "refine_limits_ok": rf.get("limits_ok"),
-               "stage": r.get("stage"), "attempts": r.get("attempts"), "flags": r.get("flags", []),
-               "angle_to_camera_deg": r.get("angle_to_camera_deg")}
+        keep = ("status", "shot_spec", "body_dims", "body_source", "support", "support_info", "secondary",
+                "support_object", "support_parts_on", "support_gap_cm", "back_gap_cm", "wall_gap_cm", "penetration",
+                "footprint", "frame", "frame_tries", "orient", "angle_to_camera_deg", "stage", "attempts", "flags",
+                "target_info")
+        row = {"id": p["id"], **{k: r.get(k) for k in keep},
+               "zone": {k: r.get("zone", {}).get(k) for k in ("source", "object_id", "anchor_id", "via", "rule",
+                                                                 "band_m", "cell", "attempt", "shift_m", "sides",
+                                                                 "side_yaw_deg", "wall", "area_m2")},
+               "refine": {k: (r.get("refine") or {}).get(k) for k in ("groups_deg", "limits_ok")}}
         rows.append(row)
-        ss = row["shot_spec"] or {}
-        print(f"{p['id']:26} {row['status']:13} {ss.get('pose_class', ''):10} target {ss.get('target_object', ''):6} "
-              f"опора {row['support_object']} {row['support_gap_cm']} см прон {row['max_penetration_cm']} см | "
-              f"зона {row['zone_source']} яч.{z.get('attempt')} сдвиг {z.get('shift_m')} | "
-              f"ориент {o.get('candidate')} {o.get('reproj_err')} | refine {row['refine_groups_deg']} | {row['flags']}")
+        print(line25(p["id"], r))
     (root / "summary.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
@@ -208,12 +219,12 @@ def do_sheet24(refs_img, refs, out):
             continue
         r = json.loads(f.read_text(encoding="utf-8"))
         ss = r.get("shot_spec") or {}
-        o = r.get("orient_check") or {}
-        rf = r.get("refine") or {}
+        o, pen = r.get("orient") or {}, r.get("penetration") or {}
         lab = (f"{p['id']}  {r['status']}  {ss.get('pose_class')} → {ss.get('target_object')}  опора "
-               f"{r.get('support_object')} {r.get('support_gap_cm')} см  прон {r.get('max_penetration_cm')} см  "
-               f"зона {r.get('zone', {}).get('source')}  ориент {o.get('candidate')}  "
-               f"refine {rf.get('groups_deg') or '—'}  {','.join(r.get('flags', []))}")
+               f"{r.get('support_object')} {r.get('support_gap_cm')} см  прон p95 {pen.get('p95_cm')} max "
+               f"{pen.get('max_cm')} см  наклон {o.get('tilt_ref_deg')}→{o.get('tilt_final_deg')}  сторона "
+               f"{o.get('side_ref')}→{o.get('side_final')}  след {(r.get('footprint') or {}).get('n_out')}  кадр "
+               f"{(r.get('frame') or {}).get('ok')}  {','.join(r.get('flags', []))}")
         pb = pr.loc_dir(M, p["loc"]) / p["id"] / "playblast.png"
         spec.append({"label": lab, "cells": [
             [str(Path(refs_img) / f"{p['id']}.png"), "реф"], [str(Path(refs) / f"{p['id']}.ref_check.jpg"), "реф + тело"],

@@ -109,7 +109,7 @@ class Scale(unittest.TestCase):
             self.assertIn(rep["status"], place.STATUS_RANK)
             self.assertAlmostEqual(rep["body_dims"]["H"], 1.62 * k, delta=0.02)
             self.assertEqual(rep["zone"]["source"], "proxy")
-            self.assertIn("orient_check", rep)
+            self.assertIn("orient", rep)
         spec = ss.ShotSpec("T04", "sit_floor", "floor", ["pelvis", "foot.L", "foot.R"])
         seed = self.plate.pixel_point(0.5, 0.9)
         rep = place.place_pose(ref_of("T04_floor_sit_knees_up"), self.plate, spec, seed, 1.62 * K,

@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 
 
-def make(out, W=768, H=432, h=1.4, pitch_deg=15, fov_x=70.0, bed_y1=4.5):
+def make(out, W=768, H=432, h=1.4, pitch_deg=15, fov_x=70.0, bed_y1=4.5, bed_x=1.0):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     t = math.radians(pitch_deg)
@@ -31,10 +31,10 @@ def make(out, W=768, H=432, h=1.4, pitch_deg=15, fov_x=70.0, bed_y1=4.5):
         cand(tw, dw[..., 1] > 0)                                                     # стена
         tb = (0.5 - C[2]) / dw[..., 2]
         pb = C + dw * tb[..., None]
-        cand(tb, (dw[..., 2] < 0) & (np.abs(pb[..., 0]) <= 1) & (pb[..., 1] >= 2.5) & (pb[..., 1] <= bed_y1))
+        cand(tb, (dw[..., 2] < 0) & (np.abs(pb[..., 0]) <= bed_x) & (pb[..., 1] >= 2.5) & (pb[..., 1] <= bed_y1))
         tf = (2.5 - C[1]) / dw[..., 1]
         pf = C + dw * tf[..., None]
-        cand(tf, (dw[..., 1] > 0) & (np.abs(pf[..., 0]) <= 1) & (pf[..., 2] >= 0) & (pf[..., 2] <= 0.5))
+        cand(tf, (dw[..., 1] > 0) & (np.abs(pf[..., 0]) <= bed_x) & (pf[..., 2] >= 0) & (pf[..., 2] <= 0.5))
     z = best                                                                         # dcv z = 1 -> t = глубина z
     inv = 1 / z
     lo, hi = float(np.percentile(inv, 1)), float(np.percentile(inv, 99.5))

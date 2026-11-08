@@ -56,6 +56,182 @@ def candidates(kp, cam_axis):
             ("up180", rot_axis([0, 0, 1.0], math.pi)), ("lat180", rot_axis(lat, math.pi))]
 
 
+# ------------------------------------------------------------------------------------------------ 08.11a п.3: сборка
+TILT_RANGE = {"stand": (0, 30), "kneel": (0, 50), "sit_edge": (0, 45), "sit_tucked": (0, 60), "sit_floor": (0, 60),
+              "crouch": (0, 80), "recline": (25, 70), "lie": (75, 105), "all_fours": (60, 110)}
+ROLL_MAX = 15.0
+YAW_WINDOW = 60.0
+UP = np.array([0, 0, 1.0])
+# куда наклонять, если реф почти вертикален, а класс требует больше: назад (recline, lie) / вперёд (прочие)
+LEAN_BACK = ("recline", "lie")
+
+
+def wrap(a):
+    return (a + 180.0) % 360.0 - 180.0
+
+
+def left_vec(KP):
+    return (KP[9] - KP[10]) + (KP[5] - KP[6])
+
+
+def tilt_deg(KP):
+    """наклон корпуса: ось таз→шея от вертикали, градусы."""
+    a = KP[69] - (KP[9] + KP[10]) / 2
+    return math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), 1e-9), -1, 1)))
+
+
+def roll_deg(KP):
+    """крен: наклон поперечной оси (бёдра + плечи) от горизонтали, градусы со знаком."""
+    lv = left_vec(KP)
+    return math.degrees(math.asin(np.clip(lv[2] / max(np.linalg.norm(lv), 1e-9), -1, 1)))
+
+
+def chest(KP):
+    """нормаль груди (3D): left × (таз→шея); не зависит от оценки «вверх»."""
+    c = np.cross(left_vec(KP), KP[69] - (KP[9] + KP[10]) / 2)
+    return c / max(np.linalg.norm(c), 1e-9)
+
+
+CHEST_H_MIN = 0.3        # |горизонтальная часть нормали груди| — ниже «перёд» по горизонтали не определён (лёжа на спине)
+
+
+def forward(KP):
+    """горизонтальное «вперёд»: горизонтальная часть нормали груди; если грудь смотрит вверх/вниз — left × up."""
+    c = chest(KP)
+    f = np.array([c[0], c[1], 0.0])
+    if np.linalg.norm(f) >= CHEST_H_MIN:
+        return f / np.linalg.norm(f)
+    f = np.cross(left_vec(KP), UP)
+    f[2] = 0
+    n = np.linalg.norm(f)
+    return f / n if n > 1e-6 else None
+
+
+SIDE_DEAD = 0.1           # |cos| нормали груди к направлению на камеру — ниже сторона не определена
+
+
+def side_to_camera(KP, cam):
+    """+1 — к камере передом (нормаль груди · направление на камеру > 0, 3D), −1 — спиной; 0 — почти боком
+    (|cos| < SIDE_DEAD, ограничение не действует)."""
+    to = np.asarray(cam, float) - (KP[9] + KP[10]) / 2
+    c = chest(KP) @ (to / np.linalg.norm(to))
+    return 0 if abs(c) < SIDE_DEAD else (1 if c > 0 else -1)
+
+
+def side_for_yaws(KP, angles_deg, to_cam):
+    """сторона к камере (3D) для тела, повёрнутого вокруг Z так, что его «вперёд» = angles_deg. -> массив ±1/0."""
+    c = chest(KP)
+    f = forward(KP)
+    f0 = math.degrees(math.atan2(f[1], f[0])) if f is not None else 0.0
+    d = np.radians(np.asarray(angles_deg) - f0)
+    cx = c[0] * np.cos(d) - c[1] * np.sin(d)
+    cy = c[0] * np.sin(d) + c[1] * np.cos(d)
+    t = np.asarray(to_cam, float) / np.linalg.norm(to_cam)
+    v = cx * t[0] + cy * t[1] + c[2] * t[2]
+    return np.where(np.abs(v) < SIDE_DEAD, 0, np.sign(v)).astype(int)
+
+
+def rot_about(X, c, R):
+    return (X - c) @ R.T + c
+
+
+def tilt_sign_candidate(kp, cam_axis, pose_class):
+    """кандидаты ×180° шага 7 — только чтобы выбрать знак наклона рефа: identity / cam180 / lat180, чей наклон
+    ближе к диапазону класса (identity при равенстве ±5°). -> (имя, R)."""
+    lo, hi = TILT_RANGE[pose_class]
+    best = None
+    for name, R in candidates(kp, cam_axis):
+        if name == "up180":                                   # меняет только yaw — к знаку наклона отношения не имеет
+            continue
+        c = (kp[9] + kp[10]) / 2
+        t = tilt_deg(rot_about(kp, c, R))
+        dist = max(lo - t, 0.0, t - hi) + (0.0 if name == "identity" else 5.0)
+        if best is None or dist < best[0]:
+            best = (dist, name, R)
+    return best[1], best[2]
+
+
+def assemble_tilt_roll(V, kp, pose_class):
+    """наклон корпуса — с рефа, зажатый в диапазон класса; крен ≤ ±15° (кроме lie). Поворот вокруг центра таза.
+    -> V, kp, info{tilt_ref, tilt, roll_ref, roll, clamped_deg}."""
+    c = (kp[9] + kp[10]) / 2
+    t0, r0 = tilt_deg(kp), roll_deg(kp)
+    info = {"tilt_ref_deg": round(t0, 1), "roll_ref_deg": round(r0, 1)}
+    if pose_class != "lie" and abs(r0) > ROLL_MAX:            # крен: поворот вокруг оси «вперёд»
+        f = forward(kp)
+        if f is not None:
+            target = math.copysign(ROLL_MAX, r0)
+            for sgn in (1, -1):                               # знак поворота подбираем по результату
+                R = rot_axis(f, sgn * math.radians(r0 - target))
+                if abs(roll_deg(rot_about(kp, c, R)) - target) < 1.0:
+                    V, kp = rot_about(V, c, R), rot_about(kp, c, R)
+                    break
+    lo, hi = TILT_RANGE[pose_class]
+    t1 = tilt_deg(kp)
+    tt = min(max(t1, lo), hi)
+    if abs(tt - t1) > 0.05:
+        a = kp[69] - c
+        k = np.cross(a, UP)
+        vertical = t1 < 3.0                                   # почти вертикальная ось — сторону наклона задаёт класс
+        f = forward(kp)
+        if vertical or np.linalg.norm(k) < 1e-6:
+            k = np.cross(f, UP) if f is not None else np.array([1.0, 0, 0])
+        k = k / np.linalg.norm(k)
+        for sgn in (1, -1):
+            R = rot_axis(k, sgn * math.radians(tt - t1))
+            k2 = rot_about(kp, c, R)
+            if abs(tilt_deg(k2) - tt) >= 0.5:
+                continue
+            if vertical and f is not None:
+                lean = (k2[69] - c) @ f
+                if (pose_class in LEAN_BACK) != (lean < 0):
+                    continue
+            V, kp = rot_about(V, c, R), k2
+            break
+    info.update(tilt_deg=round(tilt_deg(kp), 1), roll_deg=round(roll_deg(kp), 1))
+    info["clamped_deg"] = round(abs(info["tilt_deg"] - t0) + abs(info["roll_deg"] - r0), 1)
+    return V, kp, info
+
+
+def solve_yaw(want_deg, side_ref, window=None, side_fn=None):
+    """yaw «вперёд» тела (мир, градусы): ближайший к want при условиях: сторона к камере = side_ref
+    (side_fn(углы) -> ±1/0, 3D по нормали груди; 0 у тела «боком» допускается), и |yaw − window| ≤ 60°.
+    Невозможно и то и другое → side_conflict, приоритет у стороны к камере. -> (yaw, side_conflict, in_window)."""
+    a = np.arange(-180.0, 180.0, 1.0)
+    if side_ref and side_fn is not None:
+        side_ok = side_fn(a) == side_ref                    # поворот в «боком»/другую сторону — запрещён
+    else:
+        side_ok = np.ones_like(a, bool)
+    if window is not None:
+        dw = np.abs(wrap(a - window)) - YAW_WINDOW
+        in_w = dw <= 0
+    else:
+        dw = np.zeros_like(a)
+        in_w = np.ones_like(a, bool)
+    dist = np.abs(wrap(a - want_deg))
+    ok = side_ok & in_w
+    if ok.any():
+        k = np.flatnonzero(ok)[np.argmin(dist[ok])]
+        return float(a[k]), False, True
+    if not side_ok.any():
+        return float(want_deg), True, False
+    k = np.flatnonzero(side_ok)[np.lexsort((dist[side_ok], dw[side_ok]))[0]]
+    return float(a[k]), True, False
+
+
+def reproj_plate(KP, plate, ref, idx):
+    """ошибка формы 2D: проекция точек тела камерой плиты против 2D-точек рефа (центр и высота рамки совмещены).
+    -> доля высоты рамки рефа (для orient_conflict: ракурс рефа против ракурса посадки)."""
+    u, v, z = plate.project(KP[idx])
+    P = np.stack([u, v], 1)
+    k2 = ref["kp2d"][idx]
+    bh_r = max(float(k2[:, 1].max() - k2[:, 1].min()), 1.0)
+    bh_p = max(float(P[:, 1].max() - P[:, 1].min()), 1.0)
+    P = (P - P.mean(0)) / bh_p
+    Q = (k2 - k2.mean(0)) / bh_r
+    return float(np.linalg.norm(P - Q, axis=1).mean())
+
+
 def reproj_error(KP_world, G0, ref, idx):
     """Ошибка репроекции на 2D-точки рефа: тело переводится в систему камеры рефа обратным к посадке «исходного»
     кандидата преобразованием G0 = (M, b) (X = M v + b), проецируется интринсиками рефа; центроиды совмещаются

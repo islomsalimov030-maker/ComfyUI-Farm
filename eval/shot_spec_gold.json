@@ -1,5 +1,5 @@
 {
- "note": "3D-A v2.4 (07.11f): эталон ShotSpec 17 поз раунда, из таблицы pose_round_prompts.json; для проверки будущей VLM (source=vlm).",
+ "note": "3D-A v2.5 (08.11a): эталон ShotSpec 17 поз раунда, из таблицы pose_round_prompts.json (весонесущие части → target, прочие → secondary_contacts); для проверки будущей VLM (source=vlm).",
  "specs": [
   {
    "id": "Q01_stand_hand_face",
@@ -10,7 +10,8 @@
     "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "Q02_bed_cross_legs",
@@ -20,7 +21,13 @@
     "pelvis"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    }
+   ]
   },
   {
    "id": "Q03_bed_kneel",
@@ -33,7 +40,8 @@
     "shin.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "Q04_bed_side_lie",
@@ -41,11 +49,16 @@
    "target_object": "bed",
    "support_parts": [
     "pelvis",
-    "elbow.L",
     "thigh.L"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "elbow.L",
+     "surface": "bed"
+    }
+   ]
   },
   {
    "id": "Q05_crouch_shoelace",
@@ -56,7 +69,8 @@
     "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "Q06_floor_hug_knees",
@@ -68,7 +82,8 @@
     "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "Q07_stretch_arms_up",
@@ -79,42 +94,66 @@
     "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "Q08_bed_recline_elbows",
    "pose_class": "recline",
    "target_object": "bed",
    "support_parts": [
-    "pelvis",
-    "elbow.L",
-    "elbow.R"
+    "pelvis"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "elbow.L",
+     "surface": "bed"
+    },
+    {
+     "part": "elbow.R",
+     "surface": "bed"
+    }
+   ]
   },
   {
    "id": "Q09_lean_wall",
    "pose_class": "stand",
-   "target_object": "wall",
+   "target_object": "floor",
    "support_parts": [
-    "hand.R"
+    "foot.L",
+    "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "hand.R",
+     "surface": "wall"
+    }
+   ]
   },
   {
    "id": "Q10_all_fours_cat",
    "pose_class": "all_fours",
    "target_object": "floor",
    "support_parts": [
-    "hand.L",
-    "hand.R",
     "knee.L",
     "knee.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "hand.L",
+     "surface": "floor"
+    },
+    {
+     "part": "hand.R",
+     "surface": "floor"
+    }
+   ]
   },
   {
    "id": "Q11_bench_side_sit",
@@ -124,7 +163,17 @@
     "pelvis"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    },
+    {
+     "part": "foot.R",
+     "surface": "floor"
+    }
+   ]
   },
   {
    "id": "Q12_one_leg_ankle",
@@ -134,7 +183,8 @@
     "foot.L"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "T01_sofa_legs_tucked",
@@ -145,7 +195,8 @@
     "shin.L"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "T02_kneel_lunge",
@@ -156,7 +207,8 @@
     "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "T03_armchair_side_sit",
@@ -166,7 +218,13 @@
     "pelvis"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "foot.L",
+     "surface": "floor"
+    }
+   ]
   },
   {
    "id": "T04_floor_sit_knees_up",
@@ -178,17 +236,24 @@
     "foot.R"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": []
   },
   {
    "id": "T05_barre_standing_split",
    "pose_class": "stand",
-   "target_object": "wall",
+   "target_object": "floor",
    "support_parts": [
-    "hand.R"
+    "foot.L"
    ],
    "instance_hint": null,
-   "source": "table"
+   "source": "table",
+   "secondary_contacts": [
+    {
+     "part": "hand.R",
+     "surface": "wall"
+    }
+   ]
   }
  ]
 }

@@ -15,7 +15,7 @@ import top_region as tr
 import zone as zn
 from body import K, height_est
 
-PROFILE_VERSION = 1
+PROFILE_VERSION = 2          # 08.11a: objects.type / soft / backrest_name, стены (type=wall), стороны sit_edge
 BODY_VERSION = 1
 SUBSTITUTES = {"armchair": ["sofa", "bed"], "bench": ["chair", "stool", "bed"], "sofa": ["bed", "armchair"],
                "chair": ["stool", "bench"], "stool": ["chair", "bench"]}
@@ -96,6 +96,18 @@ class LocationProfile:
                 return a
         return None
 
+    def walls(self):
+        """стены профиля (type=wall) в формате top_region.walls()."""
+        out = []
+        for o in self.data["objects"]:
+            if o.get("type") != "wall":
+                continue
+            d = np.load(self.dir / o["pts_npz"])
+            n = np.array(o["plane"]["n"], float)
+            out.append({"n": n, "d": float(o["plane"]["d"]), "area_m2": o["area_m2"], "pts": d["P"],
+                        "lat_dir": np.cross([0, 0, 1.0], n), "lat": o["lat_m"], "z": o["z_m"], "id": o["id"]})
+        return out
+
     def zone_metrics(self, anchor):
         d = np.load(self.dir / anchor["zone_cells_npz"])
         return {k: d[k] for k in ("xy", "h", "near", "far", "dt")}
@@ -122,7 +134,9 @@ def write_draft(loc_id, plate, seeds, H, root=None):
             back = f"{oid}_backrest.npz"
         fwd, _ = reg.cam_axes()
         front = (-fwd).tolist()                                         # от предмета к камере
-        objects.append({"id": oid, "name": name, "mask_png": f"{oid}_mask.png", "top_grid_npz": f"{oid}_top.npz",
+        objects.append({"id": oid, "name": name, "type": tr.object_type(name), "soft": tr.is_soft(name),
+                        "backrest_name": None if name == "floor" else tr.backrest_name(name, back is not None),
+                        "mask_png": f"{oid}_mask.png", "top_grid_npz": f"{oid}_top.npz",
                         "h0": round(reg.h0, 3), "front_edge_dir": [round(x, 4) for x in front],
                         "backrest_npz": back, "flags": reg.flags, "summary": reg.summary()})
         if name == "floor":
@@ -136,10 +150,32 @@ def write_draft(loc_id, plate, seeds, H, root=None):
                 continue
             fn = f"{oid}_{suf}.npz"
             np.savez_compressed(d / fn, **m)
-            anchors.append({"id": f"{oid}_{suf}", "object_id": oid, "pose_classes": classes, "zone_cells_npz": fn,
-                            "facing_yaw_deg": round(yaw, 1), "uses_backrest": uses_back})
+            a = {"id": f"{oid}_{suf}", "object_id": oid, "pose_classes": classes, "zone_cells_npz": fn,
+                 "facing_yaw_deg": round(yaw, 1), "uses_backrest": uses_back}
+            if suf == "edge":                       # 08.11a п.4: стороны прямоугольника, доступ по свободному полу
+                freg = tr.top_region(plate, "floor", None, H)
+                sides = zn.edge_sides(reg, freg, H, plate)
+                a["sides"] = [{"yaw_deg": round(sd["yaw_deg"], 1), "length_m": round(sd["length"], 2),
+                               "access_frac": sd["access_frac"], "accessible": sd["accessible"],
+                               "p0": [round(float(x), 3) for x in sd["p0"]], "p1": [round(float(x), 3) for x in sd["p1"]]}
+                              for sd in sides]
+                acc = [sd for sd in sides if sd["accessible"]]
+                if acc:                             # по умолчанию — доступная сторона, ближе всего лицом к камере
+                    best = min(acc, key=lambda sd: abs((sd["yaw_deg"] - yaw + 180) % 360 - 180))
+                    a["facing_yaw_deg"] = round(best["yaw_deg"], 1)
+                else:
+                    a["flags"] = ["no_access_side"]
+            anchors.append(a)
+    for k, w in enumerate(tr.walls(plate), 1):                         # 08.11a п.1: стены
+        oid = f"wall_{k}"
+        np.savez_compressed(d / f"{oid}_pts.npz", P=w["pts"])
+        objects.append({"id": oid, "name": "wall", "type": "wall", "soft": False, "backrest_name": None,
+                        "plane": {"n": [round(float(x), 4) for x in w["n"]], "d": round(w["d"], 4)},
+                        "area_m2": w["area_m2"], "lat_m": [round(x, 3) for x in w["lat"]],
+                        "z_m": [round(x, 3) for x in w["z"]], "pts_npz": f"{oid}_pts.npz",
+                        "flags": [] if w["z"][1] >= zn.WALL_MIN_TOP else ["low_plane"]})
     prof = {"loc_id": loc_id, "version": PROFILE_VERSION, "reviewed": False,
-            "note": "черновик v2.4 из height_proxy; якоря: ячейки маски + метрики near/far/dt, правило класса "
+            "note": "черновик v2.5 из height_proxy (+ стены RANSAC); якоря: ячейки маски + метрики near/far/dt, правило класса "
                     "(zone.py) применяется при чтении с body_dims персонажа",
             "backrest_H_m": H,
             "scale": {"factor": 1.0, "seat_heights_m": heights, "scale_suspect": bool(suspect)},

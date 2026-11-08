@@ -65,5 +65,147 @@ def zone_cells(m, pose_class, dims, seed_xy=None, has_backrest=True):
     pick = _spread(order, xy)
     cands = [{"xy": xy[k].tolist(), "h": float(m["h"][k]), "near": float(m["near"][k]), "far": float(m["far"][k]),
               "dt": float(dt[k]), "anchor": anchor} for k in pick]
-    info = {"rule": rule, "band_m": band, "n_ok": int(len(order)), "flags": flags}
+    info = {"rule": rule, "band_m": band, "n_ok": int(len(order)), "flags": flags,
+            "_all": (xy[order], np.asarray(m["h"])[order])}           # все ячейки зоны (сдвиг к центру кадра, п.8)
     return cands, info
+
+
+# ------------------------------------------------------------------------------------------------ 08.11a п.4: край sit_edge
+ACCESS_W_H = 0.25        # × H — ширина свободного пола перед стороной
+ACCESS_FRAC = 0.6        # доля длины стороны
+ACCESS_GAP = 0.06        # м — пол начинаем проверять чуть дальше края (под кромкой матраса пола не видно)
+SIDE_STEP = 0.05         # м — шаг по стороне
+EDGE_PELVIS_THIGH = 0.6  # × L_thigh
+
+
+def rect_sides(reg):
+    """стороны минимального описанного прямоугольника маски (перебор угла 0.5°). -> [{p0, p1, n (наружу), length,
+    yaw_deg (нормали)}]."""
+    P = reg.points3d()[:, :2]
+    best = None
+    for a in np.radians(np.arange(0, 90, 0.5)):
+        R = np.array([[np.cos(a), -np.sin(a)], [np.sin(a), np.cos(a)]])
+        Q = P @ R                                                   # координаты в повёрнутых осях
+        lo, hi = Q.min(0) - 0.01, Q.max(0) + 0.01                   # + половина ячейки
+        ar = np.prod(hi - lo)
+        if best is None or ar < best[0]:
+            best = (ar, R, lo, hi)
+    _, R, lo, hi = best
+    corners = np.array([[lo[0], lo[1]], [hi[0], lo[1]], [hi[0], hi[1]], [lo[0], hi[1]]]) @ R.T
+    c = corners.mean(0)
+    sides = []
+    for k in range(4):
+        p0, p1 = corners[k], corners[(k + 1) % 4]
+        t = (p1 - p0) / np.linalg.norm(p1 - p0)
+        n = np.array([t[1], -t[0]])
+        if n @ ((p0 + p1) / 2 - c) < 0:
+            n = -n
+        sides.append({"p0": p0, "p1": p1, "n": n, "length": float(np.linalg.norm(p1 - p0)),
+                      "yaw_deg": float(np.degrees(np.arctan2(n[1], n[0])))})
+    return sides
+
+
+def side_access(side, freg, H, plate=None):
+    """доля длины стороны, перед которой свободный пол (маска floor) шириной ≥ ACCESS_W_H·H.
+    plate задан: точка полосы вне кадра камеры плиты считается свободной (пол за краем кадра не виден, но и
+    видимых препятствий там нет); в кадре — только маска floor."""
+    if freg is None or not freg.mask.any():
+        return 0.0
+    L = side["length"]
+    ts = np.arange(SIDE_STEP / 2, L, SIDE_STEP) / L
+    ds = np.arange(ACCESS_GAP, ACCESS_GAP + ACCESS_W_H * H + 1e-9, 0.02)
+    good = 0
+    for t in ts:
+        s = side["p0"] + t * (side["p1"] - side["p0"])
+        pts = s[None] + ds[:, None] * side["n"][None]
+        free = freg.in_mask(pts)
+        if plate is not None:
+            P3 = np.column_stack([pts, np.full(len(pts), freg.h0)])
+            u, v, z = plate.project(P3)
+            free |= (u < 0) | (u >= plate.Wp) | (v < 0) | (v >= plate.Hp) | (z <= 0)
+        good += bool(np.all(free))
+    return good / max(len(ts), 1)
+
+
+def edge_sides(reg, freg, H, plate=None):
+    """все стороны + доступность (п.4). -> список dict с accessible/access_frac."""
+    out = []
+    for s in rect_sides(reg):
+        f = side_access(s, freg, H, plate)
+        out.append(dict(s, access_frac=round(f, 2), accessible=bool(f >= ACCESS_FRAC)))
+    return out
+
+
+def pick_side(sides, want_yaw_deg):
+    """из доступных — с внешней нормалью ближе к yaw рефа; нет доступных -> None."""
+    acc = [s for s in sides if s["accessible"]]
+    if not acc:
+        return None
+    return min(acc, key=lambda s: abs((s["yaw_deg"] - want_yaw_deg + 180) % 360 - 180))
+
+
+def edge_cells(m, side, dims, seed_xy=None):
+    """ячейки sit_edge у выбранной стороны: таз не дальше 0.6·L_thigh от неё, dt ≥ EDGE_MIN, проекция на сторону
+    внутри отрезка. Порядок: ближе к точке таблицы вдоль стороны, затем глубже (dt)."""
+    xy, dt = m["xy"], m["dt"]
+    p0, n = side["p0"], side["n"]
+    t = (side["p1"] - p0) / side["length"]
+    dist = (p0 - xy) @ n                                            # внутрь от стороны (+)
+    along = (xy - p0) @ t
+    lim = EDGE_PELVIS_THIGH * dims["L_thigh"]
+    ok = (dist >= 0) & (dist <= lim) & (dt >= EDGE_MIN) & (along >= 0) & (along <= side["length"])
+    seed_a = 0.5 * side["length"] if seed_xy is None else float((np.asarray(seed_xy)[:2] - p0) @ t)
+    order = np.lexsort((-dt, np.abs(along - seed_a)))
+    order = [k for k in order if ok[k]]
+    pick = _spread(order, xy)
+    cands = [{"xy": xy[k].tolist(), "h": float(m["h"][k]), "near": float(dist[k]), "far": float(m["far"][k]),
+              "dt": float(dt[k]), "anchor": "pelvis"} for k in pick]
+    return cands, {"rule": "sit_edge_side", "band_m": [0.0, round(lim, 3)], "n_ok": int(len(order)), "flags": [],
+                   "_all": (xy[order], np.asarray(m["h"])[order]),
+                   "side_yaw_deg": round(side["yaw_deg"], 1), "side_len_m": round(side["length"], 2),
+                   "side_access": side.get("access_frac")}
+
+
+# ------------------------------------------------------------------------------------------------ 08.11a п.6: у стены
+WALL_BAND_H = (0.15, 0.45)   # × H — таз до плоскости стены
+WALL_MIN_TOP = 1.0           # м — у «стены» для рук верх не ниже (низкие плоскости — фасады мебели)
+WALL_LAT_MARGIN = 0.15       # м
+
+
+def pick_wall(walls, seed_xy):
+    """ближайшая к точке таблицы стена, у которой проекция точки внутри стены и верх ≥ WALL_MIN_TOP."""
+    s = np.asarray(seed_xy, float)[:2]
+    best = None
+    for k, w in enumerate(walls):
+        if w["z"][1] < WALL_MIN_TOP:
+            continue
+        lat = float(np.r_[s, 0] @ w["lat_dir"])
+        if not (w["lat"][0] - 0.3 <= lat <= w["lat"][1] + 0.3):
+            continue
+        D = float(w["n"][:2] @ s + w["d"])
+        if D < 0:
+            continue
+        if best is None or D < best[0]:
+            best = (D, k)
+    return None if best is None else best[1]
+
+
+def wall_cells(freg, wall, dims, reach_m, seed_xy=None):
+    """ячейки пола: расстояние таза до плоскости стены WALL_BAND_H·H, проекция внутри стены; порядок — ближе к
+    |D − горизонтальный вынос рук| (руки достают), затем к точке таблицы."""
+    i, j = freg.cells()
+    xy = freg.origin + (np.stack([i, j], 1) + 0.5) * 0.02
+    D = xy @ wall["n"][:2] + wall["d"]
+    lat = xy @ wall["lat_dir"][:2]
+    H = dims["H"]
+    ok = (D >= WALL_BAND_H[0] * H) & (D <= WALL_BAND_H[1] * H) & (lat >= wall["lat"][0] + WALL_LAT_MARGIN) & \
+         (lat <= wall["lat"][1] - WALL_LAT_MARGIN) & (freg.dt[i, j] >= EDGE_MIN)
+    seed_d = np.zeros(len(xy)) if seed_xy is None else np.linalg.norm(xy - np.asarray(seed_xy)[:2], axis=1)
+    order = np.lexsort((seed_d, np.round(np.abs(D - reach_m), 2)))
+    order = [k for k in order if ok[k]]
+    pick = _spread(order, xy)
+    cands = [{"xy": xy[k].tolist(), "h": float(freg.height[i[k], j[k]]), "near": float(D[k]), "far": 0.0,
+              "dt": float(freg.dt[i[k], j[k]]), "anchor": "pelvis_xy"} for k in pick]
+    return cands, {"rule": "wall", "band_m": [round(WALL_BAND_H[0] * H, 3), round(WALL_BAND_H[1] * H, 3)],
+                   "_all": (xy[order], freg.height[i[order], j[order]]),
+                   "n_ok": int(len(order)), "flags": [], "reach_m": round(reach_m, 3)}

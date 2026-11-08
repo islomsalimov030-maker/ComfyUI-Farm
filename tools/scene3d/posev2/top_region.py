@@ -218,9 +218,17 @@ def height_proxy(plate, target_object, seed, H):
         k = int(np.argmin(np.linalg.norm(c3 - np.asarray(seed, float)[:3], axis=1)))
         sc = (int(fin[k, 0]), int(fin[k, 1]))
         h0 = float(Hg[sc])
-        if not (SEAT_H_RANGE[0] <= h0 <= SEAT_H_RANGE[1]):
+        if scale_suspect(target_object, h0):                 # 08.11a п.9: диапазон по типу объекта
             flags.append("scale_suspect")
     mask = _grow(Hg, sc, h0)
+    if target_object != "floor" and mask.any():            # 08.11a: внутренние дыры MoGe в верхе предмета — залить
+        filled = ndimage.binary_fill_holes(mask)            # (иначе dt у дыры режет след п.5); высота — от соседа
+        if (filled & ~mask).any():
+            idx = ndimage.distance_transform_edt(~mask, return_distances=False, return_indices=True)
+            Hg = Hg.copy()
+            hole = filled & ~mask
+            Hg[hole] = Hg[idx[0][hole], idx[1][hole]]
+            mask = filled
     dt = ndimage.distance_transform_edt(np.pad(mask, 1))[1:-1, 1:-1] * CELL
     reg = TopRegion(target_object, "height_proxy", origin, shape, Hg, mask, dt, h0, sc, plate.C[:2].copy(), None, flags)
     if target_object != "floor" and mask.any():
@@ -241,6 +249,107 @@ def _backrest(plate, reg, H):
     sel = ok & (d > far) & (d <= far + BACK_DEPTH)
     P, N = plate.P[zs][sel], plate.Nrm[zs][sel]
     return (P, N) if len(P) >= BACK_MIN_PTS else (None, None)
+
+
+# ------------------------------------------------------------------------------------------------ стены (08.11a п.1)
+WALL_UP_MAX = 0.2           # |n·up| ≤ 0.2 — вертикальная грань
+WALL_TOL = 0.03             # м, допуск RANSAC
+WALL_MIN_AREA = 0.5         # м²
+WALL_GRAZE = 0.15           # |n·луч| < 0.15 — грань вдоль луча камеры (растяжка меша на разрыве глубины), не стена
+WALL_NORMAL_AGREE = 0.7     # нормаль грани ≈ нормаль плоскости
+WALL_MAX = 8
+
+
+def walls(plate, seed=0, trials=600):
+    """Вертикальные плоскости меша плиты: грани |n·up| ≤ 0.2 → последовательный RANSAC вертикальных плоскостей
+    (2 точки + up, допуск 3 см), площадь инлаеров ≥ 0.5 м². -> [{n, d, area_m2, pts, lat, z, center}];
+    n — горизонтальная нормаль к камере, n·x + d = расстояние до плоскости (+ со стороны камеры)."""
+    V, F = plate.V, plate.F
+    A, B, C = V[F[:, 0]], V[F[:, 1]], V[F[:, 2]]
+    nn = np.cross(B - A, C - A)
+    ar = np.linalg.norm(nn, axis=1) / 2
+    ok = ar > 1e-10
+    nu = np.zeros_like(nn)
+    nu[ok] = nn[ok] / (2 * ar[ok, None])
+    cen = (A + B + C) / 3
+    ray = cen - plate.C
+    ray /= np.linalg.norm(ray, axis=1, keepdims=True)
+    nu[np.einsum("ij,ij->i", nu, -ray) < 0] *= -1                     # к камере
+    sel = ok & (np.abs(nu[:, 2]) <= WALL_UP_MAX) & (np.abs(np.einsum("ij,ij->i", nu, ray)) >= WALL_GRAZE)
+    P, N, W = cen[sel], nu[sel], ar[sel]
+    rng = np.random.default_rng(seed)
+    up = np.array([0, 0, 1.0])
+    out = []
+    alive = np.ones(len(P), bool)
+    for _ in range(WALL_MAX):
+        idx = np.flatnonzero(alive)
+        if len(idx) < 50 or W[idx].sum() < WALL_MIN_AREA:
+            break
+        prob = W[idx] / W[idx].sum()
+        best = None
+        for _ in range(trials):
+            i, j = rng.choice(idx, 2, replace=False, p=prob)
+            t = P[j] - P[i]
+            t[2] = 0
+            if np.linalg.norm(t) < 0.2:
+                continue
+            n = np.cross(t, up)
+            n /= np.linalg.norm(n)
+            if n @ (plate.C - P[i]) < 0:
+                n = -n
+            d = -n @ P[i]
+            inl = alive & (np.abs(P @ n + d) <= WALL_TOL) & (N @ n >= WALL_NORMAL_AGREE)
+            a = W[inl].sum()
+            if best is None or a > best[0]:
+                best = (a, n, d, inl)
+        if best is None or best[0] < WALL_MIN_AREA:
+            break
+        a, n, d, inl = best
+        Q = P[inl]                                                     # уточнение: вертикальная плоскость по МНК
+        c = np.average(Q, axis=0, weights=W[inl])
+        M = (Q - c)[:, :2]
+        ev = np.linalg.eigh((M * W[inl, None]).T @ M)[1][:, 0]
+        n2 = np.array([ev[0], ev[1], 0.0])
+        if n2 @ (plate.C - c) < 0:
+            n2 = -n2
+        d2 = -n2 @ c
+        inl = alive & (np.abs(P @ n2 + d2) <= WALL_TOL) & (N @ n2 >= WALL_NORMAL_AGREE)
+        alive &= ~inl
+        Q = P[inl]
+        lat_dir = np.cross(up, n2)
+        lat = Q @ lat_dir
+        sub = Q[rng.choice(len(Q), min(len(Q), 4000), replace=False)]
+        out.append({"n": n2, "d": float(d2), "area_m2": round(float(W[inl].sum()), 2), "pts": sub,
+                    "lat_dir": lat_dir, "lat": [float(np.percentile(lat, 2)), float(np.percentile(lat, 98))],
+                    "z": [float(np.percentile(Q[:, 2], 2)), float(np.percentile(Q[:, 2], 98))],
+                    "center": c, "n_faces": int(inl.sum())})
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ тип объекта (08.11a п.0, п.9)
+OBJECT_TYPES = ("bed", "sofa", "armchair", "chair", "bench", "stool", "table", "wall", "floor", "other")
+SOFT = ("bed", "sofa", "armchair", "cushion", "pillow", "mattress")
+SCALE_RANGE = {"bed": (0.20, 0.75), "sofa": (0.30, 0.60), "armchair": (0.30, 0.60), "chair": (0.30, 0.90),
+               "bench": (0.30, 0.90), "stool": (0.30, 0.90)}
+
+
+def object_type(name):
+    return name if name in OBJECT_TYPES else "other"
+
+
+def is_soft(name):
+    return name in SOFT or object_type(name) in SOFT
+
+
+def backrest_name(name, has_backrest):
+    if object_type(name) == "bed":
+        return "pillows"
+    return "backrest" if has_backrest else None
+
+
+def scale_suspect(name, h0):
+    r = SCALE_RANGE.get(object_type(name))
+    return bool(r is not None and not (r[0] <= h0 <= r[1]))
 
 
 SOURCES = {"height_proxy": height_proxy}
