@@ -46,6 +46,8 @@
 | VideoHelperSuite, Easy-Use, mxToolkit, Impact Pack | GPL-3.0 | ✅ внутреннее использование |
 | H3-FaceRefine: `identity_track` | — | только для нескольких людей в кадре; выкл. → InsightFace не грузится (nodes.py, tooltip identity_reference) |
 
+- 2026-11-08b · 3D-A шаг 9: `comp2` (`tools/scene3d/plate/composite_round.py`, `quality_round.py`) использует `SAM3Segment`; официальная **SAM License (19.11.2025)** распространяется одновременно на код и trained model weights SAM 3 (не SAM 3D Body). §1a разрешает использование/модификации/распространение без NC-оговорки: коммерческое использование допустимо при соблюдении условий, это не Apache/MIT; Trade Controls, запреты ITAR/военных/ядерных/шпионских применений и оружия (§1b.v), privacy/law, запрет reverse engineering (§1b.iv); при передаче материалов — та же лицензия и её копия, в научной публикации — acknowledgement. Источник проверен напрямую: [официальный LICENSE кода и весов](https://github.com/facebookresearch/sam3/blob/main/LICENSE). Отдельная обёртка ComfyUI-RMBG — GPL-3.0 (см. ниже); NC-флага для SAM 3 нет.
+
 ### 2.1. Дополнение (19.10.2026) — Z-Image / SAM3 / DyPE / CropAndStitch
 
 | Компонент | Лицензия | Вывод | Источник |

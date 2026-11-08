@@ -16,8 +16,11 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "plate"))
 import pose_fit as pf  # noqa: E402
+from placement_config import section  # noqa: E402
 
-W_SUP, W_SEC, W_PEN, W_PRIOR, W_RIG = 1.0, 0.3, 3.0, 0.5, 0.5
+CFG = section("refine")
+
+W_SUP, W_SEC, W_PEN, W_PRIOR, W_RIG = (CFG[k] for k in ("w_sup", "w_sec", "w_pen", "w_prior", "w_rig"))
 
 
 def load_head(comfy, model_file):
@@ -38,7 +41,7 @@ def load_head(comfy, model_file):
 
 
 def rodrigues(torch, w):
-    th = torch.sqrt((w * w).sum() + 1e-12)
+    th = torch.sqrt((w * w).sum() + CFG["rotation_norm_eps"])
     k = w / th
     K = torch.zeros(3, 3, dtype=w.dtype, device=w.device)
     K[0, 1], K[0, 2], K[1, 0], K[1, 2], K[2, 0], K[2, 1] = -k[2], k[1], k[2], -k[0], -k[1], k[0]
@@ -76,13 +79,13 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
         return (X - piv) @ R.T + piv + dt, (K - piv) @ R.T + piv + dt
 
     zero130 = torch.zeros(1, 130, device=dev)
-    w0 = torch.full((3,), 1e-6, device=dev)
+    w0 = torch.full((3,), CFG["rotation_init_rad"], device=dev)
     with torch.no_grad():
         piv = torch.tensor(st["target"], device=dev, dtype=torch.float32)
         X0, _ = body(zero130, w0, torch.zeros(3, device=dev), piv)
     Vref = d["verts"] @ st["M"].T + st["b"]
     err = float(np.abs(X0.cpu().numpy() - Vref).max())
-    if err > 0.01:
+    if err > CFG["reproduction_max_m"]:
         log(f"[refine] {pid}: MHR не воспроизвёл меш рефа (ошибка {err * 100:.1f} см) — пропуск")
         return None
     names = [k.split(":")[0] for k in st["kinds"]]
@@ -92,17 +95,17 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
     if "lowest" in support:
         groups.append(("lowest", st["sup_idx"], "h", True))
     rng = np.random.default_rng(0)
-    pen_idx = rng.choice(len(Vref), 3000, replace=False)
+    pen_idx = rng.choice(len(Vref), CFG["pen_sample_points"], replace=False)
 
     delta = torch.zeros(1, 130, device=dev, requires_grad=True)
-    w = torch.full((3,), 1e-6, device=dev, requires_grad=True)
+    w = torch.full((3,), CFG["rotation_init_rad"], device=dev, requires_grad=True)
     dt = torch.zeros(3, device=dev, requires_grad=True)
-    opt = torch.optim.Adam([{"params": [delta], "lr": 0.02}, {"params": [w, dt], "lr": 0.005}])
+    opt = torch.optim.Adam([{"params": [delta], "lr": CFG["joint_lr"]}, {"params": [w, dt], "lr": CFG["rigid_lr"]}])
     targets = None
     t0 = time.monotonic()
     for it in range(iters):
         X, _ = body(delta, w, dt, piv)
-        if it % 5 == 0:                                     # ближайшие точки поверхности — без градиента
+        if it % CFG["target_update_iters"] == 0:                                     # ближайшие точки поверхности — без градиента
             Xn = X.detach().cpu().numpy()
             targets = []
             for k, idx, kind, is_sup in groups:
@@ -110,10 +113,10 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
                 dd, j = tree.query(Xn[idx])
                 targets.append((torch.tensor(idx, device=dev), torch.tensor(P[j], device=dev, dtype=torch.float32),
                                 torch.tensor(N[j], device=dev, dtype=torch.float32), is_sup,
-                                torch.tensor(dd < 0.4, device=dev)))
+                                torch.tensor(dd < CFG["secondary_near_m"], device=dev)))
             u, v, z = plate.project(Xn[pen_idx])
             zp = plate.depth_at(u, v)
-            cand = pen_idx[(z - zp > 0) & (z - zp < 0.35)]
+            cand = pen_idx[(z - zp > 0) & (z - zp < CFG["penetration_depth_max_m"])]
             if len(cand):
                 tree, P, N = plate.trees["any"]
                 _, j = tree.query(Xn[cand])
@@ -125,14 +128,14 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
         for idx, P, N, is_sup, near in targets:
             sd = ((X[idx] - P) * N).sum(-1)
             if is_sup:
-                loss = loss + W_SUP * ((sd / 0.01) ** 2).mean()
+                loss = loss + W_SUP * ((sd / CFG["support_sigma_m"]) ** 2).mean()
             else:
-                loss = loss + W_SEC * (((sd / 0.03) ** 2) * near).mean()
+                loss = loss + W_SEC * (((sd / CFG["secondary_sigma_m"]) ** 2) * near).mean()
         if pen_t is not None:
             idx, P, N = pen_t
             sd = ((X[idx] - P) * N).sum(-1)
-            loss = loss + W_PEN * ((torch.relu(-sd - 0.005) / 0.01) ** 2).mean() * len(idx) / 300
-        loss = loss + W_PRIOR * ((delta / 0.17) ** 2).sum() + W_RIG * (((w / 0.05) ** 2).sum() + ((dt / 0.05) ** 2).sum())
+            loss = loss + W_PEN * ((torch.relu(-sd - CFG["penetration_slack_m"]) / CFG["penetration_sigma_m"]) ** 2).mean() * len(idx) / CFG["penetration_count_scale"]
+        loss = loss + W_PRIOR * ((delta / CFG["joint_prior_rad"]) ** 2).sum() + W_RIG * (((w / CFG["rotation_prior_rad"]) ** 2).sum() + ((dt / CFG["shift_prior_m"]) ** 2).sum())
         opt.zero_grad()
         loss.backward()
         opt.step()
@@ -153,19 +156,19 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
         if is_sup:
             gaps.append(sd)
     g = np.concatenate(gaps)
-    sup_gap = abs(float(np.median(g[g <= np.percentile(g, 30)]))) * 100
+    sup_gap = abs(float(np.median(g[g <= np.percentile(g, CFG["legacy_gap_percentile"])]))) * 100
     max_pen = float(pen.max()) * 100
-    status = "ok" if sup_gap <= 3 and max_pen <= 3 else "pose_mismatch"
+    status = "ok" if sup_gap <= CFG["legacy_gap_max_cm"] and max_pen <= CFG["legacy_pen_max_cm"] else "pose_mismatch"
     ku, kv, kz = plate.project(Kn[pf.MHR_TO_B25])
     kzp = plate.depth_at(ku, kv)
-    kp25 = [[round(float(a), 1), round(float(bb), 1), int(0 <= a < plate.Wp and 0 <= bb < plate.Hp and z > 0 and z <= zp + 0.02)]
+    kp25 = [[round(float(a), 1), round(float(bb), 1), int(0 <= a < plate.Wp and 0 <= bb < plate.Hp and z > 0 and z <= zp + CFG["visibility_depth_m"])]
             for a, bb, z, zp in zip(ku, kv, kz, kzp)] + [[0.0, 0.0, 0]] * 30
     dmax = float(delta.detach().abs().max()) * 180 / math.pi
     new = dict(rep, status=status, support_gap_cm=round(sup_gap, 1), max_penetration_cm=round(max_pen, 1),
-               pen_verts_over_2cm=int((pen > 0.02).sum()), contacts=rep_c or rep.get("contacts", {}),
+               pen_verts_over_2cm=int((pen > CFG["report_pen_m"]).sum()), contacts=rep_c or rep.get("contacts", {}),
                keypoints_body25_px=kp25,
                refine={"iters": iters, "seconds": round(time.monotonic() - t0, 1), "max_joint_delta_deg": round(dmax, 1),
-                       "n_joints_over_10deg": int((delta.detach().abs() > math.radians(10)).sum()),
+                       "n_joints_over_10deg": int((delta.detach().abs() > math.radians(CFG["report_joint_deg"])).sum()),
                        "rigid_deg": round(float(w.detach().norm()) * 180 / math.pi, 1),
                        "shift_cm": round(float(dt.detach().norm()) * 100, 1),
                        "before": {"status": rep["status"], "support_gap_cm": rep["support_gap_cm"],
@@ -180,8 +183,8 @@ def refine_one(torch, head, dev, pid, ref_npz, plate, rdir, iters, log):
 # Группы и лимиты (п.8 Р4): угол костей MHR70 в системе таза (как diag_seat.group_angles), градусы.
 GROUPS = {"spine": [("mh", 69)], "neck/head": [(69, 0)],
           "arms": [(5, 7), (7, 62), (6, 8), (8, 41)], "legs": [(9, 11), (11, 13), (10, 12), (12, 14)]}
-LIMITS_DEG = {"spine": 15.0, "neck/head": 15.0, "arms": 15.0, "legs": 20.0}
-W_LIM = 1.0          # на (градус сверх лимита)²
+LIMITS_DEG = CFG["limits_deg"]
+W_LIM = CFG["w_lim"]          # на (градус сверх лимита)²
 
 
 def _frame_t(torch, K):
@@ -220,12 +223,12 @@ def group_angles_t(torch, K0, K1):
                 v0 = R0 @ (K0[b] - K0[a])
                 v1 = R1 @ (K1[b] - K1[a])
             c = (v0 @ v1) / (v0.norm() * v1.norm())
-            angs.append(torch.arccos(torch.clamp(c, -0.999999, 0.999999)))
+            angs.append(torch.arccos(torch.clamp(c, -CFG["angle_cos_max"], CFG["angle_cos_max"])))
         out[g] = torch.stack(angs)
     return out
 
 
-def load_ctx(comfy, model="sam_3d_body_dinov3_int8_convrot.safetensors", iters=200):
+def load_ctx(comfy, model="sam_3d_body_dinov3_int8_convrot.safetensors", iters=CFG["iters"]):
     _, head = load_head(comfy, model)
     import torch
     dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -265,24 +268,24 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
         return (X - piv) @ R.T + piv + dt, (K - piv) @ R.T + piv + dt
 
     with torch.no_grad():
-        X0, K0 = body(torch.zeros(1, 130, device=dev), torch.full((3,), 1e-6, device=dev), torch.zeros(3, device=dev))
+        X0, K0 = body(torch.zeros(1, 130, device=dev), torch.full((3,), CFG["rotation_init_rad"], device=dev), torch.zeros(3, device=dev))
     err = float(np.abs(X0.cpu().numpy() - rec["X"]).max())
-    if err > 0.01:
+    if err > CFG["reproduction_max_m"]:
         log(f"[refine] MHR не воспроизвёл посадку (ошибка {err * 100:.1f} см) — пропуск")
         return None
     groups = [(n, idx, surf, role) for n, idx, surf, role in B["groups"] if surf in S]
     rng = np.random.default_rng(0)
-    pen_idx = rng.choice(len(rec["X"]), 3000, replace=False)
+    pen_idx = rng.choice(len(rec["X"]), CFG["pen_sample_points"], replace=False)
     delta = torch.zeros(1, 130, device=dev, requires_grad=True)
-    w = torch.full((3,), 1e-6, device=dev, requires_grad=True)
+    w = torch.full((3,), CFG["rotation_init_rad"], device=dev, requires_grad=True)
     dt = torch.zeros(3, device=dev, requires_grad=True)
-    opt = torch.optim.Adam([{"params": [delta], "lr": 0.02}, {"params": [w, dt], "lr": 0.005}])
+    opt = torch.optim.Adam([{"params": [delta], "lr": CFG["joint_lr"]}, {"params": [w, dt], "lr": CFG["rigid_lr"]}])
     lim = {g: math.radians(v) for g, v in LIMITS_DEG.items()}
     t0 = time.monotonic()
     targets, pen_t = None, None
     for it in range(iters):
         X, K = body(delta, w, dt)
-        if it % 5 == 0:
+        if it % CFG["target_update_iters"] == 0:
             Xn = X.detach().cpu().numpy()
             targets = []
             for n, idx, surf, role in groups:
@@ -290,10 +293,10 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
                 dd, j = tree.query(Xn[idx])
                 targets.append((torch.tensor(idx, device=dev), torch.tensor(P[j], device=dev, dtype=torch.float32),
                                 torch.tensor(N[j], device=dev, dtype=torch.float32), role in ("support", "back", "wall"),
-                                torch.tensor(dd < 0.4, device=dev)))
+                                torch.tensor(dd < CFG["secondary_near_m"], device=dev)))
             u, v, z = plate.project(Xn[pen_idx])
             zp = plate.depth_at(u, v)
-            cand = pen_idx[(z - zp > 0) & (z - zp < 0.35)]
+            cand = pen_idx[(z - zp > 0) & (z - zp < CFG["penetration_depth_max_m"])]
             pen_t = None
             if len(cand):
                 tree, P, N = plate.trees["any"]
@@ -303,15 +306,15 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
         loss = torch.zeros((), device=dev)
         for idx, P, N, is_sup, near in targets:
             sd = ((X[idx] - P) * N).sum(-1)
-            loss = loss + (W_SUP * ((sd / 0.01) ** 2).mean() if is_sup else W_SEC * (((sd / 0.03) ** 2) * near).mean())
+            loss = loss + (W_SUP * ((sd / CFG["support_sigma_m"]) ** 2).mean() if is_sup else W_SEC * (((sd / CFG["secondary_sigma_m"]) ** 2) * near).mean())
         if pen_t is not None:
             idx, P, N = pen_t
             sd = ((X[idx] - P) * N).sum(-1)
-            loss = loss + W_PEN * ((torch.relu(-sd - 0.005) / 0.01) ** 2).mean() * len(idx) / 300
+            loss = loss + W_PEN * ((torch.relu(-sd - CFG["penetration_slack_m"]) / CFG["penetration_sigma_m"]) ** 2).mean() * len(idx) / CFG["penetration_count_scale"]
         ga = group_angles_t(torch, K0, K)
         for g, a in ga.items():
-            loss = loss + W_LIM * (torch.relu(a - lim[g] * 0.95) * 180 / math.pi).pow(2).sum()
-        loss = loss + W_PRIOR * ((delta / 0.17) ** 2).sum() + W_RIG * (((w / 0.05) ** 2).sum() + ((dt / 0.05) ** 2).sum())
+            loss = loss + W_LIM * (torch.relu(a - lim[g] * CFG["limit_penalty_frac"]) * 180 / math.pi).pow(2).sum()
+        loss = loss + W_PRIOR * ((delta / CFG["joint_prior_rad"]) ** 2).sum() + W_RIG * (((w / CFG["rotation_prior_rad"]) ** 2).sum() + ((dt / CFG["shift_prior_m"]) ** 2).sum())
         opt.zero_grad()
         loss.backward()
         opt.step()
@@ -319,7 +322,7 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
         X, K = body(delta, w, dt)
         ga = {g: float(a.max()) * 180 / math.pi for g, a in group_angles_t(torch, K0, K).items()}
     groups_deg = {g: round(v, 1) for g, v in ga.items()}
-    limits_ok = all(ga[g] <= LIMITS_DEG[g] + 0.05 for g in ga)
+    limits_ok = all(ga[g] <= LIMITS_DEG[g] + CFG["limit_tolerance_deg"] for g in ga)
     info = {"iters": iters, "seconds": round(time.monotonic() - t0, 1), "groups_deg": groups_deg,
             "limits_deg": LIMITS_DEG, "limits_ok": bool(limits_ok),
             "max_joint_delta_deg": round(float(delta.detach().abs().max()) * 180 / math.pi, 1),

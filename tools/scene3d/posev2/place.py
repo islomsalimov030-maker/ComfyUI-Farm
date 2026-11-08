@@ -29,28 +29,31 @@ import shot_spec as ssm
 import top_region as tr
 import zone as zn
 from body import height_est, regions
+from placement_config import section
 
-SUP_GAP_CM = 3.0          # всплытие опоры (см)
-PEN_SOFT_M = 0.06         # п.7
-PEN_HARD_M = 0.03
-PEN_MIN_M = 0.002         # «проникшая» вершина
-ON_SURF_M = 0.04          # вершина «на поверхности» (над ней), м
-SHIFT_STEP = 0.01         # м
-SHIFT_MAX_H = 0.5         # × H
-ATTEMPTS = 5
-FRAME_TRIES = 5
-FRAME_PAD = 0.02
-BACK_FRAC = 0.2           # доля вершин корпуса со стороны спины
-BODY_LOW_H = 0.04         # × H, п.2
-FOOT_LOW_H = 0.15         # × H, п.5
-FOOT_MARGIN = 0.03        # м
+CFG = section("place")
+
+SUP_GAP_CM = CFG["sup_gap_cm"]
+PEN_SOFT_M = CFG["pen_soft_m"]
+PEN_HARD_M = CFG["pen_hard_m"]
+PEN_MIN_M = CFG["pen_min_m"]
+ON_SURF_M = CFG["on_surf_m"]
+SHIFT_STEP = CFG["shift_step"]
+SHIFT_MAX_H = CFG["shift_max_h"]
+ATTEMPTS = CFG["attempts"]
+FRAME_TRIES = CFG["frame_tries"]
+FRAME_PAD = CFG["frame_pad"]
+BACK_FRAC = CFG["back_frac"]
+BODY_LOW_H = CFG["body_low_h"]
+FOOT_LOW_H = CFG["foot_low_h"]
+FOOT_MARGIN = CFG["foot_margin"]
 FOOT_CLASSES = ("kneel", "lie", "sit_tucked", "recline")
-BACK_ZONE_M = 0.10        # вершины ближе к спинке — «зона спинки» (след recline их не считает)
-RECLINE_UP_H = 0.05       # × H, п.3г
-RECLINE_TILTS = np.arange(25.0, 70.01, 2.5)
-TOUCH_M = (-0.06, 0.02)   # касание спинки: p10 знакового расстояния верха спины
-LIE_YAW = [0] + [s * d for d in range(15, 91, 15) for s in (1, -1)]
-CONFLICT_DEG = 20.0
+BACK_ZONE_M = CFG["back_zone_m"]
+RECLINE_UP_H = CFG["recline_up_h"]
+RECLINE_TILTS = np.array(CFG["recline_tilts"])
+TOUCH_M = CFG["touch_m"]
+LIE_YAW = CFG["lie_yaw"]
+CONFLICT_DEG = CFG["conflict_deg"]
 BODY_SUPPORT_REGIONS = ("foot.L", "foot.R", "knee.L", "knee.R", "shin.L", "shin.R")
 BACK_REGIONS = ("torso", "arm.L", "arm.R", "forearm.L", "forearm.R")   # п.3г: спина, лопатки, локти
 STATUS_RANK = {"ok": 0, "partial": 1, "contact_fail": 2, "out_of_frame": 3, "wrong_surface": 4, "no_target": 5}
@@ -118,7 +121,7 @@ def orient_body(B, spec):
     return B
 
 
-def _lowest(V, idx, q=15):
+def _lowest(V, idx, q=CFG["support_percentile"]):
     h = V[idx, 2]
     return idx[h <= np.percentile(h, q)]
 
@@ -128,14 +131,36 @@ def build_groups(B, spec, treg, H, has_wall):
     V, kp, reg = B["V"], B["kp"], B["reg"]
     groups, flags, info = [], [], {}
     zmin = float(V[:, 2].min())
-    if spec.body_support():                                     # п.2: по телу после ориентации
+    if spec.body_support():
         chosen = []
-        for r in BODY_SUPPORT_REGIONS:
-            idx = np.where(reg == r)[0]
-            low = idx[V[idx, 2] <= zmin + BODY_LOW_H * H]
-            if len(low) >= 5:
-                groups.append((r, low, "target", "support"))
-                chosen.append(r)
+        if spec.pose_class == "kneel":
+            # Колено определяет весонесущую ногу; её ступня не становится опорой.
+            knee_sides = []
+            for side in ("L", "R"):
+                ki = np.where(reg == f"knee.{side}")[0]
+                if len(ki) and V[ki, 2].min() <= zmin + CFG["kneel_low_h"] * H:
+                    knee_sides.append(side)
+                    for part in ("knee", "shin"):
+                        name = f"{part}.{side}"
+                        idx = np.where(reg == name)[0]
+                        if len(idx):
+                            groups.append((name, _lowest(V, idx), "target", "support"))
+                            chosen.append(name)
+            if len(knee_sides) == 1:
+                other = "R" if knee_sides[0] == "L" else "L"
+                name = f"foot.{other}"
+                idx = np.where(reg == name)[0]
+                low = idx[V[idx, 2] <= zmin + BODY_LOW_H * H]
+                if len(low) >= CFG["support_min_vertices"]:
+                    groups.append((name, low, "target", "support"))
+                    chosen.append(name)
+        else:
+            for r in BODY_SUPPORT_REGIONS:
+                idx = np.where(reg == r)[0]
+                low = idx[V[idx, 2] <= zmin + BODY_LOW_H * H]
+                if len(low) >= CFG["support_min_vertices"]:
+                    groups.append((r, low, "target", "support"))
+                    chosen.append(r)
         sides_t = {p.split(".")[1] for p in spec.support_parts if "." in p and p.split(".")[0] in ("foot", "knee", "toes")}
         sides_b = {r.split(".")[1] for r in chosen if r.split(".")[0] in ("foot", "knee")}
         if sides_t and sides_b and sides_t != sides_b:
@@ -185,7 +210,7 @@ def build_groups(B, spec, treg, H, has_wall):
         pr_ = (V[ti] - V[ti].mean(0)) @ chest
         sp = spine / np.linalg.norm(spine)
         al = (V[ti] - (kp[9] + kp[10]) / 2) @ sp
-        sel = (pr_ <= np.percentile(pr_, 100 * BACK_FRAC)) & (al >= 0.5 * np.linalg.norm(spine))
+        sel = (pr_ <= np.percentile(pr_, 100 * BACK_FRAC)) & (al >= CFG["back_spine_frac"] * np.linalg.norm(spine))
         groups.append(("back", ti[sel], "back", "back"))
     return groups, flags, info
 
@@ -220,7 +245,7 @@ def yaw_target(B, plate, T, window=None, desired=None):
 
 
 # ------------------------------------------------------------------------------------------------ жёсткая посадка
-def rigid_fit(B, groups, plate, T, anchor, S, yaw_deg, yaw_free_deg=25.0, rot_free_deg=5.0):
+def rigid_fit(B, groups, plate, T, anchor, S, yaw_deg, yaw_free_deg=CFG["rigid_yaw_free_deg"], rot_free_deg=CFG["rigid_rot_free_deg"]):
     """yaw задан (сборка п.3); оптимизатор — сдвиг + yaw в ±yaw_free + наклон/крен в ±rot_free (границы)."""
     V, kp, reg = B["V"], B["kp"], B["reg"]
     fwd = ori.forward(kp)
@@ -229,10 +254,10 @@ def rigid_fit(B, groups, plate, T, anchor, S, yaw_deg, yaw_free_deg=25.0, rot_fr
     R0 = pf.rot_z(yaw0)
     V, kp = V @ R0.T, kp @ R0.T
     sup = [g for g in groups if g[3] == "support"]
-    sup_idx = np.concatenate([g[1] for g in sup]) if sup else np.argsort(V[:, 2])[: max(20, len(V) // 50)]
+    sup_idx = np.concatenate([g[1] for g in sup]) if sup else np.argsort(V[:, 2])[: max(CFG["fallback_support_min"], len(V) // CFG["fallback_support_divisor"])]
     if anchor == "pelvis":
         pi_ = np.where(reg == "pelvis")[0]
-        pivot = V[pi_[V[pi_, 2] <= np.percentile(V[pi_, 2], 15)]].mean(0)
+        pivot = V[pi_[V[pi_, 2] <= np.percentile(V[pi_, 2], CFG["support_percentile"])]].mean(0)
     elif anchor == "pelvis_xy":                                  # стена: xy таза, z опоры
         pel = (kp[9] + kp[10]) / 2
         pivot = np.array([pel[0], pel[1], V[sup_idx, 2].mean()])
@@ -241,12 +266,12 @@ def rigid_fit(B, groups, plate, T, anchor, S, yaw_deg, yaw_free_deg=25.0, rot_fr
     V, kp = V - pivot + T, kp - pivot + T
     pivot = np.asarray(T, float).copy()
     rng = np.random.default_rng(0)
-    pen_idx = rng.choice(len(V), min(2500, len(V)), replace=False)
+    pen_idx = rng.choice(len(V), min(CFG["rigid_pen_sample_points"], len(V)), replace=False)
     gs = []
     for name, idx, surf, role in groups:
         if surf not in S:
             continue
-        gs.append((name, idx if len(idx) <= 60 else rng.choice(idx, 60, replace=False), surf, role))
+        gs.append((name, idx if len(idx) <= CFG["rigid_group_sample_points"] else rng.choice(idx, CFG["rigid_group_sample_points"], replace=False), surf, role))
 
     def transform(p, X):
         return (X - pivot) @ pf.rot_xyz(p[0], p[4], p[5]).T + pivot + p[1:4]
@@ -260,21 +285,21 @@ def rigid_fit(B, groups, plate, T, anchor, S, yaw_deg, yaw_free_deg=25.0, rot_fr
             sd = np.einsum("ij,ij->i", X[idx] - P[j], N[j])
             k_n = 1.0 / math.sqrt(len(idx))
             if role == "support":
-                res.append(3.0 * k_n * sd / 0.01)
+                res.append(CFG["rigid_support_weight"] * k_n * sd / CFG["rigid_support_sigma_m"])
             elif role in ("back", "wall"):          # мягко: не заваливать корпус ради спинки/стены (дожимает refine)
-                res.append(k_n * np.where(d < 0.6, sd / 0.02, 0.0))
+                res.append(k_n * np.where(d < CFG["rigid_back_near_m"], sd / CFG["rigid_back_sigma_m"], 0.0))
             else:
-                res.append(k_n * np.where(d < 0.4, sd / 0.03, 0.0))
-        pen = np.maximum(pf.penetration(plate, X[pen_idx]) - 0.005, 0.0)
-        res.append(10.0 / math.sqrt(len(pen_idx)) * pen / 0.01)
-        res.append(np.array([p[0] / 0.35, p[4] / 0.05, p[5] / 0.05, np.hypot(p[1], p[2]) / 0.25]))
+                res.append(k_n * np.where(d < CFG["rigid_secondary_near_m"], sd / CFG["rigid_secondary_sigma_m"], 0.0))
+        pen = np.maximum(pf.penetration(plate, X[pen_idx]) - CFG["rigid_pen_slack_m"], 0.0)
+        res.append(CFG["rigid_pen_weight"] / math.sqrt(len(pen_idx)) * pen / CFG["rigid_pen_sigma_m"])
+        res.append(np.array([p[0] / CFG["rigid_yaw_prior_rad"], p[4] / CFG["rigid_tilt_prior_rad"], p[5] / CFG["rigid_roll_prior_rad"], np.hypot(p[1], p[2]) / CFG["rigid_shift_prior_m"]]))
         return np.concatenate(res)
 
-    yb, rb = math.radians(max(yaw_free_deg, 0.01)), math.radians(rot_free_deg)
-    lo = [-yb, -2.0, -2.0, -2.0, -rb, -rb]
-    hi = [yb, 2.0, 2.0, 2.0, rb, rb]
-    sol = least_squares(residuals, np.zeros(6), bounds=(lo, hi), loss="soft_l1", f_scale=1.0, diff_step=1e-3,
-                        max_nfev=400)
+    yb, rb = math.radians(max(yaw_free_deg, CFG["rigid_yaw_min_deg"])), math.radians(rot_free_deg)
+    lo = [-yb, *([-CFG["rigid_shift_bound_m"]] * 3), -rb, -rb]
+    hi = [yb, *([CFG["rigid_shift_bound_m"]] * 3), rb, rb]
+    sol = least_squares(residuals, np.zeros(6), bounds=(lo, hi), loss="soft_l1", f_scale=CFG["rigid_f_scale"], diff_step=CFG["rigid_diff_step"],
+                        max_nfev=CFG["rigid_max_nfev"])
     X, KP = transform(sol.x, V), transform(sol.x, kp)
     return {"X": X, "KP": KP, "pivot": pivot, "params": [round(float(x), 4) for x in sol.x],
             "cost": round(float(sol.cost), 3), "nfev": int(sol.nfev), "yaw_set_deg": round(yaw_deg, 1)}
@@ -304,13 +329,13 @@ def recline_sweep(r, groups, S, plate, H, tilt_ref):
             err = abs(ori.tilt_deg(ori.rot_about(KP, piv, R)) - t)
             if best is None or err < best[0]:
                 best = (err, R)
-        if best[0] > 3.0:
+        if best[0] > CFG["recline_match_deg"]:
             continue
         best = best[1]
         Xb = ori.rot_about(X[idx], piv, best)
         _, j = tree.query(Xb)
         sd = np.einsum("ij,ij->i", Xb - P[j], N[j])
-        rows.append((t, float(np.percentile(sd, 10)), best))
+        rows.append((t, float(np.percentile(sd, CFG["back_touch_percentile"])), best))
     if not rows:
         return X, KP, None
     touch = [rw for rw in rows if TOUCH_M[0] <= rw[1] <= TOUCH_M[1]]
@@ -338,9 +363,9 @@ def _on(reg, Xi, plate, sink):
     ok = reg.inside(i, j)
     out = np.zeros(len(Xi), bool)
     dz = Xi[ok, 2] - reg.height[i[ok], j[ok]]
-    out[ok] = reg.mask[i[ok], j[ok]] & (dz <= ON_SURF_M) & (dz >= -sink - 0.01)
+    out[ok] = reg.mask[i[ok], j[ok]] & (dz <= ON_SURF_M) & (dz >= -sink - CFG["surface_sink_slack_m"])
     dz0 = Xi[~vis, 2] - reg.h0
-    out[~vis] = (dz0 <= ON_SURF_M) & (dz0 >= -sink - 0.01)
+    out[~vis] = (dz0 <= ON_SURF_M) & (dz0 >= -sink - CFG["surface_sink_slack_m"])
     return out
 
 
@@ -356,29 +381,58 @@ def part_label(Xi, spec, treg, freg, plate, soft, recline=False):
     on = _on(treg, Xi, plate, sink)
     if recline:
         on = on | _near_back(treg, Xi)
-    if on.mean() >= 0.5:
+    if on.mean() >= CFG["surface_majority_frac"]:
         return spec.target_object
-    if freg is not None and _on(freg, Xi, plate, PEN_HARD_M).mean() >= 0.5:
+    if freg is not None and _on(freg, Xi, plate, PEN_HARD_M).mean() >= CFG["surface_majority_frac"]:
         return "floor"
     return "other"
 
 
-def penetration_stats(plate, X, treg, soft):
-    """п.7: p95 глубины проникших вершин; мягкие (над маской мягкого target / у спинки) и жёсткие отдельно."""
+def penetration_values(plate, X, treg, soft):
+    """Материал принадлежит проникнутой поверхности, не проекции вершины тела.
+
+    Точки спинки, совпавшие с RANSAC-стеной, всегда hard, даже над bed.
+    """
     pen = pf.penetration(plate, X)
-    hit = pen > PEN_MIN_M
-    is_soft = np.zeros(len(X), bool)
+    _, j = plate.trees["any"][0].query(X)
+    P = plate.trees["any"][1][j]
+    material = np.full(len(X), "hard", dtype="U32")
     if soft and treg is not None and treg.mask.any():
-        is_soft = treg.in_mask(X) | _near_back(treg, X, BACK_ZONE_M)
+        material[treg.in_mask(P)] = "soft:target"
+        if treg.backrest is not None:
+            material[_near_back(treg, P, BACK_ZONE_M)] = "soft:pillows"
+    for k, wall in enumerate(getattr(treg, "wall_planes", ())):
+        near = np.abs(P @ wall["n"] + wall["d"]) <= CFG["wall_backrest_m"]
+        material[near] = f"hard:wall{k}"
+    return pen, material
+
+
+def penetration_stats(plate, X, treg, soft):
+    pen, material = penetration_values(plate, X, treg, soft)
+    hit = pen > PEN_MIN_M
     out = {"max_cm": round(float(pen.max()) * 100, 1), "n_pen": int(hit.sum())}
-    ok = True
-    for name, sel, lim in (("soft", hit & is_soft, PEN_SOFT_M), ("hard", hit & ~is_soft, PEN_HARD_M)):
-        p95 = float(np.percentile(pen[sel], 95)) if sel.any() else 0.0
+    ok, excess = True, 0.0
+    for name, lim in (("soft", PEN_SOFT_M), ("hard", PEN_HARD_M)):
+        sel = hit & np.char.startswith(material, name)
+        p95 = float(np.percentile(pen[sel], CFG["penetration_percentile"])) if sel.any() else 0.0
         out[f"{name}_p95_cm"] = round(p95 * 100, 1)
         out[f"{name}_max_cm"] = round(float(pen[sel].max()) * 100, 1) if sel.any() else 0.0
         out[f"{name}_n"] = int(sel.sum())
+        out[f"{name}_p95_m"] = p95  # валидатор не сравнивает округлённые см
+        excess = max(excess, p95 - lim)
         ok &= p95 <= lim
-    out["p95_cm"] = round(float(np.percentile(pen[hit], 95)) * 100, 1) if hit.any() else 0.0
+    out["p95_cm"] = round(float(np.percentile(pen[hit], CFG["penetration_percentile"])) * 100, 1) if hit.any() else 0.0
+    surfaces = {}
+    for surface in np.unique(material):
+        values = pen[hit & (material == surface)]
+        p95 = float(np.percentile(values, CFG["penetration_percentile"])) if len(values) else 0.0
+        lim = PEN_SOFT_M if surface.startswith("soft") else PEN_HARD_M
+        surfaces[str(surface)] = {"p95_m": p95, "max_m": float(values.max()) if len(values) else 0.0,
+                                  "threshold_m": lim, "ok": bool(p95 <= lim), "n": len(values)}
+        ok &= p95 <= lim
+        excess = max(excess, p95 - lim)
+    out["surfaces"] = surfaces
+    out["excess_m"] = max(0.0, excess)
     out["ok"] = bool(ok)
     return out
 
@@ -429,13 +483,17 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
         elif role in ("back", "wall"):
             extra.setdefault(role, []).append(sd)
     g = np.concatenate(sup_sd) if sup_sd else np.zeros(1)
-    sup_gap = float(np.median(g[g <= np.percentile(g, 30)]))           # знаковый: + всплыла, − утонула
+    sup_gap = float(np.median(g[g <= np.percentile(g, CFG["gap_percentile"])]))
     sink = PEN_SOFT_M if soft else PEN_HARD_M
-    sup_ok = -sink - 0.005 <= sup_gap <= SUP_GAP_CM / 100
-    gaps = {}
+    part_gaps = {n: float(np.median(_sd(S, s, X[idx])[0]))
+                 for n, idx, s, role in groups if role == "support" and s in S}
+    max_gap = max(part_gaps.values(), default=float("inf"))
+    sup_ok = bool(part_gaps) and all(-sink <= v <= SUP_GAP_CM / 100 for v in part_gaps.values())
+    gaps, gaps_m = {}, {}
     for role, lst in extra.items():
         gb = np.concatenate(lst)
-        gaps[role] = round(float(np.median(gb[gb <= np.percentile(gb, 30)])) * 100, 1)
+        gaps_m[role] = float(np.median(gb[gb <= np.percentile(gb, CFG["gap_percentile"])]))
+        gaps[role] = round(gaps_m[role] * 100, 1)
     pen = penetration_stats(plate, X, treg if spec.target_object != "floor" else None, soft)
     vals = list(labels.values())
     if vals and all(v == spec.target_object for v in vals):
@@ -457,7 +515,7 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
     fr = framing(X, plate)
     reg = B["reg"]
     pts = [X[idx, :2] for name, idx, surf, role in groups
-           if role == "support" and name in rep_c and abs(rep_c[name]["gap_cm"]) < 6]
+           if role == "support" and name in rep_c and abs(rep_c[name]["gap_cm"]) < CFG["balance_contact_max_cm"]]
     com = sum(pf.MASS.get(r, 0.0) * X[reg == r].mean(0) for r in np.unique(reg)) / \
         sum(pf.MASS.get(r, 0.0) for r in np.unique(reg))
     balance = None
@@ -468,9 +526,11 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
             inside = bool(Delaunay(P2).find_simplex(com[:2]) >= 0)
         except Exception:
             pass
-        balance = inside or bool(np.min(np.linalg.norm(P2 - com[:2], axis=1)) < 0.04)
-    return {"support_gap_cm": round(sup_gap * 100, 1), "support_ok": bool(sup_ok), "back_gap_cm": gaps.get("back"),
-            "wall_gap_cm": gaps.get("wall"), "penetration": pen, "max_penetration_cm": pen["max_cm"],
+        balance = inside or bool(np.min(np.linalg.norm(P2 - com[:2], axis=1)) < CFG["balance_margin_m"])
+    return {"support_gap_cm": round(sup_gap * 100, 1), "support_part_gaps_m": part_gaps,
+            "max_support_gap_m": max_gap, "support_ok": bool(sup_ok), "back_gap_cm": gaps.get("back"),
+            "wall_gap_cm": gaps.get("wall"), "back_gap_m": gaps_m.get("back"),
+            "wall_gap_m": gaps_m.get("wall"), "penetration": pen, "max_penetration_cm": pen["max_cm"],
             "contacts": rep_c, "support_parts_on": labels, "support_object": sup_obj, "cells": cells,
             "cells_ok": bool(cells_ok), "footprint": fp, "frame": fr, "balance_ok": balance,
             "tilt_deg": round(ori.tilt_deg(KP), 1), "roll_deg": round(ori.roll_deg(KP), 1),
@@ -599,7 +659,7 @@ def frame_target(plate, T, bbox, zone_xy, zone_h):
 
 
 # ------------------------------------------------------------------------------------------------ поза целиком
-def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dims_override=None, refine_ctx=None,
+def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dims_override=None, refine_ctx=None,
                log=print):
     """seed — 3D-точка из таблицы (поднятая точка сиденья / точка стоп). -> dict результата (X, KP, rep, …)."""
     B = prepare_body(ref, spec, height)
@@ -611,6 +671,12 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
     if treg is None:
         return {"status": "no_target", "rep": dict(base, status="no_target", zone={"source": zsrc, **oinfo})}
     soft = bool(oinfo.get("soft"))
+    treg.wall_planes = profile.walls() if profile is not None else tr.walls(plate)
+    if treg.backrest is not None:
+        hard_back = np.zeros(len(treg.backrest), bool)
+        for w in treg.wall_planes:
+            hard_back |= np.abs(treg.backrest @ w["n"] + w["d"]) <= CFG["wall_backrest_m"]
+        treg.backrest_material = np.where(hard_back, "wall", "pillows")
     orient_body(B, spec)
     flags = [f for f in treg.flags]
     # стена (п.6)
@@ -633,7 +699,7 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
     if spec.target_object == "floor":
         if wall is not None:
             hv = hand_vec(B, groups)
-            reach = float(np.linalg.norm(hv)) if hv is not None else 0.3 * H
+            reach = float(np.linalg.norm(hv)) if hv is not None else CFG["wall_reach_h"] * H
             cells, zinfo = zn.wall_cells(freg, wall, B["dims"], reach, seed[:2])
             zinfo.update(wall_info)
             if not cells:
@@ -664,6 +730,8 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
             else:
                 cells, zinfo = zn.edge_cells(m, side, B["dims"], seed[:2])
                 window = side["yaw_deg"]
+                if side.get("edge_short"):
+                    flags.append("edge_short")
             zinfo["sides"] = [{"yaw_deg": round(s["yaw_deg"], 1), "len_m": round(s["length"], 2),
                                "access": s["access_frac"]} for s in sides]
         else:
@@ -713,7 +781,7 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
             got = _ang(fwd) if fwd is not None else y
             conflict = None
             if abs(ori.wrap(got - yi["ref_yaw_deg"])) > CONFLICT_DEG and not yi["side_conflict"]:
-                r2 = rigid_fit(B, groups, plate, T, anchor, S, y, yaw_free_deg=0.5)
+                r2 = rigid_fit(B, groups, plate, T, anchor, S, y, yaw_free_deg=CFG["locked_yaw_free_deg"])
                 e1 = ori.reproj_plate(KP, plate, ref, B25_BODY)
                 e2 = ori.reproj_plate(r2["KP"], plate, ref, B25_BODY)
                 conflict = {"plate_deg": round(got, 1), "reproj_plate": round(e1, 3), "reproj_ref": round(e2, 3),
@@ -721,25 +789,28 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
                 if e2 < e1:
                     r, X, KP = r2, r2["X"], r2["KP"]
             if B["side_ref"] and ori.side_to_camera(KP, plate.C) == -B["side_ref"]:   # п.3а: сторона не меняется
-                r = rigid_fit(B, groups, plate, T, anchor, S, y, yaw_free_deg=0.5)
+                r = rigid_fit(B, groups, plate, T, anchor, S, y, yaw_free_deg=CFG["locked_yaw_free_deg"])
                 X, KP = r["X"], r["KP"]
             sw = None
             if spec.pose_class == "recline" and "back" in S:
                 X, KP, sw = recline_sweep(dict(r, X=X, KP=KP), groups, S, plate, H, B["orient"]["tilt_deg"])
                 if sw is not None:                       # повторная посадка таза/бёдер после подбора наклона
                     pi_ = np.where(B["reg"] == "pelvis")[0]
-                    Tp = X[pi_[X[pi_, 2] <= np.percentile(X[pi_, 2], 15)]].mean(0)
+                    Tp = X[pi_[X[pi_, 2] <= np.percentile(X[pi_, 2], CFG["support_percentile"])]].mean(0)
                     f2 = ori.forward(KP)
                     r = rigid_fit(dict(B, V=X, kp=KP), groups, plate, Tp, "pelvis", S,
-                                  _ang(f2) if f2 is not None else y, yaw_free_deg=3.0)
+                                  _ang(f2) if f2 is not None else y, yaw_free_deg=CFG["refit_yaw_free_deg"])
                     X, KP = r["X"], r["KP"]
                     sw["tilt_after_reseat_deg"] = round(ori.tilt_deg(KP), 1)
+            import assembly
+            X, KP = assembly.clamp_root(X, KP, spec.pose_class, plate, B["side_ref"], window)
+            X, KP, height_info = assembly.height_fit(X, KP, groups, S, plate, spec, treg, soft, H)
             shift = 0.0
             if spec.target_object != "floor":
                 X, KP, shift, _ = shift_into(X, KP, groups, S, treg, H, spec)
             ev = evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft)
             rec = {"fit": r, "X": X, "KP": KP, "ev": ev, "yaw": yi, "shift_m": shift, "conflict": conflict,
-                   "recline": sw, "lie_yaw_add": add,
+                   "recline": sw, "lie_yaw_add": add, "height": height_info,
                    "side_flip": bool(B["side_ref"] and ori.side_to_camera(KP, plate.C) == -B["side_ref"])}
             key = (not ev["footprint"]["ok"], ev["footprint"].get("n_out", 0), abs(add))
             if best is None or key < best[0]:
@@ -755,7 +826,10 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
         frame_hist = []
         while True:                                           # п.8: тело вне кадра → сдвиг внутри зоны к центру
             r_ = fit_at(T, cell["anchor"])
-            st_ = status_of(r_["ev"], spec, True, no_secondary)
+            import assembly
+            val = assembly.validate(r_["KP"], r_["ev"], spec, plate, B["side_ref"], window, True)
+            r_["validation"] = val
+            st_ = ("partial" if no_secondary else "ok") if val["ok"] else val["status"]
             frame_hist.append({"T": [round(float(x), 3) for x in T], "frame_ok": r_["ev"]["frame"]["ok"],
                                "status": st_})
             key = (not r_["ev"]["frame"]["ok"], STATUS_RANK[st_])
@@ -784,14 +858,22 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
             rr = rf.refine_mem(refine_ctx, ref, B, rec, S, plate, spec, H, log=lambda m: log(f"[{spec.id}] {m}"))
             if rr is not None:
                 X2, K2, rinfo = rr
+                orient_bad = not all(c["ok"] for c in assembly.orientation_checks(
+                    K2, spec.pose_class, plate, B["side_ref"], window))
+                if orient_bad:
+                    X2, K2 = assembly.clamp_root(X2, K2, spec.pose_class, plate, B["side_ref"], window)
+                    X2, K2, hi2 = assembly.height_fit(X2, K2, groups, S, plate, spec, treg, soft, H)
+                    rinfo["root_clamped"] = True
+                    rinfo["height_after_clamp"] = hi2
                 shift2 = 0.0
                 if spec.target_object != "floor":
                     X2, K2, shift2, _ = shift_into(X2, K2, groups, S, treg, H, spec)
                 ev2 = evaluate(X2, K2, B, groups, S, plate, spec, treg, freg, H, soft)
-                st2 = status_of(ev2, spec, rinfo["limits_ok"], no_secondary)
+                val2 = assembly.validate(K2, ev2, spec, plate, B["side_ref"], window, rinfo["limits_ok"])
+                st2 = ("partial" if no_secondary else "ok") if val2["ok"] else val2["status"]
                 flip2 = bool(B["side_ref"] and ori.side_to_camera(K2, plate.C) == -B["side_ref"])
                 rec2 = dict(rec, stage="refine", status=st2, X=X2, KP=K2, ev=ev2, refine=rinfo, rigid=rec,
-                            shift_m=shift2, side_flip=flip2)
+                            shift_m=shift2, side_flip=flip2, validation=val2)
                 if flip2:
                     log(f"[{spec.id}] попытка {k} refine развернул тело другой стороной к камере — в конец выбора")
                 attempts.append(rec2)
@@ -810,7 +892,7 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
     tilt_final, roll_final = ev["tilt_deg"], ev["roll_deg"]
     clamped = round(abs(tilt_final - oi["tilt_ref_deg"]) + (0.0 if spec.pose_class == "lie" else
                                                             abs(roll_final - oi["roll_ref_deg"])), 1)
-    if oi["clamped_deg"] > 0.5:
+    if oi["clamped_deg"] > CFG["clamped_flag_deg"]:
         fl.append(f"orient_clamped:{oi['clamped_deg']}")
     if final["yaw"]["side_conflict"]:
         fl.append("side_conflict")
@@ -827,7 +909,8 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
     side_final = ori.side_to_camera(final["KP"], plate.C)
     elev_p = math.degrees(math.atan2(plate.h - pel[2], math.hypot(*(plate.C - pel)[:2])))
     rep = dict(base, status=final["status"], support=[g[0] for g in groups if g[3] == "support"],
-               support_info=ginfo, secondary=[{"part": g[0], "surface": g[2], "role": g[3]} for g in groups
+               support_info=ginfo, validation=final["validation"], height_adjust=final["height"],
+               refine_root_clamps=sum(bool(a.get("refine", {}).get("root_clamped")) for a in attempts), secondary=[{"part": g[0], "surface": g[2], "role": g[3]} for g in groups
                                                if g[3] != "support"],
                support_object=ev["support_object"], support_parts_on=ev["support_parts_on"],
                support_gap_cm=ev["support_gap_cm"], back_gap_cm=ev["back_gap_cm"], wall_gap_cm=ev["wall_gap_cm"],
@@ -853,14 +936,14 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
                           "support_object": a["ev"]["support_object"], "gap_cm": a["ev"]["support_gap_cm"],
                           "pen_p95_cm": a["ev"]["penetration"]["p95_cm"], "footprint_out": a["ev"]["footprint"].get("n_out"),
                           "frame_ok": a["ev"]["frame"]["ok"], "frame_tries": len(a["frame_tries"]) - 1,
-                          "lie_yaw_add": a["lie_yaw_add"],
+                          "lie_yaw_add": a["lie_yaw_add"], "validation": a["validation"], "height": a["height"],
                           **({"groups_deg": a["refine"]["groups_deg"], "limits_ok": a["refine"]["limits_ok"]}
                              if a["stage"] == "refine" else {})} for a in attempts],
                flags=sorted(set(fl)), fit={k: final["fit"][k] for k in ("params", "cost", "nfev", "yaw_set_deg")})
     ku, kv, kz = plate.project(final["KP"][pf.MHR_TO_B25])
     kzp = plate.depth_at(ku, kv)
     rep["keypoints_body25_px"] = [[round(float(a), 1), round(float(b), 1),
-                                   int(0 <= a < plate.Wp and 0 <= b < plate.Hp and z > 0 and z <= zp + 0.02)]
+                                   int(0 <= a < plate.Wp and 0 <= b < plate.Hp and z > 0 and z <= zp + CFG["visibility_depth_m"])]
                                   for a, b, z, zp in zip(ku, kv, kz, kzp)] + [[0.0, 0.0, 0]] * 30
     rep["px_size"] = [plate.Wp, plate.Hp]
     M, b = similarity(B["V0"], final["X"] if final["stage"] == "fit" else final["rigid"]["X"])
@@ -869,11 +952,16 @@ def place_pose(ref, plate, spec, seed, height, *, profile=None, body_src="proxy"
             "state": state, "final": final, "regions": (treg, freg)}
 
 
+place_pose = place  # совместимость CLI шага 7; сборка существует только одна
+
+
 def write(out, res, ref, plate, spec, fit_hash):
     """файлы позы: body.obj, fit.json, fit_state.npz, overlay.jpg, shot_spec.json; при refine — body_rigid.obj,
     fit_rigid.json, fit_hash.txt (всегда заново)."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
+    if "KP" in res:
+        np.savez_compressed(out / "label_joints.npz", kp=res["KP"])
     for fn in ("body.obj", "fit.json", "fit_state.npz", "overlay.jpg", "body_rigid.obj", "fit_rigid.json",
                "fit_hash.txt", "shot_spec.json"):
         (out / fn).unlink(missing_ok=True)

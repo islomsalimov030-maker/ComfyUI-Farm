@@ -160,13 +160,18 @@ def do_render(only):
             (out / "_plate" / fn).write_bytes((Path(pr.PLATE.format(n)) / fn).read_bytes())
         cmd = farm_env.bpy_cmd(pr.HERE / "render_plate_scene.py") + [
             "--plate", pr.PLATE.format(n), "--spec", str(spec), "--mannequin", os.environ["FARM_MANNEQUIN"],
-            "--out", str(out), "--photo-emission", "2.5", "--samples", "48"]
+            "--out", str(out), "--label-pass", "--photo-emission", "2.5", "--samples", "48"]
+        if farm_env.BLENDER:
+            cmd[1:1] = ["--python-exit-code", "1"]
         r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         for line in r.stdout.splitlines():
             if line.startswith(("[plate]",)) or "Error" in line or "Traceback" in line:
                 print(f"[V2 m{n}] {line}", flush=True)
-        if r.returncode:
-            print(r.stderr[-2000:])
+        if r.returncode or "Traceback (most recent call last)" in r.stdout + r.stderr:
+            raise RuntimeError(f"render m{n} failed ({r.returncode}):\n{(r.stdout + r.stderr)[-4000:]}")
+        for scene in scenes:
+            if not (out / scene["name"] / "labels.png").is_file():
+                raise FileNotFoundError(out / scene["name"] / "labels.png")
 
 
 def line25(pid, r):
@@ -176,6 +181,8 @@ def line25(pid, r):
     fp, fr = r.get("footprint") or {}, r.get("frame") or {}
     rf = r.get("refine") or {}
     z = r.get("zone", {})
+    failure = (r.get("validation") or {}).get("first_failure")
+    diagnostic = (f"{failure['check']} +{failure['excess']} {failure['unit']}" if failure else "—")
     return (f"{pid[:3]} {r['status']} {ss.get('pose_class')}→{ss.get('target_object')} опора {r.get('support')} "
             f"{r.get('support_gap_cm')}см втор {[(c['part'], c['surface']) for c in r.get('secondary', []) if c['role'] in ('wall', 'back')]} "
             f"стена {r.get('wall_gap_cm')} спинка {r.get('back_gap_cm')} | yaw реф {y.get('ref_yaw_deg')}→{y.get('yaw_deg')} "
@@ -183,7 +190,8 @@ def line25(pid, r):
             f"{o.get('tilt_final_deg')} крен {o.get('roll_ref_deg')}→{o.get('roll_final_deg')} | след {fp.get('n_out')} "
             f"lie+{o.get('lie_yaw_add_deg')} кадр {fr.get('ok')} попыток {len(r.get('attempts', []))} сдвиг {z.get('shift_m')} | "
             f"прон p95 {pen.get('p95_cm')} max {pen.get('max_cm')} (soft {pen.get('soft_p95_cm')}/hard {pen.get('hard_p95_cm')}) | "
-            f"refine {rf.get('groups_deg')} | {r.get('flags')}")
+            f"refine {rf.get('groups_deg')} | провал {diagnostic} | высота {r.get('height_adjust')} "
+            f"откаты {r.get('refine_root_clamps')} | {r.get('flags')}")
 
 
 def do_summary():
@@ -198,7 +206,7 @@ def do_summary():
         keep = ("status", "shot_spec", "body_dims", "body_source", "support", "support_info", "secondary",
                 "support_object", "support_parts_on", "support_gap_cm", "back_gap_cm", "wall_gap_cm", "penetration",
                 "footprint", "frame", "frame_tries", "orient", "angle_to_camera_deg", "stage", "attempts", "flags",
-                "target_info")
+                "target_info", "validation", "height_adjust", "refine_root_clamps")
         row = {"id": p["id"], **{k: r.get(k) for k in keep},
                "zone": {k: r.get("zone", {}).get(k) for k in ("source", "object_id", "anchor_id", "via", "rule",
                                                                  "band_m", "cell", "attempt", "shift_m", "sides",
@@ -310,7 +318,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("cmd", choices=["collect", "fit", "render", "summary", "sheet", "profiles", "place", "sheet24"])
     ap.add_argument("--comfy", default="", help="ComfyUI с SAM 3D Body (refine внутри place); пусто — без refine")
-    ap.add_argument("--iters", type=int, default=200)
+    from placement_config import section
+    ap.add_argument("--iters", type=int, default=section("refine")["iters"])
     ap.add_argument("--refs")
     ap.add_argument("--refs-img")
     ap.add_argument("--confluence")

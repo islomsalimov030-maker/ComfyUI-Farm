@@ -1,0 +1,254 @@
+# 3D-A placement v2.6: метры, градусы и доли H/L_thigh/L_torso, если не указано иначе.
+# Значения шагов 7–8 сохранены; шаг 9: long_side_frac и kneel/place-валидатор.
+# Математические константы, индексы суставов и округление отчёта не являются порогами.
+h3:
+  seed: 101
+  steps: 25
+  pck_torso_fraction: 0.10
+  detection_confidence: 0.30
+  strength_d1: 1.0
+  strength_d2: 0.80
+  strength_d3: 0.90
+  strength_dilate_height: 0.04
+  strength_sigma_height: 0.05
+  shadow_threshold: 0.05
+  region_denoise: 1.0
+  harmonize_denoise: 0.20
+  bg_dilate_height: 0.06
+  noise_ring_inner_height: 0.04
+  noise_ring_outer_height: 0.14
+  upper_arm_top_fraction: 0.40
+  ssim_sigma: 1.5
+  ssim_k1: 0.01
+  ssim_k2: 0.03
+  object_edge_window_height: 0.08
+  object_edge_min_columns: 10
+  seam_crop_fraction: 0.30
+  seam_zoom: 2
+  bg_ssim_min: 0.85
+  obj_shift_max_px: 5.0
+  pck_lr_min: 0.80
+  noise_ratio_min: 0.80
+  noise_ratio_max: 1.25
+
+orient:
+  max_from_vertical: 45.0
+  recline_elev: [20.0, 70.0]
+  flat_head_h: 0.18
+  conflict_deg: 20.0
+  tilt_range:
+    stand: [0, 30]
+    kneel: [0, 50]
+    sit_edge: [0, 45]
+    sit_tucked: [0, 60]
+    sit_floor: [0, 60]
+    crouch: [0, 80]
+    recline: [25, 70]
+    lie: [75, 105]
+    all_fours: [60, 110]
+  roll_max: 15.0
+  yaw_window: 60.0
+  chest_h_min: 0.3
+  side_dead: 0.1
+  identity_bias_deg: 5.0
+  roll_match_deg: 1.0
+  tilt_change_deg: 0.05
+  vertical_deg: 3.0
+  tilt_match_deg: 0.5
+  yaw_step_deg: 1.0
+  norm_eps: 1.0e-9
+  direction_eps: 1.0e-6
+  reproj_min_height_px: 1.0
+  reproj_depth_eps: 1.0e-6
+
+zone:
+  edge_min: 0.05
+  min_sep: 0.10
+  n_cells: 5
+  edge_pelvis_thigh: 0.6
+  recline_torso: [0.6, 0.9]
+  access_w_h: 0.25
+  access_frac: 0.6
+  access_gap: 0.06
+  side_step: 0.05
+  rect_step_deg: 0.5
+  long_side_frac: 0.8
+  wall_band_h: [0.15, 0.45]
+  wall_min_top: 1.0
+  wall_lat_margin: 0.15
+  wall_pick_lat_margin: 0.3
+  access_endpoint_eps: 1.0e-9
+  rank_decimals: 2
+
+top_region:
+  cell: 0.02
+  up_min: 0.9
+  h_tol: 0.06
+  step_tol: 0.03
+  floor_min_area: 0.5
+  seat_h_range: [0.35, 0.75]
+  back_depth: 0.3
+  back_h: [0.06, 0.55]
+  back_min_pts: 100
+  lat_bin: 0.05
+  horizontal_step: 0.01
+  horizontal_max_subdiv: 60
+  horizontal_area_eps: 1.0e-12
+  floor_height_samples: 400
+  wall_up_max: 0.2
+  wall_tol: 0.03
+  wall_min_area: 0.5
+  wall_graze: 0.15
+  wall_normal_agree: 0.7
+  wall_max: 8
+  wall_trials: 600
+  wall_min_faces: 50
+  wall_pair_min_m: 0.2
+  wall_sample_pts: 4000
+  wall_extent_percentiles: [2, 98]
+  wall_area_eps: 1.0e-10
+  scale_range:
+    bed: [0.20, 0.75]
+    sofa: [0.30, 0.60]
+    armchair: [0.30, 0.60]
+    chair: [0.30, 0.90]
+    bench: [0.30, 0.90]
+    stool: [0.30, 0.90]
+
+pose_fit:
+  contact_m: 0.03
+  contact_detect_m: 0.04
+  vertex_normal_eps: 1.0e-12
+  depth_valid_min: 5.0e-4
+  inverse_depth_min: 1.0e-6
+  horizontal_normal_min: 0.8
+  vertical_normal_max: 0.35
+  seat_normal_min: 0.6
+  seat_height_m: [0.25, 1.0]
+  seat_scan_steps: 200
+  seat_scan_step_frac: 0.002
+  seat_scan_max_h: 1.2
+  penetration_depth_max_m: 0.35
+  ref_max_planes: 6
+  ref_plane_thr: 0.02
+  ref_plane_min_points: 400
+  ref_plane_min_frac: 0.03
+  ref_plane_trials: 300
+  ref_plane_normal_eps: 1.0e-9
+  ref_plane_body_exclude_m: 0.05
+  ref_plane_sample_points: 4000
+  ref_contact_below_m: 0.05
+  ref_contact_surface_m: 0.15
+  ref_contact_horizontal_min: 0.85
+  ref_contact_vertical_max: 0.35
+  ref_contact_min_points: 8
+  ref_contact_min_frac: 0.01
+  plane_up_iters: 2
+  plane_up_percentile: 15
+  ref_up_max_deg: 45
+
+refine:
+  w_sup: 1.0
+  w_sec: 0.3
+  w_pen: 3.0
+  w_prior: 0.5
+  w_rig: 0.5
+  limits_deg: {spine: 15.0, neck/head: 15.0, arms: 15.0, legs: 20.0}
+  w_lim: 1.0
+  iters: 200
+  reproduction_max_m: 0.01
+  pen_sample_points: 3000
+  joint_lr: 0.02
+  rigid_lr: 0.005
+  target_update_iters: 5
+  secondary_near_m: 0.4
+  penetration_depth_max_m: 0.35
+  support_sigma_m: 0.01
+  secondary_sigma_m: 0.03
+  penetration_slack_m: 0.005
+  penetration_sigma_m: 0.01
+  penetration_count_scale: 300
+  joint_prior_rad: 0.17
+  rotation_prior_rad: 0.05
+  shift_prior_m: 0.05
+  limit_penalty_frac: 0.95
+  limit_tolerance_deg: 0.05
+  rotation_norm_eps: 1.0e-12
+  rotation_init_rad: 1.0e-6
+  angle_cos_max: 0.999999
+  # refine_one — только legacy diag_seat.py; те же значения вынесены, без изменения поведения.
+  legacy_gap_percentile: 30
+  legacy_gap_max_cm: 3
+  legacy_pen_max_cm: 3
+  visibility_depth_m: 0.02
+  report_pen_m: 0.02
+  report_joint_deg: 10
+
+place:
+  sup_gap_cm: 3.0
+  pen_soft_m: 0.06
+  pen_hard_m: 0.03
+  pen_min_m: 0.002
+  on_surf_m: 0.04
+  shift_step: 0.01
+  shift_max_h: 0.5
+  attempts: 5
+  frame_tries: 5
+  frame_pad: 0.02
+  back_frac: 0.2
+  body_low_h: 0.04
+  foot_low_h: 0.15
+  foot_margin: 0.03
+  back_zone_m: 0.10
+  recline_up_h: 0.05
+  recline_tilts: [25.0, 27.5, 30.0, 32.5, 35.0, 37.5, 40.0, 42.5, 45.0, 47.5, 50.0, 52.5, 55.0, 57.5, 60.0, 62.5, 65.0, 67.5, 70.0]
+  touch_m: [-0.06, 0.02]
+  lie_yaw: [0, 15, -15, 30, -30, 45, -45, 60, -60, 75, -75, 90, -90]
+  conflict_deg: 20.0
+  kneel_low_h: 0.06
+  support_min_vertices: 5
+  wall_backrest_m: 0.03
+  support_percentile: 15
+  gap_sweep_deg: 10
+  gap_sweep_step_deg: 2
+  orientation_tolerance_deg: 0.05
+  # Имена для оставшихся inline-порогов place.py (владелец — основной исполнитель).
+  back_spine_frac: 0.5
+  rigid_yaw_free_deg: 25.0
+  rigid_rot_free_deg: 5.0
+  fallback_support_min: 20
+  fallback_support_divisor: 50
+  rigid_pen_sample_points: 2500
+  rigid_group_sample_points: 60
+  rigid_support_weight: 3.0
+  rigid_support_sigma_m: 0.01
+  rigid_back_near_m: 0.6
+  rigid_back_sigma_m: 0.02
+  rigid_secondary_near_m: 0.4
+  rigid_secondary_sigma_m: 0.03
+  rigid_pen_slack_m: 0.005
+  rigid_pen_weight: 10.0
+  rigid_pen_sigma_m: 0.01
+  rigid_yaw_prior_rad: 0.35
+  rigid_tilt_prior_rad: 0.05
+  rigid_roll_prior_rad: 0.05
+  rigid_shift_prior_m: 0.25
+  rigid_yaw_min_deg: 0.01
+  rigid_shift_bound_m: 2.0
+  rigid_f_scale: 1.0
+  rigid_diff_step: 1.0e-3
+  rigid_max_nfev: 400
+  recline_match_deg: 3.0
+  back_touch_percentile: 10
+  surface_sink_slack_m: 0.01
+  surface_majority_frac: 0.5
+  penetration_percentile: 95
+  gap_percentile: 30
+  support_sink_slack_m: 0.005
+  balance_margin_m: 0.04
+  balance_contact_max_cm: 6.0
+  wall_reach_h: 0.3
+  locked_yaw_free_deg: 0.5
+  refit_yaw_free_deg: 3.0
+  clamped_flag_deg: 0.5
+  visibility_depth_m: 0.02

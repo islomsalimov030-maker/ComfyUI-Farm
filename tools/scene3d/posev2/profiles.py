@@ -16,7 +16,7 @@ import zone as zn
 from body import K, height_est
 
 PROFILE_VERSION = 2          # 08.11a: objects.type / soft / backrest_name, стены (type=wall), стороны sit_edge
-BODY_VERSION = 1
+BODY_VERSION = 2  # v0.12: optional outfit_colors for the label proxy
 SUBSTITUTES = {"armchair": ["sofa", "bed"], "bench": ["chair", "stool", "bed"], "sofa": ["bed", "armchair"],
                "chair": ["stool", "bench"], "stool": ["chair", "bench"]}
 ANCHOR_RULES = [("edge", ["sit_edge"], False), ("center", ["kneel", "lie", "sit_tucked"], False),
@@ -51,11 +51,17 @@ def load_body(char_id, root=None):
     return b
 
 
-def write_body(char_id, height_m, dims, root=None, shape_model="MHR", shape_params=(), source_photos=()):
+def write_body(char_id, height_m, dims, root=None, shape_model="MHR", shape_params=(), source_photos=(), outfit_colors=None):
     d = root_dir(root) / "characters" / char_id
     d.mkdir(parents=True, exist_ok=True)
     b = {"char_id": char_id, "version": BODY_VERSION, "height_m": height_m, "shape_model": shape_model,
          "shape_params": list(shape_params), "body_dims": dims, "source_photos": list(source_photos)}
+    if outfit_colors is not None:
+        import re
+        if set(outfit_colors) != {"skin", "top", "bottom", "shoes", "hair"} or not all(
+                re.fullmatch(r"#[0-9A-Fa-f]{6}", v) for v in outfit_colors.values()):
+            raise ValueError("outfit_colors: нужны skin/top/bottom/shoes/hair в #RRGGBB")
+        b["outfit_colors"] = dict(outfit_colors)
     (d / "body.json").write_text(json.dumps(b, indent=1, ensure_ascii=False), encoding="utf-8")
     return d / "body.json"
 
@@ -159,10 +165,11 @@ def write_draft(loc_id, plate, seeds, H, root=None):
                                "access_frac": sd["access_frac"], "accessible": sd["accessible"],
                                "p0": [round(float(x), 3) for x in sd["p0"]], "p1": [round(float(x), 3) for x in sd["p1"]]}
                               for sd in sides]
-                acc = [sd for sd in sides if sd["accessible"]]
-                if acc:                             # по умолчанию — доступная сторона, ближе всего лицом к камере
-                    best = min(acc, key=lambda sd: abs((sd["yaw_deg"] - yaw + 180) % 360 - 180))
+                best = zn.pick_side(sides, yaw)       # то же правило длинной доступной стороны, что при посадке
+                if best is not None:
                     a["facing_yaw_deg"] = round(best["yaw_deg"], 1)
+                    if best["edge_short"]:
+                        a["flags"] = ["edge_short"]
                 else:
                     a["flags"] = ["no_access_side"]
             anchors.append(a)

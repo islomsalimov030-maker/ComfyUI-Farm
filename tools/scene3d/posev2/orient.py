@@ -5,12 +5,16 @@ import math
 
 import numpy as np
 
+from placement_config import section
+
+CFG = section("orient")
+
 UPRIGHT = ("stand", "kneel", "sit_edge", "sit_tucked", "sit_floor", "crouch")
 FLAT = ("lie", "all_fours")
-MAX_FROM_VERTICAL = 45.0
-RECLINE_ELEV = (20.0, 70.0)
-FLAT_HEAD_H = 0.18          # × H
-CONFLICT_DEG = 20.0
+MAX_FROM_VERTICAL = CFG["max_from_vertical"]
+RECLINE_ELEV = CFG["recline_elev"]
+FLAT_HEAD_H = CFG["flat_head_h"]
+CONFLICT_DEG = CFG["conflict_deg"]
 # MHR70: 0 nose, 1–4 глаза/уши, 9/10 бёдра, 69 шея
 HEAD = [0, 1, 2, 3, 4]
 
@@ -23,7 +27,7 @@ def axis(KP):
 def check(KP, pose_class, H):
     pel, neck, head = axis(KP)
     a = neck - pel
-    from_v = math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), 1e-9), -1, 1)))
+    from_v = math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), CFG["norm_eps"]), -1, 1)))
     elev = 90.0 - from_v
     dh = float(head[2] - pel[2])
     if pose_class in UPRIGHT:
@@ -57,10 +61,9 @@ def candidates(kp, cam_axis):
 
 
 # ------------------------------------------------------------------------------------------------ 08.11a п.3: сборка
-TILT_RANGE = {"stand": (0, 30), "kneel": (0, 50), "sit_edge": (0, 45), "sit_tucked": (0, 60), "sit_floor": (0, 60),
-              "crouch": (0, 80), "recline": (25, 70), "lie": (75, 105), "all_fours": (60, 110)}
-ROLL_MAX = 15.0
-YAW_WINDOW = 60.0
+TILT_RANGE = CFG["tilt_range"]
+ROLL_MAX = CFG["roll_max"]
+YAW_WINDOW = CFG["yaw_window"]
 UP = np.array([0, 0, 1.0])
 # куда наклонять, если реф почти вертикален, а класс требует больше: назад (recline, lie) / вперёд (прочие)
 LEAN_BACK = ("recline", "lie")
@@ -77,22 +80,22 @@ def left_vec(KP):
 def tilt_deg(KP):
     """наклон корпуса: ось таз→шея от вертикали, градусы."""
     a = KP[69] - (KP[9] + KP[10]) / 2
-    return math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), 1e-9), -1, 1)))
+    return math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), CFG["norm_eps"]), -1, 1)))
 
 
 def roll_deg(KP):
     """крен: наклон поперечной оси (бёдра + плечи) от горизонтали, градусы со знаком."""
     lv = left_vec(KP)
-    return math.degrees(math.asin(np.clip(lv[2] / max(np.linalg.norm(lv), 1e-9), -1, 1)))
+    return math.degrees(math.asin(np.clip(lv[2] / max(np.linalg.norm(lv), CFG["norm_eps"]), -1, 1)))
 
 
 def chest(KP):
     """нормаль груди (3D): left × (таз→шея); не зависит от оценки «вверх»."""
     c = np.cross(left_vec(KP), KP[69] - (KP[9] + KP[10]) / 2)
-    return c / max(np.linalg.norm(c), 1e-9)
+    return c / max(np.linalg.norm(c), CFG["norm_eps"])
 
 
-CHEST_H_MIN = 0.3        # |горизонтальная часть нормали груди| — ниже «перёд» по горизонтали не определён (лёжа на спине)
+CHEST_H_MIN = CFG["chest_h_min"]        # |горизонтальная часть нормали груди| — ниже «перёд» по горизонтали не определён (лёжа на спине)
 
 
 def forward(KP):
@@ -104,10 +107,10 @@ def forward(KP):
     f = np.cross(left_vec(KP), UP)
     f[2] = 0
     n = np.linalg.norm(f)
-    return f / n if n > 1e-6 else None
+    return f / n if n > CFG["direction_eps"] else None
 
 
-SIDE_DEAD = 0.1           # |cos| нормали груди к направлению на камеру — ниже сторона не определена
+SIDE_DEAD = CFG["side_dead"]           # |cos| нормали груди к направлению на камеру — ниже сторона не определена
 
 
 def side_to_camera(KP, cam):
@@ -145,7 +148,7 @@ def tilt_sign_candidate(kp, cam_axis, pose_class):
             continue
         c = (kp[9] + kp[10]) / 2
         t = tilt_deg(rot_about(kp, c, R))
-        dist = max(lo - t, 0.0, t - hi) + (0.0 if name == "identity" else 5.0)
+        dist = max(lo - t, 0.0, t - hi) + (0.0 if name == "identity" else CFG["identity_bias_deg"])
         if best is None or dist < best[0]:
             best = (dist, name, R)
     return best[1], best[2]
@@ -163,24 +166,24 @@ def assemble_tilt_roll(V, kp, pose_class):
             target = math.copysign(ROLL_MAX, r0)
             for sgn in (1, -1):                               # знак поворота подбираем по результату
                 R = rot_axis(f, sgn * math.radians(r0 - target))
-                if abs(roll_deg(rot_about(kp, c, R)) - target) < 1.0:
+                if abs(roll_deg(rot_about(kp, c, R)) - target) < CFG["roll_match_deg"]:
                     V, kp = rot_about(V, c, R), rot_about(kp, c, R)
                     break
     lo, hi = TILT_RANGE[pose_class]
     t1 = tilt_deg(kp)
     tt = min(max(t1, lo), hi)
-    if abs(tt - t1) > 0.05:
+    if abs(tt - t1) > CFG["tilt_change_deg"]:
         a = kp[69] - c
         k = np.cross(a, UP)
-        vertical = t1 < 3.0                                   # почти вертикальная ось — сторону наклона задаёт класс
+        vertical = t1 < CFG["vertical_deg"]                                   # почти вертикальная ось — сторону наклона задаёт класс
         f = forward(kp)
-        if vertical or np.linalg.norm(k) < 1e-6:
+        if vertical or np.linalg.norm(k) < CFG["direction_eps"]:
             k = np.cross(f, UP) if f is not None else np.array([1.0, 0, 0])
         k = k / np.linalg.norm(k)
         for sgn in (1, -1):
             R = rot_axis(k, sgn * math.radians(tt - t1))
             k2 = rot_about(kp, c, R)
-            if abs(tilt_deg(k2) - tt) >= 0.5:
+            if abs(tilt_deg(k2) - tt) >= CFG["tilt_match_deg"]:
                 continue
             if vertical and f is not None:
                 lean = (k2[69] - c) @ f
@@ -197,7 +200,7 @@ def solve_yaw(want_deg, side_ref, window=None, side_fn=None):
     """yaw «вперёд» тела (мир, градусы): ближайший к want при условиях: сторона к камере = side_ref
     (side_fn(углы) -> ±1/0, 3D по нормали груди; 0 у тела «боком» допускается), и |yaw − window| ≤ 60°.
     Невозможно и то и другое → side_conflict, приоритет у стороны к камере. -> (yaw, side_conflict, in_window)."""
-    a = np.arange(-180.0, 180.0, 1.0)
+    a = np.arange(-180.0, 180.0, CFG["yaw_step_deg"])
     if side_ref and side_fn is not None:
         side_ok = side_fn(a) == side_ref                    # поворот в «боком»/другую сторону — запрещён
     else:
@@ -225,8 +228,8 @@ def reproj_plate(KP, plate, ref, idx):
     u, v, z = plate.project(KP[idx])
     P = np.stack([u, v], 1)
     k2 = ref["kp2d"][idx]
-    bh_r = max(float(k2[:, 1].max() - k2[:, 1].min()), 1.0)
-    bh_p = max(float(P[:, 1].max() - P[:, 1].min()), 1.0)
+    bh_r = max(float(k2[:, 1].max() - k2[:, 1].min()), CFG["reproj_min_height_px"])
+    bh_p = max(float(P[:, 1].max() - P[:, 1].min()), CFG["reproj_min_height_px"])
     P = (P - P.mean(0)) / bh_p
     Q = (k2 - k2.mean(0)) / bh_r
     return float(np.linalg.norm(P - Q, axis=1).mean())
@@ -238,9 +241,9 @@ def reproj_error(KP_world, G0, ref, idx):
     (сдвиг посадки не штрафуется). -> доля высоты рамки 2D-точек рефа."""
     M, b = G0
     Y = np.linalg.solve(M, (KP_world[idx] - b).T).T
-    z = np.maximum(Y[:, 2], 1e-6)
+    z = np.maximum(Y[:, 2], CFG["reproj_depth_eps"])
     uv = np.stack([ref["f"] * Y[:, 0] / z + ref["cx"], ref["f"] * Y[:, 1] / z + ref["cy"]], 1)
     k2 = ref["kp2d"][idx]
     uv = uv - uv.mean(0) + k2.mean(0)
-    bh = max(float(k2[:, 1].max() - k2[:, 1].min()), 1.0)
+    bh = max(float(k2[:, 1].max() - k2[:, 1].min()), CFG["reproj_min_height_px"])
     return float(np.linalg.norm(uv - k2, axis=1).mean() / bh)

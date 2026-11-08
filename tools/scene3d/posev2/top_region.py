@@ -11,15 +11,19 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy import ndimage
 
-CELL = 0.02                 # м, шаг сетки
-UP_MIN = 0.9                # нормаль · up
-H_TOL = 0.06                # м, |h − h0|
-STEP_TOL = 0.03             # м, перепад между соседями
-FLOOR_MIN_AREA = 0.5        # м², «крупная» горизонтальная область для пола
-SEAT_H_RANGE = (0.35, 0.75)  # м, санити масштаба сиденья/кровати
-BACK_DEPTH = 0.3            # м, спинка не дальше дальнего края маски
-BACK_H = (0.06, 0.55)       # × H над h0
-BACK_MIN_PTS = 100
+from placement_config import section
+
+CFG = section("top_region")
+
+CELL = CFG["cell"]
+UP_MIN = CFG["up_min"]
+H_TOL = CFG["h_tol"]
+STEP_TOL = CFG["step_tol"]
+FLOOR_MIN_AREA = CFG["floor_min_area"]
+SEAT_H_RANGE = CFG["seat_h_range"]
+BACK_DEPTH = CFG["back_depth"]
+BACK_H = CFG["back_h"]
+BACK_MIN_PTS = CFG["back_min_pts"]
 
 
 @dataclass
@@ -86,7 +90,7 @@ class TopRegion:
         r = np.atleast_2d(xy)[:, :2] - self.cam_xy
         return r @ fwd, r @ lat
 
-    def edge_dist(self, xy, which, lat_bin=0.05):
+    def edge_dist(self, xy, which, lat_bin=CFG["lat_bin"]):
         """глубинное расстояние (м) от ближнего (which='near') или дальнего ('far') к камере края маски
         в том же поперечном столбце (бин 5 см)."""
         Pm = self.points3d()
@@ -121,14 +125,14 @@ class TopRegion:
 
 
 # ------------------------------------------------------------------------------------------------ height_proxy
-def _horizontal_samples(plate, step=0.01):
+def _horizontal_samples(plate, step=CFG["horizontal_step"]):
     """Точки горизонтальных граней меша (нормаль·up ≥ UP_MIN) с шагом ≤ step: при низкой камере строки глубины
     MoGe на верхе кровати/пола разнесены на 3–10 см, одних вершин мало для сетки 2 см — заполняем грани."""
     V, F = plate.V, plate.F
     A, B, C = V[F[:, 0]], V[F[:, 1]], V[F[:, 2]]
     n = np.cross(B - A, C - A)
     nn = np.linalg.norm(n, axis=1)
-    ok = nn > 1e-12
+    ok = nn > CFG["horizontal_area_eps"]
     n[ok] /= nn[ok, None]
     to_cam = plate.C - (A + B + C) / 3
     n[np.einsum("ij,ij->i", n, to_cam) < 0] *= -1
@@ -136,7 +140,7 @@ def _horizontal_samples(plate, step=0.01):
     A, B, C = A[hor], B[hor], C[hor]
     edge = np.max(np.stack([np.linalg.norm(B - A, axis=1), np.linalg.norm(C - B, axis=1),
                             np.linalg.norm(A - C, axis=1)]), axis=0)
-    k = np.clip(np.ceil(edge / step), 1, 60).astype(int)
+    k = np.clip(np.ceil(edge / step), 1, CFG["horizontal_max_subdiv"]).astype(int)
     out = [plate.P[plate.Nrm[:, 2] >= UP_MIN]]
     for m in np.unique(k):
         sel = k == m
@@ -187,7 +191,7 @@ def _floor_seed(Hg):
     """самая нижняя крупная горизонтальная область: компоненты по высоте (шаг 3 см), площадь ≥ FLOOR_MIN_AREA."""
     fin = np.isfinite(Hg)
     zs = np.sort(Hg[fin])
-    for h in zs[:: max(1, len(zs) // 400)]:
+    for h in zs[:: max(1, len(zs) // CFG["floor_height_samples"])]:
         band = fin & (np.abs(Hg - h) <= H_TOL)
         lab, n = ndimage.label(band)
         if n == 0:
@@ -252,15 +256,15 @@ def _backrest(plate, reg, H):
 
 
 # ------------------------------------------------------------------------------------------------ стены (08.11a п.1)
-WALL_UP_MAX = 0.2           # |n·up| ≤ 0.2 — вертикальная грань
-WALL_TOL = 0.03             # м, допуск RANSAC
-WALL_MIN_AREA = 0.5         # м²
-WALL_GRAZE = 0.15           # |n·луч| < 0.15 — грань вдоль луча камеры (растяжка меша на разрыве глубины), не стена
-WALL_NORMAL_AGREE = 0.7     # нормаль грани ≈ нормаль плоскости
-WALL_MAX = 8
+WALL_UP_MAX = CFG["wall_up_max"]
+WALL_TOL = CFG["wall_tol"]
+WALL_MIN_AREA = CFG["wall_min_area"]
+WALL_GRAZE = CFG["wall_graze"]
+WALL_NORMAL_AGREE = CFG["wall_normal_agree"]
+WALL_MAX = CFG["wall_max"]
 
 
-def walls(plate, seed=0, trials=600):
+def walls(plate, seed=0, trials=CFG["wall_trials"]):
     """Вертикальные плоскости меша плиты: грани |n·up| ≤ 0.2 → последовательный RANSAC вертикальных плоскостей
     (2 точки + up, допуск 3 см), площадь инлаеров ≥ 0.5 м². -> [{n, d, area_m2, pts, lat, z, center}];
     n — горизонтальная нормаль к камере, n·x + d = расстояние до плоскости (+ со стороны камеры)."""
@@ -268,7 +272,7 @@ def walls(plate, seed=0, trials=600):
     A, B, C = V[F[:, 0]], V[F[:, 1]], V[F[:, 2]]
     nn = np.cross(B - A, C - A)
     ar = np.linalg.norm(nn, axis=1) / 2
-    ok = ar > 1e-10
+    ok = ar > CFG["wall_area_eps"]
     nu = np.zeros_like(nn)
     nu[ok] = nn[ok] / (2 * ar[ok, None])
     cen = (A + B + C) / 3
@@ -283,7 +287,7 @@ def walls(plate, seed=0, trials=600):
     alive = np.ones(len(P), bool)
     for _ in range(WALL_MAX):
         idx = np.flatnonzero(alive)
-        if len(idx) < 50 or W[idx].sum() < WALL_MIN_AREA:
+        if len(idx) < CFG["wall_min_faces"] or W[idx].sum() < WALL_MIN_AREA:
             break
         prob = W[idx] / W[idx].sum()
         best = None
@@ -291,7 +295,7 @@ def walls(plate, seed=0, trials=600):
             i, j = rng.choice(idx, 2, replace=False, p=prob)
             t = P[j] - P[i]
             t[2] = 0
-            if np.linalg.norm(t) < 0.2:
+            if np.linalg.norm(t) < CFG["wall_pair_min_m"]:
                 continue
             n = np.cross(t, up)
             n /= np.linalg.norm(n)
@@ -318,10 +322,10 @@ def walls(plate, seed=0, trials=600):
         Q = P[inl]
         lat_dir = np.cross(up, n2)
         lat = Q @ lat_dir
-        sub = Q[rng.choice(len(Q), min(len(Q), 4000), replace=False)]
+        sub = Q[rng.choice(len(Q), min(len(Q), CFG["wall_sample_pts"]), replace=False)]
         out.append({"n": n2, "d": float(d2), "area_m2": round(float(W[inl].sum()), 2), "pts": sub,
-                    "lat_dir": lat_dir, "lat": [float(np.percentile(lat, 2)), float(np.percentile(lat, 98))],
-                    "z": [float(np.percentile(Q[:, 2], 2)), float(np.percentile(Q[:, 2], 98))],
+                    "lat_dir": lat_dir, "lat": [float(np.percentile(lat, CFG["wall_extent_percentiles"][0])), float(np.percentile(lat, CFG["wall_extent_percentiles"][1]))],
+                    "z": [float(np.percentile(Q[:, 2], CFG["wall_extent_percentiles"][0])), float(np.percentile(Q[:, 2], CFG["wall_extent_percentiles"][1]))],
                     "center": c, "n_faces": int(inl.sum())})
     return out
 
@@ -329,8 +333,7 @@ def walls(plate, seed=0, trials=600):
 # ------------------------------------------------------------------------------------------------ тип объекта (08.11a п.0, п.9)
 OBJECT_TYPES = ("bed", "sofa", "armchair", "chair", "bench", "stool", "table", "wall", "floor", "other")
 SOFT = ("bed", "sofa", "armchair", "cushion", "pillow", "mattress")
-SCALE_RANGE = {"bed": (0.20, 0.75), "sofa": (0.30, 0.60), "armchair": (0.30, 0.60), "chair": (0.30, 0.90),
-               "bench": (0.30, 0.90), "stool": (0.30, 0.90)}
+SCALE_RANGE = CFG["scale_range"]
 
 
 def object_type(name):

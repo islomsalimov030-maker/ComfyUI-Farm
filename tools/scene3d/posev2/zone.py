@@ -9,16 +9,20 @@
 """
 import numpy as np
 
-EDGE_MIN = 0.05      # м, опорная часть не ближе к краю маски
-MIN_SEP = 0.10       # м, следующая ячейка-попытка не ближе к предыдущим
-N_CELLS = 5
+from placement_config import section
+from top_region import CELL
+
+CFG = section("zone")
+EDGE_MIN = CFG["edge_min"]
+MIN_SEP = CFG["min_sep"]
+N_CELLS = CFG["n_cells"]
 CENTER_CLASSES = ("kneel", "lie", "sit_tucked")
 
 
 def metrics(reg):
     """метрики всех ячеек маски: xy (M,2), h, near, far, dt."""
     i, j = reg.cells()
-    xy = reg.origin + (np.stack([i, j], 1) + 0.5) * 0.02
+    xy = reg.origin + (np.stack([i, j], 1) + 0.5) * CELL
     return {"xy": xy, "h": reg.height[i, j], "near": reg.edge_dist(xy, "near"), "far": reg.edge_dist(xy, "far"),
             "dt": reg.dt[i, j]}
 
@@ -43,20 +47,20 @@ def zone_cells(m, pose_class, dims, seed_xy=None, has_backrest=True):
         flags.append("no_backrest")
         rule = "kneel"
     if rule == "sit_edge":
-        lim = 0.6 * dims["L_thigh"]
+        lim = EDGE_PELVIS_THIGH * dims["L_thigh"]
         ok = (m["near"] <= lim) & (dt >= EDGE_MIN)
         order = np.lexsort((-dt, seed_d))                         # ближе к точке таблицы по поперёк, затем глубже
         anchor = "pelvis"
         band = [0.0, round(lim, 3)]
     elif rule in CENTER_CLASSES:
         ok = dt >= EDGE_MIN
-        order = np.lexsort((seed_d, -np.round(dt, 2)))           # максимум dt; при равенстве — ближе к точке таблицы
+        order = np.lexsort((seed_d, -np.round(dt, CFG["rank_decimals"])))           # максимум dt; при равенстве — ближе к точке таблицы
         anchor = "support"
         band = None
     elif rule == "recline":
-        lo, hi = 0.6 * dims["L_torso"], 0.9 * dims["L_torso"]
+        lo, hi = CFG["recline_torso"][0] * dims["L_torso"], CFG["recline_torso"][1] * dims["L_torso"]
         ok = (m["far"] >= lo) & (m["far"] <= hi) & (dt >= EDGE_MIN)
-        order = np.lexsort((seed_d, -np.round(dt, 2)))
+        order = np.lexsort((seed_d, -np.round(dt, CFG["rank_decimals"])))
         anchor = "pelvis"
         band = [round(lo, 3), round(hi, 3)]
     else:
@@ -71,11 +75,11 @@ def zone_cells(m, pose_class, dims, seed_xy=None, has_backrest=True):
 
 
 # ------------------------------------------------------------------------------------------------ 08.11a п.4: край sit_edge
-ACCESS_W_H = 0.25        # × H — ширина свободного пола перед стороной
-ACCESS_FRAC = 0.6        # доля длины стороны
-ACCESS_GAP = 0.06        # м — пол начинаем проверять чуть дальше края (под кромкой матраса пола не видно)
-SIDE_STEP = 0.05         # м — шаг по стороне
-EDGE_PELVIS_THIGH = 0.6  # × L_thigh
+ACCESS_W_H = CFG["access_w_h"]
+ACCESS_FRAC = CFG["access_frac"]
+ACCESS_GAP = CFG["access_gap"]
+SIDE_STEP = CFG["side_step"]
+EDGE_PELVIS_THIGH = CFG["edge_pelvis_thigh"]
 
 
 def rect_sides(reg):
@@ -83,10 +87,10 @@ def rect_sides(reg):
     yaw_deg (нормали)}]."""
     P = reg.points3d()[:, :2]
     best = None
-    for a in np.radians(np.arange(0, 90, 0.5)):
+    for a in np.radians(np.arange(0, 90, CFG["rect_step_deg"])):
         R = np.array([[np.cos(a), -np.sin(a)], [np.sin(a), np.cos(a)]])
         Q = P @ R                                                   # координаты в повёрнутых осях
-        lo, hi = Q.min(0) - 0.01, Q.max(0) + 0.01                   # + половина ячейки
+        lo, hi = Q.min(0) - CELL / 2, Q.max(0) + CELL / 2                   # + половина ячейки
         ar = np.prod(hi - lo)
         if best is None or ar < best[0]:
             best = (ar, R, lo, hi)
@@ -113,7 +117,7 @@ def side_access(side, freg, H, plate=None):
         return 0.0
     L = side["length"]
     ts = np.arange(SIDE_STEP / 2, L, SIDE_STEP) / L
-    ds = np.arange(ACCESS_GAP, ACCESS_GAP + ACCESS_W_H * H + 1e-9, 0.02)
+    ds = np.arange(ACCESS_GAP, ACCESS_GAP + ACCESS_W_H * H + CFG["access_endpoint_eps"], CELL)
     good = 0
     for t in ts:
         s = side["p0"] + t * (side["p1"] - side["p0"])
@@ -137,11 +141,17 @@ def edge_sides(reg, freg, H, plate=None):
 
 
 def pick_side(sides, want_yaw_deg):
-    """из доступных — с внешней нормалью ближе к yaw рефа; нет доступных -> None."""
+    """Сначала длинные ≥ long_side_frac·max(доступных), затем ближайшая к yaw нормаль.
+    edge_short — выбранная сторона короткая относительно всех: длинные стороны недоступны.
+    Входные стороны не изменяются; нет доступных -> None.
+    """
     acc = [s for s in sides if s["accessible"]]
     if not acc:
         return None
-    return min(acc, key=lambda s: abs((s["yaw_deg"] - want_yaw_deg + 180) % 360 - 180))
+    min_long = CFG["long_side_frac"] * max(s["length"] for s in acc)
+    long = [s for s in acc if s["length"] >= min_long]
+    best = min(long, key=lambda s: abs((s["yaw_deg"] - want_yaw_deg + 180) % 360 - 180))
+    return dict(best, edge_short=bool(best["length"] < CFG["long_side_frac"] * max(s["length"] for s in sides)))
 
 
 def edge_cells(m, side, dims, seed_xy=None):
@@ -167,9 +177,9 @@ def edge_cells(m, side, dims, seed_xy=None):
 
 
 # ------------------------------------------------------------------------------------------------ 08.11a п.6: у стены
-WALL_BAND_H = (0.15, 0.45)   # × H — таз до плоскости стены
-WALL_MIN_TOP = 1.0           # м — у «стены» для рук верх не ниже (низкие плоскости — фасады мебели)
-WALL_LAT_MARGIN = 0.15       # м
+WALL_BAND_H = CFG["wall_band_h"]
+WALL_MIN_TOP = CFG["wall_min_top"]
+WALL_LAT_MARGIN = CFG["wall_lat_margin"]
 
 
 def pick_wall(walls, seed_xy):
@@ -180,7 +190,7 @@ def pick_wall(walls, seed_xy):
         if w["z"][1] < WALL_MIN_TOP:
             continue
         lat = float(np.r_[s, 0] @ w["lat_dir"])
-        if not (w["lat"][0] - 0.3 <= lat <= w["lat"][1] + 0.3):
+        if not (w["lat"][0] - CFG["wall_pick_lat_margin"] <= lat <= w["lat"][1] + CFG["wall_pick_lat_margin"]):
             continue
         D = float(w["n"][:2] @ s + w["d"])
         if D < 0:
@@ -194,14 +204,14 @@ def wall_cells(freg, wall, dims, reach_m, seed_xy=None):
     """ячейки пола: расстояние таза до плоскости стены WALL_BAND_H·H, проекция внутри стены; порядок — ближе к
     |D − горизонтальный вынос рук| (руки достают), затем к точке таблицы."""
     i, j = freg.cells()
-    xy = freg.origin + (np.stack([i, j], 1) + 0.5) * 0.02
+    xy = freg.origin + (np.stack([i, j], 1) + 0.5) * CELL
     D = xy @ wall["n"][:2] + wall["d"]
     lat = xy @ wall["lat_dir"][:2]
     H = dims["H"]
     ok = (D >= WALL_BAND_H[0] * H) & (D <= WALL_BAND_H[1] * H) & (lat >= wall["lat"][0] + WALL_LAT_MARGIN) & \
          (lat <= wall["lat"][1] - WALL_LAT_MARGIN) & (freg.dt[i, j] >= EDGE_MIN)
     seed_d = np.zeros(len(xy)) if seed_xy is None else np.linalg.norm(xy - np.asarray(seed_xy)[:2], axis=1)
-    order = np.lexsort((seed_d, np.round(np.abs(D - reach_m), 2)))
+    order = np.lexsort((seed_d, np.round(np.abs(D - reach_m), CFG["rank_decimals"])))
     order = [k for k in order if ok[k]]
     pick = _spread(order, xy)
     cands = [{"xy": xy[k].tolist(), "h": float(freg.height[i[k], j[k]]), "near": float(D[k]), "far": 0.0,

@@ -65,6 +65,7 @@ def args():
     ap.add_argument("--only", default="")
     ap.add_argument("--samples", type=int, default=64, help="Cycles samples of the playblast pass")
     ap.add_argument("--no-playblast", action="store_true")
+    ap.add_argument("--label-pass", action="store_true", help="v2.6: five-zone pass; requires body_obj + label_joints.npz")
     ap.add_argument("--photo-emission", type=float, default=None,
                     help="override light.photo_emission (0 = the 05.11 playblast, 1.5 = photo-lit clay)")
     return ap.parse_args(argv)
@@ -657,6 +658,79 @@ def _write_pose_metrics(out, rig, body, plate, cam, ang0, viol0, clamp_log, cont
           f"{res['bones']['max_dev_mm']} mm; contacts [{gaps}] pen {solved.get('max_penetration_cm', '-')} cm")
 
 
+def render_label_pass(sc, body, scene, out):
+    """Same camera/occlusion/mesh as playblast; emission vertex colours, no lighting.
+
+    Final MHR70 joints must be provided by place.write; never reconstruct them
+    from screen-space BODY25 or the old mannequin rig. Blender CPU pass only.
+    """
+    import numpy as np
+    sys.path.insert(0, HERE)
+    import pose_proxy_v26 as proxy
+    if not scene.get("body_obj"):
+        raise ValueError("label pass requires body_obj and final MHR70 joints")
+    joints = os.path.join(os.path.dirname(scene["body_obj"]), "label_joints.npz")
+    with np.load(joints, allow_pickle=False) as d:
+        kp = d["kp"]
+    verts = np.array([tuple(body.matrix_world @ v.co) for v in body.data.vertices])
+    labels = proxy.vertex_zones(verts, kp)
+    np.save(f"{out}/vertex_zones.npy", labels)
+    with open(f"{out}/label_zones.json", "w", encoding="utf-8") as f:
+        json.dump({"zones": list(proxy.ZONES), "vertex_counts": {
+            z: int((labels == i).sum()) for i, z in enumerate(proxy.ZONES, 1)},
+            "blocked_test": "task requests six zones but specifies only five"}, f, indent=1)
+    attr = body.data.color_attributes.get("pose_zone") or body.data.color_attributes.new(
+        name="pose_zone", type="FLOAT_COLOR", domain="POINT")
+    rgb = proxy.LABEL_RGB[labels].astype(float) / 255
+    rgba = np.column_stack([rgb, np.ones(len(rgb))])
+    attr.data.foreach_set("color", rgba.ravel())
+    material = bpy.data.materials.new("pose_zone_emission")
+    material.use_nodes = True
+    nt = material.node_tree
+    nt.nodes.clear()
+    attribute = nt.nodes.new("ShaderNodeAttribute")
+    attribute.attribute_name = "pose_zone"
+    emission = nt.nodes.new("ShaderNodeEmission")
+    output = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(attribute.outputs["Color"], emission.inputs["Color"])
+    nt.links.new(emission.outputs[0], output.inputs["Surface"])
+    old = [slot.material for slot in body.material_slots]
+    old_links = [slot.link for slot in body.material_slots]
+    if not body.material_slots:
+        body.data.materials.append(material)
+    for slot in body.material_slots:
+        slot.link, slot.material = "OBJECT", material
+    black = bpy.data.materials.new("pose_zone_background")
+    black.use_nodes = True
+    bsdf = black.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = (0, 0, 0, 1)
+    # Non-body geometry must still occlude, but never contribute zone colours.
+    saved = []
+    for ob in sc.objects:
+        if ob.type == "MESH" and ob is not body and not ob.hide_render:
+            for slot in ob.material_slots:
+                saved.append((slot, slot.link, slot.material))
+                slot.link, slot.material = "OBJECT", black
+    try:
+        bpy.context.view_layer.material_override = None
+        sc.render.engine = "BLENDER_EEVEE"
+        sc.view_settings.view_transform = "Raw"
+        sc.render.image_settings.color_mode = "RGB"
+        sc.render.image_settings.color_depth = "8"
+        sc.render.image_settings.file_format = "PNG"
+        sc.render.filepath = f"{out}/labels.png"
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for slot, link, mat in saved:
+            slot.material, slot.link = mat, link
+        if old:
+            for slot, mat, link in zip(body.material_slots, old, old_links):
+                slot.material, slot.link = mat, link
+        else:
+            body.data.materials.clear()
+        sc.view_settings.view_transform = "Standard"
+
+
 def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, hit, yaw, u, v_used, contact, placed):
     # clay pass (plate grey, mannequin light)
     sc.render.engine = "BLENDER_WORKBENCH"
@@ -678,6 +752,8 @@ def _finish_scene(a, sc, info, cam, plate, light, out, scene, rig, body, names, 
                 bw16=True)
     if not a.no_playblast:
         render_playblast(a, sc, cam, plate, light, out, feet=(hit.x, hit.y, placed["feet_z"]))
+    if getattr(a, "label_pass", False):
+        render_label_pass(sc, body, scene, out)
 
     W, H = info["size"]
     size = (W, H)

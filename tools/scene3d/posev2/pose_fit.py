@@ -29,11 +29,14 @@ from scipy.spatial import cKDTree, Delaunay
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from body import PRIORITY, facing, height_est, regions  # noqa: E402
+from placement_config import section  # noqa: E402
 
-CONTACT_M = 0.03
+CFG = section("pose_fit")
+
+CONTACT_M = CFG["contact_m"]
 # MHR70 -> BODY-25 (первые 18 точек в порядке render_h3_maps.BODY25_NAMES)
 MHR_TO_B25 = [0, 69, 6, 8, 41, 5, 7, 62, 10, 12, 14, 9, 11, 13, 2, 1, 4, 3]
-CONTACT_DETECT_M = 0.04   # порог поиска контактов на рефе (поза SAM у стоп/кистей бывает на 2–4 см выше поверхности)
+CONTACT_DETECT_M = CFG["contact_detect_m"]   # порог поиска контактов на рефе (поза SAM у стоп/кистей бывает на 2–4 см выше поверхности)
 # доли массы сегментов (Dempster/Winter, округлённо) — центр масс по регионам, а не по вершинам (голова плотная)
 MASS = {"head": 0.08, "torso": 0.30, "pelvis": 0.14, "thigh.L": 0.10, "thigh.R": 0.10, "knee.L": 0.01, "knee.R": 0.01,
         "shin.L": 0.045, "shin.R": 0.045, "foot.L": 0.014, "foot.R": 0.014, "arm.L": 0.027, "arm.R": 0.027,
@@ -107,7 +110,7 @@ def vertex_normals(V, F):
     for k in range(3):
         np.add.at(vn, F[:, k], fn)
     n = np.linalg.norm(vn, axis=1, keepdims=True)
-    return vn / np.maximum(n, 1e-12), n[:, 0] > 1e-12
+    return vn / np.maximum(n, CFG["vertex_normal_eps"]), n[:, 0] > CFG["vertex_normal_eps"]
 
 
 class Plate:
@@ -120,8 +123,8 @@ class Plate:
         dep = np.asarray(Image.open(d / "depth_loc.png"), np.float64) / 65535.0
         lo, hi = self.info["inv_norm"]["lo"], self.info["inv_norm"]["hi"]
         inv = lo + dep * (hi - lo)
-        self.valid = dep > 5e-4
-        self.Z = np.where(self.valid, 1.0 / np.maximum(inv, 1e-6), np.inf)
+        self.valid = dep > CFG["depth_valid_min"]
+        self.Z = np.where(self.valid, 1.0 / np.maximum(inv, CFG["inverse_depth_min"]), np.inf)
         self.Hp, self.Wp = dep.shape
         self.fx = (self.Wp / 2) / math.tan(math.radians(self.info["fov_x_deg"]) / 2)
         self.cx, self.cy = self.Wp / 2, self.Hp / 2
@@ -131,8 +134,8 @@ class Plate:
         to_cam = self.C - V
         n[np.einsum("ij,ij->i", n, to_cam) < 0] *= -1                      # нормали к камере
         self.P, self.Nrm = V[ok], n[ok]
-        hor = np.abs(self.Nrm[:, 2]) > 0.8
-        ver = np.abs(self.Nrm[:, 2]) < 0.35
+        hor = np.abs(self.Nrm[:, 2]) > CFG["horizontal_normal_min"]
+        ver = np.abs(self.Nrm[:, 2]) < CFG["vertical_normal_max"]
         self.trees = {"h": (cKDTree(self.P[hor]), self.P[hor], self.Nrm[hor]),
                       "v": (cKDTree(self.P[ver]), self.P[ver], self.Nrm[ver]),
                       "any": (cKDTree(self.P), self.P, self.Nrm)}
@@ -155,19 +158,19 @@ class Plate:
         """Пиксель сиденья/кровати → верх сиденья. Разметка часто ложится на пол под сиденьем или на его переднюю
         стенку: тогда идём вверх по столбцу до горизонтальной поверхности 0.25–1.0 м. Нет такой — пол (сидя на полу/коврике)."""
         tree, Pp, N = self.trees["any"]
-        horiz = lambda Q: N[tree.query(Q)[1]][2] > 0.6  # noqa: E731
+        horiz = lambda Q: N[tree.query(Q)[1]][2] > CFG["seat_normal_min"]  # noqa: E731
         P = self.pixel_point(fu, fv)
-        if 0.25 <= P[2] <= 1.0 and horiz(P):
+        if CFG["seat_height_m"][0] <= P[2] <= CFG["seat_height_m"][1] and horiz(P):
             return P, fv
-        for i in range(1, 200):
-            vv = fv - i * 0.002
+        for i in range(1, CFG["seat_scan_steps"]):
+            vv = fv - i * CFG["seat_scan_step_frac"]
             try:
                 Q = self.pixel_point(fu, vv)
             except SystemExit:
                 continue
-            if 0.25 <= Q[2] <= 1.0 and horiz(Q):
+            if CFG["seat_height_m"][0] <= Q[2] <= CFG["seat_height_m"][1] and horiz(Q):
                 return Q, vv
-            if Q[2] > 1.2:                                                  # ушли выше мебели
+            if Q[2] > CFG["seat_scan_max_h"]:                                                  # ушли выше мебели
                 break
         return P, fv
 
@@ -186,7 +189,7 @@ def penetration(plate, X):
     u, v, z = plate.project(X)
     zp = plate.depth_at(u, v)
     beh = z - zp
-    cand = (beh > 0) & (beh < 0.35)
+    cand = (beh > 0) & (beh < CFG["penetration_depth_max_m"])
     pen = np.zeros(len(X))
     if cand.any():
         tree, P, N = plate.trees["any"]
@@ -197,21 +200,21 @@ def penetration(plate, X):
 
 
 # ------------------------------------------------------------------------------------------------ reference analysis
-def ref_planes(S, max_planes=6, thr=0.02, seed=0, body=None):
+def ref_planes(S, max_planes=CFG["ref_max_planes"], thr=CFG["ref_plane_thr"], seed=0, body=None):
     """Плоскости сцены рефа (RANSAC, последовательно): пол, кровать, сиденье, стены. Отдельные «летающие» точки
     на краю силуэта и остатки тела в MoGe в плоскости не собираются — поэтому контакты считаем только с плоскостями."""
     rng = np.random.default_rng(seed)
     pts = S.copy()
     planes = []
-    min_in = max(400, int(0.03 * len(S)))
+    min_in = max(CFG["ref_plane_min_points"], int(CFG["ref_plane_min_frac"] * len(S)))
     for _ in range(max_planes):
         if len(pts) < min_in:
             break
         best = None
-        for _ in range(300):
+        for _ in range(CFG["ref_plane_trials"]):
             q = pts[rng.choice(len(pts), 3, replace=False)]
             n = np.cross(q[1] - q[0], q[2] - q[0])
-            if np.linalg.norm(n) < 1e-9:
+            if np.linalg.norm(n) < CFG["ref_plane_normal_eps"]:
                 continue
             n /= np.linalg.norm(n)
             inl = np.abs((pts - q[0]) @ n) < thr
@@ -225,9 +228,9 @@ def ref_planes(S, max_planes=6, thr=0.02, seed=0, body=None):
         if n @ (-c) < 0:                                                  # нормаль к камере (камера в начале)
             n = -n
         pts = pts[~best[1]]
-        if body is not None and np.median(body.query(P)[0]) < 0.05:     # «плоскость» из остатков тела — не сцена
+        if body is not None and np.median(body.query(P)[0]) < CFG["ref_plane_body_exclude_m"]:     # «плоскость» из остатков тела — не сцена
             continue
-        sub = P[rng.choice(len(P), min(len(P), 4000), replace=False)]
+        sub = P[rng.choice(len(P), min(len(P), CFG["ref_plane_sample_points"]), replace=False)]
         planes.append({"n": n, "d": float(-n @ c), "tree": cKDTree(sub), "n_in": int(len(P))})
     return planes
 
@@ -246,16 +249,16 @@ def ref_contacts(ref, reg, forced, up=None, planes=None):
         return out
     for pi, pl in enumerate(planes):
         h = V @ pl["n"] + pl["d"]                                         # высота над плоскостью (+ со стороны камеры)
-        near = (h > -0.05) & (h < CONTACT_DETECT_M)
+        near = (h > -CFG["ref_contact_below_m"]) & (h < CONTACT_DETECT_M)
         if near.sum() == 0:
             continue
         dxy, _ = pl["tree"].query(V[near])                                # в пределах самой поверхности
-        idx_all = np.where(near)[0][dxy < 0.15]
+        idx_all = np.where(near)[0][dxy < CFG["ref_contact_surface_m"]]
         nz = abs(pl["n"] @ up) if up is not None else 1.0
-        kind = "h" if nz > 0.85 else ("v" if nz < 0.35 else "any")
+        kind = "h" if nz > CFG["ref_contact_horizontal_min"] else ("v" if nz < CFG["ref_contact_vertical_max"] else "any")
         for name in np.unique(reg[idx_all]):
             idx = idx_all[reg[idx_all] == name]
-            if len(idx) < max(8, int(0.01 * (reg == name).sum())):
+            if len(idx) < max(CFG["ref_contact_min_points"], int(CFG["ref_contact_min_frac"] * (reg == name).sum())):
                 continue
             prev = out.get(str(name))
             if prev is None or len(idx) > prev["n"]:
@@ -274,11 +277,11 @@ def plane_up(V, contacts, up):
     best = max(groups.values(), key=len, default=[])
     if len(best) < 2:
         return up, False
-    for _ in range(2):
+    for _ in range(CFG["plane_up_iters"]):
         cents = []
         for idx in best:
             h = V[idx] @ up
-            low = idx[h <= np.percentile(h, 15)]
+            low = idx[h <= np.percentile(h, CFG["plane_up_percentile"])]
             cents.append(V[low].mean(0))
         C = np.array(cents)
         if len(C) >= 3:
@@ -299,7 +302,7 @@ def ref_up(ref, planes, contacts):
     cands = []
     for pl in planes or []:
         n = pl["n"] if pl["n"] @ cam_up > 0 else -pl["n"]
-        if n @ cam_up > math.cos(math.radians(45)):
+        if n @ cam_up > math.cos(math.radians(CFG["ref_up_max_deg"])):
             cands.append((pl["n_in"], n))
     if cands:
         return max(cands, key=lambda t: t[0])[1], "plane"
