@@ -6,23 +6,11 @@ from placement_config import section
 
 
 def torso_back_indices(verts, normals, kp, *, part_labels=None, skin_weights=None, joint_names=None):
-    """Only authoritative MHR parts or dominant spine/chest skinning; never nearest-kp regions."""
+    """09.11b §2d: body-frame pelvis/shoulders strip, narrow lateral band, backward normals.
+
+    Legacy anatomy kwargs are accepted for callers, but do not gate this geometric rule.
+    """
     V, N = np.asarray(verts), np.asarray(normals)
-    if part_labels is not None:
-        labels = np.asarray(part_labels).astype(str)
-        if labels.shape != (len(V),):
-            raise ValueError("MHR part_labels must contain one named part per vertex")
-        torso = labels == "torso"
-    elif skin_weights is not None and joint_names is not None:
-        w, names = np.asarray(skin_weights), np.asarray(joint_names).astype(str)
-        if w.ndim != 2 or w.shape != (len(V), len(names)):
-            raise ValueError("skin_weights must be V x len(joint_names)")
-        if not len(names) or not np.isfinite(w).all() or (w < 0).any():
-            raise ValueError("invalid skin weights / empty joint names")
-        dominant = np.char.lower(names[np.argmax(w, axis=1)])
-        torso = ((np.char.find(dominant, "spine") >= 0) | (np.char.find(dominant, "chest") >= 0)) & (w.max(axis=1) > 0)
-    else:
-        raise ValueError("missing torso_back: missing MHR part_labels or skin_weights + joint_names; stopped")
     pelvis = (kp[K["l_hip"]] + kp[K["r_hip"]]) / 2
     shoulders = (kp[K["l_sh"]] + kp[K["r_sh"]]) / 2
     axis = shoulders - pelvis
@@ -36,26 +24,38 @@ def torso_back_indices(verts, normals, kp, *, part_labels=None, skin_weights=Non
     h = (V - pelvis) @ up
     norm = np.linalg.norm(N, axis=1)
     dot = (N @ forward) / np.maximum(norm, np.finfo(float).tiny)
-    return np.flatnonzero(torso & (h >= 0) & (h <= length) & (norm > 0) &
+    lateral = np.cross(up, forward)
+    halfwidth = np.linalg.norm(kp[K["l_sh"]] - kp[K["r_sh"]]) / 2
+    if halfwidth <= 0:
+        raise ValueError("shoulder width is undefined")
+    side = np.abs((V - pelvis) @ lateral)
+    return np.flatnonzero((side <= section("place")["torso_back_halfwidth_frac"] * halfwidth) &
+                          (h >= 0) & (h <= length) & (norm > 0) &
                           (dot < section("place")["torso_back_dot_max"]))
 
 
 def cached_torso_back(model_path, cache_dir):
-    """NPZ anatomy asset: V,F,kp,part_labels OR skin_weights,joint_names. Cache keyed by asset+threshold."""
+    """NPZ body asset V,F,kp. Cache keyed by model content and geometric rule/thresholds."""
     import hashlib
     from pathlib import Path
     from pose_fit import vertex_normals
     model_path, cache_dir = Path(model_path), Path(cache_dir)
-    digest = hashlib.sha256(model_path.read_bytes() +
-                            str(section("place")["torso_back_dot_max"]).encode()).hexdigest()
+    digest = hashlib.sha256(model_path.read_bytes() + repr(("geometric_2d_v1",
+                            section("place")["torso_back_dot_max"],
+                            section("place")["torso_back_halfwidth_frac"])).encode()).hexdigest()
     dest = cache_dir / ("torso_back_" + digest + ".npz")
     if dest.is_file():
         with np.load(dest, allow_pickle=False) as d:
             return d["indices"].copy()
     with np.load(model_path, allow_pickle=False) as d:
-        N, _ = vertex_normals(d["V"].astype(float), d["F"])
-        idx = torso_back_indices(d["V"], N, d["kp"], **{
-            k: d[k] for k in ("part_labels", "skin_weights", "joint_names") if k in d})
+        if "verts" in d:
+            V, F, kp = d["verts"], d["faces"], d["kp3d"]
+        elif "V" in d:
+            V, F, kp = d["V"], d["F"], d["kp"]
+        else:
+            V, F, kp = d["pred_vertices"], d["top.faces"], d["pred_keypoints_3d"]
+        N, _ = vertex_normals(V.astype(float), F)
+        idx = torso_back_indices(V, N, kp)
     if not len(idx):
         raise ValueError("approved torso_back is empty in body model")
     cache_dir.mkdir(parents=True, exist_ok=True)

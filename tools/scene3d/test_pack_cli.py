@@ -151,26 +151,88 @@ def test_explicit_config_seed_is_not_replaced_by_zone_center(tmp_path):
     assert np.allclose(cli.seed_for(Profile(), spec, cfg), [5, 6, .8])
 
 
-def test_run_stage_timeout_and_tail(tmp_path, monkeypatch):
-    def timeout(*a, **kw):
-        assert kw["timeout"] == 600
+class FakeProcess:
+    pid = 987654  # Only mocked termination calls ever receive this PID.
+    stdout = stderr = None
+    def __init__(self, returncode=0, output=("", ""), timeouts=0):
+        self.returncode, self.output, self.timeouts = returncode, output, timeouts
+        self.communications, self.killed = [], False
+    def communicate(self, timeout):
+        self.communications.append(timeout)
+        if self.timeouts:
+            self.timeouts -= 1
+            raise subprocess.TimeoutExpired("fixture", timeout, stderr=b"gpu timed out")
+        return self.output
+    def kill(self):
+        self.killed = True
+    def wait(self, timeout):
+        return self.returncode
+
+
+@pytest.mark.parametrize("platform", ["win32", "linux"])
+def test_run_stage_timeout_kills_tree_and_reaps(monkeypatch, platform):
+    process = FakeProcess(timeouts=1)
+    launches, kills = [], []
+    monkeypatch.setattr(cli.sys, "platform", platform)
+    monkeypatch.setattr(cli.subprocess, "CREATE_NEW_PROCESS_GROUP", 512, raising=False)
+    import signal
+    monkeypatch.setattr(signal, "SIGKILL", 9, raising=False)
+    def launch(command, **kw):
+        launches.append(kw)
         assert kw["cwd"] == str(cli.REPO)
-        raise subprocess.TimeoutExpired(a[0], 600, stderr=b"gpu timed out")
-    monkeypatch.setattr(cli.subprocess, "run", timeout)
+        return process
+    monkeypatch.setattr(cli.subprocess, "Popen", launch)
+    def terminate(command, **kw):
+        kills.append((command, kw))
+        return SimpleNamespace(returncode=0)
+    monkeypatch.setattr(cli.subprocess, "run", terminate)
+    monkeypatch.setattr(cli.os, "killpg", lambda pid, sig: kills.append((pid, sig)), raising=False)
     with pytest.raises(cli.StageError) as caught:
         cli.run_stage(["python", "x.py"], "SAM")
     assert caught.value.diagnostic == "gpu timed out"
     assert "600s" in str(caught.value)
-    lines = "\n".join(f"line {i}" for i in range(90))
-    monkeypatch.setattr(cli.subprocess, "run", lambda *a, **kw: SimpleNamespace(returncode=3, stdout="", stderr=lines))
+    assert process.communications == [600, 5]
+    if platform == "win32":
+        assert launches[0]["creationflags"] == 512
+        assert kills[0][0] == ["taskkill", "/PID", str(process.pid), "/T", "/F"]
+        assert kills[0][1]["timeout"] == 10
+    else:
+        assert launches[0]["start_new_session"] is True
+        import signal
+        assert kills == [(process.pid, signal.SIGKILL)]
+
+
+def test_run_stage_failed_tail_and_redaction(monkeypatch):
+    monkeypatch.setenv("FARM_AUTH", "fixture-secret-value")
+    lines = "\n".join(f"line {i} fixture-secret-value" for i in range(90))
+    process = FakeProcess(returncode=3, output=("", lines))
+    monkeypatch.setattr(cli.subprocess, "Popen", lambda *a, **kw: process)
     with pytest.raises(cli.StageError) as caught:
         cli.run_stage(["python"], "render")
-    assert caught.value.diagnostic.splitlines() == lines.splitlines()[-30:]
+    assert caught.value.diagnostic.splitlines() == [s.replace("fixture-secret-value", "[redacted]") for s in lines.splitlines()[-30:]]
+
+
+def test_run_stage_success_returns_completed_process(monkeypatch):
+    monkeypatch.setattr(cli.subprocess, "Popen", lambda *a, **kw: FakeProcess(output=("ok", "warning")))
+    result = cli.run_stage(["python"], "fixture")
+    assert isinstance(result, subprocess.CompletedProcess)
+    assert result.stdout == "ok" and result.stderr == "warning" and result.returncode == 0
+
+
+def test_run_stage_timeout_reap_is_bounded(monkeypatch):
+    process = FakeProcess(timeouts=2)
+    monkeypatch.setattr(cli.subprocess, "Popen", lambda *a, **kw: process)
+    monkeypatch.setattr(cli.subprocess, "run", lambda *a, **kw: SimpleNamespace(returncode=0))
+    monkeypatch.setattr(cli.os, "killpg", lambda *a: None, raising=False)
+    with pytest.raises(cli.StageError, match="timeout"):
+        cli.run_stage(["python"], "fixture")
+    assert process.killed
+    assert process.communications == [600, 5]
 
 
 def test_blender_stdout_traceback_is_failure(monkeypatch):
-    monkeypatch.setattr(cli.subprocess, "run", lambda *a, **kw: SimpleNamespace(
-        returncode=0, stderr="", stdout="Traceback (most recent call last):\nbad render"))
+    monkeypatch.setattr(cli.subprocess, "Popen", lambda *a, **kw: FakeProcess(
+        output=("Traceback (most recent call last):\nbad render", "")))
     with pytest.raises(cli.StageError, match="subprocess failed"):
         cli.run_stage(["blender"], "render")
 

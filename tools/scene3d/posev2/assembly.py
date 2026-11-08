@@ -66,7 +66,7 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
         contact_min = pl.body_lowest_gap(V, S) if standing else min(
             float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
         contact_ok = abs(contact_min) <= c["contact_tol"]
-        pen = pl.penetration_stats(plate, V, treg, soft)
+        pen = pl.penetration_stats(plate, V, treg, soft, spec.pose_class)
         moved = 0.0
         ceiling = c["contact_tol"] + c["height_lift_extra_m"]
         step = c["height_lift_step_m"]
@@ -74,7 +74,7 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             V, J = V + [0, 0, step], J + [0, 0, step]
             dz += step
             moved += step
-            pen = pl.penetration_stats(plate, V, treg, soft)
+            pen = pl.penetration_stats(plate, V, treg, soft, spec.pose_class)
         gaps = [float(np.median(pl._sd(S, surf, V[idx])[0])) for idx, surf in support]
         contact = pl.support_contact(V, groups, S, spec, soft)
         return V, J, {"support_rule_ok": contact["ok"], "support_flags": contact["flags"],
@@ -122,12 +122,13 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
     c = section("place")
     # В реальной place() всегда передаётся геометрия. Ровно тот же расчёт,
     # что у этапа высоты/evaluate, а не max или иной процентиль.
-    pen = pl.penetration_stats(plate, X, treg, soft) if X is not None else ev["penetration"]
+    pen = pl.penetration_stats(plate, X, treg, soft, spec.pose_class) if X is not None else ev["penetration"]
     checks = orientation_checks(K, spec.pose_class, plate, side_ref, window)
     def add(name, ok, excess=0.0, unit="m"):
         checks.append({"check": name, "ok": bool(ok), "excess": float(excess), "unit": unit})
-    add("support_target", ev["support_object"] == spec.target_object,
-        float(ev["support_object"] != spec.target_object), "surface")
+    selected = ev.get("target_instance", spec.target_object)
+    add("support_target", ev["support_object"] == selected,
+        float(ev["support_object"] != selected), "surface")
     if spec.pose_class not in ("stand", "crouch"):
         for name, gap in ev["support_part_gaps_m"].items():
             add("support_gap:" + name, gap <= c["sup_gap_cm"] / 100,
@@ -138,7 +139,7 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
         add("body_lowest_contact", abs(lowest) <= c["contact_tol"], max(abs(lowest) - c["contact_tol"], 0.0))
         add("one_foot_contact", bool(contact.get("foot_contact_parts")),
             float(not contact.get("foot_contact_parts")), "foot")
-    for name, lim in (("soft", c["pen_soft_m"]), ("hard", c["pen_hard_m"])):
+    for name, lim in (("soft", pl.soft_limit(spec.pose_class)), ("hard", c["pen_hard_m"])):
         value = pen[name + "_p95_m"]
         if not pen.get("surfaces"):
             add("penetration:" + name, value <= lim, max(value - lim, 0.0))
@@ -172,7 +173,7 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
     if spec.pose_class == "recline" and not next(x["ok"] for x in checks if x["check"] == "back_contact"):
         partial_flags.append("no_back_contact")
     flags += partial_flags
-    if partial_flags:
+    if partial_flags and ev["support_object"] == selected:
         status = "partial"  # явные исходы п.4в / п.5б; проверки остаются красными
     return {"ok": fail is None, "first_failure": fail, "checks": checks, "status": status,
             "flags": flags, "penetration": pen}

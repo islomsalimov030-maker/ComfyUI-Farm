@@ -81,26 +81,39 @@ class LocationProfile:
         f = root_dir(root) / "locations" / loc_id / "profile.json"
         return cls(f) if f.is_file() else None
 
-    def find_object(self, name):
-        """объект по имени; нет — первая замена из substitutes, которая есть. -> (obj, via) | (None, None)."""
-        objs = self.data["objects"]
-        for o in objs:
-            if o["name"] == name:
-                return o, name
-        for alt in self.data["substitutes"].get(name, []):
-            for o in objs:
-                if o["name"] == alt:
-                    return o, alt
+    def find_object(self, name, instance_hint=None, anchor_xy=None, pose_class=None):
+        """target is a type; hint selects an instance, otherwise nearest zone anchor wins."""
+        for kind in [name] + self.data["substitutes"].get(name, []):
+            candidates = [o for o in self.data["objects"] if o.get("type", o["name"]) == kind]
+            if not candidates:
+                continue
+            if instance_hint:
+                return next((o for o in candidates if o["id"] == instance_hint), None), kind
+            if len(candidates) == 1:
+                return candidates[0], kind
+            if anchor_xy is None:
+                return None, None  # Multiple instances require a zone anchor, never list order.
+            def distance(obj):
+                anchor = self.anchor(obj["id"], pose_class)
+                xy = self.zone_metrics(anchor)["xy"] if anchor is not None else self.region(obj).points3d()[:, :2]
+                return float(np.linalg.norm(xy.mean(0) - np.asarray(anchor_xy)[:2])) if len(xy) else float("inf")
+            return min(candidates, key=lambda o: (distance(o), o["id"])), kind
         return None, None
 
     def region(self, obj):
         reg = tr.load_npz(self.dir / obj["top_grid_npz"], source="profile")
         reg.object_id = obj["id"]
         if obj.get("type") != "floor" and reg.object_mask is None:
-            reg.top_diagnostics = {"method": "blocked", "reason":
-                "legacy profile has only grown top mask, no full object mask; regenerate with object_masks"}
-            if "dominant_top_unavailable" not in reg.flags:
-                reg.flags.append("dominant_top_unavailable")
+            if "footprint_bbox" in obj or "footprint_polygon" in obj:
+                mask = tr.footprint_mask(reg, bbox=obj.get("footprint_bbox"), polygon=obj.get("footprint_polygon"))
+                tr.apply_dominant_top(reg, mask, self.walls())
+                reg.top_diagnostics["footprint_source"] = "profile_polygon" if "footprint_polygon" in obj else "profile_bbox"
+                reg.flags = [f for f in reg.flags if f != "dominant_top_unavailable"]
+            else:
+                reg.top_diagnostics = {"method": "blocked", "reason":
+                    "stop2c: legacy profile has no explicit object footprint bbox/polygon or full object mask"}
+                if "dominant_top_unavailable" not in reg.flags:
+                    reg.flags.append("dominant_top_unavailable")
         return reg
 
     def anchor(self, obj_id, pose_class):

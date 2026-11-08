@@ -85,24 +85,21 @@ class TorsoTests(unittest.TestCase):
                            [0., -1, 0], [0., -.5, .875]])
 
     def test_named_mhr_parts_nonempty_all_backward_strict_dot(self):
-        labels = np.array(['torso'] * 4 + ['arm.L', 'torso'])
-        idx = body.torso_back_indices(self.V, self.N, self.K, part_labels=labels)
+        self.V[4, 0] = .3  # outside the approved central lateral band
+        self.N[5] = [1., -.5, 0]  # normalized dot above threshold, excluded
+        idx = body.torso_back_indices(self.V, self.N, self.K)
         np.testing.assert_array_equal(idx, [0])
         self.assertTrue(np.all(self.N[idx] @ body.facing(self.K, np.array([0., 0, 1])) < -.5))
 
-    def test_dominant_weight_not_any_spine_weight(self):
-        w = np.tile([.8, .1, .1], (6, 1))
-        w[1] = [.1, .8, .1]
-        w[4] = [.4, .1, .5]  # arm dominates, even with spine weight.
-        idx = body.torso_back_indices(self.V, self.N, self.K, skin_weights=w,
-                                     joint_names=['spine_02', 'chest', 'upperarm'])
-        np.testing.assert_array_equal(idx, [0])
-        with self.assertRaisesRegex(ValueError, 'missing MHR'):
-            body.torso_back_indices(self.V, self.N, self.K)
-        # Authoritative MHR part takes precedence over skinning.
-        idx = body.torso_back_indices(self.V, self.N, self.K, part_labels=np.repeat('arm', 6),
-                                     skin_weights=w, joint_names=['spine_02', 'chest', 'upperarm'])
-        self.assertEqual(len(idx), 0)
+    def test_geometric_rule_does_not_require_anatomy_labels(self):
+        expected = body.torso_back_indices(self.V, self.N, self.K)
+        self.assertGreater(len(expected), 0)
+        idx = body.torso_back_indices(self.V, self.N, self.K, part_labels=np.repeat('arm', 6))
+        np.testing.assert_array_equal(idx, expected)
+        # Rotation and translation preserve the body-frame selection.
+        R = place.pf.rot_xyz(.4, .7, -.3)
+        idx = body.torso_back_indices(self.V @ R.T + 3, self.N @ R.T, self.K @ R.T + 3)
+        np.testing.assert_array_equal(idx, expected)
 
     def test_cache_per_asset_and_topology_no_gpu(self):
         V = np.array([[-.1, -.1, 1.0], [.1, -.1, 1.0], [0., -.1, 1.3]])
@@ -268,10 +265,10 @@ class DiagnosticTests(unittest.TestCase):
         spec = ss.ShotSpec('Q03', 'kneel', 'bed', ['knee.L', 'shin.L', 'knee.R', 'shin.R'])
         groups, _, _ = place.build_groups(B, spec, None, 1.62, False)
         d = place.zone_diagnostics(B, spec, region(), groups)
-        self.assertEqual(d['support_vertex_count'], 0)
-        self.assertIn('rejected both knees', d['zero_support_cause'])
+        self.assertEqual(d['support_vertex_count'], 2)
+        self.assertIsNone(d['zero_support_cause'])
         self.assertAlmostEqual(d['body_footprint_area_m2'], .04)
-        self.assertTrue(all(not k['selected'] for k in d['kneel_selection']))
+        self.assertEqual([k['part'] for k in d['kneel_selection'] if k['selected']], ['knee.L'])
 
 
 if __name__ == '__main__':

@@ -182,7 +182,7 @@ class Recline(unittest.TestCase):
 class ZoneDiagnostics(unittest.TestCase):
     def test_mapped_counts_not_lost_when_kneel_selects_none(self):
         names = ['knee.L', 'shin.L', 'knee.R', 'shin.R', 'foot.L']
-        V = np.column_stack([np.zeros(50), np.zeros(50), np.repeat([.4, .3, .4, .3, 0.], 10)])
+        V = np.column_stack([np.zeros(50), np.zeros(50), np.repeat([.3, .3, .3, .3, 0.], 10)])
         B = dict(V=V, kp=skeleton(), reg=np.repeat(names, 10), ref_c={})
         spec = ss.ShotSpec('Q03', 'kneel', 'bed', names[:4], instance_hint='bed_1')
         groups, _, _ = place.build_groups(B, spec, None, 1.62, False)
@@ -191,10 +191,10 @@ class ZoneDiagnostics(unittest.TestCase):
         self.assertEqual(d['instance_hint'], 'bed_1')
         self.assertAlmostEqual(d['zone_mask_area_m2'], .08)
         self.assertEqual(d['support_vertices_after_mapping'], dict.fromkeys(names[:4], 10))
-        self.assertEqual(d['support_vertex_count'], 0)
+        self.assertEqual(d['support_vertex_count'], 40)
         self.assertEqual(d['body_footprint_area_m2'], 0.)  # collinear XY -> degenerate approved hull
         self.assertTrue(d['support_hull']['degenerate'])
-        self.assertIn('rejected both knees', d['zero_support_cause'])
+        self.assertIsNone(d['zero_support_cause'])
         self.assertFalse(place.zone_too_small(d))
         self.assertTrue(place.zone_too_small(dict(d, zone_mask_area_m2=0.)))
         self.assertTrue(place.zone_too_small(dict(d, body_footprint_area_m2=.09)))

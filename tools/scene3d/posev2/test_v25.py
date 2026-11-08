@@ -68,17 +68,16 @@ class Recline(unittest.TestCase):
         sup = {g[0]: g[2] for g in groups if g[3] == "support"}
         back = {g[0]: g[2] for g in groups if g[3] == "back"}
         self.assertIn("pelvis", sup)
-        self.assertTrue({"thigh.L", "thigh.R"} <= set(sup))
+        self.assertEqual(set(sup), {"pelvis"})  # 2b: only requested support_parts
         self.assertTrue(all(s == "target" for s in sup.values()))         # опора — только верх
-        self.assertNotIn("torso_back", back)  # в исходных данных зоны нет, эвристикой не заменяем
-        self.assertEqual(info['torso_back_vertices'], 0)
-        self.assertIn('missing torso_back', info['back_contact_unavailable'])
+        self.assertIn("torso_back", back)  # 2d: geometry from SAM keypoints, no labels required
+        self.assertGreater(info['torso_back_vertices'], 0)
         self.assertTrue(all(s == "back" for s in back.values()))
         pel_z = ((B["kp"][9] + B["kp"][10]) / 2)[2]
         for n, idx, surf, role in groups:                                 # на спинке — только выше таза
-            if role == "back" and n != "back":
+            if role == "back" and n not in ("back", "torso_back"):
                 self.assertGreater(B["V"][idx, 2].mean(), pel_z + place.RECLINE_UP_H * H)
-        self.assertTrue(all(g[0] in place.BACK_REGIONS + ("back",) for g in groups if g[3] == "back"))
+        self.assertTrue(all(g[0] in place.BACK_REGIONS + ("back", "torso_back") for g in groups if g[3] == "back"))
 
 
 class LieFootprint(unittest.TestCase):

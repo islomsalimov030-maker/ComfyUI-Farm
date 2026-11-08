@@ -138,6 +138,7 @@ def do_place(refs, only, comfy, iters):
         spec = ss.from_table(p)
         ref = pf.load_ref(rf)
         ref["path"] = str(rf)
+        ref["body_cache_dir"] = str(farm_env.ROOT / "characters" / CHAR_ID / "geometry_cache")
         anatomy = os.environ.get("SCENE3D_BODY_ANATOMY")
         if anatomy:
             ref["body_model_path"] = anatomy

@@ -97,18 +97,54 @@ class StageError(RuntimeError):
 
 
 def run_stage(command, stage, env=None):
+    import signal
+
+    command = [str(x) for x in command]
+    windows = sys.platform == "win32"
+    process_options = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if windows
+                       else {"start_new_session": True})
     try:
-        proc = subprocess.run([str(x) for x in command], cwd=str(REPO), env=env,
-                              capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              timeout=TIMEOUT, check=False)
-    except subprocess.TimeoutExpired as exc:
-        raise StageError(f"{stage}: timeout after {TIMEOUT}s", exc.stderr) from exc
+        proc = subprocess.Popen(command, cwd=str(REPO), env=env, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+                                **process_options)
     except OSError as exc:
         raise StageError(f"{stage}: could not start subprocess", str(exc)) from exc
-    if proc.returncode or "Traceback (most recent call last)" in proc.stdout + proc.stderr:
+    try:
+        stdout, stderr = proc.communicate(timeout=TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        diagnostic = exc.stderr or exc.stdout or ""
+        try:
+            if windows:
+                # Kill the worker AND its geometry/Blender descendants, not just
+                # the direct child as subprocess.run(timeout=...) would do.
+                terminated = subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=False)
+                if terminated.returncode:
+                    proc.kill()
+            else:
+                os.killpg(proc.pid, signal.SIGKILL)
+        except (OSError, subprocess.TimeoutExpired):
+            # Still reap the direct child if the tree already exited or taskkill
+            # itself failed; pipe collection below is bounded independently.
+            proc.kill()
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+            diagnostic = stderr or stdout or diagnostic
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            for pipe in (proc.stdout, proc.stderr):
+                if pipe is not None:
+                    pipe.close()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
+        raise StageError(f"{stage}: timeout after {TIMEOUT}s", diagnostic) from exc
+    stdout, stderr = stdout or "", stderr or ""
+    if proc.returncode or "Traceback (most recent call last)" in stdout + stderr:
         # Blender often sends Python tracebacks to stdout, not stderr.
-        raise StageError(f"{stage}: subprocess failed ({proc.returncode})", proc.stderr or proc.stdout)
-    return proc
+        raise StageError(f"{stage}: subprocess failed ({proc.returncode})", stderr or stdout)
+    return subprocess.CompletedProcess(command, proc.returncode, stdout, stderr)
 
 
 def modules(config):

@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import signal
 from pathlib import Path
 import subprocess
 import tempfile
@@ -76,11 +77,38 @@ def invoke(command, fields, images):
     if not script.is_file():
         raise FileNotFoundError(f'CLI not installed: {script}')
     t0 = time.monotonic()
-    completed = subprocess.run([cfg['python'], str(script), command, '--request', str(req), '--output', str(out)],
-                               cwd=cfg['repo'], capture_output=True, text=True, encoding='utf-8',
-                               errors='replace', timeout=600, check=False)
-    if completed.returncode:
-        raise RuntimeError('\n'.join(completed.stderr.splitlines()[-30:]) or f'CLI exit {completed.returncode}')
+    options = {'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {'start_new_session': True}
+    proc = subprocess.Popen([cfg['python'], str(script), command, '--request', str(req), '--output', str(out)],
+                            cwd=cfg['repo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            encoding='utf-8', errors='replace', **options)
+    try:
+        stdout, stderr = proc.communicate(timeout=600)
+    except subprocess.TimeoutExpired:
+        # Terminate the complete worker/geometry/Blender tree, not only its root.
+        try:
+            if os.name == 'nt':
+                stopped = subprocess.run(['taskkill', '/PID', str(proc.pid), '/T', '/F'],
+                                         capture_output=True, timeout=10, check=False)
+                if stopped.returncode:
+                    proc.kill()
+            else:
+                os.killpg(proc.pid, signal.SIGKILL)
+        except (OSError, subprocess.TimeoutExpired):
+            proc.kill()
+        try:
+            proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            for pipe in (proc.stdout, proc.stderr):
+                if pipe is not None:
+                    pipe.close()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
+        raise RuntimeError('CLI timeout after 600s; process-tree termination requested')
+    if proc.returncode:
+        raise RuntimeError('\n'.join(stderr.splitlines()[-30:]) or f'CLI exit {proc.returncode}')
     result = json.loads(out.read_text(encoding='utf-8'))
     if str(result.get('status', '')).startswith('error'):
         raise RuntimeError(result.get('error', result['status']) + '\n' + result.get('stderr_tail', ''))

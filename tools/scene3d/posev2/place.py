@@ -94,6 +94,9 @@ def prepare_body(ref, spec, height):
             with np.load(ref["body_model_path"], allow_pickle=False) as model:
                 if model["V"].shape != V0.shape or not np.array_equal(model["F"], ref["F"]):
                     raise ValueError("torso_back model topology differs from reference")
+        elif ref.get("path") and ref.get("body_cache_dir"):
+            from body import cached_torso_back
+            torso_idx = cached_torso_back(ref["path"], ref["body_cache_dir"])
         else:
             from body import torso_back_indices
             N, _ = pf.vertex_normals(V0, ref["F"])
@@ -147,7 +150,10 @@ def build_groups(B, spec, treg, H, has_wall):
     """(имя, индексы, поверхность, роль); роли: support | back | wall | secondary. -> (groups, flags, info)."""
     V, kp, reg = B["V"], B["kp"], B["reg"]
     groups, flags, info = [], [], {}
-    zmin = float(V[:, 2].min())
+    support_names = list(dict.fromkeys(spec.support_regions()))
+    support_idx = np.flatnonzero(np.isin(reg, support_names))
+    zmin = float(V[:, 2].min()) if spec.pose_class in ("stand", "crouch") else (
+        float(V[support_idx, 2].min()) if len(support_idx) else float("inf"))
     if spec.body_support():
         chosen = []
         if spec.pose_class == "kneel":
@@ -155,7 +161,7 @@ def build_groups(B, spec, treg, H, has_wall):
             knee_sides = []
             for side in ("L", "R"):
                 ki = np.where(reg == f"knee.{side}")[0]
-                if len(ki) and V[ki, 2].min() <= zmin + CFG["kneel_low_h"] * H:
+                if f"knee.{side}" in support_names and len(ki) and V[ki, 2].min() <= zmin + CFG["kneel_low_h"] * H:
                     knee_sides.append(side)
                     for part in ("knee", "shin"):
                         name = f"{part}.{side}"
@@ -184,13 +190,11 @@ def build_groups(B, spec, treg, H, has_wall):
             flags.append("table_side_mismatch")
         info = {"body_support": chosen, "table_support": spec.support_parts}
     else:
-        names = list(dict.fromkeys(spec.support_regions()))
-        if spec.pose_class == "recline":
-            names += [n for n in ("thigh.L", "thigh.R") if n not in names]
-        for n in names:
+        for n in support_names:
             idx = np.where(reg == n)[0]
-            if len(idx):
-                groups.append((n, _lowest(V, idx), "target", "support"))
+            low = idx[V[idx, 2] <= zmin + BODY_LOW_H * H]
+            if len(low):
+                groups.append((n, low, "target", "support"))
     have = {g[0] for g in groups}
     pel_z = float(((kp[9] + kp[10]) / 2)[2])
     back_ok = spec.pose_class == "recline" and treg is not None and treg.backrest is not None
@@ -352,7 +356,7 @@ def recline_sweep(r, groups, S, plate, H, tilt_ref, treg=None, soft=False):
         Xb, Kb = ori.clamp_roll(Xb, Kb)
         d, _ = tree.query(Xb[idx])
         gap = float(d.min())
-        pen = penetration_stats(plate, Xb, treg, soft)
+        pen = penetration_stats(plate, Xb, treg, soft, "recline")
         hard_ok = all(s["ok"] for n, s in pen["surfaces"].items() if n.startswith("hard"))
         rows.append((t, gap, Xb, Kb, hard_ok))
     touch = [rw for rw in rows if rw[1] <= CFG["contact_tol"] and rw[4]]
@@ -394,16 +398,31 @@ def _near_back(treg, Xi, r=ON_SURF_M):
     return d <= r
 
 
+def target_instance(spec, treg):
+    return getattr(treg, "object_id", spec.target_object)
+
+
+def soft_limit(pose_class=None):
+    return CFG["pen_soft_by_class_m"].get(pose_class, PEN_SOFT_M)
+
+
 def part_label(Xi, spec, treg, freg, plate, soft, recline=False):
-    sink = PEN_SOFT_M if soft else PEN_HARD_M
-    on = _on(treg, Xi, plate, sink)
-    if recline:
-        on = on | _near_back(treg, Xi)
-    if on.mean() >= CFG["surface_majority_frac"]:
-        return spec.target_object
-    if freg is not None and _on(freg, Xi, plate, PEN_HARD_M).mean() >= CFG["surface_majority_frac"]:
-        return "floor"
-    return "other"
+    """Measure contact on known instances, not on the requested type."""
+    candidates = getattr(treg, "diagnostic_surfaces", None)
+    if candidates is None:
+        candidates = [{"id": target_instance(spec, treg), "region": treg, "soft": soft}]
+        if freg is not None and freg is not treg:
+            candidates.append({"id": getattr(freg, "object_id", "floor"), "region": freg, "soft": False})
+    matches = []
+    for item in candidates:
+        sink = soft_limit(spec.pose_class) if item["soft"] else PEN_HARD_M
+        on = _on(item["region"], Xi, plate, sink) & item["region"].in_mask(Xi)
+        if recline and item["id"] == target_instance(spec, treg):
+            on |= _near_back(treg, Xi)
+        if len(on) and on.mean() >= CFG["surface_majority_frac"]:
+            dz = abs(float(np.median(Xi[on, 2]) - item["region"].h0))
+            matches.append((-float(on.mean()), dz, item["id"]))
+    return min(matches)[2] if matches else "other"
 
 
 def penetration_values(plate, X, treg, soft):
@@ -438,12 +457,13 @@ def penetration_values(plate, X, treg, soft):
     return pen, material
 
 
-def penetration_stats(plate, X, treg, soft):
+def penetration_stats(plate, X, treg, soft, pose_class=None):
     pen, material = penetration_values(plate, X, treg, soft)
+    soft_m = soft_limit(pose_class)
     hit = pen > PEN_MIN_M
     out = {"max_cm": round(float(pen.max()) * 100, 1), "n_pen": int(hit.sum())}
     ok, excess = True, 0.0
-    for name, lim in (("soft", PEN_SOFT_M), ("hard", PEN_HARD_M)):
+    for name, lim in (("soft", soft_m), ("hard", PEN_HARD_M)):
         sel = hit & np.char.startswith(material, name)
         p95 = float(np.percentile(pen[sel], CFG["penetration_percentile"])) if sel.any() else 0.0
         out[f"{name}_p95_cm"] = round(p95 * 100, 1)
@@ -456,7 +476,7 @@ def penetration_stats(plate, X, treg, soft):
     for surface in np.unique(material):
         values = pen[hit & (material == surface)]
         p95 = float(np.percentile(values, CFG["penetration_percentile"])) if len(values) else 0.0
-        lim = PEN_SOFT_M if surface.startswith("soft") else PEN_HARD_M
+        lim = soft_m if surface.startswith("soft") else PEN_HARD_M
         surfaces[str(surface)] = {"p95_m": p95, "max_m": float(values.max()) if len(values) else 0.0,
                                   "threshold_m": lim, "ok": bool(p95 <= lim), "n": len(values)}
         ok &= p95 <= lim
@@ -485,7 +505,7 @@ def support_contact(X, groups, S, spec, soft):
     gaps = {n: float(np.median(_sd(S, s, X[idx])[0])) for n, idx, s, role in groups
             if role == "support" and s in S and len(idx)}
     if spec.pose_class not in ("stand", "crouch"):
-        sink = PEN_SOFT_M if soft else PEN_HARD_M
+        sink = soft_limit(spec.pose_class) if soft else PEN_HARD_M
         ok = bool(gaps) and all(-sink <= g <= SUP_GAP_CM / 100 for g in gaps.values())
         return {"ok": ok, "part_gaps_m": gaps, "flags": []}
     lowest = body_lowest_gap(X, S)
@@ -544,7 +564,7 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
             extra.setdefault(role, []).append(sd)
     g = np.concatenate(sup_sd) if sup_sd else np.zeros(1)
     sup_gap = float(np.median(g[g <= np.percentile(g, CFG["gap_percentile"])]))
-    sink = PEN_SOFT_M if soft else PEN_HARD_M
+    sink = soft_limit(spec.pose_class) if soft else PEN_HARD_M
     contact_groups = list(groups)
     if spec.pose_class in ("stand", "crouch"):
         present = {g[0] for g in groups if g[3] == "support"}
@@ -561,13 +581,14 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
         gb = np.concatenate(lst)
         gaps_m[role] = float(np.median(gb[gb <= np.percentile(gb, CFG["gap_percentile"])]))
         gaps[role] = round(gaps_m[role] * 100, 1)
-    pen = penetration_stats(plate, X, treg, soft)
+    pen = penetration_stats(plate, X, treg, soft, spec.pose_class)
     vals = [v for n, v in labels.items() if spec.pose_class not in ("stand", "crouch") or
             n in contact.get("foot_contact_parts", [])]
-    if vals and all(v == spec.target_object for v in vals):
-        sup_obj = spec.target_object
+    selected = target_instance(spec, treg)
+    if vals and all(v == selected for v in vals):
+        sup_obj = selected
     else:
-        rest = [v for v in vals if v != spec.target_object] or ["none"]
+        rest = [v for v in vals if v != selected] or ["none"]
         sup_obj = max(set(rest), key=rest.count)
     cells_ok, cells = True, {}
     if spec.target_object != "floor" and spec.pose_class == "sit_edge":
@@ -603,14 +624,14 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
             "max_support_gap_m": max_gap, "support_ok": bool(sup_ok), "back_gap_cm": gaps.get("back"),
             "wall_gap_cm": gaps.get("wall"), "back_gap_m": gaps_m.get("back"),
             "wall_gap_m": gaps_m.get("wall"), "penetration": pen, "max_penetration_cm": pen["max_cm"],
-            "contacts": rep_c, "support_parts_on": labels, "support_object": sup_obj, "cells": cells,
+            "contacts": rep_c, "support_parts_on": labels, "support_object": sup_obj, "target_instance": selected, "cells": cells,
             "cells_ok": bool(cells_ok), "footprint": fp, "frame": fr, "balance_ok": balance,
             "tilt_deg": round(ori.tilt_deg(KP), 1), "roll_deg": round(ori.roll_deg(KP), 1),
             "orient": ori.check(KP, spec.pose_class, H)}
 
 
 def status_of(ev, spec, limits_ok=True, no_secondary=False):
-    if ev["support_object"] != spec.target_object:
+    if ev["support_object"] != ev.get("target_instance", spec.target_object):
         return "wrong_surface"
     if not (ev["support_ok"] and ev["penetration"]["ok"] and ev["footprint"]["ok"] and ev["cells_ok"] and limits_ok):
         return "contact_fail"
@@ -676,14 +697,17 @@ def resolve_regions(plate, spec, seed, H, profile):
     """-> (treg, freg, zone_src, obj_info) | (None, …, 'no_target')."""
     freg, info = None, {}
     if profile is not None:
-        fo, _ = profile.find_object("floor")
+        fo, _ = profile.find_object("floor", spec.instance_hint if spec.target_object == "floor" else None,
+                                    seed[:2], spec.pose_class)
+        if spec.target_object == "floor" and spec.instance_hint and fo is None:
+            return None, None, "no_target", {"reason": "floor instance_hint not found"}
         freg = profile.region(fo) if fo is not None else None
     if freg is None:
         freg = tr.top_region(plate, "floor", None, H)
     if spec.target_object == "floor":
-        return freg, freg, "floor", {"object_id": "floor", "type": "floor", "soft": False}
+        return freg, freg, "floor", {"object_id": getattr(freg, "object_id", "floor"), "type": "floor", "soft": False}
     if profile is not None:
-        obj, via = profile.find_object(spec.target_object)
+        obj, via = profile.find_object(spec.target_object, spec.instance_hint, seed[:2], spec.pose_class)
         if obj is None or obj.get("type") == "wall":
             return None, freg, "no_target", {"reason": f"{spec.target_object} нет в profile.objects и substitutes"}
         info = {"object_id": obj["id"], "via": via, "type": obj.get("type", tr.object_type(obj["name"])),
@@ -692,7 +716,7 @@ def resolve_regions(plate, spec, seed, H, profile):
         a = profile.anchor(obj["id"], spec.pose_class)
         if a is not None:
             info["anchor_id"] = a["id"]
-            return profile.region(obj), freg, "profile", info
+        return profile.region(obj), freg, "profile", info
     treg = tr.top_region(plate, spec.target_object, seed, H)
     if not treg.mask.any():
         info["reason"] = "height_proxy: пустая маска"
@@ -738,14 +762,16 @@ def zone_diagnostics(B, spec, treg, groups):
     # This is pre-placement area only; mask fraction is measured only after world placement.
     cause = []
     if spec.pose_class == "kneel":
-        zmin = float(B["V"][:, 2].min())
+        si = np.flatnonzero(np.isin(B["reg"], spec.support_regions()))
+        zmin = float(B["V"][si, 2].min()) if len(si) else float("inf")
         H = B.get("dims", {}).get("H", height_est(B["kp"]))
         for side in ("L", "R"):
             ki = np.flatnonzero(B["reg"] == "knee." + side)
             gap = float(B["V"][ki, 2].min() - zmin) if len(ki) else None
             cause.append({"part": "knee." + side, "min_above_body_lowest_m": gap,
                           "threshold_m": CFG["kneel_low_h"] * H,
-                          "selected": gap is not None and gap <= CFG["kneel_low_h"] * H})
+                          "selected": "knee." + side in spec.support_regions() and
+                          gap is not None and gap <= CFG["kneel_low_h"] * H})
     return {"target_object": spec.target_object, "instance_hint": spec.instance_hint,
             "zone_mask_area_m2": float(treg.mask.sum()) * tr.CELL ** 2 if treg is not None else None,
             "body_footprint_area_m2": hull["area_m2"], "support_hull": hull,
@@ -797,7 +823,7 @@ def geometry_diagnostics(X, KP, B, spec, treg, groups, S, plate, soft):
             "target_gap_min_m": float(distances.min()) if len(distances) else None,
             "target_gap_p50_m": float(np.median(distances)) if len(distances) else None,
             "support_hull": hull, "hull_parts": spec.support_regions(),
-            "penetration_per_surface": penetration_stats(plate, X, treg, soft)["surfaces"],
+            "penetration_per_surface": penetration_stats(plate, X, treg, soft, spec.pose_class)["surfaces"],
             "penetration_parts_per_surface": by_surface,
             "angles_deg": {"yaw": _ang(f) if f is not None else None,
                            "pitch": float(ori.tilt_deg(KP)), "roll": float(ori.roll_deg(KP))},
@@ -882,7 +908,8 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
     else:
         zreg = treg
         if zsrc == "profile" and getattr(treg, "soft_backrest_mask", None) is None:
-            m = profile.zone_metrics(profile.anchor(oinfo["object_id"], spec.pose_class))
+            a = profile.anchor(oinfo["object_id"], spec.pose_class)
+            m = profile.zone_metrics(a) if a is not None else zn.metrics(treg)
         else:
             m = zn.metrics(treg)  # class-specific D4 mask must not reuse the untrimmed anchor cells
         if spec.pose_class == "sit_edge":
@@ -905,7 +932,8 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                                          has_backrest=treg.backrest is not None)
             if spec.pose_class == "recline":
                 if zsrc == "profile":
-                    window = profile.anchor(oinfo["object_id"], spec.pose_class)["facing_yaw_deg"]
+                    a = profile.anchor(oinfo["object_id"], spec.pose_class)
+                    window = a["facing_yaw_deg"] if a is not None else _ang(-treg.cam_axes()[0])
                 else:
                     window = _ang(-treg.cam_axes()[0])
         flags += zinfo["flags"]
@@ -1082,7 +1110,7 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                support_info=ginfo, validation=final["validation"], height_adjust=final["height"],
                refine_root_clamps=sum(bool(a.get("refine", {}).get("root_clamped")) for a in attempts), secondary=[{"part": g[0], "surface": g[2], "role": g[3]} for g in groups
                                                if g[3] != "support"],
-               support_object=ev["support_object"], support_parts_on=ev["support_parts_on"],
+               target_instance=ev["target_instance"], support_object=ev["support_object"], support_parts_on=ev["support_parts_on"],
                support_gap_cm=ev["support_gap_cm"], back_gap_cm=ev["back_gap_cm"], wall_gap_cm=ev["wall_gap_cm"],
                back_contact_gap_m=ev["back_contact_gap_m"], zone_diagnostics=diagnostics,
                max_penetration_cm=ev["penetration"]["max_cm"], penetration=ev["penetration"],

@@ -238,6 +238,30 @@ def dominant_top(height, object_mask, origin, wall_planes):
     return h0, mask, dt, raised, soft_back
 
 
+def footprint_mask(reg, *, bbox=None, polygon=None):
+    """Rasterize explicit profile footprint in world XY metres (cell centres)."""
+    ij = np.indices(reg.shape).reshape(2, -1).T
+    xy = reg.origin + (ij + .5) * CELL
+    if polygon is not None:
+        p = np.asarray(polygon, float)
+        if p.ndim != 2 or p.shape[1] != 2 or len(p) < 3 or not np.isfinite(p).all():
+            raise ValueError("footprint_polygon must be >=3 finite world-XY points")
+        inside = np.zeros(len(xy), bool)
+        for a, b in zip(p, np.roll(p, -1, axis=0)):
+            crossing = (a[1] > xy[:, 1]) != (b[1] > xy[:, 1])
+            if b[1] != a[1]:
+                edge_x = a[0] + (xy[:, 1] - a[1]) * (b[0] - a[0]) / (b[1] - a[1])
+                inside ^= crossing & (xy[:, 0] < edge_x)
+    elif bbox is not None:
+        bounds = np.asarray(bbox, float)
+        if bounds.shape != (2, 2) or not np.isfinite(bounds).all() or np.any(bounds[1] <= bounds[0]):
+            raise ValueError("footprint_bbox must be [[xmin,ymin],[xmax,ymax]] in world metres")
+        inside = ((xy >= bounds[0]) & (xy <= bounds[1])).all(axis=1)
+    else:
+        raise ValueError("missing explicit footprint_bbox / footprint_polygon")
+    return inside.reshape(reg.shape)
+
+
 def apply_dominant_top(reg, object_mask, wall_planes):
     h0, mask, dt, raised, soft_back = dominant_top(reg.height, object_mask, reg.origin, wall_planes)
     reg.h0, reg.mask, reg.dt = h0, mask, dt

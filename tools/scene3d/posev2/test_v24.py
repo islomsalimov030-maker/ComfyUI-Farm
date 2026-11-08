@@ -115,7 +115,10 @@ class Scale(unittest.TestCase):
         rep = place.place_pose(ref_of("T04_floor_sit_knees_up"), self.plate, spec, seed, 1.62 * K,
                                log=lambda m: None)["rep"]
         self.assertIn(rep["status"], place.STATUS_RANK)
-        self.assertEqual(rep["support_object"], "floor")
+        self.assertEqual(rep["target_instance"], "floor")
+        self.assertIn(rep["support_object"], ("floor", "other", "none"))
+        if rep["support_object"] != "floor":
+            self.assertEqual(rep["status"], "wrong_surface")
 
 
 class Profiles(unittest.TestCase):

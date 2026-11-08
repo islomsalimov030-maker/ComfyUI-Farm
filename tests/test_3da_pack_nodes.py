@@ -50,6 +50,28 @@ class NodeTests(unittest.TestCase):
         self.assertNotIn('sensitive-test-value', msg)
         self.assertNotIn('person:password', msg)
 
+    def test_invoke_timeout_terminates_worker_tree(self):
+        from unittest.mock import MagicMock
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            script = repo / 'tools/scene3d/pack_cli.py'
+            script.parent.mkdir(parents=True)
+            script.write_text('# stub')
+            cfg = dict(repo=td, farm_root=td, python='python')
+            proc = MagicMock()
+            proc.pid = 123456
+            proc.communicate.side_effect = [subprocess.TimeoutExpired('CLI', 600), ('', '')]
+            with patch.object(nodes, 'config', return_value=cfg), \
+                 patch.object(nodes.subprocess, 'Popen', return_value=proc), \
+                 patch.object(nodes.subprocess, 'run') as stop, \
+                 patch.object(nodes.os, 'killpg', create=True) as killpg:
+                with self.assertRaisesRegex(RuntimeError, 'process-tree termination requested'):
+                    nodes.invoke('location', {'location_id': 'x'}, {})
+                if nodes.os.name == 'nt':
+                    self.assertEqual(stop.call_args.args[0], ['taskkill', '/PID', '123456', '/T', '/F'])
+                else:
+                    killpg.assert_called_once()
+
     def test_image_mask_roundtrip(self):
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / 'x.png'

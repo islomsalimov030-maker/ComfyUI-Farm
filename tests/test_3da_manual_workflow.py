@@ -17,6 +17,22 @@ class WorkflowTests(unittest.TestCase):
     def node(self, title):
         return self.api[wfkit.by_title(self.api, title)]
 
+    def test_full_roundtrip_values_and_sources(self):
+        expected = json.loads((ROOT / 'workflows/3DA_manual_v1.api.json').read_text(encoding='utf-8'))
+        def canonical(graph):
+            result = {}
+            for n in graph.values():
+                values = {}
+                for name, value in n['inputs'].items():
+                    if name == 'control_after_generate':
+                        continue
+                    if isinstance(value, list) and len(value) == 2 and str(value[0]) in graph:
+                        value = [graph[str(value[0])]['_meta']['title'], value[1]]
+                    values[name] = value
+                result[n['_meta']['title']] = (n['class_type'], values)
+            return result
+        self.assertEqual(canonical(expected), canonical(self.api))
+
     def test_integrity_and_subgraph(self):
         self.assertFalse(wfkit.check_ui(self.ui))
         self.assertFalse(wfkit.check_api(self.api))
