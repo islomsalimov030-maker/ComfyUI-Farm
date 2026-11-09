@@ -349,6 +349,25 @@ def graph_node(graph, title):
     return matches[0]
 
 
+def prop_reference_plan(images):
+    """Stable compacted media order, independent of which optional inputs exist."""
+    keys = ['plate', 'ref_char'] + [f'ref_prop_{n}' for n in range(1, 4)
+                                   if images.get(f'ref_prop_{n}') is not None]
+    return [dict(input=key, slot=f'ref_image_{i}', picture=i + 1) for i, key in enumerate(keys)]
+
+
+def reference_helpers(cfg):
+    import importlib.util
+    import sys
+    if str(Path(cfg['repo'])) not in sys.path:
+        sys.path.insert(0, str(Path(cfg['repo'])))
+    path = Path(cfg['repo']) / 'tools/scene3d/prop_references.py'
+    spec = importlib.util.spec_from_file_location('three_da_prop_references', path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def remote_run(cfg, images, strength, prompt, seed):
     """One explicit invocation; never retry POST /prompt or interrupt shared server."""
     import io
@@ -375,6 +394,28 @@ def remote_run(cfg, images, strength, prompt, seed):
     for key in ('playblast', 'init'):
         if tuple(images[key].shape) != (1, height, width, 3):
             raise ValueError(f'{key} must be one RGB IMAGE at {width}x{height}')
+    for key, tensor in images.items():
+        if tensor.ndim != 4 or tensor.shape[0] != 1 or tensor.shape[-1] != 3:
+            raise ValueError(f'{key}: expected one RGB IMAGE, not a batch')
+        if not torch.isfinite(tensor).all():
+            raise ValueError(f'{key}: Non-finite image')
+    mapping = prop_reference_plan(images)
+    helpers = reference_helpers(cfg)
+    connected = helpers.connected_labels(mapping)
+    pictures = [row['picture'] for row in mapping if row['input'].startswith('ref_prop_')]
+    prompt = helpers.with_prop_references(prompt, pictures)
+    helpers.check_media(prompt, connected)
+    # Existing no-ref callers retain their prompt and lightweight validation.
+    # Geometry-produced full prompts and every new refs prompt get full lint.
+    if pictures or 'subject_definitions:' in prompt:
+        helpers.require_prompt_lint(prompt, connected)
+    r2v = graph_node(graph, 'Движок · r2v')['inputs']
+    for row in mapping[2:]:
+        key = row['input']
+        graph[key] = {'class_type': 'LoadImage', 'inputs': {'image': ''},
+                      '_meta': {'title': 'Вход · ' + key}}
+        titles[key] = 'Вход · ' + key
+        r2v['ref_images.' + row['slot']] = [key, 0]
     graph_node(graph, 'String · промпт H3 + правки')['inputs']['text_a'] = prompt
     graph_node(graph, 'Движок · D1_noise')['inputs']['noise_seed'] = int(seed)
     client, pid = None, None
@@ -392,18 +433,32 @@ def remote_run(cfg, images, strength, prompt, seed):
             for key, path in paths.items():
                 name = client.upload_image(path, name=f'{token}_{key}.png', subfolder='3da_manual', overwrite=False)
                 graph_node(graph, titles[key])['inputs']['image'] = name
+            # A shared-server queue is never cleared/interrupted. Check immediately
+            # before submission, every30s, no more than10min for this invocation.
+            wait_start = time.monotonic()
+            while True:
+                queue = client.queue()
+                if not any(queue.get(k) for k in ('queue_running', 'queue_pending')):
+                    break
+                if time.monotonic() - wait_start >= 600:
+                    raise TimeoutError('Shared queue busy after 600s; no submission; skip remaining experiment jobs')
+                time.sleep(min(30, max(0, 600 - (time.monotonic() - wait_start))))
             uploaded = time.monotonic()
             pid = client.submit(graph)
+            submitted_at = time.monotonic()
+            if settings.get('journal_file'):
+                Path(settings['journal_file']).write_text(json.dumps({'prompt_id': pid,
+                    'reference_mapping': mapping, 'submitted_unix': time.time()}, ensure_ascii=False), encoding='utf-8')
             if not isinstance(pid, str) or not pid:
                 raise RuntimeError('POST /prompt returned no prompt_id; do not blindly resubmit')
             while True:
-                if time.monotonic() - t0 >= timeout:
-                    raise TimeoutError(f'Remote timeout {timeout:g}s; job NOT cancelled; check server before retry')
+                if time.monotonic() - submitted_at >= min(timeout, 1200):
+                    raise TimeoutError(f'Remote timeout {min(timeout, 1200):g}s; job NOT cancelled; check server before retry')
                 entry = client.history(pid)
                 if entry is not None and client._finished(entry):
                     client._check_entry(pid, entry)
                     break
-                time.sleep(min(poll, max(0, timeout - (time.monotonic() - t0))))
+                time.sleep(min(poll, max(0, min(timeout, 1200) - (time.monotonic() - submitted_at))))
             generated = time.monotonic()
             output = []
             for title in ('Сохранить · финальная вклейка', 'Сохранить · raw H3'):
@@ -418,7 +473,8 @@ def remote_run(cfg, images, strength, prompt, seed):
                         raise ValueError(f'Unexpected remote output size: {im.size}')
                     output.append(torch.from_numpy(np.array(im.convert('RGB'), dtype=np.float32) / 255)[None])
             info = dict(status='ok', prompt_id=pid, total_s=round(time.monotonic() - t0, 3),
-                        upload_s=round(uploaded - t0, 3), queue_and_h3_s=round(generated - uploaded, 3))
+                        upload_s=round(uploaded - t0, 3), queue_and_h3_s=round(generated - uploaded, 3),
+                        reference_mapping=mapping, connected_labels=sorted(connected), prompt=prompt)
             return *output, json.dumps(info, ensure_ascii=False)
     except Exception as exc:
         raise RuntimeError(f'prompt_id={pid or "not_received"}; elapsed_s={time.monotonic() - t0:.3f}\n{exc}') from None
@@ -433,16 +489,20 @@ class H3Remote:
         return {'required': {'plate': ('IMAGE',), 'ref_char': ('IMAGE',), 'playblast': ('IMAGE',),
                              'init': ('IMAGE',), 'strength': ('MASK',),
                              'prompt': ('STRING', {'multiline': True, 'forceInput': True}),
-                             'seed': ('INT', {'default': 101, 'min': 0, 'max': 0xffffffffffffffff})}}
+                             'seed': ('INT', {'default': 101, 'min': 0, 'max': 0xffffffffffffffff})},
+                'optional': {f'ref_prop_{n}': ('IMAGE',) for n in range(1, 4)}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'STRING')
     RETURN_NAMES = ('final', 'raw', 'info')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
-    def execute(self, plate, ref_char, playblast, init, strength, prompt, seed):
+    def execute(self, plate, ref_char, playblast, init, strength, prompt, seed,
+                ref_prop_1=None, ref_prop_2=None, ref_prop_3=None):
         try:
-            return remote_run(config(), dict(plate=plate, ref_char=ref_char, playblast=playblast, init=init),
-                              strength, prompt, seed)
+            images = dict(plate=plate, ref_char=ref_char, playblast=playblast, init=init)
+            images.update({f'ref_prop_{n}': value for n, value in enumerate(
+                (ref_prop_1, ref_prop_2, ref_prop_3), 1) if value is not None})
+            return remote_run(config(), images, strength, prompt, seed)
         except Exception as exc:
             # Deliberately recognisable placeholders, never masquerade as a final plate.
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)

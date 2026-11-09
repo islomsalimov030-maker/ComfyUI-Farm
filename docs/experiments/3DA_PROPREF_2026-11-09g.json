@@ -1,0 +1,646 @@
+{
+  "experiment": "3DA_PROPREF_2026-11-09g",
+  "refs": [
+    {
+      "input": "ref_prop_1",
+      "slot": "ref_image_2",
+      "picture": 3,
+      "source_filename": "photo_2026-11-09_20-31-08.jpg",
+      "source_sha256": "a5457991dc89414488b8679cd95fc6c3973d3e092b1209dbd460f4a515329874",
+      "png_sha256": "0efc9dd0ace9ac472b568385b9ceef08a13c1dcdbfb127359f9d0d7fe07a222e",
+      "size": [
+        1280,
+        720
+      ],
+      "mode": "RGB",
+      "license": "unknown"
+    },
+    {
+      "input": "ref_prop_2",
+      "slot": "ref_image_3",
+      "picture": 4,
+      "source_filename": "photo_2026-11-09_20-31-17.jpg",
+      "source_sha256": "3cc5722eab44d229226088978e4bf4507adb3bbc58734806a777633f5a767f14",
+      "png_sha256": "88e5b7a6745f13857b48c9cf62556080e1d820d665c87181828f88a42682cd6f",
+      "size": [
+        1280,
+        720
+      ],
+      "mode": "RGB",
+      "license": "unknown"
+    },
+    {
+      "input": "ref_prop_3",
+      "slot": "ref_image_4",
+      "picture": 5,
+      "source_filename": "photo_2026-11-09_20-31-22.jpg",
+      "source_sha256": "b06fc0771045d406874ff70a563ee76d143a5e54441761a983b529c476af0847",
+      "png_sha256": "c4aa24306a32af9298b8a1b3edc8efafc533e9e16a38a685dd7e60a3e794f40f",
+      "size": [
+        1280,
+        720
+      ],
+      "mode": "RGB",
+      "license": "unknown"
+    }
+  ],
+  "shots": {
+    "Q01": {
+      "baseline_init_sha256": "3ba7ccb80ac8ec287726277895b6b0407a4a1aff9790eafa4d7969854d3e729f",
+      "baseline_playblast_sha256": "9fa97c63fbf7c6aefc10701aff7df42484f1bdd63c8cb959abc826e0922a9963",
+      "seed": 101,
+      "steps": 25,
+      "size_m": 0.3,
+      "body_strength": 1.0,
+      "outside_prop_influence_changed_pixels": 0,
+      "composite_support_equal": true,
+      "geometry_unchanged": true,
+      "frame": {
+        "body": {
+          "inside_fraction": 1.0,
+          "out_of_frame": false
+        }
+      },
+      "prop_frame_inside_fraction": 1.0,
+      "prop_flags": {
+        "prop_hits_room": true,
+        "prop_hits_body": false,
+        "out_of_frame": false,
+        "prop_out_of_frame": false
+      },
+      "lint": [],
+      "baseline": "09f2 original final PNG",
+      "original_request_sha256": "445f6883c19be3082c09d3f5eb36cab958be400377cc1de8f6959e7aa07858b2",
+      "baseline_prompt_id": "bf665c72-808d-4f31-a998-555e1986d71c",
+      "variants": {
+        "S35": {
+          "status": "not_completed",
+          "prompt_id": null,
+          "outside_changed_pixels": null,
+          "ssim_outside": null,
+          "reason": "Bash execution permission denied by environment; no bypass/retry via another submission path"
+        },
+        "S80": {
+          "status": "not_completed",
+          "prompt_id": null,
+          "outside_changed_pixels": null,
+          "ssim_outside": null,
+          "reason": "Bash execution permission denied by environment; no bypass/retry via another submission path"
+        }
+      },
+      "baseline_changed_pixel_fraction_vs_plate": 0.994060475161987
+    },
+    "Q04": {
+      "baseline_init_sha256": "0a5973f298b1d80e7511850c4f77c4a48fec4edce91516654f7e69eb0ab8c3a8",
+      "baseline_playblast_sha256": "89b3af9a9fb7a6d49d11f387b3c6d4470c10e0b30d7df90374cc1d82f29c11e5",
+      "seed": 101,
+      "steps": 25,
+      "size_m": 0.3,
+      "body_strength": 1.0,
+      "outside_prop_influence_changed_pixels": 0,
+      "composite_support_equal": true,
+      "geometry_unchanged": true,
+      "frame": {
+        "body": {
+          "inside_fraction": 1.0,
+          "out_of_frame": false
+        }
+      },
+      "prop_frame_inside_fraction": 1.0,
+      "prop_flags": {
+        "prop_hits_room": true,
+        "prop_hits_body": false,
+        "out_of_frame": false,
+        "prop_out_of_frame": false
+      },
+      "lint": [
+        "warn:W_SCALE_ANCHOR"
+      ],
+      "baseline": "09f2 original final PNG",
+      "original_request_sha256": "6b840efa3b86ec1c8760202f3342dbdb102c81319e0b92b6082dc3fbc9076c69",
+      "baseline_prompt_id": "c6a41b45-4631-46ae-b50f-792cac7dc577",
+      "variants": {
+        "S35": {
+          "status": "not_completed",
+          "prompt_id": null,
+          "outside_changed_pixels": null,
+          "ssim_outside": null,
+          "reason": "Bash execution permission denied by environment; no bypass/retry via another submission path"
+        },
+        "S80": {
+          "status": "not_completed",
+          "prompt_id": null,
+          "outside_changed_pixels": null,
+          "ssim_outside": null,
+          "reason": "Bash execution permission denied by environment; no bypass/retry via another submission path"
+        }
+      },
+      "baseline_changed_pixel_fraction_vs_plate": 1.0
+    }
+  },
+  "visual_status": "visual_unverified_no_new_finals",
+  "execution_status": "partial",
+  "h3_runs_submitted": 0,
+  "h3_skip_reason": "Bash execution permission denied by environment; no bypass/retry via another submission path",
+  "visual_review": {
+    "new_finals": "unavailable",
+    "reference_images": "three RGB views, same object, black glossy surface",
+    "baseline09f2": "not accepted: grey material, missing reference details, softened/distorted silhouette, visible edge halo; one instance per image"
+  },
+  "diagnostics": {
+    "T01": {
+      "status": "measured",
+      "conclusion": "Source body already has the same inferred tilt as stage b (neck52.7deg). No new backwards tilt is introduced by b coordinate conversion. Stage c clamps roll, not the sit_tucked neck tilt52.7deg; final51.1deg. Cannot distinguish SAM reconstruction tilt from wrong inferred source up without independently measured source gravity/camera orientation."
+    },
+    "Q04": {
+      "status": "measured",
+      "conclusion": "Anatomical thigh.L raised (gap .225540m), thigh.R supporting (.031976m); both are declared support_parts. Left was absent from original low-band group and gets evaluate._lowest fallback on final mesh; not an instruction to lower body or adjust thresholds."
+    }
+  },
+  "t01_stages": {
+    "a_source": {
+      "measurements": {
+        "pelvis": [
+          -0.17085244942955397,
+          1.5762756557101039,
+          -1.4794274932305176
+        ],
+        "shoulder_axis": [
+          0.35021020037733613,
+          0.19806578639955763,
+          0.28632596431869306
+        ],
+        "neck_axis": [
+          0.3810244197213736,
+          0.18427409356904456,
+          0.3221392989126759
+        ],
+        "shoulder_tilt_deg": 54.562357373776436,
+        "neck_tilt_deg": 52.724608583305816,
+        "roll_deg": -36.08899824572476,
+        "angle_basis": "inferred source Z-up Rref; not independent source gravity",
+        "raw_cv_pelvis": [
+          -0.09485896117985249,
+          0.2918272316455841,
+          2.1467137336730957
+        ],
+        "raw_cv_shoulder_axis": [
+          0.24202598072588444,
+          -0.4303155839443207,
+          -0.01056981086730957
+        ],
+        "raw_cv_neck_axis": [
+          0.26604454405605793,
+          -0.4585714638233185,
+          -0.04292774200439453
+        ],
+        "source_up_cv": [
+          -0.21947970013469162,
+          -0.7742491167350183,
+          -0.5936050593313961
+        ]
+      },
+      "matrix_from_source": [
+        [
+          0.9999999999999987,
+          4.1736035811123663e-17,
+          -4.062337398105049e-19
+        ],
+        [
+          -5.171923615925708e-16,
+          1.0000000000000002,
+          1.8267972272772242e-16
+        ],
+        [
+          -5.1390673817881195e-15,
+          -1.2212453270876722e-15,
+          1.000000000000002
+        ]
+      ],
+      "shift_from_source": [
+        1.209453746584997e-17,
+        -1.7837150710326972e-17,
+        -9.019739970422685e-17
+      ],
+      "matrix_from_previous": [
+        [
+          0.9999999999999987,
+          4.1736035811123663e-17,
+          -4.062337398105049e-19
+        ],
+        [
+          -5.171923615925708e-16,
+          1.0000000000000002,
+          1.8267972272772242e-16
+        ],
+        [
+          -5.1390673817881195e-15,
+          -1.2212453270876722e-15,
+          1.000000000000002
+        ]
+      ],
+      "shift_from_previous": [
+        1.209453746584997e-17,
+        -1.7837150710326972e-17,
+        -9.019739970422685e-17
+      ]
+    },
+    "b_location_preorient": {
+      "measurements": {
+        "pelvis": [
+          -0.1591504469150095,
+          1.4683135998641306,
+          -1.37809874843539
+        ],
+        "shoulder_axis": [
+          0.3262236514041272,
+          0.1844998917446583,
+          0.26671496567264663
+        ],
+        "neck_axis": [
+          0.35492734746651666,
+          0.17165281764639828,
+          0.3000753782694776
+        ],
+        "shoulder_tilt_deg": 54.56235737377642,
+        "neck_tilt_deg": 52.72460858330581,
+        "roll_deg": -36.08899824572473,
+        "display_only_translation": [
+          0.2575373345916856,
+          1.3208885814651103,
+          1.81861157340362
+        ]
+      },
+      "matrix_from_source": [
+        [
+          0.8961957404016364,
+          -0.25404842978033065,
+          -1.863964598640753e-17
+        ],
+        [
+          -0.15080443323280532,
+          -0.5319863256536594,
+          0.7496372336155307
+        ],
+        [
+          -0.20444712663958778,
+          -0.7212193525076517,
+          -0.5529479430879075
+        ]
+      ],
+      "shift_from_source": [
+        3.5291017786572574e-17,
+        -8.832585515296926e-17,
+        1.3217377866524476e-16
+      ],
+      "matrix_from_previous": [
+        [
+          0.8961957404016364,
+          -0.25404842978033065,
+          -1.863964598640753e-17
+        ],
+        [
+          -0.15080443323280532,
+          -0.5319863256536594,
+          0.7496372336155307
+        ],
+        [
+          -0.20444712663958778,
+          -0.7212193525076517,
+          -0.5529479430879075
+        ]
+      ],
+      "shift_from_previous": [
+        3.5291017786572574e-17,
+        -8.832585515296926e-17,
+        1.3217377866524476e-16
+      ]
+    },
+    "c_root_orient": {
+      "measurements": {
+        "pelvis": [
+          -0.1591504469150095,
+          1.4683135998641306,
+          -1.37809874843539
+        ],
+        "shoulder_axis": [
+          0.3375616956749737,
+          0.176437904714406,
+          0.25791611251726754
+        ],
+        "neck_axis": [
+          0.35492734746651666,
+          0.17165281764639828,
+          0.3000753782694776
+        ],
+        "shoulder_tilt_deg": 55.89656846917134,
+        "neck_tilt_deg": 52.72460858330581,
+        "roll_deg": -15.000000000000027,
+        "display_only_translation": [
+          0.2575373345916856,
+          1.3208885814651103,
+          1.81861157340362
+        ]
+      },
+      "matrix_from_source": [
+        [
+          0.7873539916427617,
+          -0.35030017789299117,
+          0.35365362574167775
+        ],
+        [
+          -0.48429608885303477,
+          -0.6920527856085251,
+          0.3927182833037257
+        ],
+        [
+          0.1150582459181033,
+          -0.5158101754400609,
+          -0.7670781399222857
+        ]
+      ],
+      "shift_from_source": [
+        -0.741428829370443,
+        0.7812798923161893,
+        0.43004019057245424
+      ],
+      "matrix_from_previous": [
+        [
+          0.9157654927001262,
+          0.3834591637177237,
+          -0.11971897151496327
+        ],
+        [
+          -0.29757630913562516,
+          0.847742977597092,
+          0.4390674027709596
+        ],
+        [
+          0.26985533646922194,
+          -0.36645724675017627,
+          0.8904421282056268
+        ]
+      ],
+      "shift_from_previous": [
+        -0.7414288293704432,
+        0.7812798923161899,
+        0.4300401905724542
+      ]
+    },
+    "d_final": {
+      "measurements": {
+        "pelvis": [
+          0.09838688767667605,
+          2.789202181329241,
+          0.44051282496823
+        ],
+        "shoulder_axis": [
+          0.35262226122250073,
+          0.12332609772418568,
+          0.2684160356861121
+        ],
+        "neck_axis": [
+          0.3675780152651824,
+          0.11633155605493517,
+          0.3111859832779779
+        ],
+        "shoulder_tilt_deg": 54.30188007721019,
+        "neck_tilt_deg": 51.092023875202756,
+        "roll_deg": -13.218059860944665,
+        "display_only_translation": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "matrix_from_source": [
+        [
+          0.6954228127559442,
+          -0.4390617532135076,
+          0.4374006151705552
+        ],
+        [
+          -0.602409909534116,
+          -0.6333232744806605,
+          0.32204245168002266
+        ],
+        [
+          0.14559128470342578,
+          -0.5232913305741482,
+          -0.7567541020385903
+        ]
+      ],
+      "shift_from_source": [
+        -0.6464897584664596,
+        2.2255462271875346,
+        2.231568547197316
+      ],
+      "matrix_from_previous": [
+        [
+          0.9865487393100617,
+          0.16000621659829017,
+          -0.033460358868872574
+        ],
+        [
+          -0.15969105359719565,
+          0.987095244873857,
+          0.011905668752179304
+        ],
+        [
+          0.034933542144347886,
+          -0.006402202536597512,
+          0.9993691307199398
+        ]
+      ],
+      "shift_from_previous": [
+        -0.02565442213215607,
+        1.3308290935780838,
+        1.8327023031365097
+      ]
+    }
+  },
+  "local_8187": {
+    "object_info_checked": true,
+    "new_inputs_loaded": false,
+    "reload_required": true,
+    "file_installed": true
+  },
+  "server_changed": false,
+  "tests": [
+    {
+      "file": "tools/scene3d/posev2/test_assembly_v26.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": "5 passed in 0.34s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_auto_surfaces_09e.py",
+      "exit": 0,
+      "passed": 11,
+      "summary": "11 passed in 0.38s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_config_v26.py",
+      "exit": 0,
+      "passed": 11,
+      "summary": "11 passed in 0.56s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_contact_speed_09e.py",
+      "exit": 0,
+      "passed": 10,
+      "summary": "10 passed in 0.35s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_geometry_2ae.py",
+      "exit": 0,
+      "passed": 9,
+      "summary": "9 passed in 0.38s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_lie_09d.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": "5 passed, 3 subtests passed in 0.49s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_manual_pose.py",
+      "exit": 0,
+      "passed": 6,
+      "summary": "6 passed in 0.21s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_pose_fit.py",
+      "exit": 0,
+      "passed": 6,
+      "summary": "6 passed in 3.68s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_profile_ids_09e.py",
+      "exit": 0,
+      "passed": 7,
+      "summary": "7 passed in 0.31s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_runner_v26.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.32s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_step9c.py",
+      "exit": 0,
+      "passed": 12,
+      "summary": "12 passed, 16 subtests passed in 0.37s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_step9d.py",
+      "exit": 0,
+      "passed": 18,
+      "summary": "18 passed in 0.42s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_support_09f2.py",
+      "exit": 0,
+      "passed": 20,
+      "summary": "20 passed in 0.41s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_v24.py",
+      "exit": 0,
+      "passed": 7,
+      "summary": "7 passed in633.71s, one BLAS thread; previous900s timeout superseded, not summed"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_v25.py",
+      "exit": 0,
+      "passed": 7,
+      "summary": "7 passed in 32.22s"
+    },
+    {
+      "file": "tests/test_composite_09f2.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.29s"
+    },
+    {
+      "file": "tests/test_3da_pack_nodes.py",
+      "exit": 0,
+      "passed": 12,
+      "summary": "12 passed, 18 subtests passed in 1.28s"
+    },
+    {
+      "file": "tests/test_3da_manual_workflow.py",
+      "exit": 0,
+      "passed": 15,
+      "summary": "15 passed, 4 subtests passed in 1.32s"
+    },
+    {
+      "file": "tests/test_3da_h3_remote.py",
+      "exit": 0,
+      "passed": 8,
+      "summary": "8 passed, 4 subtests passed in 6.56s"
+    },
+    {
+      "file": "tools/scene3d/test_pack_cli.py",
+      "exit": 0,
+      "passed": 36,
+      "summary": "36 passed in 3.67s"
+    },
+    {
+      "file": "tools/scene3d/test_aio_v23.py",
+      "exit": 0,
+      "passed": 9,
+      "summary": "9 passed in 0.22s"
+    },
+    {
+      "file": "tools/scene3d/test_props.py",
+      "exit": 0,
+      "passed": 46,
+      "summary": "46 passed in 0.37s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_report_v26c.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.06s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_h3_v26.py",
+      "exit": 0,
+      "passed": 21,
+      "summary": "21 passed in 0.52s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_gate_v26c.py",
+      "exit": 0,
+      "passed": 4,
+      "summary": "4 passed in 0.38s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_manual_pack_verify.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.26s"
+    },
+    {
+      "file": "tests/test_prop_references_09g.py",
+      "exit": 0,
+      "passed": 17,
+      "summary": "17 passed in 1.57s"
+    },
+    {
+      "file": "h3_img2img_latent/test_latent.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": "standalone CPU entrypoint Ran5 tests OK 0.006s"
+    },
+    {
+      "file": "tests/test_diagnostics_09g.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in0.11s"
+    }
+  ],
+  "tests_unique_ok": 317
+}

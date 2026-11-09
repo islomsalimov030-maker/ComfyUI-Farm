@@ -1,0 +1,1295 @@
+{
+ "id": "3DA_props_Q04_09g",
+ "revision": 0,
+ "last_node_id": 22,
+ "last_link_id": 24,
+ "nodes": [
+  {
+   "id": 1,
+   "type": "LoadImage",
+   "title": "Плита комнаты",
+   "pos": [
+    0,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      2
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "3da_manual/09d_Q04_plate_rgb.png"
+   ],
+   "widgets_values_named": {
+    "image": "3da_manual/09d_Q04_plate_rgb.png"
+   }
+  },
+  {
+   "id": 2,
+   "type": "LoadImage",
+   "title": "Референс персонажа · SFW",
+   "pos": [
+    0,
+    500
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      13
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "3da_manual/09d_Q04_0003.png"
+   ],
+   "widgets_values_named": {
+    "image": "3da_manual/09d_Q04_0003.png"
+   }
+  },
+  {
+   "id": 3,
+   "type": "SaveImage",
+   "title": "Сохранить · финальная вклейка",
+   "pos": [
+    2470,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 2,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "SaveImage"
+   },
+   "widgets_values": [
+    "3DA_manual/result"
+   ],
+   "widgets_values_named": {
+    "filename_prefix": "3DA_manual/result"
+   }
+  },
+  {
+   "id": 4,
+   "type": "LoadImage",
+   "title": "Референс позы · SFW",
+   "pos": [
+    0,
+    950
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      4
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "3da_manual/09d_Q04_Q04_bed_side_lie.png"
+   ],
+   "widgets_values_named": {
+    "image": "3da_manual/09d_Q04_Q04_bed_side_lie.png"
+   }
+  },
+  {
+   "id": 5,
+   "type": "3DALocation",
+   "title": "3DA Location",
+   "pos": [
+    430,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "plate",
+     "type": "IMAGE",
+     "link": 2
+    }
+   ],
+   "outputs": [
+    {
+     "name": "location",
+     "type": "STRING",
+     "links": [
+      3
+     ]
+    },
+    {
+     "name": "plate",
+     "type": "IMAGE",
+     "links": [
+      12
+     ]
+    },
+    {
+     "name": "objects",
+     "type": "STRING",
+     "links": []
+    },
+    {
+     "name": "objects_preview",
+     "type": "IMAGE",
+     "links": [
+      23
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "3DALocation"
+   },
+   "widgets_values": [
+    "mainroom3"
+   ],
+   "widgets_values_named": {
+    "location_id": "mainroom3"
+   }
+  },
+  {
+   "id": 6,
+   "type": "3DAPlacePose",
+   "title": "3DA Place Pose",
+   "pos": [
+    430,
+    480
+   ],
+   "size": [
+    330,
+    940
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "location",
+     "type": "STRING",
+     "link": 3,
+     "widget": {
+      "name": "location"
+     }
+    },
+    {
+     "name": "pose_ref",
+     "type": "IMAGE",
+     "link": 4
+    },
+    {
+     "name": "seed",
+     "type": "INT",
+     "link": 5,
+     "widget": {
+      "name": "seed"
+     }
+    },
+    {
+     "name": "props",
+     "type": "STRING",
+     "link": 6,
+     "widget": {
+      "name": "props"
+     }
+    }
+   ],
+   "outputs": [
+    {
+     "name": "playblast",
+     "type": "IMAGE",
+     "links": [
+      8,
+      14
+     ]
+    },
+    {
+     "name": "init",
+     "type": "IMAGE",
+     "links": [
+      15,
+      24
+     ]
+    },
+    {
+     "name": "strength",
+     "type": "MASK",
+     "links": [
+      16
+     ]
+    },
+    {
+     "name": "silhouette",
+     "type": "MASK",
+     "links": []
+    },
+    {
+     "name": "h3_prompt",
+     "type": "STRING",
+     "links": [
+      7
+     ]
+    },
+    {
+     "name": "status",
+     "type": "STRING",
+     "links": [
+      11
+     ]
+    },
+    {
+     "name": "debug",
+     "type": "IMAGE",
+     "links": [
+      9
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "3DAPlacePose"
+   },
+   "widgets_values": [
+    "lie",
+    "bed",
+    "",
+    "",
+    "",
+    1.62,
+    "../scene3d_work/farm/characters/stacy/body.json",
+    "grey",
+    1.0,
+    false,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    "She lies on her side with her head resting on her bent arm."
+   ],
+   "widgets_values_named": {
+    "pose_class": "lie",
+    "target_object": "bed",
+    "support_parts": "",
+    "secondary_contacts": "",
+    "instance_hint": "",
+    "height_m": 1.62,
+    "body_json": "../scene3d_work/farm/characters/stacy/body.json",
+    "proxy": "grey",
+    "strength": 1.0,
+    "block_on_fail": false,
+    "body_dx": 0.0,
+    "body_dy": 0.0,
+    "body_dz": 0.0,
+    "body_dyaw": 0.0,
+    "body_dpitch": 0.0,
+    "body_droll": 0.0,
+    "pose_text": "She lies on her side with her head resting on her bent arm."
+   }
+  },
+  {
+   "id": 7,
+   "type": "StringConcatenate",
+   "title": "String · промпт H3 + правки",
+   "pos": [
+    850,
+    900
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "string_a",
+     "type": "STRING",
+     "link": 7,
+     "widget": {
+      "name": "string_a"
+     }
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": [
+      17
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "StringConcatenate"
+   },
+   "widgets_values": [
+    "",
+    ""
+   ],
+   "widgets_values_named": {
+    "string_b": "",
+    "delimiter": ""
+   }
+  },
+  {
+   "id": 8,
+   "type": "PreviewImage",
+   "title": "Превью · playblast",
+   "pos": [
+    1690,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 8
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 9,
+   "type": "PreviewImage",
+   "title": "Превью · debug",
+   "pos": [
+    1690,
+    950
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 9
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 10,
+   "type": "PreviewImage",
+   "title": "Превью · raw_H3",
+   "pos": [
+    2080,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 2,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 10
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 11,
+   "type": "PreviewAny",
+   "title": "Статус · опора / p95 / углы",
+   "pos": [
+    2080,
+    500
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 11
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 12,
+   "type": "PrimitiveInt",
+   "title": "Seed · общий для геометрии и H3",
+   "pos": [
+    850,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 11,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "INT",
+     "type": "INT",
+     "links": [
+      5,
+      18
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PrimitiveInt"
+   },
+   "widgets_values": [
+    101,
+    "fixed"
+   ],
+   "widgets_values_named": {
+    "value": 101,
+    "control_after_generate": "fixed"
+   }
+  },
+  {
+   "id": 13,
+   "type": "3DAH3Remote",
+   "title": "3DA H3 Remote",
+   "pos": [
+    1260,
+    50
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 12,
+   "mode": 2,
+   "inputs": [
+    {
+     "name": "plate",
+     "type": "IMAGE",
+     "link": 12
+    },
+    {
+     "name": "ref_char",
+     "type": "IMAGE",
+     "link": 13
+    },
+    {
+     "name": "playblast",
+     "type": "IMAGE",
+     "link": 14
+    },
+    {
+     "name": "init",
+     "type": "IMAGE",
+     "link": 15
+    },
+    {
+     "name": "strength",
+     "type": "MASK",
+     "link": 16
+    },
+    {
+     "name": "prompt",
+     "type": "STRING",
+     "link": 17,
+     "widget": {
+      "name": "prompt"
+     }
+    },
+    {
+     "name": "seed",
+     "type": "INT",
+     "link": 18,
+     "widget": {
+      "name": "seed"
+     }
+    },
+    {
+     "name": "ref_prop_1",
+     "type": "IMAGE",
+     "link": 19
+    },
+    {
+     "name": "ref_prop_2",
+     "type": "IMAGE",
+     "link": 20
+    },
+    {
+     "name": "ref_prop_3",
+     "type": "IMAGE",
+     "link": 21
+    }
+   ],
+   "outputs": [
+    {
+     "name": "final",
+     "type": "IMAGE",
+     "links": [
+      1
+     ]
+    },
+    {
+     "name": "raw",
+     "type": "IMAGE",
+     "links": [
+      10
+     ]
+    },
+    {
+     "name": "info",
+     "type": "STRING",
+     "links": [
+      22
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "3DAH3Remote"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 14,
+   "type": "PreviewAny",
+   "title": "Статус · H3 Remote",
+   "pos": [
+    2470,
+    500
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 13,
+   "mode": 2,
+   "inputs": [
+    {
+     "name": "source",
+     "type": "*",
+     "link": 22
+    }
+   ],
+   "outputs": [
+    {
+     "name": "STRING",
+     "type": "STRING",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewAny"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 15,
+   "type": "PreviewImage",
+   "title": "Превью · объекты / ID",
+   "pos": [
+    2080,
+    950
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 23
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 16,
+   "type": "PreviewImage",
+   "title": "Превью · init",
+   "pos": [
+    1690,
+    500
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 15,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 24
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 17,
+   "type": "3DAProp",
+   "title": "3DA Prop",
+   "pos": [
+    850,
+    440
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 16,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "props_in",
+     "type": "STRING",
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "props",
+     "type": "STRING",
+     "links": [
+      6
+     ]
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "3DAProp"
+   },
+   "widgets_values": [
+    "head_close_a648e192",
+    "world",
+    -1.15,
+    0.7,
+    0.45,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.3,
+    0.35
+   ],
+   "widgets_values_named": {
+    "prop_id": "head_close_a648e192",
+    "anchor": "world",
+    "x": -1.15,
+    "y": 0.7,
+    "z": 0.45,
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "roll": 0.0,
+    "scale": 1.0,
+    "size_m": 0.3,
+    "prop_strength": 0.35
+   }
+  },
+  {
+   "id": 18,
+   "type": "LoadImage",
+   "title": "Предмет · ракурс 1",
+   "pos": [
+    0,
+    1490
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 17,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      19
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "3da_prop_refs_09g/ref_prop_1.png"
+   ],
+   "widgets_values_named": {
+    "image": "3da_prop_refs_09g/ref_prop_1.png"
+   }
+  },
+  {
+   "id": 19,
+   "type": "LoadImage",
+   "title": "Предмет · ракурс 2",
+   "pos": [
+    0,
+    1940
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 18,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      20
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "3da_prop_refs_09g/ref_prop_2.png"
+   ],
+   "widgets_values_named": {
+    "image": "3da_prop_refs_09g/ref_prop_2.png"
+   }
+  },
+  {
+   "id": 20,
+   "type": "LoadImage",
+   "title": "Предмет · ракурс 3",
+   "pos": [
+    0,
+    2390
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 19,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      21
+     ]
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "LoadImage"
+   },
+   "widgets_values": [
+    "3da_prop_refs_09g/ref_prop_3.png"
+   ],
+   "widgets_values_named": {
+    "image": "3da_prop_refs_09g/ref_prop_3.png"
+   }
+  },
+  {
+   "id": 21,
+   "type": "Note",
+   "title": "README",
+   "pos": [
+    1260,
+    500
+   ],
+   "size": [
+    380,
+    340
+   ],
+   "flags": {},
+   "order": 100,
+   "mode": 0,
+   "properties": {},
+   "widgets_values": [
+    "09g: три отдельных ракурса одного предмета, без коллажа. Prop активен. Remote и все потребители его результата muted (mode2); Queue в этом состоянии считает только локальную геометрию/превью. Для H3 вернуть mode0 у Remote, final Save, raw Preview, Remote status. S=.35 и S=.80 — экспериментальные варианты (extra); preset открыт с .35. Seed101, steps25. Референсы: input/3da_prop_refs_09g/ref_prop_1/2/3.png. body_json задан относительно local config.repo: профиль тела 09f2 должен оставаться доступным по этому пути. Новые IMAGE-входы требуют reload локального пака, если загруженная схема ещё старая."
+   ]
+  },
+  {
+   "id": 22,
+   "type": "Note",
+   "title": "Шпаргалка «симптом → крутилка»",
+   "pos": [
+    1260,
+    950
+   ],
+   "size": [
+    380,
+    340
+   ],
+   "flags": {},
+   "order": 100,
+   "mode": 0,
+   "properties": {},
+   "widgets_values": [
+    "block_on_fail=False: статусы/флаги НЕ останавливают H3. True: только ok/partial (не дописывать string_b при rejected). body_* — общий трансформ без костей. pose_text — описание позы. ID поверхности смотреть в objects_preview. error CLI / пустой prompt → Remote не отправляет H3. HTTP error → info, изображения-заглушки НЕ результат. 401 → env Basic auth; 502 → остановиться. Таймаут не отменяет чужую очередь: проверьте prompt_id на сервере до повтора. raw_H3 до вклейки; final после. string_b — SFW-правки промпта."
+   ]
+  }
+ ],
+ "links": [
+  [
+   1,
+   13,
+   0,
+   3,
+   0,
+   "IMAGE"
+  ],
+  [
+   2,
+   1,
+   0,
+   5,
+   0,
+   "IMAGE"
+  ],
+  [
+   3,
+   5,
+   0,
+   6,
+   0,
+   "STRING"
+  ],
+  [
+   4,
+   4,
+   0,
+   6,
+   1,
+   "IMAGE"
+  ],
+  [
+   5,
+   12,
+   0,
+   6,
+   2,
+   "INT"
+  ],
+  [
+   6,
+   17,
+   0,
+   6,
+   3,
+   "STRING"
+  ],
+  [
+   7,
+   6,
+   4,
+   7,
+   0,
+   "STRING"
+  ],
+  [
+   8,
+   6,
+   0,
+   8,
+   0,
+   "IMAGE"
+  ],
+  [
+   9,
+   6,
+   6,
+   9,
+   0,
+   "IMAGE"
+  ],
+  [
+   10,
+   13,
+   1,
+   10,
+   0,
+   "IMAGE"
+  ],
+  [
+   11,
+   6,
+   5,
+   11,
+   0,
+   "STRING"
+  ],
+  [
+   12,
+   5,
+   1,
+   13,
+   0,
+   "IMAGE"
+  ],
+  [
+   13,
+   2,
+   0,
+   13,
+   1,
+   "IMAGE"
+  ],
+  [
+   14,
+   6,
+   0,
+   13,
+   2,
+   "IMAGE"
+  ],
+  [
+   15,
+   6,
+   1,
+   13,
+   3,
+   "IMAGE"
+  ],
+  [
+   16,
+   6,
+   2,
+   13,
+   4,
+   "MASK"
+  ],
+  [
+   17,
+   7,
+   0,
+   13,
+   5,
+   "STRING"
+  ],
+  [
+   18,
+   12,
+   0,
+   13,
+   6,
+   "INT"
+  ],
+  [
+   19,
+   18,
+   0,
+   13,
+   7,
+   "IMAGE"
+  ],
+  [
+   20,
+   19,
+   0,
+   13,
+   8,
+   "IMAGE"
+  ],
+  [
+   21,
+   20,
+   0,
+   13,
+   9,
+   "IMAGE"
+  ],
+  [
+   22,
+   13,
+   2,
+   14,
+   0,
+   "STRING"
+  ],
+  [
+   23,
+   5,
+   3,
+   15,
+   0,
+   "IMAGE"
+  ],
+  [
+   24,
+   6,
+   1,
+   16,
+   0,
+   "IMAGE"
+  ]
+ ],
+ "groups": [
+  {
+   "title": "1 · Вход",
+   "bounding": [
+    -30,
+    -30,
+    400,
+    2870
+   ],
+   "color": "#3f5260",
+   "font_size": 24
+  },
+  {
+   "title": "2 · ПУЛЬТ",
+   "bounding": [
+    400,
+    -30,
+    820,
+    1430
+   ],
+   "color": "#3f5260",
+   "font_size": 24
+  },
+  {
+   "title": "3 · Движок",
+   "bounding": [
+    1230,
+    -30,
+    430,
+    1430
+   ],
+   "color": "#3f5260",
+   "font_size": 24
+  },
+  {
+   "title": "4 · Результат",
+   "bounding": [
+    1660,
+    -30,
+    1190,
+    1430
+   ],
+   "color": "#3f5260",
+   "font_size": 24
+  }
+ ],
+ "config": {},
+ "extra": {
+  "3da_prop_reference_experiment": {
+   "revision": "09g",
+   "shot": "Q04",
+   "baseline": "3DA_props_Q04_09f2.json",
+   "geometry_request": "Q04_prop_request.json",
+   "camera": "unchanged location profile",
+   "seed": 101,
+   "steps": 25,
+   "prop_strength_variants": [
+    0.35,
+    0.8
+   ],
+   "variant_control": {
+    "title": "3DA Prop",
+    "input": "prop_strength"
+   },
+   "working_default_changed": false,
+   "body_json_base": "local config.repo (pack subprocess cwd)",
+   "refs": {
+    "ref_prop_1": {
+     "slot": "ref_images.ref_image_2",
+     "picture": 3
+    },
+    "ref_prop_2": {
+     "slot": "ref_images.ref_image_3",
+     "picture": 4
+    },
+    "ref_prop_3": {
+     "slot": "ref_images.ref_image_4",
+     "picture": 5
+    }
+   }
+  }
+ },
+ "version": 0.4
+}

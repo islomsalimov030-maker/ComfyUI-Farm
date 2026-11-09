@@ -84,14 +84,15 @@ def prompt_h(text_d):
     return text
 
 
-def lint(text, video):
+def lint(text, video, connected=None):
     from farm.prompts.lint import lint as _lint
-    connected = {"<Picture 1>", "<Picture 2>"} | ({"<Video 1>"} if video else set())
-    return [f"{i.severity}:{i.code}" for i in _lint(text, "frame", {"connected": connected})]
+    if connected is None:
+        connected = {"<Picture 1>", "<Picture 2>"} | ({"<Video 1>"} if video else set())
+    return [f"{i.severity}:{i.code}" for i in _lint(text, "frame", {"connected": set(connected)})]
 
 
-def require_lint(text, video):
-    issues = lint(text, video)
+def require_lint(text, video, connected=None):
+    issues = lint(text, video, connected=connected)
     if any(i.startswith("error:") for i in issues):
         raise ValueError(f"H3 lint failed: {issues}; no GPU submission")
     return issues

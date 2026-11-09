@@ -1,0 +1,176 @@
+[
+  {
+    "file": "tools/scene3d/posev2/test_assembly_v26.py",
+    "exit": 0,
+    "passed": 5,
+    "summary": "5 passed in 0.34s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_auto_surfaces_09e.py",
+    "exit": 0,
+    "passed": 11,
+    "summary": "11 passed in 0.38s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_config_v26.py",
+    "exit": 0,
+    "passed": 11,
+    "summary": "11 passed in 0.56s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_contact_speed_09e.py",
+    "exit": 0,
+    "passed": 10,
+    "summary": "10 passed in 0.35s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_geometry_2ae.py",
+    "exit": 0,
+    "passed": 9,
+    "summary": "9 passed in 0.38s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_lie_09d.py",
+    "exit": 0,
+    "passed": 5,
+    "summary": "5 passed, 3 subtests passed in 0.49s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_manual_pose.py",
+    "exit": 0,
+    "passed": 6,
+    "summary": "6 passed in 0.21s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_pose_fit.py",
+    "exit": 0,
+    "passed": 6,
+    "summary": "6 passed in 3.68s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_profile_ids_09e.py",
+    "exit": 0,
+    "passed": 7,
+    "summary": "7 passed in 0.31s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_runner_v26.py",
+    "exit": 0,
+    "passed": 2,
+    "summary": "2 passed in 0.32s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_step9c.py",
+    "exit": 0,
+    "passed": 12,
+    "summary": "12 passed, 16 subtests passed in 0.37s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_step9d.py",
+    "exit": 0,
+    "passed": 18,
+    "summary": "18 passed in 0.42s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_support_09f2.py",
+    "exit": 0,
+    "passed": 20,
+    "summary": "20 passed in 0.41s"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_v24.py",
+    "exit": 0,
+    "passed": 7,
+    "summary": "7 passed in633.71s, one BLAS thread; previous900s timeout superseded, not summed"
+  },
+  {
+    "file": "tools/scene3d/posev2/test_v25.py",
+    "exit": 0,
+    "passed": 7,
+    "summary": "7 passed in 32.22s"
+  },
+  {
+    "file": "tests/test_composite_09f2.py",
+    "exit": 0,
+    "passed": 2,
+    "summary": "2 passed in 0.29s"
+  },
+  {
+    "file": "tests/test_3da_pack_nodes.py",
+    "exit": 0,
+    "passed": 12,
+    "summary": "12 passed, 18 subtests passed in 1.28s"
+  },
+  {
+    "file": "tests/test_3da_manual_workflow.py",
+    "exit": 0,
+    "passed": 15,
+    "summary": "15 passed, 4 subtests passed in 1.32s"
+  },
+  {
+    "file": "tests/test_3da_h3_remote.py",
+    "exit": 0,
+    "passed": 8,
+    "summary": "8 passed, 4 subtests passed in 6.56s"
+  },
+  {
+    "file": "tools/scene3d/test_pack_cli.py",
+    "exit": 0,
+    "passed": 36,
+    "summary": "36 passed in 3.67s"
+  },
+  {
+    "file": "tools/scene3d/test_aio_v23.py",
+    "exit": 0,
+    "passed": 9,
+    "summary": "9 passed in 0.22s"
+  },
+  {
+    "file": "tools/scene3d/test_props.py",
+    "exit": 0,
+    "passed": 46,
+    "summary": "46 passed in 0.37s"
+  },
+  {
+    "file": "tools/scene3d/plate/test_pose_report_v26c.py",
+    "exit": 0,
+    "passed": 2,
+    "summary": "2 passed in 0.06s"
+  },
+  {
+    "file": "tools/scene3d/plate/test_pose_h3_v26.py",
+    "exit": 0,
+    "passed": 21,
+    "summary": "21 passed in 0.52s"
+  },
+  {
+    "file": "tools/scene3d/plate/test_pose_gate_v26c.py",
+    "exit": 0,
+    "passed": 4,
+    "summary": "4 passed in 0.38s"
+  },
+  {
+    "file": "tools/scene3d/plate/test_manual_pack_verify.py",
+    "exit": 0,
+    "passed": 2,
+    "summary": "2 passed in 0.26s"
+  },
+  {
+    "file": "tests/test_prop_references_09g.py",
+    "exit": 0,
+    "passed": 17,
+    "summary": "17 passed in 1.57s"
+  },
+  {
+    "file": "h3_img2img_latent/test_latent.py",
+    "exit": 0,
+    "passed": 5,
+    "summary": "standalone CPU entrypoint Ran5 tests OK 0.006s"
+  },
+  {
+    "file": "tests/test_diagnostics_09g.py",
+    "exit": 0,
+    "passed": 2,
+    "summary": "2 passed in0.11s"
+  }
+]

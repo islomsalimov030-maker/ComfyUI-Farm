@@ -642,6 +642,21 @@
      "widget": {
       "name": "seed"
      }
+    },
+    {
+     "name": "ref_prop_1",
+     "type": "IMAGE",
+     "link": null
+    },
+    {
+     "name": "ref_prop_2",
+     "type": "IMAGE",
+     "link": null
+    },
+    {
+     "name": "ref_prop_3",
+     "type": "IMAGE",
+     "link": null
     }
    ],
    "outputs": [

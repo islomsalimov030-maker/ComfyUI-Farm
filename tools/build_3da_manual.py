@@ -7,6 +7,7 @@ import argparse
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import uuid
@@ -191,8 +192,12 @@ def as_ui(api, oi):
                     named['control_after_generate'] = 'fixed'
                     widgets.append('fixed')
         for field, entry in schema.items():
-            if field not in n['inputs'] and len(entry) > 1 and entry[1].get('forceInput'):
-                inputs.append({'name': field, 'type': entry[0], 'link': None})
+            # Optional image sockets exist even when disconnected. Do not emit
+            # fake slots for autogrow containers or scalar widget defaults.
+            typ = entry[0]
+            opts = entry[1] if len(entry) > 1 else {}
+            if field not in n['inputs'] and (opts.get('forceInput') or typ in ('IMAGE', 'MASK')):
+                inputs.append({'name': field, 'type': 'COMBO' if isinstance(typ, list) else typ, 'link': None})
         outs = [{'name': name, 'type': typ, 'links': []} for name, typ in
                 zip(info.get('output_name', info.get('output', [])), info.get('output', []))]
         nd = {'id': ids[k], 'type': n['class_type'], 'title': n['_meta']['title'],
@@ -304,6 +309,108 @@ def layout_pc(ui, ids):
         ui['nodes'].append({'id': ui['last_node_id'], 'type': 'Note', 'title': title, 'pos': p, 'size': [380, 340],
                             'flags': {}, 'order': 100, 'mode': 0, 'properties': {}, 'widgets_values': [text]})
     return ui
+
+
+def mute_consumers(ui, title='3DA H3 Remote'):
+    """Mute the Remote and every transitive consumer, never geometry/inputs."""
+    muted = {n['id'] for n in ui['nodes'] if n.get('title') == title}
+    if len(muted) != 1:
+        raise ValueError(f'Expected one node titled {title!r}')
+    while True:
+        downstream = {wfkit._norm(link)['target_id'] for link in ui['links']
+                      if wfkit._norm(link)['origin_id'] in muted}
+        if downstream <= muted:
+            break
+        muted |= downstream
+    for n in ui['nodes']:
+        if n['id'] in muted:
+            n['mode'] = 2
+    return ui
+
+
+def build_prop_reference_preset(baseline, request, oi, shot):
+    """Portable 09g experiment; reuse 09f2 graph/camera profile, no HTTP.
+
+    Request config and absolute asset paths must never enter the public JSON.
+    Preserve the body profile as a relative path: the pack subprocess cwd is
+    config.repo. Both strengths are experiments; the loaded preset stays at .35.
+    """
+    if shot not in ('Q01', 'Q04'):
+        raise ValueError('09g presets are limited to Q01/Q04')
+    active = copy.deepcopy(baseline)
+    for n in active['nodes']:
+        if n['type'] not in wfkit.UI_ONLY:
+            n['mode'] = 0
+    api = wfkit.to_api(active)
+    by_title = {n['_meta']['title']: n for n in api.values()}
+    location_id = Path(request['location'].replace('\\', '/')).parent.name
+    by_title['3DA Location']['inputs']['location_id'] = location_id
+    place = by_title['3DA Place Pose']['inputs']
+    for field in tuple(place):
+        if field in request and field not in ('location', 'pose_ref', 'seed', 'props', 'body_json'):
+            place[field] = request[field]
+    body = request.get('body_json', '')
+    place['body_json'] = Path(os.path.relpath(body, request['config']['repo'])).as_posix() if body else ''
+    prop = json.loads(request['props'])
+    if len(prop) != 1:
+        raise ValueError('09g preset requires exactly one prop')
+    by_title['3DA Prop']['inputs'].update(prop[0], size_m=.30, prop_strength=.35)
+    by_title['Seed · общий для геометрии и H3']['inputs']['value'] = 101
+    image_names = {
+        'Плита комнаты': f'3da_manual/09d_{shot}_plate_rgb.png',
+        'Референс персонажа · SFW': f'3da_manual/09d_{shot}_0003.png',
+        'Референс позы · SFW': '3da_manual/09d_' + shot + '_' +
+                              Path(request['pose_ref'].replace('\\', '/')).name,
+    }
+    for title, image in image_names.items():
+        by_title[title]['inputs']['image'] = image
+    remote = by_title['3DA H3 Remote']['inputs']
+    schema = oi['3DAH3Remote']['input'].get('optional', {})
+    for index in range(1, 4):
+        name = f'ref_prop_{index}'
+        if name not in schema or schema[name][0] != 'IMAGE':
+            raise ValueError(f'3DAH3Remote schema missing optional IMAGE {name}')
+        api[name] = node('LoadImage', f'Предмет · ракурс {index}',
+                         image=f'3da_prop_refs_09g/{name}.png')
+        remote[name] = [name, 0]
+    ui, ids = as_ui(api, oi)
+    originals = {n.get('title'): n for n in baseline['nodes']}
+    for n in ui['nodes']:
+        old = originals.get(n['title'])
+        if old:
+            n['pos'], n['size'] = copy.deepcopy(old['pos']), copy.deepcopy(old['size'])
+    for index in range(1, 4):
+        next(n for n in ui['nodes'] if n['id'] == ids[f'ref_prop_{index}'])['pos'] = [0, 1490 + (index - 1) * 450]
+    ui['groups'] = copy.deepcopy(baseline['groups'])
+    ui['groups'][0]['bounding'][3] = 2870
+    for old in baseline['nodes']:
+        if old['type'] in wfkit.UI_ONLY:
+            note = copy.deepcopy(old)
+            if note.get('title') == 'README':
+                note['widgets_values'] = [
+                    '09g: три отдельных ракурса одного предмета, без коллажа. '
+                    'Prop активен. Remote и все потребители его результата muted (mode2); '
+                    'Queue в этом состоянии считает только локальную геометрию/превью. '
+                    'Для H3 вернуть mode0 у Remote, final Save, raw Preview, Remote status. '
+                    'S=.35 и S=.80 — экспериментальные варианты (extra); preset открыт с .35. '
+                    'Seed101, steps25. Референсы: input/3da_prop_refs_09g/ref_prop_1/2/3.png. '
+                    'body_json задан относительно local config.repo: профиль тела 09f2 должен '
+                    'оставаться доступным по этому пути. Новые IMAGE-входы требуют reload '
+                    'локального пака, если загруженная схема ещё старая.']
+            ui['last_node_id'] += 1
+            note['id'] = ui['last_node_id']
+            ui['nodes'].append(note)
+    ui['id'] = f'3DA_props_{shot}_09g'
+    ui['extra']['3da_prop_reference_experiment'] = {
+        'revision': '09g', 'shot': shot, 'baseline': '3DA_props_Q04_09f2.json',
+        'geometry_request': f'{shot}_prop_request.json', 'camera': 'unchanged location profile',
+        'seed': 101, 'steps': 25, 'prop_strength_variants': [.35, .80],
+        'variant_control': {'title': '3DA Prop', 'input': 'prop_strength'},
+        'working_default_changed': False, 'body_json_base': 'local config.repo (pack subprocess cwd)',
+        'refs': {f'ref_prop_{i}': {'slot': f'ref_images.ref_image_{i + 1}', 'picture': i + 2}
+                 for i in range(1, 4)},
+    }
+    return mute_consumers(ui)
 
 
 def write_workflows(manual, oi, pc=None):

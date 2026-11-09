@@ -48,6 +48,8 @@ class RemoteTests(unittest.TestCase):
             with Image.open(io.BytesIO(content[start:end])) as im:
                 self.uploads.append(np.array(im))
             return httpx.Response(200, json={'name': f'file{len(self.uploads)}.png', 'subfolder': '3da_manual'})
+        if req.url.path == '/queue':
+            return httpx.Response(200, json={'queue_running': [], 'queue_pending': []})
         if req.url.path == '/prompt':
             self.submitted = json.loads(req.content)['prompt']
             return httpx.Response(200, json={'prompt_id': 'mock-pid'})
@@ -64,7 +66,7 @@ class RemoteTests(unittest.TestCase):
             return httpx.Response(200, content=self.png)
         self.fail('Unexpected request ' + str(req.url))
 
-    def execute(self, handler=None):
+    def execute(self, handler=None, prompt='SFW prompt supplied by geometry', **props):
         original = nodes.remote_client
         def factory(cfg):
             client = original(cfg)
@@ -76,7 +78,7 @@ class RemoteTests(unittest.TestCase):
         with patch.dict(nodes.os.environ, self.env), patch.object(nodes, 'config', return_value=self.cfg), \
                 patch.object(nodes, 'remote_client', side_effect=factory):
             return nodes.H3Remote().execute(self.image, self.image, self.image, self.image,
-                                            self.mask, 'SFW prompt supplied by geometry', 777)
+                                            self.mask, prompt, 777, **props)
 
     def test_upload_submit_poll_download_and_mask_polarity(self):
         final, raw, info = self.execute()
@@ -92,6 +94,46 @@ class RemoteTests(unittest.TestCase):
         self.assertEqual(self.submitted['strength_input']['inputs']['image'], '3da_manual/file5.png')
         self.assertEqual(sum(r.url.path == '/prompt' for r in self.requests), 1)
         self.assertEqual(self.histories, 2)
+
+    def test_optional_refs_uploaded_in_compacted_slots(self):
+        import sys
+        sys.path.insert(0, str(ROOT / 'tools/scene3d/plate'))
+        from table_round import prompt
+        text = prompt({'room': 'the room in <Picture 1>'},
+                      {'action': 'holding a relaxed pose', 'anchor': 'the table reaches her hips'})
+        text = text.replace('One single photorealistic static image.', 'One single photograph.')
+        refs = {'ref_prop_1': torch.full((1, 12, 23, 3), .2),
+                'ref_prop_3': torch.full((1, 19, 31, 3), .8)}
+        _, _, info = self.execute(prompt=text, **refs)
+        data = json.loads(info)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['reference_mapping'][2:], [
+            {'input': 'ref_prop_1', 'slot': 'ref_image_2', 'picture': 3},
+            {'input': 'ref_prop_3', 'slot': 'ref_image_3', 'picture': 4}])
+        cond = next(n['inputs'] for n in self.submitted.values()
+                    if n['class_type'] == 'MiniMaxH3ReferenceToVideo')
+        self.assertEqual(cond['ref_images.ref_image_2'], ['ref_prop_1', 0])
+        self.assertEqual(cond['ref_images.ref_image_3'], ['ref_prop_3', 0])
+        self.assertNotIn('ref_images.ref_image_4', cond)
+        self.assertEqual(self.uploads[4].shape, (12, 23, 3))
+        self.assertEqual(self.uploads[5].shape, (19, 31, 3))
+        self.assertIn('<Subject 2>', data['prompt'])
+        self.assertNotIn('<Picture 5>', data['prompt'])
+        self.assertEqual(sum(r.url.path == '/prompt' for r in self.requests), 1)
+        self.assertTrue(any(r.url.path == '/queue' and r.method == 'GET' for r in self.requests))
+
+    def test_shared_queue_timeout_never_submits_or_cancels(self):
+        import itertools
+        def busy(req):
+            if req.url.path == '/queue':
+                return httpx.Response(200, json={'queue_running': [[0, 'foreign-pid']], 'queue_pending': []})
+            return self.handler(req)
+        with patch.object(nodes.time, 'sleep') as sleep, \
+                patch.object(nodes.time, 'monotonic', side_effect=itertools.count(0, 31)):
+            _, _, info = self.execute(busy)
+        self.assertIn('Shared queue busy after 600s', info)
+        self.assertFalse(any(r.url.path in ('/prompt', '/interrupt', '/free') for r in self.requests))
+        self.assertTrue(all(c.args[0] <= 30 for c in sleep.call_args_list))
 
     def test_http_errors_at_each_stage_do_not_raise_or_leak(self):
         for path in ('/upload/image', '/prompt', '/history/mock-pid', '/view'):
@@ -127,8 +169,13 @@ class RemoteTests(unittest.TestCase):
             return httpx.Response(200, text='not json')
         self.assertIn('status=error', self.execute(malformed)[2])
         self.cfg['h3_remote']['timeout_s'] = .0001
-        self.assertIn('NOT cancelled', self.execute()[2])
-        self.assertFalse(any(r.url.path in ('/interrupt', '/queue', '/free') for r in self.requests))
+        def pending(req):
+            if req.url.path.startswith('/history/'):
+                return httpx.Response(200, json={})
+            return self.handler(req)
+        self.assertIn('NOT cancelled', self.execute(pending)[2])
+        self.assertFalse(any(r.url.path in ('/interrupt', '/free') or
+                             (r.url.path == '/queue' and r.method != 'GET') for r in self.requests))
 
     def test_local_validation_prevents_submission(self):
         with patch.object(nodes, 'config', return_value=self.cfg), patch.object(nodes, 'remote_client') as client:
