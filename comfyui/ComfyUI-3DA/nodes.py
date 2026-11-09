@@ -254,7 +254,8 @@ class Prop:
             'size_m': ('FLOAT', {'default': .30, 'min': .001, 'step': .01}),
             'prop_strength': ('FLOAT', {'default': .35, 'min': 0., 'max': 1., 'step': .01}),
         }, 'optional': {'props_in': ('STRING', {'default': '[]', 'forceInput': True}),
-                        'model_3d_info': ('LOAD3D_MODEL_INFO',), 'model_3d': ('FILE_3D',)}}
+                        'model_3d_info': ('LOAD3D_MODEL_INFO',), 'model_3d': ('FILE_3D',),
+                        'camera_info': ('LOAD3D_CAMERA',), 'location': ('STRING', {'forceInput':True})}}
     RETURN_TYPES = ('STRING',)
     RETURN_NAMES = ('props',)
     FUNCTION = 'execute'
@@ -263,9 +264,28 @@ class Prop:
     @classmethod
     def IS_CHANGED(cls,prop_id,**kwargs):
         directory=prop_library()/safe_prop_id(prop_id)
-        return content_fingerprint([HERE/'nodes.py',*directory.glob('*')])
+        cfg=config();paths=[HERE/'nodes.py',HERE/'config.yaml',*directory.glob('*')]
+        if cfg.get('repo'):paths += [Path(cfg['repo'])/'tools/scene3d/prop_gizmo.py',Path(cfg['repo'])/'config/placement.yaml']
+        location=kwargs.get('location')
+        if location and Path(location).is_file():
+            paths.append(Path(location))
+            try:
+                loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
+                paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
+            except (ValueError,KeyError,OSError):pass
+        return content_fingerprint(paths)
 
-    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30, model_3d_info=None, model_3d=None):
+    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30, model_3d_info=None, model_3d=None,
+                camera_info=None,location=None):
+        if model_3d_info is not None and (camera_info is not None or location is not None):
+            if camera_info is None or not location:
+                raise ValueError('Гизмо: подключите camera_info и location для проверки камеры')
+            cfg=config();profile=json.loads(Path(location).read_text(encoding='utf-8'))
+            plate=json.loads((Path(cfg['location_asset_dirs'][profile['loc_id']])/'plate.json').read_text(encoding='utf-8'))
+            import yaml
+            limits=yaml.safe_load((Path(cfg['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))['gizmo_camera']
+            helpers=gizmo_helpers()
+            helpers.validate_camera(camera_info,helpers.camera_config(plate,[1344,768]),limits)
         props = validated_props(props_in)
         item = dict(prop_id=prop_id, anchor=anchor, x=x, y=y, z=z, yaw=yaw, pitch=pitch,
                     roll=roll, scale=scale, prop_strength=prop_strength, size_m=size_m)
@@ -294,7 +314,7 @@ class PlacePose:
     def IS_CHANGED(cls,location=None,props='[]',**kwargs):
         cfg=config();repo=Path(cfg['repo']);root=repo/'tools/scene3d'
         paths=[HERE/'config.yaml',HERE/'nodes.py',repo/'config/placement.yaml',
-               root/'pack_cli.py',root/'prop_composite.py',root/'plate/prop_render.py']
+               root/'pack_cli.py',root/'prop_composite.py',root/'prop_validation.py',root/'plate/prop_render.py']
         paths += [p for p in (root/'posev2').glob('*.py') if not p.name.startswith('test_')]
         if isinstance(location,str) and Path(location).is_file():
             paths += list(Path(location).parent.glob('*'))
@@ -354,6 +374,7 @@ class PlacePose:
                      for key in ('plate','playblast','init','strength')} if bundle else {})
             if bundle:
                 guides.update(prompt=bundle['prompt'] if h3_prompt else '',render_prompt=bundle['render_prompt'])
+                guides['validation']=bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+result['status']]})
                 guides['prop_rgb']=load_image(bundle.get('prop_rgb',result['init']))
                 guides['prop_alpha']=load_mask(bundle['prop_alpha']) if bundle.get('prop_alpha') else torch.zeros_like(guides['strength'])
             return (load_image(result['playblast']), load_image(result['init']), load_mask(result['strength']),
@@ -549,6 +570,10 @@ def remote_run(cfg, images, strength, prompt, seed):
             client.close()
 
 
+class GeometryRejected(ValueError):
+    """Visible Comfy execution error; never save a fake final or spend H3."""
+
+
 class H3Remote:
     @classmethod
     def INPUT_TYPES(cls):
@@ -577,6 +602,9 @@ class H3Remote:
                 raise ValueError('Unknown prop_handling')
             ignored=[]
             if prop_handling=='rendered_separately':
+                if body_guides and not body_guides.get('validation',{}).get('ok',True):
+                    raise GeometryRejected('3DA: H3 не отправлен. Непринятая геометрия: '+
+                        '; '.join(body_guides['validation'].get('reasons',[])))
                 if not body_guides or not body_guides.get('prompt','').strip():
                     raise ValueError('Separate prop mode requires accepted body_guides')
                 if prop_repair is None or prop_repair_mask is None:
@@ -618,6 +646,8 @@ class H3Remote:
                         final_composite_support_pixels=int(final_support.sum()),background_guard_pixels=int(guard.sum()))
                 info=json.dumps(detail,ensure_ascii=False)
             return final,raw,info
+        except GeometryRejected:
+            raise
         except Exception as exc:
             # Deliberately recognisable placeholders, never masquerade as a final plate.
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)

@@ -614,6 +614,8 @@ def do_place(request, config):
         fit["props"] = prop_report["props"]
         fit["flags"] = sorted(set(fit.get("flags", []) + [flag for prop in prop_report["props"]
                                     for flag, active in prop["flags"].items() if active]))
+        from prop_validation import include_props
+        include_props(fit)
         save_json(job / "fit/fit.json", fit)
     # Keep geometry diagnostics visible even in a saved preview, without painting
     # them into init/playblast (which are H3 references).
@@ -636,6 +638,8 @@ def do_place(request, config):
     canvas.save(directory / 'debug.png')
     timings["maps_s"] = round(time.monotonic() - stage, 3)
     timings["total_s"] = round(time.monotonic() - t0, 3)
+    from prop_validation import blocking_reasons
+    body_guides['validation']=dict(ok=not blocking_reasons(fit),reasons=blocking_reasons(fit))
     save_json(job/'body_guides.json',body_guides)
     return dict(status=fit["status"], **{key: str((directory / filename).resolve()) for key, filename in
                 {"playblast": "playblast.png", "init": "init.png", "strength": "strength.png",

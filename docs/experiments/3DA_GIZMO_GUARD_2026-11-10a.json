@@ -1,0 +1,58 @@
+{
+  "restored_local_prompt_id": "5a9f90c2-d933-4edb-b2d0-4b2ea4239cf4",
+  "restored_status": "ok",
+  "dimensions_m": [
+    0.17605352401733398,
+    0.23012447357177734,
+    0.2999999523162842
+  ],
+  "prop_frame_inside": 1.0,
+  "negative_local_prompt_id": "870743d3-481d-4f59-ac7e-53926c919754",
+  "camera_guard": "expected execution_error at Prop",
+  "real_failed_scene_reclassified": "out_of_frame",
+  "h3_preflight_calls": 0,
+  "body_input_hash_matches": {
+    "plate": true,
+    "init": false,
+    "playblast": false,
+    "strength": true
+  },
+  "new_studio_submissions": 0,
+  "body_input_pixel_diffs": {
+    "plate": {
+      "max_difference": 0,
+      "changed_pixels": 0
+    },
+    "init": {
+      "max_difference": 2,
+      "changed_pixels": 1217
+    },
+    "playblast": {
+      "max_difference": 9,
+      "changed_pixels": 1864
+    },
+    "strength": {
+      "max_difference": 0,
+      "changed_pixels": 0
+    }
+  },
+  "source_studio_prompt_id": "bf264f02-4b46-4111-9665-abab9ed2a7a4",
+  "verification": "Local composition on completed user H3; init/playblast differ slightly after render, so full current H3 graph was NOT rerun or claimed equivalent",
+  "outside_changed_pixels": 0,
+  "ssim_outside": 0.9999945902994399,
+  "targeted_tests_passed": 70,
+  "subtests_passed": 26,
+  "new_guard_tests": 12,
+  "package_version": "0.2.1",
+  "contracts": "v0.21",
+  "installed_files": {
+    "nodes.py": "0b4b5b4f9f5fe4ea7a55c8a3f596658701747aec8db48e16bc4e09dc85439f1e",
+    "README_RU.md": "b630aea467d384f99758282bde556aeadd502bf997bc4f82b694d0edcf5779a7",
+    "pyproject.toml": "60e5f1d34a09ea9a4ebfe4d6b17b0cf1feac5a6b37afd2a4a404a68bf37f6c43"
+  },
+  "user_studio_jobs": [
+    "411c2d36-d41e-4411-a982-761e962b329a",
+    "2d488a8b-d7c3-4eca-93ba-d90a48d202d8",
+    "bf264f02-4b46-4111-9665-abab9ed2a7a4"
+  ]
+}

@@ -142,6 +142,8 @@ def build(preset, cfg, request, preview, background, out):
     if len(place['outputs'])==9:place['outputs'].append(dict(name='body_guides',type='3DA_BODY_GUIDES',links=[]))
     graph=wfkit.G(w,w,top=True)
     graph.connect(node,0,prop,'model_3d',type_='FILE_3D')
+    graph.connect(node,2,prop,'camera_info',type_='LOAD3D_CAMERA')
+    graph.connect(by_title['3DA Location'],0,prop,'location',type_='STRING')
     graph.connect(place,7,remote,'prop_repair',type_='IMAGE')
     graph.connect(place,8,remote,'prop_repair_mask',type_='MASK')
     graph.connect(place,9,remote,'body_guides',type_='3DA_BODY_GUIDES')

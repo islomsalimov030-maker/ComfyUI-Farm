@@ -68,3 +68,28 @@ def camera_config(plate, raster):
     fov_y = math.degrees(2 * math.atan(float(plate['sensor_width_mm']) / float(plate['lens_mm']) * h / w / 2))
     return dict(position=vec(pos), target=vec(pos+B@r[:, 2]), zoom=1,
                 cameraType='perspective', fov=fov_y, useCustomUp=True, customUp=vec(-B@r[:, 1]))
+
+
+def validate_camera(actual, expected, limits):
+    """A 2D background cannot reveal that core Fit/orbit changed the camera."""
+    def vec(value):
+        try:a=np.asarray([value[k] for k in 'xyz'],dtype=float)
+        except (TypeError,KeyError,ValueError):raise ValueError('Гизмо: неполные данные камеры') from None
+        if not np.isfinite(a).all():raise ValueError('Гизмо: нечисловая камера')
+        return a
+    def angle(a,b):
+        length=np.linalg.norm(a)*np.linalg.norm(b)
+        if length<1e-12:raise ValueError('Гизмо: нулевое направление камеры')
+        return math.degrees(math.acos(float(np.clip(np.dot(a,b)/length,-1,1))))
+    if not isinstance(actual,dict):raise ValueError('Гизмо: подключите camera_info')
+    p,q=vec(actual.get('position')),vec(expected['position'])
+    direction=vec(actual.get('target'))-p;desired=vec(expected['target'])-q
+    up=vec(actual.get('customUp')) if actual.get('useCustomUp') else np.array([0.,1.,0.])
+    values=np.asarray([actual.get('fov',float('nan')),actual.get('zoom',1)],dtype=float)
+    mismatch=(not np.isfinite(values).all() or actual.get('cameraType')!='perspective' or
+        np.linalg.norm(p-q)>limits['position_m'] or angle(direction,desired)>limits['direction_deg'] or
+        angle(up,vec(expected['customUp']))>limits['direction_deg'] or
+        abs(values[0]-expected['fov'])>limits['fov_deg'] or abs(values[1]-1)>limits['zoom'])
+    if mismatch:
+        raise ValueError('Камера гизмо отличается от камеры комнаты. Подогнать к просмотру/Fit меняет также масштаб предмета. '
+                         'Откройте исходный safe-пресет для восстановления камеры и размера; двигайте предмет стрелками гизмо.')
