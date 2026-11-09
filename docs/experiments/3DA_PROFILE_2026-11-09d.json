@@ -1,0 +1,1156 @@
+{
+  "head_at_profile": "e16da79914c18d966896d404625ae0324050e59c",
+  "scope": "facts only2,3; no source geometry/pack/workflow changes; no server; no commit/push",
+  "q01": {
+    "id": "Q01_stand_hand_face",
+    "status": "ok",
+    "penetration": {
+      "max_cm": 0.0,
+      "n_pen": 0,
+      "soft_p95_cm": 0.0,
+      "soft_max_cm": 0.0,
+      "soft_n": 0,
+      "soft_p95_m": 0.0,
+      "hard_p95_cm": 0.0,
+      "hard_max_cm": 0.0,
+      "hard_n": 0,
+      "hard_p95_m": 0.0,
+      "p95_cm": 0.0,
+      "surfaces": {
+        "hard:floor_1": {
+          "p95_m": 0.0,
+          "max_m": 0.0,
+          "threshold_m": 0.03,
+          "ok": true,
+          "n": 0
+        }
+      },
+      "excess_m": 0.0,
+      "ok": true
+    },
+    "target_instance": "floor_1",
+    "support_object": "floor_1",
+    "fit_source": "single fresh placement before SDF; run_v2 inputs, no Blender/H3",
+    "reference": "C:\\work\\scene3d_work\\refs_v2_npz\\Q01_stand_hand_face.ref.npz",
+    "spec": {
+      "id": "Q01_stand_hand_face",
+      "pose_class": "stand",
+      "target_object": "floor",
+      "support_parts": [
+        "foot.L",
+        "foot.R"
+      ],
+      "instance_hint": null,
+      "source": "table",
+      "secondary_contacts": []
+    },
+    "seed": [
+      2.0985318006511764,
+      4.5587387135454405,
+      0.00088028225493475
+    ],
+    "height_m": 1.62,
+    "elapsed_s": 21.218999999999937,
+    "profiler_total_s": 23.76906219999986,
+    "pstats": "C:\\work\\scene3d_work\\farm\\diagnostics_09d\\Q01_before_SDF.pstats",
+    "top10_cumtime": [
+      {
+        "file": "C:\\work/ComfyUI-next\\comfy\\lora.py",
+        "line": 1,
+        "function": "<module>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 1.04e-05,
+        "cum_s": 5.0724071
+      },
+      {
+        "file": "C:\\work/ComfyUI-next\\comfy\\model_base.py",
+        "line": 1,
+        "function": "<module>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 0.00024880000000000003,
+        "cum_s": 5.0504562
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 839,
+        "function": "place",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 0.0007666000000000001,
+        "cum_s": 4.4302614
+      },
+      {
+        "file": "C:\\work/ComfyUI-next\\comfy\\ldm\\hidream_o1\\model.py",
+        "line": 1,
+        "function": "<module>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 2.19e-05,
+        "cum_s": 4.277551600000001
+      },
+      {
+        "file": "C:\\work/ComfyUI-next\\comfy\\text_encoders\\qwen35.py",
+        "line": 1,
+        "function": "<module>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 0.0002639,
+        "cum_s": 4.272634
+      },
+      {
+        "file": "C:\\work/ComfyUI-next\\comfy\\sd1_clip.py",
+        "line": 1,
+        "function": "<module>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 2.23e-05,
+        "cum_s": 4.2675393
+      },
+      {
+        "file": "C:\\work\\ComfyUI-next\\venv\\Lib\\site-packages\\torch\\_library\\custom_ops.py",
+        "line": 607,
+        "function": "_register_to_dispatcher",
+        "primitive_calls": 130,
+        "calls": 140,
+        "self_s": 2.8501943,
+        "cum_s": 3.8300525000000003
+      },
+      {
+        "file": "C:\\work\\ComfyUI-next\\venv\\Lib\\site-packages\\transformers\\__init__.py",
+        "line": 1,
+        "function": "<module>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 0.000144,
+        "cum_s": 3.6402171
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 86,
+        "function": "prepare_body",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 0.0044897,
+        "cum_s": 3.6204652000000004
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py",
+        "line": 204,
+        "function": "ref_planes",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 3.1833847000000004,
+        "cum_s": 3.5933067000000003
+      }
+    ],
+    "distance_penetration_functions": [
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 428,
+        "function": "penetration_values",
+        "primitive_calls": 5,
+        "calls": 5,
+        "self_s": 0.37194720000000003,
+        "cum_s": 0.38107090000000005
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 460,
+        "function": "penetration_stats",
+        "primitive_calls": 4,
+        "calls": 4,
+        "self_s": 0.0016677,
+        "cum_s": 0.3229094
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py",
+        "line": 187,
+        "function": "penetration",
+        "primitive_calls": 129,
+        "calls": 129,
+        "self_s": 0.020706500000000003,
+        "cum_s": 0.040331000000000006
+      },
+      {
+        "file": "C:\\work\\ComfyUI-next\\venv\\Lib\\site-packages\\torch\\nn\\modules\\loss.py",
+        "line": 1805,
+        "function": "TripletMarginWithDistanceLoss",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 4.9000000000000005e-06,
+        "cum_s": 1.01e-05
+      },
+      {
+        "file": "C:\\work\\ComfyUI-next\\venv\\Lib\\site-packages\\torch\\nn\\modules\\distance.py",
+        "line": 10,
+        "function": "PairwiseDistance",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_s": 4.1000000000000006e-06,
+        "cum_s": 4.1000000000000006e-06
+      }
+    ],
+    "sources_start": {
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\assembly.py": "2d3bfe30ae09700eed098a59c0f597f535e5bc7b7fdd0518ff2a745d82573713",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\body.py": "a7f6b08f3f185e13152e6bf34a5e889d743f45f170f1060da7ec0189a5498661",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\diag_seat.py": "afeeedfbbe63187e3ee88ddb90c323f4e61c5569b323525451b8e9d8ca58f4a3",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\mhr_probe.py": "8d97c61beb96021cef28fb5d9de9f525087c5d9bce763011dfa25dad07aec4f8",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\orient.py": "efb8696fce003b4b7021d40564243363488d99b2194ae814b52d66e100e4a4b9",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py": "69322dda3bb97d3a50b5a9611bf3fa3252f63eba9a3b75ebe0f5283c0cb4bef5",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\placement_config.py": "326205f859e6b3510252d9914194625fc51fe296c522ac0e0c8f210293799796",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py": "2710b84956e3ace0d761e8619ca4f85e9b316df996a2375cdfd7eba75a4063d2",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\profiles.py": "f20b4bf3a4781b77a68d8c9d273c90b5eeb7e2bad97bfa6be73da0fa2ca1a226",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\refine.py": "adde859f79f9cfb5505abc99eab4d19a488b7bdbeeb924a77fb3e800ca3c12bb",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\ref_scene.py": "dd6d2c54c397205ee697e3bc3fb67100d8fb9faa63501fb1eb5bddba586e3e70",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\run_v2.py": "4607e43e3b622774942dae9182ea46b973aa4a2620d387f104542df37eed6c5d",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\shot_spec.py": "0ea0f9d5a10a4e84c8a61c9f0a9d009afba2e9cc7ff030c0147b6548fde6bd18",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\support_geometry.py": "405af85bd8d95cbce87713dbbdac649a49f35636c88e3f018e84aa8daad41dcf",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_assembly_v26.py": "b28364af4317da6d18981990fb58c374710ba4001f68d24a53f2e5d273cc47c1",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_config_v26.py": "4d668d438ab25fbe90a92228b6acbba3bbbe1d53482691ae72898a5b68857438",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_geometry_2ae.py": "a78bdb2bfc1a29d554db8cc716b74bdb2c9f0264c772fb49cc73aa2a7d1de94a",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_pose_fit.py": "24b6af4330f5ec12858693a8f1e7c085ac28c823d6654424ea5527d9829a30c1",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_runner_v26.py": "c2645b48ad1c544bd9c4e5acc1d7703ff78c908db203b561bd8d5dd6390e1d33",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_step9c.py": "3ec0f5a3240fe5fd872a7347b5abd39feb38591670d0efb3984f77dc32c8f31b",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_step9d.py": "f2ad16c732cf69ffc9b4fda9333064667a0a28d617e5f3963faf2789d5d1a26b",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_synth_plate.py": "9ece8e7f8ec2820f5152a8118d064caa4ed24181ee1aa40e7a23940f3d7d4c14",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_v24.py": "9dc970ac96be2557866c3ab19087d7435677039d46974f76f21adaa667312287",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_v25.py": "ce7908423c93950293a060c88c449b7282677cc8e79be2288dfb752c7403420e",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\top_region.py": "6456b142792db494417ab04b4490d27bcb20463bacd108a47faae1e47022c6c9",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\zone.py": "549a1b0dde8465760d5be987d2685b4389ae3021b18427cc5a7cd33332607285",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\pack_cli.py": "14df9212d8c551a0e34dd90da14c9875988535b94d31bdca51d57e27035dc437",
+      "C:\\work\\ComfyUI-Farm\\config\\placement.yaml": "e608d8972f647344251afeed2e75aed7ec0fcc561989f6561fecf3be3cd36c10",
+      "C:\\work\\ComfyUI-next\\custom_nodes\\ComfyUI-3DA\\config.yaml": "858269a4c656674885bbca5f3136adb0b8e219089e0be03dedc3ae21fd61859a"
+    },
+    "sources_end": {
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\assembly.py": "2d3bfe30ae09700eed098a59c0f597f535e5bc7b7fdd0518ff2a745d82573713",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\body.py": "a7f6b08f3f185e13152e6bf34a5e889d743f45f170f1060da7ec0189a5498661",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\diag_seat.py": "afeeedfbbe63187e3ee88ddb90c323f4e61c5569b323525451b8e9d8ca58f4a3",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\mhr_probe.py": "8d97c61beb96021cef28fb5d9de9f525087c5d9bce763011dfa25dad07aec4f8",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\orient.py": "efb8696fce003b4b7021d40564243363488d99b2194ae814b52d66e100e4a4b9",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py": "69322dda3bb97d3a50b5a9611bf3fa3252f63eba9a3b75ebe0f5283c0cb4bef5",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\placement_config.py": "326205f859e6b3510252d9914194625fc51fe296c522ac0e0c8f210293799796",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py": "2710b84956e3ace0d761e8619ca4f85e9b316df996a2375cdfd7eba75a4063d2",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\profiles.py": "f20b4bf3a4781b77a68d8c9d273c90b5eeb7e2bad97bfa6be73da0fa2ca1a226",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\refine.py": "adde859f79f9cfb5505abc99eab4d19a488b7bdbeeb924a77fb3e800ca3c12bb",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\ref_scene.py": "dd6d2c54c397205ee697e3bc3fb67100d8fb9faa63501fb1eb5bddba586e3e70",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\run_v2.py": "4607e43e3b622774942dae9182ea46b973aa4a2620d387f104542df37eed6c5d",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\shot_spec.py": "0ea0f9d5a10a4e84c8a61c9f0a9d009afba2e9cc7ff030c0147b6548fde6bd18",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\support_geometry.py": "405af85bd8d95cbce87713dbbdac649a49f35636c88e3f018e84aa8daad41dcf",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_assembly_v26.py": "b28364af4317da6d18981990fb58c374710ba4001f68d24a53f2e5d273cc47c1",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_config_v26.py": "4d668d438ab25fbe90a92228b6acbba3bbbe1d53482691ae72898a5b68857438",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_geometry_2ae.py": "a78bdb2bfc1a29d554db8cc716b74bdb2c9f0264c772fb49cc73aa2a7d1de94a",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_pose_fit.py": "24b6af4330f5ec12858693a8f1e7c085ac28c823d6654424ea5527d9829a30c1",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_runner_v26.py": "c2645b48ad1c544bd9c4e5acc1d7703ff78c908db203b561bd8d5dd6390e1d33",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_step9c.py": "3ec0f5a3240fe5fd872a7347b5abd39feb38591670d0efb3984f77dc32c8f31b",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_step9d.py": "f2ad16c732cf69ffc9b4fda9333064667a0a28d617e5f3963faf2789d5d1a26b",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_synth_plate.py": "9ece8e7f8ec2820f5152a8118d064caa4ed24181ee1aa40e7a23940f3d7d4c14",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_v24.py": "9dc970ac96be2557866c3ab19087d7435677039d46974f76f21adaa667312287",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\test_v25.py": "ce7908423c93950293a060c88c449b7282677cc8e79be2288dfb752c7403420e",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\top_region.py": "6456b142792db494417ab04b4490d27bcb20463bacd108a47faae1e47022c6c9",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\zone.py": "549a1b0dde8465760d5be987d2685b4389ae3021b18427cc5a7cd33332607285",
+      "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\pack_cli.py": "14df9212d8c551a0e34dd90da14c9875988535b94d31bdca51d57e27035dc437",
+      "C:\\work\\ComfyUI-Farm\\config\\placement.yaml": "e608d8972f647344251afeed2e75aed7ec0fcc561989f6561fecf3be3cd36c10",
+      "C:\\work\\ComfyUI-next\\custom_nodes\\ComfyUI-3DA\\config.yaml": "858269a4c656674885bbca5f3136adb0b8e219089e0be03dedc3ae21fd61859a"
+    },
+    "head": "e16da79914c18d966896d404625ae0324050e59c",
+    "geometry_top10_cumtime": [
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 839,
+        "function": "place",
+        "calls": 1,
+        "self_s": 0.0007666000000000001,
+        "cum_s": 4.4302614
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 86,
+        "function": "prepare_body",
+        "calls": 1,
+        "self_s": 0.0044897,
+        "cum_s": 3.6204652000000004
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py",
+        "line": 204,
+        "function": "ref_planes",
+        "calls": 1,
+        "self_s": 3.1833847000000004,
+        "cum_s": 3.5933067000000003
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\refine.py",
+        "line": 32,
+        "function": "run",
+        "calls": 1,
+        "self_s": 0.0021913,
+        "cum_s": 2.0064384
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 966,
+        "function": "fit_at",
+        "calls": 1,
+        "self_s": 9.09e-05,
+        "cum_s": 0.4541432
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 428,
+        "function": "penetration_values",
+        "calls": 5,
+        "self_s": 0.37194720000000003,
+        "cum_s": 0.38107090000000005
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 460,
+        "function": "penetration_stats",
+        "calls": 4,
+        "self_s": 0.0016677,
+        "cum_s": 0.3229094
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 784,
+        "function": "geometry_diagnostics",
+        "calls": 1,
+        "self_s": 0.011910700000000001,
+        "cum_s": 0.1903766
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 547,
+        "function": "evaluate",
+        "calls": 1,
+        "self_s": 0.0831119,
+        "cum_s": 0.1840437
+      },
+      {
+        "file": "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py",
+        "line": 265,
+        "function": "rigid_fit",
+        "calls": 1,
+        "self_s": 0.0015416000000000002,
+        "cum_s": 0.1492473
+      }
+    ],
+    "penetration_disjoint_cum_s": 0.41829800000000006,
+    "penetration_fraction_of_place": 0.09441835644280494,
+    "penetration_fraction_of_profiled_wall": 0.01971337009284138,
+    "refine_ctx_available": true,
+    "refine_mem_calls": 0,
+    "refine_evidence": "SAM3DBody_Loader.execute in pstats; load_ctx returned without exception; first rigid fit ok -> break before refine_mem",
+    "body_dims_source": "C:/work/scene3d_work/farm/characters/stacy/body.json",
+    "scope_note": "runner cached reference, not fresh generic SHA256 reference; excludes MoGe/SAM ref extraction, Plate construction, Blender, maps and H3",
+    "cprofile_note": "Raw cProfile total_tt23.769s > perf wall21.219s; nested import cProfile timings not suitable for summing. Outer load_ctx/load_head frames absent in stats despite successful loader.execute, so import/runtime registration may affect enclosing frames; exact place cumtime and raw pstats preserved.",
+    "input_sha256_at_report": {
+      "C:\\work\\scene3d_work\\refs_v2_npz\\Q01_stand_hand_face.ref.npz": "e63f2d91c88665d69603bb0b8d11200cf74ff2c37f68c77c7387b54352749eb2",
+      "C:\\work\\scene3d_work\\farm\\characters\\stacy\\body.json": "4e87fbcbc7f2f4efbbff2e7c9b2900785c347b549981afd24b8a98ab04d222b6",
+      "C:\\work\\scene3d_work\\farm\\locations\\mainroom1\\profile.json": "bd27c967e90ac6919335c99f018a01b331756ec90c7fc88e2966578c68a7e98f"
+    }
+  },
+  "existing_baselines": [
+    {
+      "id": "Q03_bed_kneel",
+      "path": "C:\\work\\scene3d_work\\farm\\pose_round\\V2_before_09d_20261109_144847\\Q03_bed_kneel\\fit.json",
+      "sha256": "d5da78650709062b71a622a34b120ae9ad69bff8444d3cdf06745a6be9c2942b",
+      "fit_hash": "e3373a41a1b8ed2d",
+      "status": "ok",
+      "penetration": {
+        "max_cm": 2.4,
+        "n_pen": 215,
+        "soft_p95_cm": 2.1,
+        "soft_max_cm": 2.4,
+        "soft_n": 215,
+        "soft_p95_m": 0.02113409709490807,
+        "hard_p95_cm": 0.0,
+        "hard_max_cm": 0.0,
+        "hard_n": 0,
+        "hard_p95_m": 0.0,
+        "p95_cm": 2.1,
+        "surfaces": {
+          "soft:bed_1": {
+            "p95_m": 0.02113409709490807,
+            "max_m": 0.024432929280556005,
+            "threshold_m": 0.06,
+            "ok": true,
+            "n": 215
+          }
+        },
+        "excess_m": 0.0,
+        "ok": true
+      },
+      "mtime_utc": "2026-11-08T22:49:42.150761+00:00",
+      "freshness": "Q03 latest completed09c 2ae; T02 stale/not rerun09c2ae",
+      "current_baseline_eligible": true
+    },
+    {
+      "id": "T02_kneel_lunge",
+      "path": "C:\\work\\scene3d_work\\farm\\pose_round\\V2_before_09d_20261109_144847\\T02_kneel_lunge\\fit.json",
+      "sha256": "b1401e9a95734271274ecd02f3245ede234122644b276e4472a6293434d180f1",
+      "fit_hash": "7e2fbc616b73b5d9",
+      "status": "ok",
+      "penetration": {
+        "max_cm": 1.7,
+        "n_pen": 92,
+        "soft_p95_cm": 0.0,
+        "soft_max_cm": 0.0,
+        "soft_n": 0,
+        "soft_p95_m": 0.0,
+        "hard_p95_cm": 1.6,
+        "hard_max_cm": 1.7,
+        "hard_n": 92,
+        "hard_p95_m": 0.016082496316072045,
+        "p95_cm": 1.6,
+        "surfaces": {
+          "hard": {
+            "p95_m": 0.016082496316072045,
+            "max_m": 0.017253666247236486,
+            "threshold_m": 0.03,
+            "ok": true,
+            "n": 92
+          },
+          "hard:wall0": {
+            "p95_m": 0.0,
+            "max_m": 0.0,
+            "threshold_m": 0.03,
+            "ok": true,
+            "n": 0
+          }
+        },
+        "excess_m": 0.0,
+        "ok": true
+      },
+      "mtime_utc": "2026-11-08T18:49:32.452655+00:00",
+      "freshness": "Q03 latest completed09c 2ae; T02 stale/not rerun09c2ae",
+      "current_baseline_eligible": false
+    }
+  ],
+  "q11": {
+    "source": "existing fresh generic CLI09c, read-only; NOT V2/Q11",
+    "request_path": "C:\\work\\scene3d_work\\farm\\pack_manual_09c\\Q11_bench_side_sit_request.json",
+    "outcome_path": "C:\\work\\scene3d_work\\farm\\pack_manual_09c\\Q11_place_result_after_fixes.json",
+    "job": "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36",
+    "fit_path": "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit.json",
+    "reference": "C:\\work\\scene3d_work\\farm\\cache\\pose_ref\\a823ac92e73602697a5fd5009398c9a8d410d2fca2887fd7ce033e7d99669498\\pose.ref.npz",
+    "plate_dir": "C:\\work\\scene3d_work\\plate\\mainroom1",
+    "status": "wrong_surface",
+    "timings_saved": {
+      "reference_s": 14.812,
+      "placement_s": 367.312,
+      "render_s": 6.969,
+      "maps_s": 0.546,
+      "total_s": 391.593
+    },
+    "objects": [
+      {
+        "id": "bench_1",
+        "type": "bench",
+        "h0": 0.35,
+        "soft": false,
+        "center_world_m": [
+          1.6878651685393213,
+          5.5152808988764,
+          0.3506137196324762
+        ],
+        "top_bounds_world_m": [
+          [
+            1.33,
+            5.03,
+            0.32803553274682307
+          ],
+          [
+            2.03,
+            6.09,
+            0.36988
+          ]
+        ]
+      },
+      {
+        "id": "floor_1",
+        "type": "floor",
+        "h0": -0.001,
+        "soft": false,
+        "center_world_m": [
+          1.7766515171768482,
+          5.167755647640682,
+          4.574076416711865e-05
+        ],
+        "top_bounds_world_m": [
+          [
+            -0.27,
+            3.7700000000000005,
+            -0.01455
+          ],
+          [
+            4.470000000000001,
+            7.99,
+            0.036208333333333335
+          ]
+        ]
+      },
+      {
+        "id": "wall_1",
+        "type": "wall",
+        "h0": null,
+        "soft": false,
+        "center_world_m": [
+          -0.6736805833333348,
+          4.198631574999994,
+          1.7108663833333322
+        ]
+      },
+      {
+        "id": "wall_2",
+        "type": "wall",
+        "h0": null,
+        "soft": false,
+        "center_world_m": [
+          1.9829099999999968,
+          6.407928641666685,
+          1.3209423750000016
+        ]
+      },
+      {
+        "id": "wall_3",
+        "type": "wall",
+        "h0": null,
+        "soft": false,
+        "center_world_m": [
+          3.212633266666668,
+          7.969297016666646,
+          1.5035711249999981
+        ]
+      },
+      {
+        "id": "wall_4",
+        "type": "wall",
+        "h0": null,
+        "soft": false,
+        "center_world_m": [
+          1.4605999999999981,
+          5.289565258215965,
+          2.5327668427230043
+        ]
+      },
+      {
+        "id": "wall_5",
+        "type": "wall",
+        "h0": null,
+        "soft": false,
+        "center_world_m": [
+          2.706325407532317,
+          7.942330541502721,
+          1.1769995128349264
+        ]
+      }
+    ],
+    "bench_instances": [
+      {
+        "id": "bench_1",
+        "type": "bench",
+        "h0": 0.35,
+        "soft": false,
+        "center_world_m": [
+          1.6878651685393213,
+          5.5152808988764,
+          0.3506137196324762
+        ],
+        "top_bounds_world_m": [
+          [
+            1.33,
+            5.03,
+            0.32803553274682307
+          ],
+          [
+            2.03,
+            6.09,
+            0.36988
+          ]
+        ]
+      }
+    ],
+    "pink_sofa": {
+      "registered_instances": [],
+      "type": null,
+      "id": null,
+      "h0_m": null,
+      "center_world_m": null,
+      "reason": "pink sofa visible in original plate is not an object in this location profile; no sofa/armchair/other instance registered"
+    },
+    "target_instance": "bench_1",
+    "resolved_type": "bench",
+    "find_object_rule": "profiles.py:86-93: first kind bench has exactly one candidate; no instance_hint; return candidates[0], kind. Nearest-anchor branch 94-100 NOT reached.",
+    "seed_world_m": [
+      1.6878651685393213,
+      5.5152808988764,
+      0.35061371963247573
+    ],
+    "target_region_h0_m": 0.34976,
+    "saved_support_object": "other",
+    "saved_support_parts_on": {
+      "pelvis": "bench_1",
+      "thigh.R": "other"
+    },
+    "saved_support_info": {},
+    "saved_zone": {
+      "source": "profile",
+      "object_id": "bench_1",
+      "via": "bench",
+      "type": "bench",
+      "soft": false,
+      "name": "bench",
+      "backrest_name": "backrest",
+      "anchor_id": "bench_1_edge",
+      "rule": "sit_edge_side",
+      "band_m": [
+        0.0,
+        0.232
+      ],
+      "n_ok": 323,
+      "side_yaw_deg": -27.5,
+      "side_len_m": 1.08,
+      "side_access": 0.82,
+      "sides": [
+        {
+          "yaw_deg": -27.5,
+          "len_m": 1.08,
+          "access": 0.82
+        },
+        {
+          "yaw_deg": 62.5,
+          "len_m": 0.42,
+          "access": 0.0
+        },
+        {
+          "yaw_deg": 152.5,
+          "len_m": 1.08,
+          "access": 0.18
+        },
+        {
+          "yaw_deg": -117.5,
+          "len_m": 0.42,
+          "access": 1.0
+        }
+      ],
+      "cell": {
+        "xy": [
+          1.69,
+          5.51
+        ],
+        "h": 0.351,
+        "near": 0.212,
+        "far": 0.481,
+        "dt": 0.179,
+        "anchor": "pelvis"
+      },
+      "attempt": 1,
+      "shift_m": 0.02,
+      "region": {
+        "target_object": "bench",
+        "source": "profile",
+        "h0_m": 0.35,
+        "width_m": 0.52,
+        "depth_m": 1.06,
+        "area_m2": 0.36,
+        "dt_max_m": 0.19,
+        "x_m": [
+          1.33,
+          2.03
+        ],
+        "y_m": [
+          5.03,
+          6.09
+        ],
+        "backrest_pts": 331,
+        "backrest_z_m": [
+          0.45,
+          1.23
+        ],
+        "flags": [
+          "dominant_top_unavailable"
+        ]
+      }
+    },
+    "geometry_diagnostics": {
+      "measurement_vertices": "selected_support",
+      "target_h0_m": 0.34976,
+      "actual_support_surfaces": [
+        {
+          "id": "bench_1",
+          "h0_m": 0.34976,
+          "n_contact": 63,
+          "min_distance_m": 0.020767669585199086
+        }
+      ],
+      "actual_surface": {
+        "id": "bench_1",
+        "h0_m": 0.34976,
+        "n_contact": 63,
+        "min_distance_m": 0.020767669585199086
+      },
+      "actual_surface_reason": null,
+      "target_gap_min_m": 0.020004615384615343,
+      "target_gap_p50_m": 0.04358000000000006,
+      "support_hull": {
+        "area_m2": 0.15918200715000003,
+        "in_mask_area_m2": 0.11561341318739195,
+        "in_mask_fraction": 0.7262969933432701,
+        "hull_xy": [
+          [
+            1.98014,
+            5.28397
+          ],
+          [
+            2.00712,
+            5.32604
+          ],
+          [
+            1.999,
+            5.34863
+          ],
+          [
+            1.98961,
+            5.36872
+          ],
+          [
+            1.97669,
+            5.39394
+          ],
+          [
+            1.96427,
+            5.41597
+          ],
+          [
+            1.93811,
+            5.46171
+          ],
+          [
+            1.88649,
+            5.55193
+          ],
+          [
+            1.87721,
+            5.56586
+          ],
+          [
+            1.86901,
+            5.57687
+          ],
+          [
+            1.8612,
+            5.58642
+          ],
+          [
+            1.85164,
+            5.59646
+          ],
+          [
+            1.82969,
+            5.61924
+          ],
+          [
+            1.80097,
+            5.64714
+          ],
+          [
+            1.79486,
+            5.65232
+          ],
+          [
+            1.78156,
+            5.66249
+          ],
+          [
+            1.77453,
+            5.66603
+          ],
+          [
+            1.75744,
+            5.67239
+          ],
+          [
+            1.74668,
+            5.67487
+          ],
+          [
+            1.73141,
+            5.67552
+          ],
+          [
+            1.71136,
+            5.67431
+          ],
+          [
+            1.69331,
+            5.67008
+          ],
+          [
+            1.64196,
+            5.65324
+          ],
+          [
+            1.5929,
+            5.62881
+          ],
+          [
+            1.56525,
+            5.59628
+          ],
+          [
+            1.55167,
+            5.55951
+          ],
+          [
+            1.55232,
+            5.54405
+          ],
+          [
+            1.55781,
+            5.49927
+          ],
+          [
+            1.56009,
+            5.48188
+          ],
+          [
+            1.60115,
+            5.32026
+          ],
+          [
+            1.60872,
+            5.29997
+          ],
+          [
+            1.6657,
+            5.15232
+          ],
+          [
+            1.67556,
+            5.14313
+          ],
+          [
+            1.70561,
+            5.15224
+          ],
+          [
+            1.78485,
+            5.1781
+          ]
+        ],
+        "degenerate": false
+      },
+      "hull_parts": [
+        "pelvis",
+        "thigh.L",
+        "thigh.R"
+      ],
+      "penetration_per_surface": {
+        "hard:bench_1": {
+          "p95_m": 0.04073375178983095,
+          "max_m": 0.08015862080990038,
+          "threshold_m": 0.03,
+          "ok": false,
+          "n": 414
+        },
+        "hard:floor_1": {
+          "p95_m": 0.01947207969061757,
+          "max_m": 0.02367527194414713,
+          "threshold_m": 0.03,
+          "ok": true,
+          "n": 74
+        },
+        "hard:wall_2": {
+          "p95_m": 0.024496711706335952,
+          "max_m": 0.026869035716874996,
+          "threshold_m": 0.03,
+          "ok": true,
+          "n": 128
+        },
+        "hard:wall_4": {
+          "p95_m": 0.0,
+          "max_m": 0.0,
+          "threshold_m": 0.03,
+          "ok": true,
+          "n": 0
+        }
+      },
+      "penetration_parts_per_surface": {
+        "hard:bench_1": {
+          "foot.L": {
+            "n": 27,
+            "p95_m": 0.01855046055021177,
+            "max_m": 0.02099252723835492
+          },
+          "foot.R": {
+            "n": 259,
+            "p95_m": 0.02816793902584733,
+            "max_m": 0.03407888634578509
+          },
+          "shin.R": {
+            "n": 128,
+            "p95_m": 0.06280444997926768,
+            "max_m": 0.08015862080990038
+          }
+        },
+        "hard:floor_1": {
+          "foot.L": {
+            "n": 68,
+            "p95_m": 0.019186616443548358,
+            "max_m": 0.02367527194414713
+          },
+          "shin.R": {
+            "n": 6,
+            "p95_m": 0.01784742076845795,
+            "max_m": 0.019392401235887233
+          }
+        },
+        "hard:wall_2": {
+          "arm.R": {
+            "n": 43,
+            "p95_m": 0.0181155919177229,
+            "max_m": 0.01992319739857911
+          },
+          "torso": {
+            "n": 85,
+            "p95_m": 0.02543200574527015,
+            "max_m": 0.026869035716874996
+          }
+        },
+        "hard:wall_4": {}
+      },
+      "angles_deg": {
+        "yaw": -83.1700335765605,
+        "pitch": 10.169346289489708,
+        "roll": 0.32244527596774475
+      },
+      "top_definition": {
+        "method": "blocked",
+        "reason": "stop2c: legacy profile has no explicit object footprint bbox/polygon or full object mask"
+      }
+    },
+    "part_vertex_heights": {
+      "pelvis": {
+        "vertex_count": 685,
+        "z_min_m": 0.37706,
+        "z_p50_m": 0.47402,
+        "z_max_m": 0.61817,
+        "relative_target_min_m": 0.02729999999999999,
+        "relative_target_p50_m": 0.12425999999999998
+      },
+      "foot.L": {
+        "vertex_count": 1120,
+        "z_min_m": 0.30775,
+        "z_p50_m": 0.35277499999999995,
+        "z_max_m": 0.44716,
+        "relative_target_min_m": -0.04200999999999999,
+        "relative_target_p50_m": 0.0030149999999999344
+      },
+      "foot.R": {
+        "vertex_count": 1127,
+        "z_min_m": 0.03377,
+        "z_p50_m": 0.07055,
+        "z_max_m": 0.19766,
+        "relative_target_min_m": -0.31599,
+        "relative_target_p50_m": -0.27921
+      }
+    },
+    "joint_heights": {
+      "pelvis_hip_midpoint": {
+        "world_xyz_m": [
+          1.7077552344741995,
+          5.519947994631561,
+          0.4776583925542484
+        ],
+        "relative_target_m": 0.1278983925542484
+      },
+      "l_an": {
+        "world_xyz_m": [
+          1.7838959615426624,
+          5.234664011076133,
+          0.39899162495594154
+        ],
+        "relative_target_m": 0.04923162495594152
+      },
+      "l_heel": {
+        "world_xyz_m": [
+          1.7600663577427729,
+          5.265021684647742,
+          0.36699940350982047
+        ],
+        "relative_target_m": 0.01723940350982045
+      },
+      "l_btoe": {
+        "world_xyz_m": [
+          1.7133783684246269,
+          5.082106544766797,
+          0.3646711938025484
+        ],
+        "relative_target_m": 0.014911193802548406
+      },
+      "l_stoe": {
+        "world_xyz_m": [
+          1.7534820228608692,
+          5.111076385983291,
+          0.3215370038620611
+        ],
+        "relative_target_m": -0.028222996137938938
+      },
+      "r_an": {
+        "world_xyz_m": [
+          1.687615802727121,
+          5.287845804107152,
+          0.13921169561559843
+        ],
+        "relative_target_m": -0.21054830438440159
+      },
+      "r_heel": {
+        "world_xyz_m": [
+          1.6695137968730125,
+          5.330533406509271,
+          0.1098893915091943
+        ],
+        "relative_target_m": -0.23987060849080571
+      },
+      "r_btoe": {
+        "world_xyz_m": [
+          1.761948426590749,
+          5.173970531544676,
+          0.04722173464716031
+        ],
+        "relative_target_m": -0.3025382653528397
+      },
+      "r_stoe": {
+        "world_xyz_m": [
+          1.6966883419126926,
+          5.1860168016193375,
+          0.04665479211963877
+        ],
+        "relative_target_m": -0.3031052078803612
+      }
+    },
+    "support_world_bbox_m": [
+      [
+        1.59356,
+        5.14569,
+        0.37628
+      ],
+      [
+        1.78485,
+        5.54091,
+        0.44331
+      ]
+    ],
+    "input_sha256_before": {
+      "C:\\work\\scene3d_work\\farm\\pack_manual_09c\\Q11_bench_side_sit_request.json": "f0c52f1a5c4f183dd1280381aa600b24304847ef6f0a1fc481063b903dbbec8f",
+      "C:\\work\\scene3d_work\\farm\\pack_manual_09c\\Q11_place_result_after_fixes.json": "de96fd7536e1a3b98af6b56270ec3c8fcf8046de1d4630c4c5a613c4985bbbb5",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\body.obj": "c188297f63fb7510e290a1f9f27e31863fe1ad64e3c13c843816b01a0bb6e7fc",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\body_rigid.obj": "c292f461d45c94a5c73f2dc909b7305bd43817419ccb8ea1797711f7c655b66a",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit.json": "f1fb653e86daaf7b73c49663dd3d58db2dbf0c3c4e6f0db92ed311eb9898dc8a",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit_hash.txt": "93517de292180d05532b8c0da55c4d22d68d36b299b65e83d2bca8b76a63545a",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit_rigid.json": "9ff2c8babf6f36479d34553a33e385ebd44ff73ebe0929808b14a9b996abb966",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit_state.npz": "06b68da56bdef66cb6fe9476114e9394b6a9637f21158165eadebd5cb2695722",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\label_joints.npz": "ef4e8fba9a49519e05b413d271fe49483071e5d57e74a14277c69ee829bfe5d1",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\overlay.jpg": "04801c1a7cb569e5234c280e9aa5c73ea6188fdc0795608517f2ae39dc6a5ee6",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\shot_spec.json": "333ebd77ab7a3eda288e780c668f09911cf88384a63b1f2b9d6ea8913aa21a1a",
+      "C:\\work\\scene3d_work\\farm\\locations\\mainroom1\\profile.json": "bd27c967e90ac6919335c99f018a01b331756ec90c7fc88e2966578c68a7e98f"
+    },
+    "input_sha256_after": {
+      "C:\\work\\scene3d_work\\farm\\pack_manual_09c\\Q11_bench_side_sit_request.json": "f0c52f1a5c4f183dd1280381aa600b24304847ef6f0a1fc481063b903dbbec8f",
+      "C:\\work\\scene3d_work\\farm\\pack_manual_09c\\Q11_place_result_after_fixes.json": "de96fd7536e1a3b98af6b56270ec3c8fcf8046de1d4630c4c5a613c4985bbbb5",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\body.obj": "c188297f63fb7510e290a1f9f27e31863fe1ad64e3c13c843816b01a0bb6e7fc",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\body_rigid.obj": "c292f461d45c94a5c73f2dc909b7305bd43817419ccb8ea1797711f7c655b66a",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit.json": "f1fb653e86daaf7b73c49663dd3d58db2dbf0c3c4e6f0db92ed311eb9898dc8a",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit_hash.txt": "93517de292180d05532b8c0da55c4d22d68d36b299b65e83d2bca8b76a63545a",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit_rigid.json": "9ff2c8babf6f36479d34553a33e385ebd44ff73ebe0929808b14a9b996abb966",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\fit_state.npz": "06b68da56bdef66cb6fe9476114e9394b6a9637f21158165eadebd5cb2695722",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\label_joints.npz": "ef4e8fba9a49519e05b413d271fe49483071e5d57e74a14277c69ee829bfe5d1",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\overlay.jpg": "04801c1a7cb569e5234c280e9aa5c73ea6188fdc0795608517f2ae39dc6a5ee6",
+      "C:\\work\\scene3d_work\\farm\\pack\\jobs\\1fab1f1ed9484a97b29dc796e0fc6a36\\fit\\shot_spec.json": "333ebd77ab7a3eda288e780c668f09911cf88384a63b1f2b9d6ea8913aa21a1a",
+      "C:\\work\\scene3d_work\\farm\\locations\\mainroom1\\profile.json": "bd27c967e90ac6919335c99f018a01b331756ec90c7fc88e2966578c68a7e98f"
+    },
+    "vertical_mesh_rays": {
+      "support_vertices": 179,
+      "hits": 179,
+      "bench_height_hits": 161,
+      "floor_height_hits": 18,
+      "hit_height_min_p50_max_m": [
+        -0.008800238370895386,
+        0.3535187840461731,
+        0.35791459679603577
+      ],
+      "vertical_gap_min_p50_max_m": [
+        0.02000801780700684,
+        0.04497860008239746,
+        0.45186952501296995
+      ],
+      "interpretation": "Actual mesh under selected support is mostly bench-height, remaining rays floor-height; does not establish all support groups in valid contact. No sofa instance exists."
+    },
+    "inputs_unchanged": true,
+    "inputs_still_unchanged_at_report": true
+  },
+  "top_view": {
+    "path": "C:\\work\\ComfyUI-Farm\\docs\\experiments\\img\\Q11_top_09d.jpg",
+    "labels": [
+      {
+        "id": "bench_1",
+        "pixel": [
+          716.6231274604797,
+          603.86583507061
+        ]
+      },
+      {
+        "id": "floor_1",
+        "pixel": [
+          733.4205746650696,
+          669.6138381958008
+        ]
+      },
+      {
+        "id": "wall_1",
+        "pixel": [
+          269.84421014785767,
+          852.9615849256516
+        ]
+      },
+      {
+        "id": "wall_2",
+        "pixel": [
+          772.4424123764038,
+          434.98653769493103
+        ]
+      },
+      {
+        "id": "wall_3",
+        "pixel": [
+          1005.0927639007568,
+          139.59251046180725
+        ]
+      },
+      {
+        "id": "wall_4",
+        "pixel": [
+          673.6270248889923,
+          646.5688169002533
+        ]
+      },
+      {
+        "id": "wall_5",
+        "pixel": [
+          909.3047738075256,
+          144.69426274299622
+        ]
+      }
+    ],
+    "camera_world_m": [
+      1.600000023841858,
+      5.800000190734863,
+      12.0
+    ],
+    "ortho_scale_m": 7.400000095367432,
+    "cutaway_above_z_m": 1.8
+  }
+}

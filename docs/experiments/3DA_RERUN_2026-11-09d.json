@@ -1,0 +1,698 @@
+{
+  "placement_s": 1800.188,
+  "exit_code": 124,
+  "render_exit_code": 0,
+  "new": 14,
+  "counts_new": {
+    "contact_fail": 2,
+    "ok": 12,
+    "partial": 0
+  },
+  "rows": [
+    {
+      "id": "Q01_stand_hand_face",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "c187b18048c5fd48d9264cfc4c0aadf954dbbf3db28eea507d4e1a7e87677a6b",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 5.7,
+        "tilt_set_deg": 5.7,
+        "tilt_final_deg": 9.3,
+        "roll_ref_deg": 1.8,
+        "roll_final_deg": 0.0,
+        "clamped_deg": 0.1,
+        "total_change_deg": 5.4,
+        "yaw": {
+          "ref_yaw_deg": -112.8,
+          "want_deg": -112.8,
+          "yaw_deg": -113.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -114.7
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 9.3,
+          "elev_deg": 80.7,
+          "head_minus_pelvis_m": 0.585,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q02_bed_cross_legs",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "a765b4ab0d2a4500cff1b602676b7e516d3c6e8b95d3d42266d29181efcc6391",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 16.7,
+        "tilt_set_deg": 16.7,
+        "tilt_final_deg": 8.6,
+        "roll_ref_deg": 5.7,
+        "roll_final_deg": 9.1,
+        "clamped_deg": 0.1,
+        "total_change_deg": 11.5,
+        "yaw": {
+          "ref_yaw_deg": -37.9,
+          "want_deg": -37.9,
+          "yaw_deg": -38.0,
+          "window_deg": -90.0,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -81.9
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": {
+          "plate_deg": -63.4,
+          "reproj_plate": 0.055,
+          "reproj_ref": 0.029,
+          "picked": "ref"
+        },
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 8.6,
+          "elev_deg": 81.4,
+          "head_minus_pelvis_m": 0.605,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q03_bed_kneel",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "a8ac2bba00086bf1e66449f590dcaf9f473b4a6b96171fbc6d46deadd7af6ed4",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 11.6,
+        "tilt_set_deg": 11.6,
+        "tilt_final_deg": 18.1,
+        "roll_ref_deg": -1.0,
+        "roll_final_deg": -1.3,
+        "clamped_deg": 0.1,
+        "total_change_deg": 6.8,
+        "yaw": {
+          "ref_yaw_deg": -99.8,
+          "want_deg": -99.8,
+          "yaw_deg": -100.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -100.1
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 18.1,
+          "elev_deg": 71.9,
+          "head_minus_pelvis_m": 0.533,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q04_bed_side_lie",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "b4718ae815eaf8df961fe9832dc6cb586a905d90da169c748f190360146ba61e",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 81.7,
+        "tilt_set_deg": 81.7,
+        "tilt_final_deg": 92.8,
+        "roll_ref_deg": 99.0,
+        "roll_final_deg": 99.0,
+        "clamped_deg": 0.0,
+        "total_change_deg": 11.1,
+        "yaw": {
+          "ref_yaw_deg": -91.0,
+          "want_deg": -91.0,
+          "yaw_deg": -91.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -100.1
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 92.8,
+          "elev_deg": -2.8,
+          "head_minus_pelvis_m": -0.039,
+          "rule": "|h(голова) − h(таз)| ≤ 0.18·H = 0.29 м"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q05_crouch_shoelace",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "fbc3b59d7378372a0559085629f307a6fdd447d060278137bc4c6f44928c04f1",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 33.0,
+        "tilt_set_deg": 33.0,
+        "tilt_final_deg": 34.7,
+        "roll_ref_deg": -2.1,
+        "roll_final_deg": -0.5,
+        "clamped_deg": 0.1,
+        "total_change_deg": 3.3,
+        "yaw": {
+          "ref_yaw_deg": -87.6,
+          "want_deg": -87.6,
+          "yaw_deg": -88.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -97.5
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 34.7,
+          "elev_deg": 55.3,
+          "head_minus_pelvis_m": 0.356,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q06_floor_hug_knees",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "55a30b23559f037ee27905f71013ce95ffd1a415000b4f999d5f5b62912ab0ab",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 22.3,
+        "tilt_set_deg": 22.3,
+        "tilt_final_deg": 27.8,
+        "roll_ref_deg": 2.8,
+        "roll_final_deg": -6.8,
+        "clamped_deg": 0.1,
+        "total_change_deg": 15.1,
+        "yaw": {
+          "ref_yaw_deg": -110.9,
+          "want_deg": -110.9,
+          "yaw_deg": -111.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -94.7
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 27.8,
+          "elev_deg": 62.2,
+          "head_minus_pelvis_m": 0.532,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q07_stretch_arms_up",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "bd4e0cfeb2989282ab56a882fcfb70350726ed75a042b6e2cd0349d9e451881d",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 1.7,
+        "tilt_set_deg": 1.7,
+        "tilt_final_deg": 3.7,
+        "roll_ref_deg": -0.5,
+        "roll_final_deg": -0.0,
+        "clamped_deg": 0.0,
+        "total_change_deg": 2.5,
+        "yaw": {
+          "ref_yaw_deg": -98.1,
+          "want_deg": -98.1,
+          "yaw_deg": -98.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -97.8
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 3.7,
+          "elev_deg": 86.3,
+          "head_minus_pelvis_m": 0.609,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q08_bed_recline_elbows",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "59b61539bc3461cfb2b058bf74e9e3cacfa5e93740c8245571aa37c822ba5521",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 59.6,
+        "tilt_set_deg": 59.6,
+        "tilt_final_deg": 60.3,
+        "roll_ref_deg": 5.7,
+        "roll_final_deg": 7.4,
+        "clamped_deg": 0.0,
+        "total_change_deg": 2.4,
+        "yaw": {
+          "ref_yaw_deg": -13.9,
+          "want_deg": -13.9,
+          "yaw_deg": -30.0,
+          "window_deg": -89.3,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -88.1
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": {
+          "plate_deg": -57.5,
+          "reproj_plate": 0.248,
+          "reproj_ref": 0.315,
+          "picked": "plate"
+        },
+        "recline": {
+          "tilt_deg": 60.0,
+          "back_contact_gap_m": 0.002252833033167356,
+          "touch": true,
+          "tilts_tried": 12
+        },
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 60.3,
+          "elev_deg": 29.7,
+          "head_minus_pelvis_m": 0.356,
+          "rule": "над горизонталью 20–70°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q09_lean_wall",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "20a1250f75a771c1edc22ca91bd9d56aee2d8247defaa67cddf5f84a92013b94",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 11.4,
+        "tilt_set_deg": 11.4,
+        "tilt_final_deg": 14.9,
+        "roll_ref_deg": -13.3,
+        "roll_final_deg": -14.9,
+        "clamped_deg": 0.0,
+        "total_change_deg": 5.1,
+        "yaw": {
+          "ref_yaw_deg": 140.1,
+          "want_deg": 76.1,
+          "yaw_deg": 81.0,
+          "window_deg": 140.1,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -96.7
+        },
+        "side_ref": "back",
+        "side_final": "back",
+        "conflict": {
+          "plate_deg": 104.3,
+          "reproj_plate": 0.038,
+          "reproj_ref": 0.054,
+          "picked": "plate"
+        },
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 14.9,
+          "elev_deg": 75.1,
+          "head_minus_pelvis_m": 0.643,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q10_all_fours_cat",
+      "freshness": "NEW",
+      "status": "contact_fail",
+      "fit_sha256": "1701f3c18d2889fdffae7c8ff29f70cb3935d86a002daa621fb95b1588590300",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 102.7,
+        "tilt_set_deg": 102.7,
+        "tilt_final_deg": 103.5,
+        "roll_ref_deg": 0.9,
+        "roll_final_deg": 1.5,
+        "clamped_deg": 0.1,
+        "total_change_deg": 1.4,
+        "yaw": {
+          "ref_yaw_deg": -162.9,
+          "want_deg": -162.9,
+          "yaw_deg": -163.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -94.7
+        },
+        "side_ref": "side",
+        "side_final": "back",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 103.5,
+          "elev_deg": -13.5,
+          "head_minus_pelvis_m": -0.209,
+          "rule": "|h(голова) − h(таз)| ≤ 0.18·H = 0.29 м"
+        }
+      },
+      "first_failure": {
+        "check": "support_gap:knee.L",
+        "ok": false,
+        "excess": 0.0012524421537860736,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "Q11_bench_side_sit",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "f59893f7c2338f3163b7e0af017e7e967a8ba6ce73e0d42638a7295146237d3b",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 14.8,
+        "tilt_set_deg": 14.8,
+        "tilt_final_deg": 1.1,
+        "roll_ref_deg": 9.4,
+        "roll_final_deg": -2.9,
+        "clamped_deg": 0.1,
+        "total_change_deg": 26.0,
+        "yaw": {
+          "ref_yaw_deg": -92.6,
+          "want_deg": -92.6,
+          "yaw_deg": -87.0,
+          "window_deg": -27.5,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -107.3
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 1.1,
+          "elev_deg": 88.9,
+          "head_minus_pelvis_m": 0.571,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "Q12_one_leg_ankle",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "8e307a6c914031c6865dd7b834d887be44b253108ee62733622b9f5952628a26",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 11.2,
+        "tilt_set_deg": 11.2,
+        "tilt_final_deg": 10.1,
+        "roll_ref_deg": -0.5,
+        "roll_final_deg": -2.1,
+        "clamped_deg": 0.0,
+        "total_change_deg": 2.7,
+        "yaw": {
+          "ref_yaw_deg": -112.5,
+          "want_deg": -112.5,
+          "yaw_deg": -113.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -100.4
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 10.1,
+          "elev_deg": 79.9,
+          "head_minus_pelvis_m": 0.573,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "T01_sofa_legs_tucked",
+      "freshness": "NEW",
+      "status": "contact_fail",
+      "fit_sha256": "7118f35c08994d1634bfaa09900e494304dcffba4fc74f7ac32bd615aa3f1733",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 52.7,
+        "tilt_set_deg": 52.7,
+        "tilt_final_deg": 56.4,
+        "roll_ref_deg": -36.1,
+        "roll_final_deg": -5.3,
+        "clamped_deg": 21.1,
+        "total_change_deg": 34.5,
+        "yaw": {
+          "ref_yaw_deg": -120.2,
+          "want_deg": -120.2,
+          "yaw_deg": -120.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -90.2
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": false,
+          "from_vertical_deg": 56.4,
+          "elev_deg": 33.6,
+          "head_minus_pelvis_m": 0.411,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": {
+        "check": "support_gap:pelvis",
+        "ok": false,
+        "excess": 0.0014055707364284131,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "T02_kneel_lunge",
+      "freshness": "NEW",
+      "status": "ok",
+      "fit_sha256": "8eaa821223eaad0bc7a40ad8574b9c7aaafe00e4bc9b30dcc81547c830407bb5",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 8.5,
+        "tilt_set_deg": 8.5,
+        "tilt_final_deg": 11.3,
+        "roll_ref_deg": -2.7,
+        "roll_final_deg": -7.6,
+        "clamped_deg": 0.0,
+        "total_change_deg": 7.7,
+        "yaw": {
+          "ref_yaw_deg": -78.6,
+          "want_deg": -78.6,
+          "yaw_deg": -79.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -94.7
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 11.3,
+          "elev_deg": 78.7,
+          "head_minus_pelvis_m": 0.638,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "T03_armchair_side_sit",
+      "freshness": "STALE",
+      "status": "partial",
+      "fit_sha256": "0bd9084b3974f3873e8da4a68de2a1b111ceaa3352a7cac1d3f8f0443719e058",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 43.6,
+        "tilt_set_deg": 43.6,
+        "tilt_final_deg": 42.9,
+        "roll_ref_deg": -28.9,
+        "roll_final_deg": -3.6,
+        "clamped_deg": 13.9,
+        "total_change_deg": 26.0,
+        "yaw": {
+          "ref_yaw_deg": 8.3,
+          "want_deg": 8.3,
+          "yaw_deg": -30.0,
+          "window_deg": -89.3,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -83.1
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": {
+          "touch": false,
+          "reason": "missing torso_back or backrest",
+          "tilts_tried": 0
+        },
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 42.9,
+          "elev_deg": 47.1,
+          "head_minus_pelvis_m": 0.459,
+          "rule": "над горизонталью 20–70°, голова выше таза"
+        }
+      },
+      "first_failure": {
+        "check": "yaw_window",
+        "excess": 2.586402784081997,
+        "unit": "deg",
+        "ok": false
+      }
+    },
+    {
+      "id": "T04_floor_sit_knees_up",
+      "freshness": "STALE",
+      "status": "ok",
+      "fit_sha256": "4b077e19d68dc34608f5408da64c4d2ad9754bd83856b755ff43292f7188f24c",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 13.2,
+        "tilt_set_deg": 13.2,
+        "tilt_final_deg": 17.1,
+        "roll_ref_deg": -2.4,
+        "roll_final_deg": -4.9,
+        "clamped_deg": 0.0,
+        "total_change_deg": 6.4,
+        "yaw": {
+          "ref_yaw_deg": -92.9,
+          "want_deg": -92.9,
+          "yaw_deg": -93.0,
+          "window_deg": null,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -94.7
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 17.1,
+          "elev_deg": 72.9,
+          "head_minus_pelvis_m": 0.574,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    },
+    {
+      "id": "T05_barre_standing_split",
+      "freshness": "STALE",
+      "status": "ok",
+      "fit_sha256": "5b1cd2687f9a40a43586160e020b07d2694a4d689e939b4e196cc291b6349181",
+      "orient": {
+        "sign_candidate": "identity",
+        "tilt_ref_deg": 58.3,
+        "tilt_set_deg": 30.0,
+        "tilt_final_deg": 27.6,
+        "roll_ref_deg": 26.2,
+        "roll_final_deg": 8.7,
+        "clamped_deg": 46.1,
+        "total_change_deg": 48.2,
+        "yaw": {
+          "ref_yaw_deg": 158.1,
+          "want_deg": 145.2,
+          "yaw_deg": -176.0,
+          "window_deg": 158.1,
+          "side_conflict": false,
+          "in_window": true,
+          "tc_deg": -93.5
+        },
+        "side_ref": "front",
+        "side_final": "front",
+        "conflict": null,
+        "recline": null,
+        "lie_yaw_add_deg": 0,
+        "check": {
+          "ok": true,
+          "from_vertical_deg": 27.6,
+          "elev_deg": 62.4,
+          "head_minus_pelvis_m": 0.562,
+          "rule": "от вертикали ≤ 45°, голова выше таза"
+        }
+      },
+      "first_failure": null
+    }
+  ]
+}

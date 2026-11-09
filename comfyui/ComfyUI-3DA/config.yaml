@@ -8,6 +8,12 @@ blender: C:/Program Files/Blender Foundation/Blender 5.0/blender.exe
 blender_pkgs: C:/work/venvs/blender_pkgs
 mannequin: C:/work/scene3d_work/stacy_mannequin_162.blend
 cell_px: 16
+# PC orchestrates existing server nodes. Credentials ONLY from process env.
+h3_remote:
+  url: https://comfy.next-genium.com
+  timeout_s: 1800
+  request_timeout_s: 60
+  poll_s: 2
 # New rooms require explicit prepared geometry metadata; no invented furniture.
 location_hints_by_id: {}
 location_asset_dirs:

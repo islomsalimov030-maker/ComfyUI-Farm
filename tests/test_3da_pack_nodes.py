@@ -17,7 +17,7 @@ spec.loader.exec_module(nodes)
 
 class NodeTests(unittest.TestCase):
     def test_registered_io(self):
-        self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose'})
+        self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose', '3DAH3Remote'})
         self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 7)
         self.assertEqual(len(nodes.CLASSES), 9)
 
@@ -31,6 +31,34 @@ class NodeTests(unittest.TestCase):
             self.assertEqual(len(result), 7)
             self.assertIn('status=error', result[5])
             self.assertEqual(result[2].shape, (1, 64, 64))
+
+    def test_place_only_accepted_statuses_forward_prompt(self):
+        image = torch.ones((1, 16, 16, 3))
+        mask = torch.ones((1, 16, 16))
+        statuses = ('ok', 'partial', 'contact_fail', 'wrong_surface', 'no_target',
+                    'out_of_frame', 'unknown', '', {'status': 'ok'})
+        for status in statuses:
+            with self.subTest(status=status):
+                payload = dict(status=status, h3_prompt='SFW geometry prompt', playblast='p', init='i',
+                               strength='m', silhouette='s', debug='d', report={'kept': True})
+                with patch.object(nodes, 'invoke', return_value=payload), \
+                     patch.object(nodes, 'load_image', return_value=image), \
+                     patch.object(nodes, 'load_mask', return_value=mask):
+                    result = nodes.PlacePose().execute('{}', image, 'stand', 'floor', '', '', '',
+                                                       1.62, '', 'grey', 1., 101)
+                accepted = isinstance(status, str) and status in ('ok', 'partial')
+                self.assertEqual(result[4], 'SFW geometry prompt' if accepted else '')
+                self.assertIs(result[0], image)
+                self.assertIs(result[1], image)
+                self.assertIs(result[2], mask)
+                self.assertIs(result[6], image)
+                self.assertIn('kept', result[5])
+                if not accepted:
+                    with patch.object(nodes, 'config', return_value={'repo': str(PATH.parents[2]),
+                                      'h3_remote': {}}), patch.object(nodes, 'remote_client') as client:
+                        remote = nodes.H3Remote().execute(image, image, image, image, mask, result[4], 101)
+                    self.assertIn('Empty H3 prompt', remote[2])
+                    client.assert_not_called()
 
     def test_timeout_does_not_raise_in_node(self):
         image = torch.zeros((1, 16, 16, 3))

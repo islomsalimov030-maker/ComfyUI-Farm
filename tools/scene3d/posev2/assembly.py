@@ -13,7 +13,8 @@ def orientation_checks(K, pose_class, plate, side_ref, window=None):
     tilt, roll = ori.tilt_deg(K), ori.roll_deg(K)
     lo, hi = ori.TILT_RANGE[pose_class]
     checks = [("tilt", max(lo - tilt, tilt - hi, 0.0), "deg")]
-    checks.append(("roll", max(abs(roll) - ori.ROLL_MAX, 0.0), "deg"))
+    if pose_class != "lie":
+        checks.append(("roll", max(abs(roll) - ori.ROLL_MAX, 0.0), "deg"))
     got = ori.side_to_camera(K, plate.C)
     checks.append(("camera_side", float(bool(side_ref) and got != side_ref), "side"))
     if window is not None:
@@ -25,7 +26,7 @@ def orientation_checks(K, pose_class, plate, side_ref, window=None):
             for n, e, u in checks]
 
 
-def clamp_root(X, K, pose_class, plate, side_ref, window=None):
+def clamp_root(X, K, pose_class, plate, side_ref, window=None, lie_roll_ref=None):
     """Только корневой rigid-поворот; суставы refine остаются неизменными."""
     for _ in range(section("place")["frame_tries"]):
         X, K, _ = ori.assemble_tilt_roll(X, K, pose_class)
@@ -38,6 +39,13 @@ def clamp_root(X, K, pose_class, plate, side_ref, window=None):
         to_cam = plate.C - pel
         y, _, _ = ori.solve_yaw(yaw, side_ref, window, lambda a: ori.side_for_yaws(K, a, to_cam))
         R = ori.rot_axis(ori.UP, math.radians(ori.wrap(y - yaw)))
+        X, K = ori.rot_about(X, pel, R), ori.rot_about(K, pel, R)
+    if pose_class == "lie" and lie_roll_ref is not None:
+        pel = (K[9] + K[10]) / 2
+        axis = K[69] - pel
+        delta = ori.wrap(lie_roll_ref - ori.roll_deg(K, "lie"))
+        # roll_deg grows opposite to the right-hand rotation about pelvis→neck.
+        R = ori.rot_axis(axis, -math.radians(delta))
         X, K = ori.rot_about(X, pel, R), ori.rot_about(K, pel, R)
     return X, K
 
@@ -97,6 +105,10 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
     if f is None:
         return V, J, info
     lateral = np.cross(f, ori.UP)
+    if spec.pose_class == "lie":
+        long_axis = K[69] - origin
+        lateral = np.cross(long_axis, ori.UP)
+        lateral /= max(np.linalg.norm(lateral), ori.CFG["norm_eps"])
     vals = np.arange(-c["gap_sweep_deg"], c["gap_sweep_deg"] + c["gap_sweep_step_deg"] / 2,
                      c["gap_sweep_step_deg"])
     for tilt in vals:
@@ -106,7 +118,12 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             lo, hi = ori.TILT_RANGE[spec.pose_class]
             if not lo <= ori.tilt_deg(B) <= hi:
                 continue
-            if abs(ori.roll_deg(B)) > ori.ROLL_MAX:
+            if spec.pose_class == "lie":
+                # Lie не имеет глобального roll-clamp. Высотная подстройка
+                # не вращает тело вокруг длинной оси, сохраняя крен рефа.
+                if roll != 0:
+                    continue
+            elif abs(ori.roll_deg(B)) > ori.ROLL_MAX:
                 continue
             A, B, ii = settle(A, B)
             key = score(ii)

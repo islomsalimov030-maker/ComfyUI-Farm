@@ -1,0 +1,104 @@
+{
+  "Q04": {
+    "status": "contact_fail",
+    "timings": {
+      "reference_s": 0.047,
+      "placement_s": 173.453,
+      "render_s": 7.797,
+      "maps_s": 0.547,
+      "total_s": 183.922
+    },
+    "orient": {
+      "sign_candidate": "identity",
+      "tilt_ref_deg": 81.7,
+      "tilt_set_deg": 81.7,
+      "tilt_final_deg": 85.9,
+      "roll_ref_deg": 99.0,
+      "roll_final_deg": 99.0,
+      "clamped_deg": 0.0,
+      "total_change_deg": 4.2,
+      "yaw": {
+        "ref_yaw_deg": -91.0,
+        "want_deg": -91.0,
+        "yaw_deg": -91.0,
+        "window_deg": null,
+        "side_conflict": false,
+        "in_window": true,
+        "tc_deg": -100.1
+      },
+      "side_ref": "front",
+      "side_final": "front",
+      "conflict": null,
+      "recline": null,
+      "lie_yaw_add_deg": 0,
+      "check": {
+        "ok": true,
+        "from_vertical_deg": 85.9,
+        "elev_deg": 4.1,
+        "head_minus_pelvis_m": 0.041,
+        "rule": "|h(голова) − h(таз)| ≤ 0.18·H = 0.29 м"
+      }
+    },
+    "first_failure": {
+      "check": "support_gap:thigh.R",
+      "ok": false,
+      "excess": 0.00030170956827085815,
+      "unit": "m"
+    },
+    "target_instance": "bed_1",
+    "support_object": "bed_1",
+    "flags": [
+      "dominant_top_unavailable"
+    ],
+    "visual_pose_matches": true,
+    "visual_note": "Side lying, head supported by bent arm; not all-fours. Pose acceptance separate from contact gate.",
+    "api_run": {
+      "prompt_id": "af8b60b0-36ec-4d43-9d7d-c18bf304b635",
+      "total_s": 244.328,
+      "geometry_status": "contact_fail",
+      "timings": {
+        "reference_s": 13.985,
+        "placement_s": 196.484,
+        "render_s": 27.468,
+        "maps_s": 0.61,
+        "total_s": 240.453,
+        "node_total_s": 241.282
+      },
+      "first_failure": {
+        "check": "support_gap:thigh.R",
+        "ok": false,
+        "excess": 0.00030175103647311907,
+        "unit": "m"
+      },
+      "remote": {
+        "text": [
+          "status=error\nEmpty H3 prompt: check geometry status before remote generation"
+        ]
+      }
+    }
+  },
+  "Q01": {
+    "prompt_id": "824b4983-ca2d-46fb-9331-80e0f54d949b",
+    "total_s": 94.188,
+    "geometry_status": "ok",
+    "geometry_timings": {
+      "reference_s": 0.047,
+      "placement_s": 8.797,
+      "render_s": 6.547,
+      "maps_s": 0.547,
+      "total_s": 17.782,
+      "node_total_s": 18.5
+    },
+    "remote": {
+      "status": "ok",
+      "prompt_id": "73c3ddc2-9fcb-4b54-9be0-2f6fb66f0b5b",
+      "total_s": 73.875,
+      "upload_s": 4.047,
+      "queue_and_h3_s": 68.157
+    },
+    "outside_ssim": 0.9999963963184957,
+    "outside_pixels": 955941,
+    "outside_changed_pixels": 0,
+    "passed": true
+  }
+}

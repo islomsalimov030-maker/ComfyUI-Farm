@@ -125,8 +125,9 @@ def prepare_body(ref, spec, height):
 
 
 def orient_body(B, spec):
-    """п.3б/в: знак наклона (кандидаты ×180°), наклон в диапазон класса, крен ≤ 15°. Мир рефа, Z вверх."""
-    name, R = ori.tilt_sign_candidate(B["kp"], B["cam_axis"], spec.pose_class)
+    """Наклон класса, крен ≤15° кроме lie; lie без sign-flip и roll-clamp. Z вверх."""
+    name, R = (("identity", np.eye(3)) if spec.pose_class == "lie" else
+               ori.tilt_sign_candidate(B["kp"], B["cam_axis"], spec.pose_class))
     c = (B["kp"][9] + B["kp"][10]) / 2
     V, kp = ori.rot_about(B["V"], c, R), ori.rot_about(B["kp"], c, R)
     V, kp, info = ori.assemble_tilt_roll(V, kp, spec.pose_class)
@@ -626,7 +627,7 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
             "wall_gap_m": gaps_m.get("wall"), "penetration": pen, "max_penetration_cm": pen["max_cm"],
             "contacts": rep_c, "support_parts_on": labels, "support_object": sup_obj, "target_instance": selected, "cells": cells,
             "cells_ok": bool(cells_ok), "footprint": fp, "frame": fr, "balance_ok": balance,
-            "tilt_deg": round(ori.tilt_deg(KP), 1), "roll_deg": round(ori.roll_deg(KP), 1),
+            "tilt_deg": round(ori.tilt_deg(KP), 1), "roll_deg": round(ori.roll_deg(KP, spec.pose_class), 1),
             "orient": ori.check(KP, spec.pose_class, H)}
 
 
@@ -826,7 +827,7 @@ def geometry_diagnostics(X, KP, B, spec, treg, groups, S, plate, soft):
             "penetration_per_surface": penetration_stats(plate, X, treg, soft, spec.pose_class)["surfaces"],
             "penetration_parts_per_surface": by_surface,
             "angles_deg": {"yaw": _ang(f) if f is not None else None,
-                           "pitch": float(ori.tilt_deg(KP)), "roll": float(ori.roll_deg(KP))},
+                           "pitch": float(ori.tilt_deg(KP)), "roll": float(ori.roll_deg(KP, spec.pose_class))},
             "top_definition": getattr(treg, "top_diagnostics", {})}
 
 
@@ -987,7 +988,8 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                 r = rigid_fit(B, groups, plate, T, anchor, S, y, yaw_free_deg=CFG["locked_yaw_free_deg"])
                 X, KP = r["X"], r["KP"]
             import assembly
-            X, KP = assembly.clamp_root(X, KP, spec.pose_class, plate, B["side_ref"], window)
+            X, KP = assembly.clamp_root(X, KP, spec.pose_class, plate, B["side_ref"], window,
+                                          lie_roll_ref=B["orient"]["roll_ref_deg"])
             shift = 0.0
             if spec.target_object != "floor":
                 X, KP, shift, _ = shift_into(X, KP, groups, S, treg, H, spec,
@@ -1051,8 +1053,9 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                 X2, K2, rinfo = rr
                 orient_bad = not all(c["ok"] for c in assembly.orientation_checks(
                     K2, spec.pose_class, plate, B["side_ref"], window))
-                if orient_bad:
-                    X2, K2 = assembly.clamp_root(X2, K2, spec.pose_class, plate, B["side_ref"], window)
+                if orient_bad or spec.pose_class == "lie":
+                    X2, K2 = assembly.clamp_root(X2, K2, spec.pose_class, plate, B["side_ref"], window,
+                                                  lie_roll_ref=B["orient"]["roll_ref_deg"])
                     rinfo["root_clamped"] = True
                 shift2 = 0.0
                 if spec.target_object != "floor":
@@ -1090,7 +1093,7 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
     tilt_final, roll_final = ev["tilt_deg"], ev["roll_deg"]
     clamped = round(abs(tilt_final - oi["tilt_ref_deg"]) + (0.0 if spec.pose_class == "lie" else
                                                             abs(roll_final - oi["roll_ref_deg"])), 1)
-    if oi["clamped_deg"] > CFG["clamped_flag_deg"]:
+    if spec.pose_class != "lie" and oi["clamped_deg"] > CFG["clamped_flag_deg"]:
         fl.append(f"orient_clamped:{oi['clamped_deg']}")
     if final["yaw"]["side_conflict"]:
         fl.append("side_conflict")

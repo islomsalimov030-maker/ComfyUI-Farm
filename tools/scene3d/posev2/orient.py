@@ -36,6 +36,10 @@ def check(KP, pose_class, H):
     elif pose_class == "recline":
         ok = RECLINE_ELEV[0] <= elev <= RECLINE_ELEV[1] and dh > 0
         rule = f"над горизонталью {RECLINE_ELEV[0]:.0f}–{RECLINE_ELEV[1]:.0f}°, голова выше таза"
+    elif pose_class == "lie":
+        lo, hi = CFG["tilt_range"]["lie"]
+        ok = lo <= from_v <= hi
+        rule = f"ось таз→шея: от вертикали {lo}–{hi}°, крен с рефа без clamp"
     elif pose_class in FLAT:
         ok = abs(dh) <= FLAT_HEAD_H * H
         rule = f"|h(голова) − h(таз)| ≤ {FLAT_HEAD_H}·H = {FLAT_HEAD_H * H:.2f} м"
@@ -83,9 +87,19 @@ def tilt_deg(KP):
     return math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), CFG["norm_eps"]), -1, 1)))
 
 
-def roll_deg(KP):
-    """крен: наклон поперечной оси (бёдра + плечи) от горизонтали, градусы со знаком."""
+def roll_deg(KP, pose_class=None):
+    """Для lie — полный крен вокруг длинной оси: спина=0, бок=±90, живот=±180.
+
+    Для остальных классов сохраняется прежний наклон поперечной оси.
+    """
     lv = left_vec(KP)
+    if pose_class == "lie":
+        a = KP[69] - (KP[9] + KP[10]) / 2
+        a = a / max(np.linalg.norm(a), CFG["norm_eps"])
+        lv = lv - a * (lv @ a)
+        lv = lv / max(np.linalg.norm(lv), CFG["norm_eps"])
+        normal = np.cross(lv, a)
+        return math.degrees(math.atan2(lv @ UP, normal @ UP))
     return math.degrees(math.asin(np.clip(lv[2] / max(np.linalg.norm(lv), CFG["norm_eps"]), -1, 1)))
 
 
@@ -179,12 +193,14 @@ def clamp_roll(V, kp):
 
 
 def assemble_tilt_roll(V, kp, pose_class):
-    """наклон корпуса — с рефа, зажатый в диапазон класса; крен ≤ ±15°. Поворот вокруг центра таза.
+    """Наклон в диапазоне класса; крен ≤ ±15°, кроме lie (полный крен с рефа).
+    Поворот вокруг центра таза.
     -> V, kp, info{tilt_ref, tilt, roll_ref, roll, clamped_deg}."""
     c = (kp[9] + kp[10]) / 2
-    t0, r0 = tilt_deg(kp), roll_deg(kp)
+    t0, r0 = tilt_deg(kp), roll_deg(kp, pose_class)
     info = {"tilt_ref_deg": round(t0, 1), "roll_ref_deg": round(r0, 1)}
-    V, kp = clamp_roll(V, kp)
+    if pose_class != "lie":
+        V, kp = clamp_roll(V, kp)
     lo, hi = TILT_RANGE[pose_class]
     t1 = tilt_deg(kp)
     tt = min(max(t1, lo), hi)
@@ -208,9 +224,11 @@ def assemble_tilt_roll(V, kp, pose_class):
             V, kp = rot_about(V, c, R), k2
             break
     # Наклон выше мог снова внести крен. Финальный clamp сохраняет ось корпуса.
-    V, kp = clamp_roll(V, kp)
-    info.update(tilt_deg=round(tilt_deg(kp), 1), roll_deg=round(roll_deg(kp), 1))
-    info["clamped_deg"] = round(abs(info["tilt_deg"] - t0) + abs(info["roll_deg"] - r0), 1)
+    if pose_class != "lie":
+        V, kp = clamp_roll(V, kp)
+    info.update(tilt_deg=round(tilt_deg(kp), 1), roll_deg=round(roll_deg(kp, pose_class), 1))
+    info["clamped_deg"] = (0.0 if pose_class == "lie" else
+                           round(abs(info["tilt_deg"] - t0) + abs(info["roll_deg"] - r0), 1))
     return V, kp, info
 
 

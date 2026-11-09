@@ -1,2 +1,4 @@
 # Usually already present in ComfyUI; no SAM/MoGe/scipy/blender here.
 PyYAML>=6.0
+# H3 Remote reuses farm/comfy_client.py (HTTPX BSD-3-Clause).
+httpx>=0.27,<1
