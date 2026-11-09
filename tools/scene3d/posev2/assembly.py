@@ -146,16 +146,11 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
     selected = ev.get("target_instance", spec.target_object)
     add("support_target", ev["support_object"] == selected,
         float(ev["support_object"] != selected), "surface")
-    if spec.pose_class not in ("stand", "crouch"):
-        for name, gap in ev["support_part_gaps_m"].items():
-            add("support_gap:" + name, gap <= c["sup_gap_cm"] / 100,
-                max(gap - c["sup_gap_cm"] / 100, 0.0))
-    else:
-        contact = ev.get("support_contact", {})
-        lowest = contact.get("lowest_gap_m", float("inf"))
-        add("body_lowest_contact", abs(lowest) <= c["contact_tol"], max(abs(lowest) - c["contact_tol"], 0.0))
-        add("one_foot_contact", bool(contact.get("foot_contact_parts")),
-            float(not contact.get("foot_contact_parts")), "foot")
+    # Part gaps > contact_tol are diagnostics, not contact_fail.
+    # Only the coordinator's explicit >5cm rule promotes them to partial.
+    for name, gap in ev["support_part_gaps_m"].items():
+        add("support_gap:" + name, gap <= c["support_gap_partial_m"],
+            max(gap - c["support_gap_partial_m"], 0.0))
     for name, lim in (("soft", pl.soft_limit(spec.pose_class)), ("hard", c["pen_hard_m"])):
         value = pen[name + "_p95_m"]
         if not pen.get("surfaces"):
@@ -181,16 +176,31 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
     add("frame", ev["frame"]["ok"], float(not ev["frame"]["ok"]), "frame")
     add("refine_limits", limits_ok, float(not limits_ok), "limit")
     fail = next((x for x in checks if not x["ok"]), None)
-    status = "ok" if fail is None else ("wrong_surface" if fail["check"] == "support_target" else
-                                        "out_of_frame" if fail["check"] == "frame" else "contact_fail")
     flags = list(ev.get("support_contact", {}).get("flags", []))
-    partial_flags = []
-    if (height_info or {}).get("height_conflict"):
-        partial_flags.append("height_conflict")
-    if spec.pose_class == "recline" and not next(x["ok"] for x in checks if x["check"] == "back_contact"):
-        partial_flags.append("no_back_contact")
-    flags += partial_flags
-    if partial_flags and ev["support_object"] == selected:
-        status = "partial"  # явные исходы п.4в / п.5б; проверки остаются красными
+    if any(g > c["contact_tol"] for g in ev["support_part_gaps_m"].values()):
+        flags.append("support_gap")
+    for check in checks:
+        if check["ok"]:
+            continue
+        name = check["check"]
+        flag = ("orient_fail" if name in ("tilt", "roll", "camera_side", "yaw_window") else
+                "penetration_fail" if name.startswith("penetration") else
+                "support_gap" if name.startswith("support_gap:") else
+                {"back_contact": "no_back_contact", "height_contact": "height_conflict",
+                 "footprint": "footprint_fail", "cells": "cells_fail",
+                 "refine_limits": "refine_limits_fail"}.get(name))
+        if flag:
+            flags.append(flag)
+    # No new status enum: keep non-contact failures separately visible in
+    # checks/flags. A missing contact must never be hidden by partial flags.
+    if ev["support_object"] != selected:
+        status = "wrong_surface"
+    elif not ev["support_ok"]:
+        status = "contact_fail"
+    elif not ev["frame"]["ok"]:
+        status = "out_of_frame"
+    else:
+        status = "partial" if fail is not None else "ok"
+    flags = sorted(set(flags))
     return {"ok": fail is None, "first_failure": fail, "checks": checks, "status": status,
             "flags": flags, "penetration": pen}

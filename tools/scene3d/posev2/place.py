@@ -7,7 +7,7 @@
        выше таза > 0.05·H — на спинку, наклон 25–70° подбирается до касания спинки. orient_fail нет → orient_clamped.
   п.4  sit_edge: сторона минимального прямоугольника маски с доступным полом, нормаль ближе к yaw рефа.
   п.5  след (kneel, lie, sit_tucked, recline): вершины ниже h0 + 0.15·H — внутри маски верха с отступом 3 см;
-       не влезает → поворот yaw (lie, шаг 15° до ±90°) → следующая ячейка (≤ 5) → contact_fail.
+       не влезает → поворот yaw (lie, шаг 15° до ±90°) → следующая ячейка (≤ 5) → partial + footprint_fail.
   п.6  стена из secondary_contacts → зона на полу 0.15–0.45·H от плоскости, yaw руками к стене; нет стены → partial.
   п.7  проникновение = p95 проникших вершин; мягкое ≤ 6 см, жёсткое ≤ 3 см.
   п.8  кадр: тело в кадре плиты с полем 2 %; иначе сдвиг к центру кадра (≤ 5), иначе out_of_frame.
@@ -501,21 +501,30 @@ def body_lowest_gap(X, S):
     return float(_sd(S, "target", X[[int(np.argmin(X[:, 2]))]])[0][0])
 
 
-def support_contact(X, groups, S, spec, soft):
-    """D5: stand/crouch need body-lowest + one foot; other gaps are diagnostic flags."""
-    gaps = {n: float(np.median(_sd(S, s, X[idx])[0])) for n, idx, s, role in groups
-            if role == "support" and s in S and len(idx)}
-    if spec.pose_class not in ("stand", "crouch"):
-        sink = soft_limit(spec.pose_class) if soft else PEN_HARD_M
-        ok = bool(gaps) and all(-sink <= g <= SUP_GAP_CM / 100 for g in gaps.values())
-        return {"ok": ok, "part_gaps_m": gaps, "flags": []}
-    lowest = body_lowest_gap(X, S)
-    foot_gaps = {n: float(np.min(np.abs(_sd(S, s, X[idx])[0]))) for n, idx, s, role in groups
-                 if role == "support" and n.startswith("foot.") and s in S and len(idx)}
-    feet = [n for n, gap in foot_gaps.items() if gap <= CFG["contact_tol"]]
-    flagged = [n for n, g in gaps.items() if g > CFG["contact_tol"] and n not in feet]
-    return {"ok": bool(abs(lowest) <= CFG["contact_tol"] and feet), "lowest_gap_m": lowest,
-            "foot_contact_parts": feet, "foot_min_abs_gaps_m": foot_gaps, "part_gaps_m": gaps,
+def support_contact(X, groups, S, spec, soft, reg=None):
+    """09e: any declared support vertex in ±contact_tol; part medians stay diagnostic.
+
+    reg supplies the complete support_parts, not just the low-band fitting samples.
+    Callers with preselected support groups may omit reg (height-fit stage).
+    """
+    names = set(spec.support_regions())
+    samples = {n: _sd(S, s, X[idx])[0] for n, idx, s, role in groups
+               if role == "support" and n in names and s in S and len(idx)}
+    gaps = {n: float(np.median(sd)) for n, sd in samples.items()}
+    if reg is not None:
+        idx = np.flatnonzero(np.isin(reg, spec.support_regions()))
+        distances = _sd(S, "target", X[idx])[0] if len(idx) else np.empty(0)
+    else:
+        distances = np.concatenate(list(samples.values())) if samples else np.empty(0)
+    min_abs = float(np.min(np.abs(distances))) if len(distances) else float("inf")
+    flagged = [n for n, gap in gaps.items() if gap > CFG["contact_tol"]]
+    foot_gaps = {n: float(np.min(np.abs(sd))) for n, sd in samples.items() if n.startswith("foot.")}
+    return {"ok": min_abs <= CFG["contact_tol"], "min_abs_gap_m": min_abs,
+            "contact_vertex_count": int(np.count_nonzero(np.abs(distances) <= CFG["contact_tol"])),
+            "lowest_gap_m": body_lowest_gap(X, S) if spec.pose_class in ("stand", "crouch") else None,
+            "foot_contact_parts": [n for n, gap in foot_gaps.items() if gap <= CFG["contact_tol"]],
+            "foot_min_abs_gaps_m": foot_gaps, "part_gaps_m": gaps,
+            "max_support_gap_m": max(gaps.values(), default=float("inf")),
             "gap_parts": flagged, "flags": ["support_gap"] if flagged else []}
 
 
@@ -567,13 +576,12 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
     sup_gap = float(np.median(g[g <= np.percentile(g, CFG["gap_percentile"])]))
     sink = soft_limit(spec.pose_class) if soft else PEN_HARD_M
     contact_groups = list(groups)
-    if spec.pose_class in ("stand", "crouch"):
-        present = {g[0] for g in groups if g[3] == "support"}
-        for name in spec.support_regions():
-            idx = np.flatnonzero(B["reg"] == name)
-            if name not in present and len(idx):
-                contact_groups.append((name, _lowest(X, idx), "target", "support"))
-    contact = support_contact(X, contact_groups, S, spec, soft)
+    present = {g[0] for g in groups if g[3] == "support"}
+    for name in spec.support_regions():
+        idx = np.flatnonzero(B["reg"] == name)
+        if name not in present and len(idx):
+            contact_groups.append((name, _lowest(X, idx), "target", "support"))
+    contact = support_contact(X, contact_groups, S, spec, soft, reg=B["reg"])
     part_gaps = contact["part_gaps_m"]
     max_gap = max(part_gaps.values(), default=float("inf"))
     sup_ok = contact["ok"]
@@ -634,11 +642,13 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
 def status_of(ev, spec, limits_ok=True, no_secondary=False):
     if ev["support_object"] != ev.get("target_instance", spec.target_object):
         return "wrong_surface"
-    if not (ev["support_ok"] and ev["penetration"]["ok"] and ev["footprint"]["ok"] and ev["cells_ok"] and limits_ok):
+    if not ev["support_ok"]:
         return "contact_fail"
     if not ev["frame"]["ok"]:
         return "out_of_frame"
-    return "partial" if no_secondary else "ok"
+    other_ok = ev["penetration"]["ok"] and ev["footprint"]["ok"] and ev["cells_ok"] and limits_ok
+    gap = max(ev.get("support_part_gaps_m", {}).values(), default=0.0)
+    return "partial" if no_secondary or not other_ok or gap > CFG["support_gap_partial_m"] else "ok"
 
 
 # ------------------------------------------------------------------------------------------------ сдвиг в зону (Р2)
@@ -837,6 +847,7 @@ def zone_too_small(diagnostics):
 
 
 # ------------------------------------------------------------------------------------------------ поза целиком
+@pf.ref_plane_scope()
 def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dims_override=None, refine_ctx=None,
                log=print):
     """seed — 3D-точка из таблицы (поднятая точка сиденья / точка стоп). -> dict результата (X, KP, rep, …)."""
@@ -939,8 +950,8 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                     window = _ang(-treg.cam_axes()[0])
         flags += zinfo["flags"]
         if not cells:
-            return {"status": "contact_fail",
-                    "rep": dict(base, status="contact_fail", flags=sorted(set(flags + ["zone_empty"])),
+            return {"status": "partial",
+                    "rep": dict(base, status="partial", flags=sorted(set(flags + ["zone_empty"])),
                                 zone_diagnostics=diagnostics, support_info=ginfo,
                                 zone={"source": zsrc, **oinfo, **{k: v for k, v in zinfo.items() if k != "_all"},
                                       "region": treg.summary()})}
@@ -1114,7 +1125,10 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                refine_root_clamps=sum(bool(a.get("refine", {}).get("root_clamped")) for a in attempts), secondary=[{"part": g[0], "surface": g[2], "role": g[3]} for g in groups
                                                if g[3] != "support"],
                target_instance=ev["target_instance"], support_object=ev["support_object"], support_parts_on=ev["support_parts_on"],
-               support_gap_cm=ev["support_gap_cm"], back_gap_cm=ev["back_gap_cm"], wall_gap_cm=ev["wall_gap_cm"],
+               support_gap_cm=ev["support_gap_cm"], support_contact=ev["support_contact"],
+               support_gap_parts=ev["support_contact"]["gap_parts"],
+               support_part_gaps_m=ev["support_part_gaps_m"], max_support_gap_m=ev["max_support_gap_m"],
+               back_gap_cm=ev["back_gap_cm"], wall_gap_cm=ev["wall_gap_cm"],
                back_contact_gap_m=ev["back_contact_gap_m"], zone_diagnostics=diagnostics,
                max_penetration_cm=ev["penetration"]["max_cm"], penetration=ev["penetration"],
                footprint=ev["footprint"], frame=ev["frame"], frame_tries=final["frame_tries"],

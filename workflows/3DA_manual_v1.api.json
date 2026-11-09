@@ -75,7 +75,15 @@
    "seed": [
     "seed",
     0
-   ]
+   ],
+   "block_on_fail": false,
+   "body_dx": 0.0,
+   "body_dy": 0.0,
+   "body_dz": 0.0,
+   "body_dyaw": 0.0,
+   "body_dpitch": 0.0,
+   "body_droll": 0.0,
+   "pose_text": ""
   },
   "_meta": {
    "title": "3DA Place Pose"
@@ -198,6 +206,30 @@
   },
   "_meta": {
    "title": "Статус · H3 Remote"
+  }
+ },
+ "preview_objects": {
+  "class_type": "PreviewImage",
+  "inputs": {
+   "images": [
+    "location",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "Превью · объекты / ID"
+  }
+ },
+ "preview_init": {
+  "class_type": "PreviewImage",
+  "inputs": {
+   "images": [
+    "place",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "Превью · init"
   }
  }
 }

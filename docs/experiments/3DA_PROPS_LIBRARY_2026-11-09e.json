@@ -1,0 +1,123 @@
+{
+  "source_dir": "C:\\Users\\user\\Downloads\\3d_objects",
+  "file_count": 8,
+  "total_bytes": 361331389,
+  "models": [
+    {
+      "file": "Head_Close.fbx",
+      "bytes": 52184928,
+      "licenses": []
+    },
+    {
+      "file": "pelvis/ass_low.fbx",
+      "bytes": 844304,
+      "licenses": []
+    },
+    {
+      "file": "stick/stick.obj",
+      "bytes": 156274874,
+      "licenses": []
+    }
+  ],
+  "files": [
+    {
+      "file": "Head_Close.fbx",
+      "bytes": 52184928
+    },
+    {
+      "file": "pelvis/ass_low.fbx",
+      "bytes": 844304
+    },
+    {
+      "file": "pelvis/Material_input_BC.tga",
+      "bytes": 50331692
+    },
+    {
+      "file": "pelvis/Material_input_N.tga",
+      "bytes": 50331692
+    },
+    {
+      "file": "pelvis/Material_input_ORM.tga",
+      "bytes": 50331692
+    },
+    {
+      "file": "stick/stick.obj",
+      "bytes": 156274874
+    },
+    {
+      "file": "stick/stick1.jpg",
+      "bytes": 260558
+    },
+    {
+      "file": "stick/stick2.jpg",
+      "bytes": 771649
+    }
+  ],
+  "library_dir": "C:/work/scene3d_work/farm/props",
+  "license_conclusion": "unknown for all source models; local test only, no commercial approval or redistribution grant",
+  "smoke": {
+    "scene": "Q01 generic mainroom1 overlay; not final pack acceptance",
+    "output_dir": "C:/work/scene3d_work/farm/props_smoke09e/Q01",
+    "resolution": [1536, 864],
+    "passes": ["textured_rgba", "clay_rgba", "per_prop_silhouette", "unified_depth"],
+    "blender_render_clock_first_run_seconds": 2.953,
+    "whole_preview_wall_seconds": null,
+    "lighting_fix": "AgX, neutral world strength .35, area light75W; shaded geometry visually verified",
+    "source_texture_missing": "file1",
+    "diagnostic_method": "world AABB overlap + camera projected bbox corners, diagnostic only",
+    "flags": {"prop_hits_room": true, "prop_hits_body": true, "prop_out_of_frame": true},
+    "not_acceptance": "Plate/pose pairing not final; source longest side .9769m retained, right side cropped. Main owns Q01/Q04 final tests."
+  },
+  "cpu_tests": {"passed": 11, "seconds": 0.36},
+  "gizmo_research": {
+    "installed_frontend_version": "1.57.6",
+    "builtin_Load3D": {"gizmo": true, "external_transform": true, "output": "model_3d_info", "coordinates": "Y-up; position, quaternion, scale", "license": "GPL-3.0"},
+    "builtin_Load3DAdvanced": {"external_transform": true, "output": "model_3d_info", "license": "GPL-3.0"},
+    "ComfyUI_3D_Pack_Preview_3DMesh": {"gizmo": false, "orbit_controls": true, "external_transform": false, "license": "MIT (wrapper); bundled model licenses separate"}
+  },
+  "results": [
+    {
+      "id": "head_close_a648e192",
+      "status": "imported",
+      "metadata": {
+        "name": "Head_Close",
+        "size_m": 0.9768999218940735,
+        "description_en": "",
+        "prop_strength": 0.35,
+        "model": "model.glb",
+        "license_status": "unknown",
+        "license_evidence_files": [],
+        "license_note": "Accompanying text requires review; user ownership is not an automatic license.",
+        "source_file": "Head_Close.fbx",
+        "source_sha256": "a06a3b942407fae41d6857e58f5f6dc115f93d118375509b412733cd7c2e62d2",
+        "importer_version": 1,
+        "import_facts": {
+          "longest_side_m": 0.9768999218940735,
+          "dimensions_m": [
+            0.5732887983322144,
+            0.7493612766265869,
+            0.9768999218940735
+          ],
+          "source_bbox_center_m": [
+            0.00015652179718017578,
+            -0.0001226663589477539,
+            0.48844996094703674
+          ],
+          "origin": "bbox_center",
+          "units": "meters",
+          "unit_policy": "Blender import metadata; OBJ assumes meters",
+          "mesh_count": 1,
+          "vertices": 25974,
+          "triangles": 51944,
+          "material_count": 1,
+          "missing_images": [
+            "file1"
+          ],
+          "static_cache": true,
+          "embedded_scripts_executed": false,
+          "blender_version": "5.0.0"
+        }
+      }
+    }
+  ]
+}

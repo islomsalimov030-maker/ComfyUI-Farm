@@ -216,8 +216,22 @@ def do_location(request, config):
         geometry_dir = plate_assets(directory)
         hints = hints_for(config, loc_id)
         if "seeds" not in hints:
-            raise ValueError("new location requires config.location_hints_by_id[location_id].seeds; "
-                             "MoGe geometry is cached, object detection is not implemented")
+            pf, profiles = modules(config)
+            import auto_surfaces
+            import tempfile
+            plate = pf.Plate(directory)
+            with tempfile.TemporaryDirectory(prefix="3da_auto_") as td:
+                generated = auto_surfaces.write_auto_profile(loc_id, plate, Path(td))
+                for asset in Path(td).iterdir():
+                    if (directory / asset.name).exists():
+                        raise ValueError("auto profile refuses overwrite: " + asset.name)
+                    __import__("shutil").copy2(asset, directory / asset.name)
+            data = read_json(profile_path)
+            preview = directory / "objects_preview.png"
+            auto_surfaces.render_objects_preview(plate, profile_path, preview)
+            return {"status": "ok", "location": str(profile_path.resolve()),
+                    "plate": str((geometry_dir / "plate_rgb.png").resolve()),
+                    "objects": data["objects"], "objects_preview": str(preview.resolve())}
         seeds = {name: vector(point, 3, f"seed {name}") for name, point in hints["seeds"].items()}
         pf, profiles = modules(config)
         plate = pf.Plate(directory)
@@ -243,8 +257,15 @@ def do_location(request, config):
     if any("top_grid_npz" in obj for obj in data["objects"]):
         _, profiles = modules(config)
         require_profile_geometry(profiles.LocationProfile(profile_path))
+    pf, _ = modules(config)
+    import auto_surfaces
+    # Preview lives outside the immutable prepared location profile.
+    preview_dir = Path(config["farm_root"]) / "cache" / "objects_preview" / loc_id
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    preview = preview_dir / "objects_preview.png"
+    auto_surfaces.render_objects_preview(pf.Plate(geometry_dir), profile_path, preview)
     return {"status": "ok", "location": str(profile_path.resolve()),
-            "plate": str((geometry_dir / "plate_rgb.png").resolve()),
+            "plate": str((geometry_dir / "plate_rgb.png").resolve()), "objects_preview": str(preview.resolve()),
             "objects": [{"id": o["id"], "type": o.get("type", o.get("name")),
                          "height_m": o.get("h0", o.get("z_m", [None, None])[-1])} for o in data["objects"]]}
 
@@ -282,6 +303,8 @@ def seed_for(profile, spec, config):
                                  anchor_xy=seed[:2] if seed else None, pose_class=spec.pose_class)
     if obj is None:
         raise ValueError("target instance is absent or ambiguous; prepare profile/config spatial hints")
+    if obj.get("seed_world") is not None and seed is None:
+        return np.asarray(vector(obj["seed_world"], 3, "auto-surface seed_world"), float)
     if seed is not None:
         return np.asarray(vector(seed, 3, "location seed"), float)
     anchor = profile.anchor(obj["id"], spec.pose_class)
@@ -320,6 +343,20 @@ def prompt_direct(profile, config, fit):
                          "config.prompt_context_by_location[id].anchor")
     scene = {"action": context.get("action", "holding the body pose shown in <Video 1>"), "anchor": context["anchor"]}
     text = pose_h3_v26.prompt_d(table_round.prompt({"room": context.get("room", "the room in <Picture 1>")}, scene), fit)
+    additions = []
+    pose_text = str(fit.get("pose_text", "")).strip()
+    if pose_text:
+        if "\n" in pose_text or any(tag in pose_text for tag in ("subject_definitions:", "summary:", "overall_soundscape:")):
+            raise ValueError("pose_text must be one pose sentence, not prompt sections")
+        additions.append(pose_text.rstrip(".!?") + ".")
+    for prop in fit.get("props_prompt", []):
+        name = str(prop.get("description_en") or prop["name"]).strip()
+        if any(c in name for c in "\r\n"):
+            raise ValueError("prop description must be one line")
+        additions.append(f"The {name} floats motionless in the air; preserve its exact shape, color and material as in the init image.")
+    if additions:
+        marker = "\noverall_soundscape:"
+        text = text.replace(marker, "\n" + " ".join(additions) + marker, 1)
     pose_h3_v26.require_lint(text, video=True)
     return text
 
@@ -357,6 +394,26 @@ def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_
     from scipy.ndimage import binary_erosion
     overlay[sil & ~binary_erosion(sil)] = [0, 255, 180]
     Image.fromarray(np.rint(overlay).astype(np.uint8)).save(directory / "debug.png")
+
+
+def compose_props(directory, overlay_dir):
+    import numpy as np
+    from PIL import Image
+    import prop_render
+    size = (1344, 768)
+    desc = read_json(overlay_dir / "props_render.json")
+    for target, source in (("init.png", "textured_rgba"), ("playblast.png", "clay_rgba")):
+        base = Image.open(directory / target).convert("RGBA")
+        overlay = Image.open(desc[source]).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
+        Image.alpha_composite(base, overlay).convert("RGB").save(directory / target)
+    body = np.asarray(Image.open(directory / "strength.png").convert("L"), dtype=float) / 255
+    props = [(Image.open(p["silhouette"]).convert("L").resize(size, Image.Resampling.NEAREST),
+              p["prop_strength"]) for p in desc["props"]]
+    strength = prop_render.combine_strength(body, props)
+    Image.fromarray(np.rint(strength * 255).astype("uint8")).save(directory / "strength.png")
+    plate = np.asarray(Image.open(directory / "plate.png"), dtype=float)
+    debug = plate * (1 - .45 * strength[..., None]) + np.array([255,70,30]) * (.45 * strength[..., None])
+    Image.fromarray(np.rint(debug).astype("uint8")).save(directory / "debug.png")
 
 
 def do_place(request, config):
@@ -404,6 +461,14 @@ def do_place(request, config):
                     support_parts=parts(request.get("support_parts")) or DEFAULT_SUPPORT[pc],
                     instance_hint=request.get("instance_hint") or None,
                     secondary_contacts=contacts(request.get("secondary_contacts")))
+    explicit = next((o for o in profile.data["objects"] if o["id"] == spec.target_object), None)
+    if explicit is not None:
+        if spec.instance_hint and spec.instance_hint != explicit["id"]:
+            raise ValueError("target ID conflicts with instance_hint")
+        spec.instance_hint = explicit["id"]
+        spec.target_object = explicit.get("type", explicit.get("name", "other"))
+    if profile.data.get("auto_surfaces", {}).get("floor_status") not in (None, "ok"):
+        raise ValueError("auto profile floor is ambiguous; explicit floor preparation required before placement")
     seed = seed_for(profile, spec, config)
     # Validate required prompt metadata before spending GPU time.
     prompt_for(profile, config, {"shot_spec": spec.to_dict()})
@@ -430,15 +495,42 @@ def do_place(request, config):
     job.mkdir(parents=True)
     plate = pf.Plate(plate_dir)
     stage = time.monotonic()
-    np.random.seed(seed_value % (2 ** 32))
-    refine_ctx = refine.load_ctx(config["comfy"])
-    result = place.place(ref, plate, spec, seed, height, profile=profile,
-                         body_src="profile" if body else "proxy", dims_override=body["body_dims"] if body else None,
-                         refine_ctx=refine_ctx)
-    fit_hash = pf.fit_input_hash(rf, plate_dir, {"spec": spec.to_dict(), "height": height, "seed": seed_value})
-    place.write(job / "fit", result, ref, plate, spec, fit_hash)
+    import manual_pose
+    key = manual_pose.placement_key(rf, profile, config, spec, height, seed, {"body": body, "random_seed": seed_value})
+    cache_dir = Path(config["farm_root"]) / "cache" / "placement" / key
+    base = manual_pose.load_placement(cache_dir, key)
+    cache_hit = base is not None
+    if base is None:
+        np.random.seed(seed_value % (2 ** 32))
+        refine_ctx = refine.load_ctx(config["comfy"])
+        result = place.place(ref, plate, spec, seed, height, profile=profile,
+                             body_src="profile" if body else "proxy", dims_override=body["body_dims"] if body else None,
+                             refine_ctx=refine_ctx)
+        manual_pose.save_placement(cache_dir, result, ref, plate, spec, key)
+        base = manual_pose.load_placement(cache_dir, key)
+        if base is None:
+            raise ValueError(f"placement has no body geometry (status={result['status']})")
+    values = {k: request.get(k, 0.) for k in ("body_dx", "body_dy", "body_dz", "body_dyaw", "body_dpitch", "body_droll")}
+    if any(float(v) != 0 for v in values.values()):
+        X, KP, fit = manual_pose.revalidate(base, ref, plate, profile, spec, seed, height, values)
+    else:
+        X, KP, fit = base["X"], base["KP"], base["report"]
+    manual_pose.write_transformed(job / "fit", X, KP, ref["F"], fit)
+    timings["placement_cache_hit"] = cache_hit
     timings["placement_s"] = round(time.monotonic() - stage, 3)
     fit = read_json(job / "fit/fit.json")
+    fit["pose_text"] = request.get("pose_text", "")
+    props_value = request.get("props", "[]")
+    props_value = json.loads(props_value) if isinstance(props_value, str) else props_value
+    if not isinstance(props_value, list):
+        raise ValueError("props must be a JSON list")
+    fit["props_prompt"] = []
+    library = Path(config["farm_root"]) / "props"
+    for prop in props_value:
+        pid = location_id(prop.get("prop_id"))
+        meta = read_json(required_file(library / pid / "prop.json", "prop metadata"))
+        fit["props_prompt"].append(meta)
+    save_json(job / "fit/fit.json", fit)
     required_file(job / "fit/body.obj", f"placement body.obj (status={fit.get('status')})")
     h3_prompt = prompt_for(profile, config, fit)
     scene = {"name": "pose", "body_obj": str(job / "fit/body.obj"),
@@ -457,6 +549,28 @@ def do_place(request, config):
     directory = job / "render/pose"
     stage = time.monotonic()
     prepare_images(directory, plate_dir / "plate_rgb.png", mode, body_path, strength, config["cell_px"])
+    if props_value:
+        # Input offsets use the same camera-horizontal location axes as body_*.
+        render_props_value = []
+        basis = manual_pose.location_basis(plate)
+        for prop in props_value:
+            prop = dict(prop)
+            offset = basis @ np.asarray([prop.get(k, 0.) for k in "xyz"], dtype=float)
+            prop.update(dict(zip("xyz", offset.tolist())))
+            render_props_value.append(prop)
+        props_path = job / "props.json"
+        save_json(props_path, render_props_value)
+        overlay_dir = job / "props_render"
+        run_stage([config["blender"], "-b", "--factory-startup", "--disable-autoexec", "--python-exit-code", "1",
+                   "--python", HERE / "plate/prop_render.py", "--", "--plate", plate_dir,
+                   "--body", job / "fit/body.obj", "--joints", job / "fit/label_joints.npz",
+                   "--props", props_path, "--library", library, "--out", overlay_dir], "Blender props", env=env)
+        compose_props(directory, overlay_dir)
+        prop_report = read_json(overlay_dir / "props_render.json")
+        fit["props"] = prop_report["props"]
+        fit["flags"] = sorted(set(fit.get("flags", []) + [flag for prop in prop_report["props"]
+                                    for flag, active in prop["flags"].items() if active]))
+        save_json(job / "fit/fit.json", fit)
     timings["maps_s"] = round(time.monotonic() - stage, 3)
     timings["total_s"] = round(time.monotonic() - t0, 3)
     return dict(status=fit["status"], **{key: str((directory / filename).resolve()) for key, filename in

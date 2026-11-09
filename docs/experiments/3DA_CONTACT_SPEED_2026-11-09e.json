@@ -1,0 +1,229 @@
+{
+  "scope": "0b/0c CPU cached refs only; same new 0b semantics both sides, old/new ref_planes",
+  "refinement": "refine_ctx=None; no loader, GPU, Blender, SAM extraction or H3",
+  "tolerance": 1e-06,
+  "tests": {
+    "targeted_cpu": "72 passed, 19 subtests passed in 1.26s",
+    "additional_legacy_cpu": "24 passed, 1 failed in 756.07s (includes 18 targeted-suite tests)",
+    "legacy_failure": "Historical lie head-height assertion updated to v0.16 pelvis-neck axis [75,105]deg; orient.py unchanged. Relevant method rerun only: 1 passed in 3.78s; full long suite not rerun.",
+    "whitespace": "git diff --check: pass"
+  },
+  "contact_rules": {
+    "contact": "Any vertex from declared spec.support_regions within signed distance +/- place.contact_tol; full regions in evaluate, selected groups fallback in height_fit",
+    "part_gap": "Existing low-band group signed median preserved; >contact_tol -> support_gap + gap_parts + max_support_gap_m; >support_gap_partial_m -> partial",
+    "other_failures": "wrong_surface/out_of_frame preserved, other geometry failures partial plus named flags; no new status enum; no-contact not hidden by partial flags",
+    "early_zone_empty": "partial + zone_empty; no contact geometry available, so cannot claim contact_fail"
+  },
+  "rows": [
+    {
+      "id": "Q01_stand_hand_face",
+      "reference": "C:\\work\\scene3d_work\\refs_v2_npz\\Q01_stand_hand_face.ref.npz",
+      "reference_sha256": "e63f2d91c88665d69603bb0b8d11200cf74ff2c37f68c77c7387b54352749eb2",
+      "spec_sha256": "169d1104b74080d7d8ea94555fbff2987cba31f2d1ea1f6f32fec75851ab15f3",
+      "reference_points": 221947,
+      "old_0c_wall_s": 4.636388299999453,
+      "new_0c_wall_s": 3.1281836000016483,
+      "max_abs_difference": {
+        "X": 0.0,
+        "KP": 0.0
+      },
+      "plane_max_abs_difference": 0.0,
+      "status": "ok",
+      "penetration_equal": true,
+      "plane_count": 5,
+      "memo_hit_wall_s": 0.008984800000689575,
+      "flags": [
+        "support_gap"
+      ]
+    },
+    {
+      "id": "Q03_bed_kneel",
+      "reference": "C:\\work\\scene3d_work\\refs_v2_npz\\Q03_bed_kneel.ref.npz",
+      "reference_sha256": "93c177e35150e3628f7a20238771e6511459df5c057cc94300c7ce198da2eecf",
+      "spec_sha256": "50e6b5f61be54066ef37ece5666e653cee646bed94eca1540880447025a94138",
+      "reference_points": 213688,
+      "old_0c_wall_s": 494.27445589999843,
+      "new_0c_wall_s": 510.9873167000005,
+      "max_abs_difference": {
+        "X": 0.0,
+        "KP": 0.0
+      },
+      "plane_max_abs_difference": 0.0,
+      "status": "ok",
+      "penetration_equal": true,
+      "plane_count": 3,
+      "memo_hit_wall_s": 0.006728000000293832,
+      "flags": [
+        "dominant_top_unavailable",
+        "support_gap"
+      ]
+    },
+    {
+      "id": "Q04_bed_side_lie",
+      "reference": "C:\\work\\scene3d_work\\refs_v2_npz\\Q04_bed_side_lie.ref.npz",
+      "reference_sha256": "95da1816ed2ec3418d1eb93d9ff721f8340afc9389a51a5e47ed755bcf0e5bce",
+      "spec_sha256": "2c80767d3366204428ebe394d2d84fbc2d34a0e2029b1218ad6ddcbe99ea6834",
+      "reference_points": 222267,
+      "old_0c_wall_s": 5.269776600000114,
+      "new_0c_wall_s": 3.6272277000007307,
+      "max_abs_difference": {
+        "X": 0.0,
+        "KP": 0.0
+      },
+      "plane_max_abs_difference": 0.0,
+      "status": "partial",
+      "penetration_equal": true,
+      "plane_count": 4,
+      "memo_hit_wall_s": 0.006860000001324806,
+      "flags": [
+        "dominant_top_unavailable",
+        "support_gap"
+      ]
+    },
+    {
+      "id": "T02_kneel_lunge",
+      "reference": "C:\\work\\scene3d_work\\refs_v2_npz\\T02_kneel_lunge.ref.npz",
+      "reference_sha256": "71e53b998dd0de6a4390ac8a55508d232af838b2182939d40c074b3abc25d91d",
+      "spec_sha256": "8ead13251120ff40745d3f77a18889669b978091eab986ec27ff260919f9212a",
+      "reference_points": 38991,
+      "old_0c_wall_s": 6.0474405999993905,
+      "new_0c_wall_s": 5.669021600000633,
+      "max_abs_difference": {
+        "X": 0.0,
+        "KP": 0.0
+      },
+      "plane_max_abs_difference": 0.0,
+      "status": "wrong_surface",
+      "penetration_equal": true,
+      "plane_count": 5,
+      "memo_hit_wall_s": 0.004006900000604219,
+      "flags": [
+        "support_gap"
+      ]
+    }
+  ],
+  "profile_after": {
+    "id": "Q01",
+    "raw": "C:\\work\\scene3d_work\\farm\\diagnostics_09e\\Q01_after_0c_cpu.pstats",
+    "total_tt_s": 3.1281177999999996,
+    "top_geometry": [
+      {
+        "file": "place.py",
+        "line": 850,
+        "function": "place",
+        "calls": 1,
+        "self_s": 0.0010059000000000001,
+        "cum_s": 3.1276032000000002
+      },
+      {
+        "file": "place.py",
+        "line": 86,
+        "function": "prepare_body",
+        "calls": 1,
+        "self_s": 0.0026321,
+        "cum_s": 2.2309482000000003
+      },
+      {
+        "file": "pose_fit.py",
+        "line": 225,
+        "function": "ref_planes",
+        "calls": 1,
+        "self_s": 0.0004203,
+        "cum_s": 2.2111237000000004
+      },
+      {
+        "file": "pose_fit.py",
+        "line": 236,
+        "function": "_ref_planes",
+        "calls": 1,
+        "self_s": 1.3723204,
+        "cum_s": 2.2075919
+      },
+      {
+        "file": "place.py",
+        "line": 978,
+        "function": "fit_at",
+        "calls": 1,
+        "self_s": 0.0001661,
+        "cum_s": 0.5262568000000001
+      },
+      {
+        "file": "place.py",
+        "line": 461,
+        "function": "penetration_stats",
+        "calls": 4,
+        "self_s": 0.0017711,
+        "cum_s": 0.42522770000000004
+      },
+      {
+        "file": "place.py",
+        "line": 429,
+        "function": "penetration_values",
+        "calls": 5,
+        "self_s": 0.40904820000000003,
+        "cum_s": 0.4186612
+      },
+      {
+        "file": "place.py",
+        "line": 557,
+        "function": "evaluate",
+        "calls": 1,
+        "self_s": 0.11797450000000001,
+        "cum_s": 0.2491604
+      },
+      {
+        "file": "place.py",
+        "line": 795,
+        "function": "geometry_diagnostics",
+        "calls": 1,
+        "self_s": 0.0086081,
+        "cum_s": 0.2310954
+      },
+      {
+        "file": "place.py",
+        "line": 266,
+        "function": "rigid_fit",
+        "calls": 1,
+        "self_s": 0.000491,
+        "cum_s": 0.1590164
+      },
+      {
+        "file": "assembly.py",
+        "line": 53,
+        "function": "height_fit",
+        "calls": 1,
+        "self_s": 1.54e-05,
+        "cum_s": 0.11609370000000001
+      },
+      {
+        "file": "assembly.py",
+        "line": 64,
+        "function": "settle",
+        "calls": 1,
+        "self_s": 0.0004667,
+        "cum_s": 0.1160611
+      }
+    ],
+    "ref_planes_place_percent": 70.69706604725306,
+    "note": "One after CPU Q01 profile; no model loader/refine. Memo called once; no repeat hit inside real placement. Source hash updated for docstring-only change after measurement."
+  },
+  "baseline_sources": {
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py": "4e232d068f92c7b981560408426d8bcda2be749e90e22e87206132e25ad07062",
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\assembly.py": "2d3bfe30ae09700eed098a59c0f597f535e5bc7b7fdd0518ff2a745d82573713",
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py": "2710b84956e3ace0d761e8619ca4f85e9b316df996a2375cdfd7eba75a4063d2",
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\orient.py": "1389bc4c43efa5e506cd1bb81f2c8d88bd5011eccb22fe4d7380444169a2acdd",
+    "C:\\work\\ComfyUI-Farm\\config\\placement.yaml": "e608d8972f647344251afeed2e75aed7ec0fcc561989f6561fecf3be3cd36c10"
+  },
+  "final_sources": {
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\place.py": "d30435e15830ecef97155e1f19198450632a903289383ff5b498ed679066a696",
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\assembly.py": "5ec8e84d6aa80179ad6a8aa3340ffe7a6d039cfd6de798e9694318451bdf4cb4",
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\pose_fit.py": "d6bf83356906a1f80e20972d927d71f475e16358cab6cec7a1b87fc21424dd59",
+    "C:\\work\\ComfyUI-Farm\\tools\\scene3d\\posev2\\orient.py": "1389bc4c43efa5e506cd1bb81f2c8d88bd5011eccb22fe4d7380444169a2acdd",
+    "C:\\work\\ComfyUI-Farm\\config\\placement.yaml": "2bb240d85082e7fcac26ab16911ff810b698a81343e75da0e6269304e06e41f8"
+  },
+  "limitations": [
+    "Not an old/new 0b equivalence claim (contact semantics intentionally changed).",
+    "Q04/Q10/T01 live GPU reruns not performed; main owns GPU scheduling.",
+    "CPU rigid-only timings do not establish the <=60s full live placement SLA."
+  ]
+}

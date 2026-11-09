@@ -196,7 +196,7 @@ class ContactTests(unittest.TestCase):
                        ('shin.L', np.array([2]), 'target', 'support')]
         self.X = np.array([[0., 0, 0.], [1., 0, .055], [0., 0, .05]])
 
-    def test_q05_one_foot_and_other_gaps_are_flags_not_failure(self):
+    def test_q05_one_foot_contact_gap_over_5cm_is_partial_09e(self):
         for cls in ('stand', 'crouch'):
             spec = ss.ShotSpec('Q05', cls, 'floor', ['foot.L', 'foot.R'])
             c = place.support_contact(self.X, self.groups, self.S, spec, False)
@@ -208,21 +208,21 @@ class ContactTests(unittest.TestCase):
                       support_part_gaps_m=c['part_gaps_m'])
             with patch.object(assembly, 'orientation_checks', return_value=[]):
                 val = assembly.validate(None, ev, spec, None, 0, None, True)
-            self.assertTrue(val['ok'])
-            self.assertEqual(val['status'], 'ok')
+            self.assertFalse(val['ok'])
+            self.assertEqual(val['status'], 'partial')
             self.assertIn('support_gap', val['flags'])
 
-    def test_lowest_without_foot_and_foot_without_body_lowest_fail(self):
+    def test_only_declared_support_contact_not_body_lowest_09e(self):
         spec = ss.ShotSpec('Q05', 'crouch', 'floor', ['foot.L'])
         X = self.X.copy(); X[0, 2] = .04; X[2, 2] = 0
         self.assertFalse(place.support_contact(X, self.groups, self.S, spec, False)['ok'])
         X = self.X.copy(); X[2, 2] = -.011
-        self.assertFalse(place.support_contact(X, self.groups, self.S, spec, False)['ok'])
+        self.assertTrue(place.support_contact(X, self.groups, self.S, spec, False)['ok'])
 
-    def test_other_classes_keep_all_group_gap_requirement(self):
+    def test_other_classes_share_any_vertex_contact_09e(self):
         for cls in ('kneel', 'sit_edge', 'lie'):
-            spec = ss.ShotSpec('old', cls, 'bed', ['foot.L', 'foot.R'])
-            self.assertFalse(place.support_contact(self.X, self.groups, self.S, spec, False)['ok'])
+            spec = ss.ShotSpec('unified', cls, 'bed', ['foot.L', 'foot.R'])
+            self.assertTrue(place.support_contact(self.X, self.groups, self.S, spec, False)['ok'])
 
     def test_height_does_not_sweep_to_force_other_parts_down(self):
         spec = ss.ShotSpec('Q05', 'crouch', 'floor', ['foot.L'])

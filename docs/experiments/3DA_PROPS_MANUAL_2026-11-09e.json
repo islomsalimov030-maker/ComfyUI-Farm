@@ -1,0 +1,111 @@
+{
+  "Q01": {
+    "status": "out_of_frame",
+    "flags": [
+      "penetration_fail",
+      "prop_hits_body",
+      "prop_hits_room",
+      "prop_out_of_frame",
+      "support_gap"
+    ],
+    "timings": {
+      "reference_s": 0.047,
+      "placement_cache_hit": true,
+      "placement_s": 0.562,
+      "render_s": 10.422,
+      "maps_s": 5.781,
+      "total_s": 19.593
+    },
+    "preview_wall_s": 19.968,
+    "remote": {
+      "status": "ok",
+      "prompt_id": "8704fb3d-0b91-44a5-9b93-f5ca2c4a2f2f",
+      "total_s": 66.485,
+      "upload_s": 10.844,
+      "queue_and_h3_s": 54.406
+    },
+    "ssim_outside": 0.9999972643588387,
+    "outside_changed_pixels": 0,
+    "passed": true,
+    "max_support_gap_m": 0.015372426560765994,
+    "props": [
+      {
+        "prop_id": "head_close_a648e192",
+        "index": 0,
+        "prop_strength": 0.35,
+        "silhouette": "C:\\work\\scene3d_work\\farm\\pack\\jobs\\4df12bdadabb47378c39b51a4c760ad1\\props_render\\prop_000_silhouette.png",
+        "bbox_world": [
+          [
+            2.5364322662353516,
+            4.266637802124023,
+            1.3127683401107788
+          ],
+          [
+            3.1097211837768555,
+            5.015998840332031,
+            2.289668321609497
+          ]
+        ],
+        "flags": {
+          "prop_hits_room": true,
+          "prop_hits_body": true,
+          "prop_out_of_frame": true
+        }
+      }
+    ]
+  },
+  "Q04": {
+    "status": "partial",
+    "flags": [
+      "dominant_top_unavailable",
+      "prop_hits_body",
+      "prop_hits_room",
+      "support_gap"
+    ],
+    "timings": {
+      "reference_s": 0.063,
+      "placement_cache_hit": true,
+      "placement_s": 0.188,
+      "render_s": 10.141,
+      "maps_s": 5.859,
+      "total_s": 19.093
+    },
+    "preview_wall_s": 19.453,
+    "remote": {
+      "status": "ok",
+      "prompt_id": "05806d6c-aa25-486e-9d07-dcb8fcb1a994",
+      "total_s": 62.703,
+      "upload_s": 6.719,
+      "queue_and_h3_s": 54.531
+    },
+    "ssim_outside": 0.9999908025828347,
+    "outside_changed_pixels": 0,
+    "passed": true,
+    "max_support_gap_m": 0.22386147235802734,
+    "props": [
+      {
+        "prop_id": "head_close_a648e192",
+        "index": 0,
+        "prop_strength": 0.35,
+        "silhouette": "C:\\work\\scene3d_work\\farm\\pack\\jobs\\b863e79f1f0c4c1298cf1332d7a04350\\props_render\\prop_000_silhouette.png",
+        "bbox_world": [
+          [
+            -0.14773152768611908,
+            1.9651356935501099,
+            0.42695602774620056
+          ],
+          [
+            0.4255572557449341,
+            2.7144970893859863,
+            1.4038559198379517
+          ]
+        ],
+        "flags": {
+          "prop_hits_room": true,
+          "prop_hits_body": true,
+          "prop_out_of_frame": false
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,217 @@
+{
+  "place_exit": 0,
+  "render_exit": 0,
+  "rows": [
+    {
+      "id": "Q01_stand_hand_face",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q02_bed_cross_legs",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "dominant_top_unavailable",
+        "orient_conflict",
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q03_bed_kneel",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "dominant_top_unavailable",
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q04_bed_side_lie",
+      "freshness": "NEW",
+      "status": "partial",
+      "flags": [
+        "dominant_top_unavailable",
+        "support_gap"
+      ],
+      "first_failure": {
+        "check": "support_gap:thigh.L",
+        "ok": false,
+        "excess": 0.18801585703909718,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "Q05_crouch_shoelace",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q06_floor_hug_knees",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q07_stretch_arms_up",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q08_bed_recline_elbows",
+      "freshness": "NEW",
+      "status": "partial",
+      "flags": [
+        "dominant_top_unavailable",
+        "orient_conflict",
+        "penetration_fail",
+        "support_gap"
+      ],
+      "first_failure": {
+        "check": "penetration_surface:soft:pillows",
+        "ok": false,
+        "excess": 0.008936596484516168,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "Q09_lean_wall",
+      "freshness": "NEW",
+      "status": "partial",
+      "flags": [
+        "orient_conflict",
+        "support_gap"
+      ],
+      "first_failure": {
+        "check": "support_gap:foot.R",
+        "ok": false,
+        "excess": 0.011231049061691423,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "Q10_all_fours_cat",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q11_bench_side_sit",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "dominant_top_unavailable",
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "Q12_one_leg_ankle",
+      "freshness": "NEW",
+      "status": "wrong_surface",
+      "flags": [
+        "support_gap",
+        "table_side_mismatch"
+      ],
+      "first_failure": {
+        "check": "support_target",
+        "ok": false,
+        "excess": 1.0,
+        "unit": "surface"
+      }
+    },
+    {
+      "id": "T01_sofa_legs_tucked",
+      "freshness": "NEW",
+      "status": "partial",
+      "flags": [
+        "dominant_top_unavailable",
+        "orient_clamped:21.1",
+        "support_gap"
+      ],
+      "first_failure": {
+        "check": "support_gap:shin.L",
+        "ok": false,
+        "excess": 0.13533241787314304,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "T02_kneel_lunge",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "T03_armchair_side_sit",
+      "freshness": "NEW",
+      "status": "partial",
+      "flags": [
+        "dominant_top_unavailable",
+        "no_back_contact",
+        "orient_clamped:13.9",
+        "support_gap"
+      ],
+      "first_failure": {
+        "check": "back_contact",
+        "ok": false,
+        "excess": 0.012234768715601566,
+        "unit": "m"
+      }
+    },
+    {
+      "id": "T04_floor_sit_knees_up",
+      "freshness": "NEW",
+      "status": "ok",
+      "flags": [
+        "support_gap"
+      ],
+      "first_failure": null
+    },
+    {
+      "id": "T05_barre_standing_split",
+      "freshness": "NEW",
+      "status": "wrong_surface",
+      "flags": [
+        "orient_clamped:46.1",
+        "support_gap",
+        "table_side_mismatch"
+      ],
+      "first_failure": {
+        "check": "support_target",
+        "ok": false,
+        "excess": 1.0,
+        "unit": "surface"
+      }
+    }
+  ],
+  "counts_new": {
+    "ok": 10,
+    "partial": 5,
+    "wrong_surface": 2
+  },
+  "new": 17
+}

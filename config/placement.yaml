@@ -80,6 +80,10 @@ zone:
   access_endpoint_eps: 1.0e-9
   rank_decimals: 2
 
+auto_surfaces:
+  height_bin_m: 0.02
+  min_area_m2: 0.15
+
 top_region:
   cell: 0.02
   dominant_bin_m: 0.02
@@ -193,6 +197,7 @@ place:
   torso_back_halfwidth_frac: 0.8
   hull_in_mask_min: 0.9
   contact_tol: 0.01
+  support_gap_partial_m: 0.05
   height_lift_step_m: 0.005
   height_lift_extra_m: 0.01
   sup_gap_cm: 3.0

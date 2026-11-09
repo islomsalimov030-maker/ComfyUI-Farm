@@ -15,6 +15,80 @@ import yaml
 
 HERE = Path(__file__).resolve().parent
 CLASSES = ['stand', 'kneel', 'sit_edge', 'sit_tucked', 'sit_floor', 'crouch', 'recline', 'lie', 'all_fours']
+ANCHORS = ['world', 'char_head', 'char_chest', 'char_hand_l', 'char_hand_r', 'char_pelvis']
+PROP_FIELDS = {'prop_id', 'anchor', 'x', 'y', 'z', 'yaw', 'pitch', 'roll', 'scale', 'prop_strength'}
+
+
+def finite_number(value, name, *, minimum=None, maximum=None):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not np.isfinite(value):
+        raise ValueError(f'{name} must be a finite number')
+    if minimum is not None and value < minimum or maximum is not None and value > maximum:
+        raise ValueError(f'{name} outside allowed range')
+    return float(value)
+
+
+def safe_prop_id(value):
+    if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', value):
+        raise ValueError('prop_id must be an ASCII slug, without paths or traversal')
+    return value
+
+
+def prop_library():
+    return Path(config()['farm_root']) / 'props'
+
+
+def prop_metadata(root, prop_id):
+    safe_prop_id(prop_id)
+    root = root.resolve()
+    path = (root / prop_id / 'prop.json').resolve()
+    if not path.is_relative_to(root):
+        raise ValueError('Prop metadata escapes library')
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(data, dict) or not isinstance(data.get('name'), str) or not data['name'].strip():
+        raise ValueError('prop.json requires nonempty name')
+    if not isinstance(data.get('description_en', ''), str):
+        raise ValueError('prop.json description_en must be STRING')
+    if 'size_m' in data and data['size_m'] is not None:
+        if finite_number(data['size_m'], 'size_m') <= 0:
+            raise ValueError('size_m must be positive')
+    finite_number(data.get('prop_strength', .35), 'prop_strength', minimum=0., maximum=1.)
+    return data
+
+
+def prop_choices():
+    try:
+        root = prop_library()
+        choices = []
+        for path in sorted(root.glob('*/prop.json')):
+            try:
+                prop_metadata(root, path.parent.name)
+                choices.append(path.parent.name)
+            except (ValueError, OSError):
+                continue
+        return choices or ['']
+    except (ValueError, OSError):
+        # Missing library/config must not prevent the other nodes from loading.
+        return ['']
+
+
+def validated_props(text):
+    if not isinstance(text, str):
+        raise ValueError('props must be a JSON STRING')
+    data = json.loads(text)
+    if not isinstance(data, list):
+        raise ValueError('props must be a JSON list')
+    for prop in data:
+        if not isinstance(prop, dict) or set(prop) != PROP_FIELDS:
+            raise ValueError('Each prop requires exactly prop_id, anchor, x/y/z, yaw/pitch/roll, scale, prop_strength')
+        safe_prop_id(prop['prop_id'])
+        if prop['anchor'] not in ANCHORS:
+            raise ValueError('Unknown prop anchor')
+        for name in ('x', 'y', 'z', 'yaw', 'pitch', 'roll', 'scale', 'prop_strength'):
+            finite_number(prop[name], name)
+        if prop['scale'] <= 0:
+            raise ValueError('scale must be positive')
+        finite_number(prop['prop_strength'], 'prop_strength', minimum=0., maximum=1.)
+    return data
 
 
 def config():
@@ -120,8 +194,8 @@ class Location:
     @classmethod
     def INPUT_TYPES(cls):
         return {'required': {'plate': ('IMAGE',), 'location_id': ('STRING', {'default': 'mainroom2'})}}
-    RETURN_TYPES = ('STRING', 'IMAGE', 'STRING')
-    RETURN_NAMES = ('location', 'plate', 'objects')
+    RETURN_TYPES = ('STRING', 'IMAGE', 'STRING', 'IMAGE')
+    RETURN_NAMES = ('location', 'plate', 'objects', 'objects_preview')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
@@ -129,10 +203,42 @@ class Location:
         try:
             result = invoke('location', {'location_id': location_id}, {'plate': plate})
             objects = result.get('objects', [])
-            return result['location'], load_image(result['plate']), (objects if isinstance(objects, str) else
-                                                                   json.dumps(objects, ensure_ascii=False))
+            output_plate = load_image(result['plate'])
+            preview = load_image(result['objects_preview']) if result.get('objects_preview') else output_plate
+            return (result['location'], output_plate, objects if isinstance(objects, str) else
+                    json.dumps(objects, ensure_ascii=False), preview)
         except Exception as exc:
-            return json.dumps({'status': 'error', 'error': error_text(exc)}, ensure_ascii=False), plate, error_text(exc)
+            return json.dumps({'status': 'error', 'error': error_text(exc)}, ensure_ascii=False), plate, error_text(exc), plate
+
+
+class Prop:
+    """JSON-only adapter. Import, transforms, contacts and rendering live in the CLI."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        position = ('FLOAT', {'default': 0., 'step': .01})
+        angle = ('FLOAT', {'default': 0., 'step': 1.})
+        return {'required': {
+            'prop_id': (prop_choices(),), 'anchor': (ANCHORS,),
+            'x': position, 'y': position, 'z': position,
+            'yaw': angle, 'pitch': angle, 'roll': angle,
+            'scale': ('FLOAT', {'default': 1., 'min': .001, 'step': .01}),
+            'prop_strength': ('FLOAT', {'default': .35, 'min': 0., 'max': 1., 'step': .01}),
+        }, 'optional': {'props_in': ('STRING', {'default': '[]', 'forceInput': True})}}
+    RETURN_TYPES = ('STRING',)
+    RETURN_NAMES = ('props',)
+    FUNCTION = 'execute'
+    CATEGORY = '3DA'
+
+    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]'):
+        props = validated_props(props_in)
+        item = dict(prop_id=prop_id, anchor=anchor, x=x, y=y, z=z, yaw=yaw, pitch=pitch,
+                    roll=roll, scale=scale, prop_strength=prop_strength)
+        props.append(item)
+        validated_props(json.dumps(props, allow_nan=False))
+        root = prop_library()
+        for entry in props:
+            prop_metadata(root, entry['prop_id'])
+        return (json.dumps(props, ensure_ascii=False, allow_nan=False),)
 
 
 class PlacePose:
@@ -147,23 +253,37 @@ class PlacePose:
             'body_json': ('STRING', {'default': ''}), 'proxy': (['grey', 'color'],),
             'strength': ('FLOAT', {'default': 1., 'min': 0., 'max': 1., 'step': .05}),
             'seed': ('INT', {'default': 101, 'min': 0, 'max': 0xffffffffffffffff}),
-        }}
+            'block_on_fail': ('BOOLEAN', {'default': False}),
+            **{name: ('FLOAT', {'default': 0., 'step': .01 if name in ('body_dx', 'body_dy', 'body_dz') else 1.})
+               for name in ('body_dx', 'body_dy', 'body_dz', 'body_dyaw', 'body_dpitch', 'body_droll')},
+        }, 'optional': {'pose_text': ('STRING', {'default': '', 'multiline': True}),
+                        'props': ('STRING', {'default': '[]', 'forceInput': True})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE')
     RETURN_NAMES = ('playblast', 'init', 'strength', 'silhouette', 'h3_prompt', 'status', 'debug')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
     def execute(self, location, pose_ref, pose_class, target_object, support_parts, secondary_contacts,
-                instance_hint, height_m, body_json, proxy, strength, seed):
+                instance_hint, height_m, body_json, proxy, strength, seed, block_on_fail=False,
+                body_dx=0., body_dy=0., body_dz=0., body_dyaw=0., body_dpitch=0., body_droll=0.,
+                pose_text='', props='[]'):
         try:
+            if not isinstance(block_on_fail, bool) or not isinstance(pose_text, str):
+                raise ValueError('block_on_fail must be BOOLEAN; pose_text must be STRING')
+            transforms = dict(body_dx=body_dx, body_dy=body_dy, body_dz=body_dz,
+                              body_dyaw=body_dyaw, body_dpitch=body_dpitch, body_droll=body_droll)
+            for name, value in transforms.items():
+                finite_number(value, name)
+            validated_props(props)
             result = invoke('place', dict(location=location, pose_class=pose_class, target_object=target_object,
                             support_parts=support_parts, secondary_contacts=secondary_contacts,
                             instance_hint=instance_hint, height_m=height_m, body_json=body_json,
-                            proxy=proxy, strength=strength, seed=seed), {'pose_ref': pose_ref})
+                            proxy=proxy, strength=strength, seed=seed, block_on_fail=block_on_fail,
+                            pose_text=pose_text, props=props, **transforms), {'pose_ref': pose_ref})
             status = result['status']
-            # Only accepted placements may spend H3 GPU time. Preserve all geometry
-            # artifacts/status for diagnosis, but let Remote's empty-prompt guard stop.
-            h3_prompt = result['h3_prompt'] if isinstance(status, str) and status in ('ok', 'partial') else ''
+            # Manual mode retains diagnostics without using status as an H3 gate.
+            accepted = isinstance(status, str) and status in ('ok', 'partial')
+            h3_prompt = result['h3_prompt'] if not block_on_fail or accepted else ''
             if not isinstance(status, str):
                 status = json.dumps(status, ensure_ascii=False)
             status += '\n' + json.dumps({'report': result.get('report', {}),
@@ -325,6 +445,6 @@ class H3Remote:
             return blank, blank.clone(), remote_error(exc)
 
 
-NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAH3Remote': H3Remote}
+NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote}
 NODE_DISPLAY_NAME_MAPPINGS = {'3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
-                              '3DAH3Remote': '3DA H3 Remote'}
+                              '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote'}

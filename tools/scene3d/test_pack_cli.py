@@ -19,13 +19,28 @@ def config(tmp_path):
     return cli.config_for({"config": {"farm_root": str(tmp_path), "python": sys.executable}})
 
 
+def geometry_fixtures(directory):
+    """Tiny real plate: preview also runs in the isolated CLI subprocess test."""
+    cli.save_json(directory / "plate.json", {"R_world_from_cv": [[1, 0, 0], [0, 0, 1], [0, -1, 0]],
+        "cam_height_m": 2., "inv_norm": {"lo": .1, "hi": 1.}, "fov_x_deg": 60.})
+    vertices = [f"v {x} {y} 0\n" for x in np.linspace(-1, 1, 21) for y in np.linspace(1, 3, 21)]
+    faces = []
+    for i in range(20):
+        for j in range(20):
+            a = i * 21 + j + 1
+            faces.extend((f"f {a} {a + 21} {a + 22}\n", f"f {a} {a + 22} {a + 1}\n"))
+    (directory / "plate_mesh.obj").write_text("".join(vertices + faces), encoding="utf-8")
+    Image.new("RGB", (64, 48), (90, 90, 90)).save(directory / "plate_rgb.png")
+    Image.fromarray(np.full((48, 64), 30000, np.uint16)).save(directory / "depth_loc.png")
+
+
 def profile_dir(tmp_path):
     directory = tmp_path / "locations" / "room"
     directory.mkdir(parents=True)
-    for name in ("plate.json", "plate_mesh.obj", "plate_rgb.png", "depth_loc.png"):
-        (directory / name).write_text("fixture", encoding="utf-8")
+    geometry_fixtures(directory)
     cli.save_json(directory / "profile.json", {"loc_id": "room", "objects": [
-        {"id": "bed_2", "type": "bed", "h0": .5}, {"id": "wall_1", "type": "wall", "z_m": [0, 2.5]}]})
+        {"id": "bed_2", "type": "bed", "h0": .5}, {"id": "wall_1", "type": "wall", "z_m": [0, 2.5],
+         "lat_m": [-1, 1], "plane": {"n": [0, -1, 0], "d": 3.}}]})
     return directory
 
 
@@ -87,21 +102,23 @@ def test_profile_without_mesh_is_explicit_error(tmp_path):
         cli.do_location({"location_id": "room"}, config(tmp_path))
 
 
-def test_new_location_runs_existing_moge_then_stops_without_hints(tmp_path, monkeypatch):
+def test_new_location_runs_existing_moge_then_auto_surfaces_without_hints(tmp_path, monkeypatch):
     source = tmp_path / "source.png"
     Image.new("RGB", (8, 8)).save(source)
     calls = []
     def run(command, stage):
         calls.append((command, stage))
-        out = Path(command[3])
-        for name in ("plate.json", "plate_mesh.obj", "plate_rgb.png", "depth_loc.png"):
-            (out / name).write_text("fixture", encoding="utf-8")
+        geometry_fixtures(Path(command[3]))
     monkeypatch.setattr(cli, "run_stage", run)
-    with pytest.raises(ValueError, match="location_hints_by_id"):
-        cli.do_location({"location_id": "new_room", "plate": str(source)}, config(tmp_path))
+    result = cli.do_location({"location_id": "new_room", "plate": str(source)}, config(tmp_path))
     assert len(calls) == 1
     assert str(calls[0][0][1]).endswith("plate_geometry.py")
-    assert not (tmp_path / "locations/new_room/profile.json").exists()
+    assert result["status"] == "ok"
+    data = cli.read_json(tmp_path / "locations/new_room/profile.json")
+    assert data["auto_surfaces"]["surface_count"] == 1
+    assert data["auto_surfaces"]["floor_status"] == "ok"
+    assert result["objects"][0]["id"] == "floor_1"
+    assert Path(result["objects_preview"]).is_file()
 
 
 def test_contacts_and_support_defaults():
@@ -392,12 +409,19 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
         assert ref["body_cache_dir"].endswith("body_geometry")
         assert kw["refine_ctx"] == "existing-refine-context"
         return {"rep": {"status": "partial"}}
-    def write(out, result, ref, plate, spec, fit_hash):
+    placement_cache = {}
+    def save_placement(out, result, ref, plate, spec, key):
+        placement_cache[key] = {"X": np.zeros((3, 3)), "KP": np.zeros((70, 3)),
+                                "report": {"status": "partial", "shot_spec": spec.to_dict()}}
+    def write_transformed(out, X, KP, faces, fit):
         events.append("write")
         out.mkdir(parents=True)
         (out / "body.obj").write_text("fixture")
-        cli.save_json(out / "fit.json", {"status": "partial", "shot_spec": spec.to_dict()})
-    monkeypatch.setitem(sys.modules, "place", SimpleNamespace(place=place, write=write))
+        cli.save_json(out / "fit.json", fit)
+    monkeypatch.setitem(sys.modules, "place", SimpleNamespace(place=place))
+    monkeypatch.setitem(sys.modules, "manual_pose", SimpleNamespace(
+        placement_key=lambda *a: "placement-fixture", save_placement=save_placement,
+        load_placement=lambda d, key: placement_cache.get(key), write_transformed=write_transformed))
     monkeypatch.setitem(sys.modules, "refine", SimpleNamespace(load_ctx=lambda p: "existing-refine-context"))
     monkeypatch.syspath_prepend(str(cli.HERE / "posev2"))
     monkeypatch.syspath_prepend(str(cli.HERE / "plate"))
@@ -427,14 +451,33 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
     assert result["h3_prompt"] == "existing-prompt-fixture"
     for key in ("playblast", "init", "strength", "silhouette", "debug"):
         assert Path(result[key]).is_file()
-    assert set(result["timings"]) == {"reference_s", "placement_s", "render_s", "maps_s", "total_s"}
+    assert set(result["timings"]) == {"reference_s", "placement_s", "placement_cache_hit", "render_s", "maps_s", "total_s"}
+    assert result["timings"]["placement_cache_hit"] is False
     assert len(list((tmp_path / "cache/pose_ref").iterdir())) == 1
     events.clear()
     # Same bytes, different filename: cache must still hit.
     alias = tmp_path / "renamed.png"
     alias.write_bytes(pose.read_bytes())
-    cli.do_place(dict(request, pose_ref=str(alias)), cfg)
-    assert events == ["place", "write", "Blender render"]
+    cached = cli.do_place(dict(request, pose_ref=str(alias)), cfg)
+    assert events == ["write", "Blender render"]
+    assert cached["timings"]["placement_cache_hit"] is True
+
+
+def test_pose_text_and_prop_sentences_use_existing_linter(monkeypatch):
+    import sys
+    monkeypatch.syspath_prepend(str(cli.HERE / 'plate'))
+    monkeypatch.syspath_prepend(str(cli.REPO))
+    from types import SimpleNamespace
+    profile = SimpleNamespace(data={'loc_id':'test','prompt_context':{'anchor':'the table reaches her knees'}})
+    fit={'shot_spec':{'pose_class':'stand','target_object':'floor','secondary_contacts':[]},
+         'pose_text':'She holds her left hand beside her face.',
+         'props_prompt':[{'name':'stylized head','description_en':''}]}
+    text=cli.prompt_direct(profile,{},fit)
+    assert 'She holds her left hand beside her face.' in text
+    assert 'The stylized head floats motionless in the air' in text
+    assert text.index('floats motionless') < text.index('overall_soundscape:')
+    with pytest.raises(ValueError):
+        cli.prompt_direct(profile,{},dict(fit,pose_text='new\\nsummary: injected'))
 
 
 def test_place_worker_dispatches_refine_to_geometry_python(tmp_path, monkeypatch):

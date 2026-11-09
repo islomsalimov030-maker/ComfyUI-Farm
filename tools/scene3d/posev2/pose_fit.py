@@ -16,6 +16,9 @@
 status "pose_mismatch" (нужна поправка позы — следующий шаг, MHR в ComfyUI).
 """
 import argparse
+from contextlib import contextmanager
+from contextvars import ContextVar
+import hashlib
 import json
 import math
 import os
@@ -201,7 +204,36 @@ def penetration(plate, X):
 
 
 # ------------------------------------------------------------------------------------------------ reference analysis
+_REF_PLANE_CACHE = ContextVar("ref_plane_cache", default=None)
+
+
+@contextmanager
+def ref_plane_scope():
+    """Content-keyed memo, discarded on placement exit (also on exceptions)."""
+    token = _REF_PLANE_CACHE.set({})
+    try:
+        yield
+    finally:
+        _REF_PLANE_CACHE.reset(token)
+
+
+def _array_digest(a):
+    a = np.ascontiguousarray(a)
+    return (a.shape, a.dtype.str, hashlib.sha256(a.view(np.uint8)).digest())
+
+
 def ref_planes(S, max_planes=CFG["ref_max_planes"], thr=CFG["ref_plane_thr"], seed=0, body=None):
+    cache = _REF_PLANE_CACHE.get()
+    if cache is None:
+        return _ref_planes(S, max_planes, thr, seed, body)
+    key = (_array_digest(S), None if body is None else _array_digest(body.data),
+           max_planes, thr, seed, json.dumps(CFG, sort_keys=True))
+    if key not in cache:
+        cache[key] = _ref_planes(S, max_planes, thr, seed, body)
+    return cache[key]
+
+
+def _ref_planes(S, max_planes, thr, seed, body):
     """Плоскости сцены рефа (RANSAC, последовательно): пол, кровать, сиденье, стены. Отдельные «летающие» точки
     на краю силуэта и остатки тела в MoGe в плоскости не собираются — поэтому контакты считаем только с плоскостями."""
     rng = np.random.default_rng(seed)
@@ -211,24 +243,33 @@ def ref_planes(S, max_planes=CFG["ref_max_planes"], thr=CFG["ref_plane_thr"], se
     for _ in range(max_planes):
         if len(pts) < min_in:
             break
-        best = None
-        for _ in range(CFG["ref_plane_trials"]):
-            q = pts[rng.choice(len(pts), 3, replace=False)]
-            n = np.cross(q[1] - q[0], q[2] - q[0])
-            if np.linalg.norm(n) < CFG["ref_plane_normal_eps"]:
-                continue
-            n /= np.linalg.norm(n)
-            inl = np.abs((pts - q[0]) @ n) < thr
-            if best is None or inl.sum() > best[1].sum():
-                best = (n, inl)
-        if best is None or best[1].sum() < min_in:
+        # Keep exactly the original RNG draws/order and first-max tie rule.
+        # Score point/hypothesis pairs in bounded numpy batches, not BLAS
+        # matrix-vector calls per trial (thread dispatch dominates small clouds).
+        q = pts[np.array([rng.choice(len(pts), 3, replace=False)
+                          for _ in range(CFG["ref_plane_trials"])])]
+        normals = np.cross(q[:, 1] - q[:, 0], q[:, 2] - q[:, 0])
+        norms = np.linalg.norm(normals, axis=1)
+        valid = norms >= CFG["ref_plane_normal_eps"]
+        q, normals = q[valid, 0], normals[valid] / norms[valid, None]
+        best_inliers, best_count = None, -1
+        for start in range(0, len(q), 16):  # memory bound only, not a geometric threshold
+            ns = normals[start:start + 16]
+            distances = np.einsum("ni,ti->tn", pts, ns, optimize=False)
+            distances -= np.einsum("ti,ti->t", q[start:start + 16], ns)[:, None]
+            inliers = np.abs(distances) < thr
+            counts = inliers.sum(axis=1)
+            winner = int(np.argmax(counts))
+            if counts[winner] > best_count:
+                best_inliers, best_count = inliers[winner].copy(), int(counts[winner])
+        if best_inliers is None or best_count < min_in:
             break
-        P = pts[best[1]]
+        P = pts[best_inliers]
         c = P.mean(0)
         n = np.linalg.svd(P - c, full_matrices=False)[2][-1]
         if n @ (-c) < 0:                                                  # нормаль к камере (камера в начале)
             n = -n
-        pts = pts[~best[1]]
+        pts = pts[~best_inliers]
         if body is not None and np.median(body.query(P)[0]) < CFG["ref_plane_body_exclude_m"]:     # «плоскость» из остатков тела — не сцена
             continue
         sub = P[rng.choice(len(P), min(len(P), CFG["ref_plane_sample_points"]), replace=False)]

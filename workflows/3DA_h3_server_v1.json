@@ -624,7 +624,7 @@
     },
     "inputs": [
      {
-      "id": "fe9e3b38-fecd-49cf-ace7-4bb4a3835912",
+      "id": "32c49a6d-e6a3-4120-887e-31da7301cc7a",
       "name": "String · промпт H3 + правки [0]",
       "type": "STRING",
       "linkIds": [
@@ -632,7 +632,7 @@
       ]
      },
      {
-      "id": "e6da3a70-236a-49e4-8429-f2dfcc7d91cb",
+      "id": "72e23322-aad2-4073-ba34-16ca341416fd",
       "name": "Плита комнаты [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -641,7 +641,7 @@
       ]
      },
      {
-      "id": "b944829c-33bd-428e-9ef7-a890ae5a191b",
+      "id": "3a565c91-db6b-4603-a30d-aa34d5b196be",
       "name": "Референс персонажа · SFW [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -649,7 +649,7 @@
       ]
      },
      {
-      "id": "e8859f8e-718e-45a0-a037-36ee841900df",
+      "id": "ebe5d67b-b3f4-419e-bdff-950db29e9b4d",
       "name": "Вход · init [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -657,7 +657,7 @@
       ]
      },
      {
-      "id": "efceb38d-a044-4d5b-80a3-0b529b7c1a6b",
+      "id": "46e22801-84b5-4c2a-963f-e14aa42eace3",
       "name": "Движок · D1_noise [0]",
       "type": "NOISE",
       "linkIds": [
@@ -665,7 +665,7 @@
       ]
      },
      {
-      "id": "cb1a1690-05ba-4efb-85dc-5e501ae528fe",
+      "id": "c25c494e-56f4-4cb9-8fbf-5251212ef67f",
       "name": "Вход · playblast [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -673,7 +673,7 @@
       ]
      },
      {
-      "id": "83e06547-a1ab-4156-a612-418b3b017817",
+      "id": "6776a067-6270-47c7-b621-17f6b864e182",
       "name": "Вход · strength (белое = менять) [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -683,7 +683,7 @@
     ],
     "outputs": [
      {
-      "id": "c032034b-f5d5-441b-a526-ee643e50eeec",
+      "id": "4b97381e-a712-4973-b519-1a609d20fa2e",
       "name": "Вклейка · фон из плиты [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -691,7 +691,7 @@
       ]
      },
      {
-      "id": "cfaaf6db-70cc-4bea-a78c-59f50b713b84",
+      "id": "d8fab1f8-999a-4c0a-85b5-15274d128709",
       "name": "Движок · D1_select [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -715,7 +715,13 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [],
+      "inputs": [
+       {
+        "name": "extra_state_dict",
+        "type": "STRING",
+        "link": null
+       }
+      ],
       "outputs": [
        {
         "name": "MODEL",

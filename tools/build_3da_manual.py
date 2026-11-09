@@ -72,7 +72,7 @@ def build_api(recipe):
 def build_server_api(manual):
     """Keep the approved engine; replace only local geometry boundary by PNGs."""
     g = copy.deepcopy(manual)
-    drop = {'3DALocation', '3DAPlacePose', 'PreviewImage', 'PreviewAny'}
+    drop = {'3DALocation', '3DAPlacePose', '3DAProp', 'PreviewImage', 'PreviewAny'}
     g = {k: n for k, n in g.items() if n['class_type'] not in drop and k != 'pose_ref'}
     g['playblast_input'] = node('LoadImage', 'Вход · playblast', image='3da_manual/playblast.png')
     g['init_input'] = node('LoadImage', 'Вход · init', image='3da_manual/init.png')
@@ -116,6 +116,20 @@ def build_pc_api(manual):
     return g
 
 
+def upgrade_pc(pc):
+    """Add optional manual controls without touching the approved server engine."""
+    pc = copy.deepcopy(pc)
+    pc['place']['inputs'].update(block_on_fail=False, body_dx=0., body_dy=0., body_dz=0.,
+                                  body_dyaw=0., body_dpitch=0., body_droll=0., pose_text='',
+                                  props=['prop', 0])
+    choices = pack_info()['3DAProp']['input']['required']['prop_id'][0]
+    pc['prop'] = node('3DAProp', '3DA Prop', prop_id=choices[0], anchor='world',
+                      x=0., y=0., z=0., yaw=0., pitch=0., roll=0., scale=1., prop_strength=.35)
+    pc['preview_objects'] = node('PreviewImage', 'Превью · объекты / ID', images=['location', 3])
+    pc['preview_init'] = node('PreviewImage', 'Превью · init', images=['place', 1])
+    return pc
+
+
 def pack_info():
     path = REPO / 'comfyui/ComfyUI-3DA/nodes.py'
     spec = importlib.util.spec_from_file_location('pack_ui_nodes', path)
@@ -153,6 +167,9 @@ def as_ui(api, oi):
                 if opts.get('control_after_generate') or (n['class_type'] == 'RandomNoise' and field == 'noise_seed'):
                     named['control_after_generate'] = 'fixed'
                     widgets.append('fixed')
+        for field, entry in schema.items():
+            if field not in n['inputs'] and len(entry) > 1 and entry[1].get('forceInput'):
+                inputs.append({'name': field, 'type': entry[0], 'link': None})
         outs = [{'name': name, 'type': typ, 'links': []} for name, typ in
                 zip(info.get('output_name', info.get('output', [])), info.get('output', []))]
         nd = {'id': ids[k], 'type': n['class_type'], 'title': n['_meta']['title'],
@@ -244,18 +261,22 @@ def wrap_engine(ui, ids, outside):
 
 def layout_pc(ui, ids):
     positions = {'ref_room': (0, 50), 'ref_char': (0, 500), 'pose_ref': (0, 950),
-                 'location': (430, 50), 'place': (430, 480), 'prompt_text': (850, 480),
-                 'seed': (850, 50), 'remote': (1260, 50), 'preview_playblast': (1690, 50),
-                 'preview_debug': (1690, 500), 'preview_raw_H3': (2080, 50),
-                 'preview_status': (2080, 500), 'preview_remote_info': (2470, 500), 'save': (2470, 50)}
+                 'location': (430, 50), 'place': (430, 480), 'prompt_text': (850, 900),
+                 'seed': (850, 50), 'prop': (850, 440), 'remote': (1260, 50),
+                 'preview_playblast': (1690, 50), 'preview_init': (1690, 500),
+                 'preview_debug': (1690, 950), 'preview_objects': (2080, 950),
+                 'preview_raw_H3': (2080, 50), 'preview_status': (2080, 500),
+                 'preview_remote_info': (2470, 500), 'save': (2470, 50)}
     for key, p in positions.items():
         next(n for n in ui['nodes'] if n['id'] == ids[key])['pos'] = list(p)
     ui['groups'] = [{'title': t, 'bounding': b, 'color': '#3f5260', 'font_size': 24} for t, b in [
         ('1 · Вход', [-30, -30, 400, 1430]), ('2 · ПУЛЬТ', [400, -30, 820, 1430]),
-        ('3 · Движок', [1230, -30, 430, 1430]), ('4 · Результат', [1660, -30, 1190, 1000])]]
+        ('3 · Движок', [1230, -30, 430, 1430]), ('4 · Результат', [1660, -30, 1190, 1430])]]
+    next(n for n in ui['nodes'] if n['id'] == ids['place'])['size'] = [330, 940]
+    next(n for n in ui['nodes'] if n['id'] == ids['prop'])['mode'] = 4
     for title, text, p in [
-        ('README', 'Две машины: геометрия на ПК; H3 на сервере из config.yaml. COMFY_USER/COMFY_PASS задать в окружении процесса ComfyUI ПК. Выберите 3 SFW-входа и подготовленный location_id. Seed общий. Queue отправляет удалённое задание. Ничего на сервер ставить не нужно.', [1260, 500]),
-        ('Шпаргалка «симптом → крутилка»', 'error геометрии / пустой prompt → Remote не отправляет H3. HTTP error → info, изображения-заглушки НЕ результат. 401 → env Basic auth; 502 → остановиться. Таймаут не отменяет чужую очередь: проверьте prompt_id на сервере до повтора. raw_H3 до вклейки; final после. string_b — SFW-правки промпта.', [1260, 950])]:
+        ('README', 'Две машины: геометрия на ПК; H3 на сервере из config.yaml. COMFY_USER/COMFY_PASS задать в окружении процесса ComfyUI ПК. Выберите 3 SFW-входа и подготовленный location_id. Seed общий. Prop по умолчанию bypass: включить после импорта библиотеки. Queue отправляет H3. Для превью без H3: mute Remote И все 3 его выхода (final Save, raw Preview, Remote status); оставить playblast/init/debug/ID/status Place. Вернуть mode0 для e2e. Ничего на сервер ставить не нужно.', [1260, 500]),
+        ('Шпаргалка «симптом → крутилка»', 'block_on_fail=False: статусы/флаги НЕ останавливают H3. True: только ok/partial (не дописывать string_b при rejected). body_* — общий трансформ без костей. pose_text — описание позы. ID поверхности смотреть в objects_preview. error CLI / пустой prompt → Remote не отправляет H3. HTTP error → info, изображения-заглушки НЕ результат. 401 → env Basic auth; 502 → остановиться. Таймаут не отменяет чужую очередь: проверьте prompt_id на сервере до повтора. raw_H3 до вклейки; final после. string_b — SFW-правки промпта.', [1260, 950])]:
         ui['last_node_id'] += 1
         ui['nodes'].append({'id': ui['last_node_id'], 'type': 'Note', 'title': title, 'pos': p, 'size': [380, 340],
                             'flags': {}, 'order': 100, 'mode': 0, 'properties': {}, 'widgets_values': [text]})
@@ -265,11 +286,15 @@ def layout_pc(ui, ids):
 def write_workflows(manual, oi, pc=None):
     oi = {**oi, **pack_info()}
     server = build_server_api(manual)
-    pc = build_pc_api(manual) if pc is None else copy.deepcopy(pc)
+    pc = upgrade_pc(build_pc_api(manual) if pc is None else pc)
     pc['prompt_text'] = node('StringConcatenate', 'String · промпт H3 + правки',
                               string_a=['place', 4], string_b='', delimiter='')
     pc_ui, ids = as_ui(pc, oi)
     pc_ui = layout_pc(pc_ui, ids)
+    # API format has no bypass mode. Match the default UI export: no Prop or
+    # props link, so PlacePose uses its optional empty-list default.
+    pc.pop('prop')
+    pc['place']['inputs'].pop('props', None)
     server_ui, server_ids = as_ui(server, oi)
     server_ui['id'] = '3DA_h3_server_v1'
     outside = {'ref_room', 'ref_char', 'playblast_input', 'init_input', 'strength_input',
@@ -303,7 +328,12 @@ def write_workflows(manual, oi, pc=None):
             raise ValueError('UI/API roundtrip mismatch')
     for name, value in [('3DA_manual_v1.json', pc_ui), ('3DA_manual_v1.api.json', pc),
                         ('3DA_h3_server_api.json', server), ('3DA_h3_server_v1.json', server_ui)]:
-        (REPO / 'workflows' / name).write_text(json.dumps(value, ensure_ascii=False, indent=1), encoding='utf-8')
+        path = REPO / 'workflows' / name
+        if name == '3DA_h3_server_v1.json' and path.exists():
+            previous = json.loads(path.read_text(encoding='utf-8'))
+            if canonical(wfkit.to_api(previous)) == canonical(wfkit.to_api(value)):
+                continue  # No random subgraph-port UUID churn for an unchanged engine.
+        path.write_text(json.dumps(value, ensure_ascii=False, indent=1), encoding='utf-8')
     print(f'PC {len(pc)} nodes; server {len(server)} nodes; no GPU')
 
 

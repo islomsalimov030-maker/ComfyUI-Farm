@@ -4,6 +4,8 @@ python: C:/work/ComfyUI-Farm/.venv/Scripts/python.exe
 geometry_python: C:/work/ComfyUI-next/venv/Scripts/python.exe
 comfy: C:/work/ComfyUI-next
 farm_root: C:/work/scene3d_work/farm
+# User-supplied models; normalized library lives at farm_root/props.
+props_source_dir: C:/Users/user/Downloads/3d_objects
 blender: C:/Program Files/Blender Foundation/Blender 5.0/blender.exe
 blender_pkgs: C:/work/venvs/blender_pkgs
 mannequin: C:/work/scene3d_work/stacy_mannequin_162.blend
@@ -14,7 +16,7 @@ h3_remote:
   timeout_s: 1800
   request_timeout_s: 60
   poll_s: 2
-# New rooms require explicit prepared geometry metadata; no invented furniture.
+# Optional explicit furniture metadata; new rooms may use geometric surface IDs.
 location_hints_by_id: {}
 location_asset_dirs:
   mainroom1: C:/work/scene3d_work/plate/mainroom1

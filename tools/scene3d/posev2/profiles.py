@@ -82,7 +82,16 @@ class LocationProfile:
         return cls(f) if f.is_file() else None
 
     def find_object(self, name, instance_hint=None, anchor_xy=None, pose_class=None):
-        """target is a type; hint selects an instance, otherwise nearest zone anchor wins."""
+        """Exact instance ID wins; types retain hint/nearest-zone/substitute selection.
+
+        A conflicting hint cannot silently redirect an explicit instance target.
+        The second return value is always the resolved type, not the instance ID.
+        """
+        explicit = next((o for o in self.data["objects"] if o["id"] == name), None)
+        if explicit is not None:
+            if instance_hint and instance_hint != explicit["id"]:
+                return None, None
+            return explicit, explicit.get("type", explicit["name"])
         for kind in [name] + self.data["substitutes"].get(name, []):
             candidates = [o for o in self.data["objects"] if o.get("type", o["name"]) == kind]
             if not candidates:

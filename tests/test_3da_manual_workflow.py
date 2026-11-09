@@ -51,6 +51,43 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(ui['groups']), 4)
         self.assertTrue({'README', 'Шпаргалка «симптом → крутилка»'} <= {n['title'] for n in ui['nodes']})
 
+    def test_manual_controls_optional_prop_and_location_preview(self):
+        fields = self.pc['place']['inputs']
+        self.assertIs(fields['block_on_fail'], False)
+        self.assertEqual(fields['pose_text'], '')
+        for name in ('body_dx', 'body_dy', 'body_dz', 'body_dyaw', 'body_dpitch', 'body_droll'):
+            self.assertEqual(fields[name], 0.)
+        self.assertNotIn('prop', self.pc)  # API default is the UI's bypass export.
+        self.assertNotIn('props', fields)
+        self.assertEqual(self.pc['preview_objects']['inputs']['images'], ['location', 3])
+        self.assertEqual(self.pc['preview_init']['inputs']['images'], ['place', 1])
+        ui = read('3DA_manual_v1.json')
+        prop = next(n for n in ui['nodes'] if n['type'] == '3DAProp')
+        self.assertEqual(prop['mode'], 4)
+        self.assertEqual(prop['widgets_values_named']['prop_strength'], .35)
+        self.assertTrue(any(i['name'] == 'props_in' for i in prop['inputs']))
+        place = next(n for n in ui['nodes'] if n['type'] == '3DAPlacePose')
+        link = next(i['link'] for i in place['inputs'] if i['name'] == 'props')
+        self.assertEqual(next(l for l in ui['links'] if l[0] == link)[1], prop['id'])
+        prop['mode'] = 0
+        enabled = wfkit.to_api(ui)
+        self.assertEqual(enabled[str(place['id'])]['inputs']['props'], [str(prop['id']), 0])
+        self.assertEqual(enabled[str(prop['id'])]['class_type'], '3DAProp')
+
+    def test_documented_preview_mute_removes_remote_branch(self):
+        ui = read('3DA_manual_v1.json')
+        muted = {'3DA H3 Remote', 'Сохранить · финальная вклейка',
+                 'Превью · raw_H3', 'Статус · H3 Remote'}
+        for item in ui['nodes']:
+            if item['title'] in muted:
+                item['mode'] = 2
+        api = wfkit.to_api(ui)
+        titles = {n['_meta']['title'] for n in api.values()}
+        self.assertFalse(titles & muted)
+        self.assertTrue({'3DA Place Pose', 'Превью · init', 'Превью · playblast',
+                         'Превью · объекты / ID'} <= titles)
+        self.assertFalse(wfkit.check_api(api))
+
     def test_server_only_existing_nodes_and_load_images(self):
         self.assertFalse(any(n['class_type'].startswith('3DA') for n in self.server.values()))
         loads = [n for n in self.server.values() if n['class_type'] == 'LoadImage']

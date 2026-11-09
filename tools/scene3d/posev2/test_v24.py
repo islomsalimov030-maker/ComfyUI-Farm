@@ -93,12 +93,17 @@ class Scale(unittest.TestCase):
         self.assertTrue(all(ri1["band_m"][0] - 1e-6 <= c["far"] <= ri1["band_m"][1] + 1e-6 for c in r1))
         _, rn = zn.zone_cells(m, "recline", d1, self.seed[:2], has_backrest=False)
         self.assertIn("no_backrest", rn["flags"])
-        # порог «лёжа» 0.18·H
+        # v0.16: lie uses pelvis→neck axis [75,105]°, independent of head height/H.
         KP = np.zeros((70, 3))
         KP[9], KP[10], KP[69] = [0.1, 0, 0.5], [-0.1, 0, 0.5], [0, 0.5, 0.5]
         KP[0:5] = [0, 0.7, 0.5 + 0.31]
-        self.assertFalse(ori.check(KP, "lie", d1["H"])["ok"])
-        self.assertTrue(ori.check(KP, "lie", d2["H"])["ok"])
+        for H in (d1["H"], d2["H"]):
+            self.assertTrue(ori.check(KP, "lie", H)["ok"])
+            for tilt, expected in ((74., False), (76., True), (104., True), (106., False)):
+                K2 = KP.copy()
+                a = np.radians(tilt)
+                K2[69] = [0., .5 * np.sin(a), .5 + .5 * np.cos(a)]
+                self.assertEqual(ori.check(K2, "lie", H)["ok"], expected)
 
     def test_place_scaled_no_crash(self):
         for k in (1.0, K):
