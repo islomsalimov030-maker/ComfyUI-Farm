@@ -10,7 +10,7 @@ from placement_config import section
 def orientation_checks(K, pose_class, plate, side_ref, window=None):
     c = section("place")
     eps = c["orientation_tolerance_deg"]
-    tilt, roll = ori.tilt_deg(K), ori.roll_deg(K)
+    tilt, roll = ori.tilt_deg(K, pose_class), ori.roll_deg(K, pose_class)
     lo, hi = ori.TILT_RANGE[pose_class]
     checks = [("tilt", max(lo - tilt, tilt - hi, 0.0), "deg")]
     if pose_class != "lie":
@@ -50,7 +50,7 @@ def clamp_root(X, K, pose_class, plate, side_ref, window=None, lie_roll_ref=None
     return X, K
 
 
-def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
+def height_fit(X, K, groups, S, plate, spec, treg, soft, H, reg=None):
     """Сначала min signed support contact=0, затем подъём 5 мм до p95.
 
     Потолок подъёма от контакта: contact_tol + 1 см. Каждый кандидат
@@ -62,16 +62,17 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
     support = [(idx, surf) for _, idx, surf, role in groups if role == "support" and surf in S]
 
     def settle(V, J):
-        if not support:
+        if not support or (spec.pose_class in ("stand", "crouch") and not len(pl.lowest_foot_indices(V, groups, reg))):
             return V, J, {"shift_z_m": 0.0, "max_gap_m": float("inf"), "penetration_ok": False,
                           "height_conflict": False, "reason": "no_support_vertices"}
         # target — горизонтальная поверхность верха, signed distance сохраняет
         # сторону: при исходном проникновении тело поднимается, не опускается.
         standing = spec.pose_class in ("stand", "crouch")
-        dz = -pl.body_lowest_gap(V, S) if standing else -min(
+        foot_idx = pl.lowest_foot_indices(V, groups, reg)
+        dz = -pl.body_lowest_gap(V, S, foot_idx) if standing else -min(
             float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
         V, J = V + [0, 0, dz], J + [0, 0, dz]
-        contact_min = pl.body_lowest_gap(V, S) if standing else min(
+        contact_min = pl.body_lowest_gap(V, S, foot_idx) if standing else min(
             float(pl._sd(S, surf, V[idx])[0].min()) for idx, surf in support)
         contact_ok = abs(contact_min) <= c["contact_tol"]
         pen = pl.penetration_stats(plate, V, treg, soft, spec.pose_class)
@@ -84,7 +85,7 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             moved += step
             pen = pl.penetration_stats(plate, V, treg, soft, spec.pose_class)
         gaps = [float(np.median(pl._sd(S, surf, V[idx])[0])) for idx, surf in support]
-        contact = pl.support_contact(V, groups, S, spec, soft)
+        contact = pl.support_contact(V, groups, S, spec, soft, reg=reg if standing else None)
         return V, J, {"support_rule_ok": contact["ok"], "support_flags": contact["flags"],
                       "shift_z_m": float(dz), "contact_min_m": contact_min, "contact_ok": bool(contact_ok),
                       "lift_from_contact_m": moved, "lift_ceiling_m": ceiling,
@@ -116,14 +117,14 @@ def height_fit(X, K, groups, S, plate, spec, treg, soft, H):
             R = ori.rot_axis(f, math.radians(float(roll))) @ ori.rot_axis(lateral, math.radians(float(tilt)))
             A, B = ori.rot_about(X, origin, R), ori.rot_about(K, origin, R)
             lo, hi = ori.TILT_RANGE[spec.pose_class]
-            if not lo <= ori.tilt_deg(B) <= hi:
+            if not lo <= ori.tilt_deg(B, spec.pose_class) <= hi:
                 continue
             if spec.pose_class == "lie":
                 # Lie не имеет глобального roll-clamp. Высотная подстройка
                 # не вращает тело вокруг длинной оси, сохраняя крен рефа.
                 if roll != 0:
                     continue
-            elif abs(ori.roll_deg(B)) > ori.ROLL_MAX:
+            elif abs(ori.roll_deg(B, spec.pose_class)) > ori.ROLL_MAX:
                 continue
             A, B, ii = settle(A, B)
             key = score(ii)

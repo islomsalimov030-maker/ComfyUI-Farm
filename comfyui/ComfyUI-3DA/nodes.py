@@ -78,8 +78,11 @@ def validated_props(text):
     if not isinstance(data, list):
         raise ValueError('props must be a JSON list')
     for prop in data:
-        if not isinstance(prop, dict) or set(prop) != PROP_FIELDS:
-            raise ValueError('Each prop requires exactly prop_id, anchor, x/y/z, yaw/pitch/roll, scale, prop_strength')
+        if not isinstance(prop, dict) or set(prop) - {'size_m'} != PROP_FIELDS:
+            raise ValueError('Each prop requires prop_id, anchor, x/y/z, yaw/pitch/roll, scale, prop_strength; optional size_m')
+        prop.setdefault('size_m', .30)
+        if finite_number(prop['size_m'], 'size_m') <= 0:
+            raise ValueError('size_m must be positive')
         safe_prop_id(prop['prop_id'])
         if prop['anchor'] not in ANCHORS:
             raise ValueError('Unknown prop anchor')
@@ -222,6 +225,7 @@ class Prop:
             'x': position, 'y': position, 'z': position,
             'yaw': angle, 'pitch': angle, 'roll': angle,
             'scale': ('FLOAT', {'default': 1., 'min': .001, 'step': .01}),
+            'size_m': ('FLOAT', {'default': .30, 'min': .001, 'step': .01}),
             'prop_strength': ('FLOAT', {'default': .35, 'min': 0., 'max': 1., 'step': .01}),
         }, 'optional': {'props_in': ('STRING', {'default': '[]', 'forceInput': True})}}
     RETURN_TYPES = ('STRING',)
@@ -229,10 +233,10 @@ class Prop:
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
-    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]'):
+    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30):
         props = validated_props(props_in)
         item = dict(prop_id=prop_id, anchor=anchor, x=x, y=y, z=z, yaw=yaw, pitch=pitch,
-                    roll=roll, scale=scale, prop_strength=prop_strength)
+                    roll=roll, scale=scale, prop_strength=prop_strength, size_m=size_m)
         props.append(item)
         validated_props(json.dumps(props, allow_nan=False))
         root = prop_library()

@@ -394,7 +394,8 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
     events = []
     profile = Profile()
     pf = SimpleNamespace(
-        Plate=lambda p: SimpleNamespace(dir=p),
+        Plate=lambda p: SimpleNamespace(dir=p, Wp=128, Hp=128,
+            project=lambda x: (np.full(len(x), 32.), np.full(len(x), 32.), np.ones(len(x)))),
         load_ref=lambda p: {"F": np.array([[0, 1, 2]]), "V": np.zeros((3, 3))},
         fit_input_hash=lambda *a: "hash-fixture",
     )

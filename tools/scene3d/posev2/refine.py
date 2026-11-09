@@ -301,16 +301,23 @@ def refine_mem(ctx, ref, B, rec, S, plate, spec, H, log=print):
             if len(cand):
                 tree, P, N = plate.trees["any"]
                 _, j = tree.query(Xn[cand])
+                allowed = np.full(len(cand), CFG["penetration_slack_m"])
+                target = S.get("soft_support_region")
+                if target is not None:
+                    _, material = pl.penetration_values(plate, Xn[cand], target, False)
+                    allowed = np.array([target.soft_surface_limits.get(
+                        str(m).removeprefix("soft:"), CFG["penetration_slack_m"]) for m in material])
                 pen_t = (torch.tensor(cand, device=dev), torch.tensor(P[j], device=dev, dtype=torch.float32),
-                         torch.tensor(N[j], device=dev, dtype=torch.float32))
+                         torch.tensor(N[j], device=dev, dtype=torch.float32),
+                         torch.tensor(allowed, device=dev, dtype=torch.float32))
         loss = torch.zeros((), device=dev)
         for idx, P, N, is_sup, near in targets:
             sd = ((X[idx] - P) * N).sum(-1)
             loss = loss + (W_SUP * ((sd / CFG["support_sigma_m"]) ** 2).mean() if is_sup else W_SEC * (((sd / CFG["secondary_sigma_m"]) ** 2) * near).mean())
         if pen_t is not None:
-            idx, P, N = pen_t
+            idx, P, N, allowed = pen_t
             sd = ((X[idx] - P) * N).sum(-1)
-            loss = loss + W_PEN * ((torch.relu(-sd - CFG["penetration_slack_m"]) / CFG["penetration_sigma_m"]) ** 2).mean() * len(idx) / CFG["penetration_count_scale"]
+            loss = loss + W_PEN * ((torch.relu(-sd - allowed) / CFG["penetration_sigma_m"]) ** 2).mean() * len(idx) / CFG["penetration_count_scale"]
         ga = group_angles_t(torch, K0, K)
         for g, a in ga.items():
             loss = loss + W_LIM * (torch.relu(a - lim[g] * CFG["limit_penalty_frac"]) * 180 / math.pi).pow(2).sum()
@@ -338,7 +345,7 @@ def clamp_refine_roll(X, K, info, pose_class=None):
     import orient as ori
     before = ori.roll_deg(K, pose_class)
     if pose_class != "lie":
-        X, K = ori.clamp_roll(X, K)
+        X, K = ori.clamp_roll(X, K, pose_class)
     info["roll_before_clamp_deg"] = before
     info["roll_final_deg"] = ori.roll_deg(K, pose_class)
     info["root_clamped"] = pose_class != "lie" and abs(before) > ori.ROLL_MAX

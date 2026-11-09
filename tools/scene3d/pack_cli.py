@@ -515,6 +515,21 @@ def do_place(request, config):
         X, KP, fit = manual_pose.revalidate(base, ref, plate, profile, spec, seed, height, values)
     else:
         X, KP, fit = base["X"], base["KP"], base["report"]
+    # Advisory frame coverage of the projected 3D bbox, not fraction of vertices.
+    import itertools
+    import prop_render
+    corners = np.array(list(itertools.product(*zip(X.min(axis=0), X.max(axis=0)))))
+    u, v, z = plate.project(corners)
+    fraction = prop_render.projected_bbox_fraction(np.column_stack((u / plate.Wp, v / plate.Hp, z)))
+    fit['frame'] = {'body': {'inside_fraction': fraction, 'out_of_frame': fraction < .95}}
+    flags = set(fit.get('flags', []))
+    flags.discard('out_of_frame')
+    flags.discard('body_out_of_frame')
+    if fraction < .95:
+        flags.update(('out_of_frame', 'body_out_of_frame'))
+    elif fit.get('status') == 'out_of_frame':
+        fit['status'] = 'partial' if flags else 'ok'
+    fit['flags'] = sorted(flags)
     manual_pose.write_transformed(job / "fit", X, KP, ref["F"], fit)
     timings["placement_cache_hit"] = cache_hit
     timings["placement_s"] = round(time.monotonic() - stage, 3)
@@ -571,6 +586,25 @@ def do_place(request, config):
         fit["flags"] = sorted(set(fit.get("flags", []) + [flag for prop in prop_report["props"]
                                     for flag, active in prop["flags"].items() if active]))
         save_json(job / "fit/fit.json", fit)
+    # Keep geometry diagnostics visible even in a saved preview, without painting
+    # them into init/playblast (which are H3 references).
+    from PIL import Image, ImageDraw, ImageFont
+    preview = Image.open(directory / 'debug.png').convert('RGB')
+    lines = [f"body out_of_frame={fraction < .95} bbox_inside={fraction:.4f}"]
+    for p in fit.get('props', []):
+        lines.append(f"prop {p['prop_id']}: source bbox {p.get('bbox_source_m')} m")
+        lines.append(f"prop final bbox {p.get('bbox_final_m')} m; dims {p.get('final_dimensions_m')}")
+        lines.append(f"prop out_of_frame={p['flags'].get('prop_out_of_frame')} inside={p.get('frame_inside_fraction')}")
+    surface = fit.get('surface_match', {})
+    if surface:
+        lines.append(f"support={surface.get('support_surface_id')} soft={surface.get('soft_surface_ids')}")
+    canvas = Image.new('RGB', (preview.width, preview.height + 24 * len(lines) + 10), '#141414')
+    canvas.paste(preview)
+    draw = ImageDraw.Draw(canvas)
+    font = ImageFont.truetype('C:/Windows/Fonts/arial.ttf', 18) if os.name == 'nt' else ImageFont.load_default()
+    for i, line in enumerate(lines):
+        draw.text((8, preview.height + 5 + i * 24), line, fill='white', font=font)
+    canvas.save(directory / 'debug.png')
     timings["maps_s"] = round(time.monotonic() - stage, 3)
     timings["total_s"] = round(time.monotonic() - t0, 3)
     return dict(status=fit["status"], **{key: str((directory / filename).resolve()) for key, filename in

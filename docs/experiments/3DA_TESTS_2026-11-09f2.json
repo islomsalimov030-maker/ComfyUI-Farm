@@ -1,0 +1,140 @@
+{
+  "geometry": {
+    "separate_suites": [
+      {
+        "file": "tools/scene3d/posev2/test_assembly_v26.py",
+        "summary": "5 passed in 0.36s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_auto_surfaces_09e.py",
+        "summary": "11 passed in 0.39s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_config_v26.py",
+        "summary": "11 passed in 0.54s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_contact_speed_09e.py",
+        "summary": "10 passed in 0.33s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_geometry_2ae.py",
+        "summary": "9 passed in 0.40s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_lie_09d.py",
+        "summary": "5 passed, 3 subtests passed in 0.51s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_manual_pose.py",
+        "summary": "6 passed in 0.20s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_pose_fit.py",
+        "summary": "6 passed in 3.85s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_profile_ids_09e.py",
+        "summary": "7 passed in 0.29s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_runner_v26.py",
+        "summary": "2 passed in 0.34s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_step9c.py",
+        "summary": "12 passed, 16 subtests passed in 0.40s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_step9d.py",
+        "summary": "18 passed in 0.43s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_support_09f2.py",
+        "summary": "19 passed in 0.40s"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_v24.py",
+        "summary": "7 passed in 547.75s (0:09:07)"
+      },
+      {
+        "file": "tools/scene3d/posev2/test_v25.py",
+        "summary": "7 passed in 21.26s"
+      }
+    ],
+    "final_support_suite": "20 passed (final rerun)",
+    "helper_without_tests": "test_synth_plate.py collected 0, excluded",
+    "unique_geometry_passed": 136
+  },
+  "non_geometry": [
+    {
+      "file": "tests/test_composite_09f2.py",
+      "exit": 0,
+      "summary": "2 passed in 0.25s"
+    },
+    {
+      "file": "tests/test_3da_pack_nodes.py",
+      "exit": 0,
+      "summary": "12 passed, 18 subtests passed in 1.30s"
+    },
+    {
+      "file": "tests/test_3da_manual_workflow.py",
+      "exit": 0,
+      "summary": "9 passed in 0.05s"
+    },
+    {
+      "file": "tests/test_3da_h3_remote.py",
+      "exit": 0,
+      "summary": "6 passed, 4 subtests passed in 5.35s"
+    },
+    {
+      "file": "tools/scene3d/test_pack_cli.py",
+      "exit": 0,
+      "summary": "36 passed in 3.36s"
+    },
+    {
+      "file": "tools/scene3d/test_aio_v23.py",
+      "exit": 0,
+      "summary": "9 passed in 0.20s"
+    },
+    {
+      "file": "tools/scene3d/test_props.py",
+      "exit": 0,
+      "summary": "46 passed in 0.34s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_report_v26c.py",
+      "exit": 0,
+      "summary": "2 passed in 0.04s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_h3_v26.py",
+      "exit": 0,
+      "summary": "21 passed in 0.50s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_gate_v26c.py",
+      "exit": 0,
+      "summary": "4 passed in 0.38s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_manual_pack_verify.py",
+      "exit": 0,
+      "summary": "2 passed in 0.29s"
+    }
+  ],
+  "latent": {
+    "tests": 5,
+    "passed": 5,
+    "method": "direct test_latent.py with stub modules; pytest package collection requires comfy and was not applicable"
+  },
+  "unique_passed": 290,
+  "subtests_passed": 41,
+  "core_alpha_api": {
+    "prompt_id": "f41ddab1-40f5-4344-927e-59f23bf9589d",
+    "core_min": 255,
+    "max_reference_delta": 0.003913050539353313,
+    "outside_changed": 0,
+    "passed": true
+  }
+}

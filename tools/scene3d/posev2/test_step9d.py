@@ -196,21 +196,21 @@ class ContactTests(unittest.TestCase):
                        ('shin.L', np.array([2]), 'target', 'support')]
         self.X = np.array([[0., 0, 0.], [1., 0, .055], [0., 0, .05]])
 
-    def test_q05_one_foot_contact_gap_over_5cm_is_partial_09e(self):
+    def test_q05_raised_foot_no_support_gap_09f2(self):
         for cls in ('stand', 'crouch'):
             spec = ss.ShotSpec('Q05', cls, 'floor', ['foot.L', 'foot.R'])
             c = place.support_contact(self.X, self.groups, self.S, spec, False)
             self.assertTrue(c['ok'])
             self.assertEqual(c['foot_contact_parts'], ['foot.L'])
-            self.assertEqual(c['flags'], ['support_gap'])
+            self.assertEqual(c['flags'], [])
             ev = evaluation()
             ev.update(support_object='floor', support_contact=c, support_ok=c['ok'],
                       support_part_gaps_m=c['part_gaps_m'])
             with patch.object(assembly, 'orientation_checks', return_value=[]):
                 val = assembly.validate(None, ev, spec, None, 0, None, True)
-            self.assertFalse(val['ok'])
-            self.assertEqual(val['status'], 'partial')
-            self.assertIn('support_gap', val['flags'])
+            self.assertTrue(val['ok'])
+            self.assertEqual(val['status'], 'ok')
+            self.assertNotIn('support_gap', val['flags'])
 
     def test_only_declared_support_contact_not_body_lowest_09e(self):
         spec = ss.ShotSpec('Q05', 'crouch', 'floor', ['foot.L'])

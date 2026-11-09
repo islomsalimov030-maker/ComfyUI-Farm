@@ -96,6 +96,29 @@ def build_server_api(manual):
     g['ref_char']['inputs']['image'] = '3da_manual/ref_char.png'
     g['save_raw'] = node('SaveImage', 'Сохранить · raw H3', images=['D1_select', 0],
                          filename_prefix='3DA_manual/raw')
+    return separate_composite_mask(g)
+
+
+def separate_composite_mask(graph):
+    """Core nodes only: S>0 -> cross dilation16 -> Gaussian radius8/sigma8px.
+
+    Core ImageBlur uses coordinates [-1,1], so its widget sigma=1 means 8px.
+
+    The DifferentialDiffusion input remains the original strength mask.
+    """
+    g = copy.deepcopy(graph)
+    composite = next(n for n in g.values() if n['_meta']['title'] == 'Вклейка · фон из плиты')
+    strength = (g['composite_binary']['inputs']['mask'] if 'composite_binary' in g
+                else composite['inputs']['mask'])
+    g['composite_binary'] = node('ThresholdMask', 'Склейка · S > 0', mask=strength, value=0.)
+    g['composite_grow'] = node('GrowMask', 'Склейка · дилатация 16 px',
+                               mask=['composite_binary', 0], expand=16, tapered_corners=True)
+    g['composite_image'] = node('MaskToImage', 'Склейка · маска в RGB', mask=['composite_grow', 0])
+    g['composite_blur'] = node('ImageBlur', 'Склейка · гаусс 8 px',
+                               image=['composite_image', 0], blur_radius=8, sigma=1.)
+    g['composite_mask'] = node('ImageToMask', 'Склейка · независимая альфа',
+                               image=['composite_blur', 0], channel='red')
+    composite['inputs']['mask'] = ['composite_mask', 0]
     return g
 
 
@@ -124,7 +147,7 @@ def upgrade_pc(pc):
                                   props=['prop', 0])
     choices = pack_info()['3DAProp']['input']['required']['prop_id'][0]
     pc['prop'] = node('3DAProp', '3DA Prop', prop_id=choices[0], anchor='world',
-                      x=0., y=0., z=0., yaw=0., pitch=0., roll=0., scale=1., prop_strength=.35)
+                      x=0., y=0., z=0., yaw=0., pitch=0., roll=0., scale=1., size_m=.30, prop_strength=.35)
     pc['preview_objects'] = node('PreviewImage', 'Превью · объекты / ID', images=['location', 3])
     pc['preview_init'] = node('PreviewImage', 'Превью · init', images=['place', 1])
     return pc

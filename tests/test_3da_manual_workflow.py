@@ -94,7 +94,12 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(loads), 5)
         self.assertEqual(self.server['strength_mask']['class_type'], 'ImageToMask')
         self.assertEqual(self.server['strength_mask']['inputs']['channel'], 'red')
-        self.assertEqual(self.server['final_composite']['inputs']['mask'], ['strength_mask', 0])
+        self.assertEqual(self.server['final_composite']['inputs']['mask'], ['composite_mask', 0])
+        self.assertEqual(self.server['composite_binary']['inputs'], {'mask': ['strength_mask', 0], 'value': 0.})
+        self.assertEqual(self.server['composite_grow']['inputs']['expand'], 16)
+        self.assertEqual(self.server['composite_blur']['inputs']['blur_radius'], 8)
+        self.assertEqual(self.server['composite_blur']['inputs']['sigma'], 1.)  # core normalized [-1,1] = sigma8px
+        self.assertEqual(self.server['D1_lat']['inputs']['mask'], ['strength_mask', 0])
         self.assertEqual(self.server['save']['inputs']['images'], ['final_composite', 0])
         self.assertEqual(self.server['save_raw']['inputs']['images'], ['D1_select', 0])
         self.assertFalse(self.server['final_composite']['inputs']['resize_source'])
@@ -102,6 +107,18 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(ui['groups']), 4)
         self.assertEqual(len(ui['definitions']['subgraphs']), 1)
         self.assertIn('не трогать', ui['definitions']['subgraphs'][0]['name'])
+
+    def test_09f2_preset_is_valid_and_matches_requested_prop(self):
+        ui = read('3DA_props_Q04_09f2.json')
+        self.assertFalse(wfkit.check_ui(ui))
+        prop = next(n for n in ui['nodes'] if n['type'] == '3DAProp')
+        self.assertEqual(prop['mode'], 0)
+        self.assertEqual(prop['widgets_values_named']['size_m'], .30)
+        self.assertEqual(prop['widgets_values_named']['prop_strength'], .35)
+        self.assertEqual(prop['widgets_values_named']['anchor'], 'world')
+        self.assertFalse(wfkit.check_api(wfkit.to_api(ui)))
+        remote = next(n for n in ui['nodes'] if n['type'] == '3DAH3Remote')
+        self.assertEqual(remote['mode'], 2)
 
     def test_fixed_noise_and_approved_engine(self):
         lat = self.server['D1_lat']['inputs']

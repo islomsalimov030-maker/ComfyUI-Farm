@@ -42,8 +42,9 @@ class Contact09e(unittest.TestCase):
         with patch.object(assembly, 'orientation_checks', return_value=[]):
             return assembly.validate(None, ev, spec, None, 0, None, True, **kwargs)
 
-    def test_all_classes_one_vertex_not_median(self):
-        for cls in ss.POSE_CLASSES:
+    def test_nonstanding_classes_one_vertex_not_median(self):
+        # 09f2: stand/crouch require a FOOT, not an arbitrary pelvis vertex.
+        for cls in (c for c in ss.POSE_CLASSES if c not in ('stand', 'crouch')):
             spec, contact = self.contact(cls, [.0, .04, .04, .0303])
             self.assertTrue(contact['ok'], cls)
             self.assertEqual(contact['gap_parts'], ['pelvis', 'thigh.L'])

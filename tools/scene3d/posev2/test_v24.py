@@ -149,7 +149,9 @@ class Profiles(unittest.TestCase):
         ref = ref_of("Q08_bed_recline_elbows")
         spec = ss.ShotSpec("Q08", "recline", "bed", ["pelvis", "elbow.L", "elbow.R"])
         rep = place.place_pose(ref, self.plate, spec, self.seed, 1.62, profile=lp, log=lambda m: None)["rep"]
-        self.assertEqual(rep["zone"]["source"], "profile")
+        self.assertEqual(rep["zone"]["source"], "auto_surface")
+        self.assertEqual(rep["target_info"]["surface_match"], "matched")
+        self.assertTrue(rep["target_info"]["support_surface"].startswith('surf_'))
         self.assertEqual(rep["zone"]["anchor_id"], "bed_1_recline")
         spec = ss.ShotSpec("X", "sit_edge", "piano", ["pelvis"])
         res = place.place_pose(ref, self.plate, spec, self.seed, 1.62, profile=lp, log=lambda m: None)

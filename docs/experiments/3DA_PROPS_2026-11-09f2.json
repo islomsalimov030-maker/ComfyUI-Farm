@@ -1,0 +1,457 @@
+{
+  "experiment": "3DA_PROPS_2026-11-09f2",
+  "props": {
+    "Q01": {
+      "status": "ok",
+      "support_surface": "floor_1",
+      "soft_surfaces": [],
+      "soft_sink_m": null,
+      "surface_match_status": null,
+      "max_support_gap_m": -0.0007357142857143165,
+      "gap_parts": [],
+      "part_gaps_m": {
+        "foot.R": -0.0007357142857143165
+      },
+      "support_parts": {
+        "foot.R": "floor_1"
+      },
+      "flags": [
+        "prop_hits_room",
+        "table_side_mismatch"
+      ],
+      "orientation": {
+        "tilt_final_deg": 3.0,
+        "roll_final_deg": -0.9
+      },
+      "frame": {
+        "body": {
+          "inside_fraction": 1.0,
+          "out_of_frame": false
+        }
+      },
+      "timings": {
+        "reference_s": 0.047,
+        "placement_cache_hit": false,
+        "placement_s": 11.438,
+        "render_s": 7.172,
+        "maps_s": 6.187,
+        "total_s": 26.781
+      },
+      "preview_wall_s": 28.141,
+      "image_size": [
+        1344,
+        768
+      ],
+      "ssim_outside": 0.999994593581038,
+      "outside_pixels": 901310,
+      "outside_changed_pixels": 0,
+      "outside_passed": true,
+      "props": [
+        {
+          "index": 0,
+          "prop_id": "head_close_a648e192",
+          "size_m": 0.3,
+          "scale": 1.0,
+          "prop_strength": 0.35,
+          "source_bbox_m": [
+            [
+              -0.286487877368927,
+              -0.3748033046722412,
+              0.0
+            ],
+            [
+              0.28680092096328735,
+              0.3745579719543457,
+              0.9768999218940735
+            ]
+          ],
+          "bbox_source_m": [
+            [
+              -0.286487877368927,
+              -0.3748033046722412,
+              0.0
+            ],
+            [
+              0.28680092096328735,
+              0.3745579719543457,
+              0.9768999218940735
+            ]
+          ],
+          "source_dimensions_m": [
+            0.5732887983322144,
+            0.7493612766265869,
+            0.9768999218940735
+          ],
+          "final_bbox_m": [
+            [
+              1.9307620525360107,
+              4.338294982910156,
+              1.6109787225723267
+            ],
+            [
+              2.1068155765533447,
+              4.568419456481934,
+              1.9109786748886108
+            ]
+          ],
+          "bbox_final_m": [
+            [
+              1.9307620525360107,
+              4.338294982910156,
+              1.6109787225723267
+            ],
+            [
+              2.1068155765533447,
+              4.568419456481934,
+              1.9109786748886108
+            ]
+          ],
+          "final_dimensions_m": [
+            0.17605352401733398,
+            0.23012447357177734,
+            0.2999999523162842
+          ],
+          "frame_inside_fraction": 1.0,
+          "flags": {
+            "prop_hits_room": true,
+            "prop_hits_body": false,
+            "out_of_frame": false,
+            "prop_out_of_frame": false
+          },
+          "core_pixels": 1852,
+          "opaque_core_pixels": 1841,
+          "opacity_fraction": 0.994060475161987,
+          "opacity_passed": true
+        }
+      ],
+      "opacity_passed": true,
+      "composite_reference": "S>0; cross dilation 16px; Gaussian sigma=8 radius=8 mirror",
+      "opacity_reference": "silhouette>127; cross erosion 8px at 1344x768; any(abs(final-plate)>10), int16 difference",
+      "passed": true,
+      "remote_wall_s": 70.141,
+      "evidence": "docs/experiments/img/props_Q01_f.jpg"
+    },
+    "Q04": {
+      "status": "partial",
+      "support_surface": "surf_6",
+      "soft_surfaces": [],
+      "soft_sink_m": 0.11340000000000001,
+      "surface_match_status": "matched",
+      "max_support_gap_m": 0.2255401393879567,
+      "gap_parts": [
+        "pelvis",
+        "torso",
+        "thigh.R",
+        "thigh.L"
+      ],
+      "part_gaps_m": {
+        "pelvis": 0.023694620846302833,
+        "torso": 0.026905034530011807,
+        "thigh.R": 0.03197586556264598,
+        "thigh.L": 0.2255401393879567
+      },
+      "support_parts": {
+        "pelvis": "surf_6",
+        "torso": "surf_6",
+        "thigh.R": "surf_6"
+      },
+      "flags": [
+        "orient_conflict",
+        "prop_hits_room",
+        "support_gap"
+      ],
+      "orientation": {
+        "tilt_final_deg": 85.8,
+        "roll_final_deg": 99.0
+      },
+      "frame": {
+        "body": {
+          "inside_fraction": 1.0,
+          "out_of_frame": false
+        }
+      },
+      "timings": {
+        "reference_s": 0.031,
+        "placement_cache_hit": true,
+        "placement_s": 0.125,
+        "render_s": 6.266,
+        "maps_s": 3.875,
+        "total_s": 12.078
+      },
+      "preview_wall_s": 12.328,
+      "image_size": [
+        1344,
+        768
+      ],
+      "ssim_outside": 0.9999920975126478,
+      "outside_pixels": 865141,
+      "outside_changed_pixels": 0,
+      "outside_passed": true,
+      "props": [
+        {
+          "index": 0,
+          "prop_id": "head_close_a648e192",
+          "size_m": 0.3,
+          "scale": 1.0,
+          "prop_strength": 0.35,
+          "source_bbox_m": [
+            [
+              -0.286487877368927,
+              -0.3748033046722412,
+              3.3557063794376063e-09
+            ],
+            [
+              0.28680092096328735,
+              0.3745579719543457,
+              0.9768999218940735
+            ]
+          ],
+          "bbox_source_m": [
+            [
+              -0.286487877368927,
+              -0.3748033046722412,
+              3.3557063794376063e-09
+            ],
+            [
+              0.28680092096328735,
+              0.3745579719543457,
+              0.9768999218940735
+            ]
+          ],
+          "source_dimensions_m": [
+            0.5732887983322144,
+            0.7493612766265869,
+            0.9768999185383671
+          ],
+          "final_bbox_m": [
+            [
+              -1.1119401454925537,
+              3.2361559867858887,
+              0.7720339298248291
+            ],
+            [
+              -0.9358866214752197,
+              3.466280460357666,
+              1.0720338821411133
+            ]
+          ],
+          "bbox_final_m": [
+            [
+              -1.1119401454925537,
+              3.2361559867858887,
+              0.7720339298248291
+            ],
+            [
+              -0.9358866214752197,
+              3.466280460357666,
+              1.0720338821411133
+            ]
+          ],
+          "final_dimensions_m": [
+            0.17605352401733398,
+            0.23012447357177734,
+            0.2999999523162842
+          ],
+          "frame_inside_fraction": 1.0,
+          "flags": {
+            "prop_hits_room": true,
+            "prop_hits_body": false,
+            "out_of_frame": false,
+            "prop_out_of_frame": false
+          },
+          "core_pixels": 1639,
+          "opaque_core_pixels": 1639,
+          "opacity_fraction": 1.0,
+          "opacity_passed": true
+        }
+      ],
+      "opacity_passed": true,
+      "composite_reference": "S>0; cross dilation 16px; Gaussian sigma=8 radius=8 mirror",
+      "opacity_reference": "silhouette>127; cross erosion 8px at 1344x768; any(abs(final-plate)>10), int16 difference",
+      "passed": true,
+      "remote_wall_s": 68.125,
+      "evidence": "docs/experiments/img/props_Q04_f.jpg"
+    }
+  },
+  "poses": {
+    "Q04": {
+      "status": "partial",
+      "support_surface": "surf_6",
+      "soft_surfaces": [],
+      "soft_sink_m": 0.11340000000000001,
+      "surface_match_status": "matched",
+      "max_support_gap_m": 0.2255401393879567,
+      "gap_parts": [
+        "pelvis",
+        "torso",
+        "thigh.R",
+        "thigh.L"
+      ],
+      "part_gaps_m": {
+        "pelvis": 0.023694620846302833,
+        "torso": 0.026905034530011807,
+        "thigh.R": 0.03197586556264598,
+        "thigh.L": 0.2255401393879567
+      },
+      "support_parts": {
+        "pelvis": "surf_6",
+        "torso": "surf_6",
+        "thigh.R": "surf_6"
+      },
+      "flags": [
+        "orient_conflict",
+        "support_gap"
+      ],
+      "orientation": {
+        "tilt_final_deg": 85.8,
+        "roll_final_deg": 99.0
+      },
+      "frame": {
+        "body": {
+          "inside_fraction": 1.0,
+          "out_of_frame": false
+        }
+      },
+      "timings": {
+        "reference_s": 0.047,
+        "placement_cache_hit": false,
+        "placement_s": 36.953,
+        "render_s": 6.813,
+        "maps_s": 0.687,
+        "total_s": 46.422
+      },
+      "preview_wall_s": 47.359,
+      "freshness": "NEW",
+      "missing_images": []
+    },
+    "Q12": {
+      "status": "ok",
+      "support_surface": "floor_1",
+      "soft_surfaces": [],
+      "soft_sink_m": null,
+      "surface_match_status": null,
+      "max_support_gap_m": 0.0,
+      "gap_parts": [],
+      "part_gaps_m": {
+        "foot.R": 0.0
+      },
+      "support_parts": {
+        "foot.R": "floor_1"
+      },
+      "flags": [
+        "body_out_of_frame",
+        "out_of_frame",
+        "table_side_mismatch"
+      ],
+      "orientation": {
+        "tilt_final_deg": 7.0,
+        "roll_final_deg": -0.8
+      },
+      "frame": {
+        "body": {
+          "inside_fraction": 0.8987320062636566,
+          "out_of_frame": true
+        }
+      },
+      "timings": {
+        "reference_s": 20.907,
+        "placement_cache_hit": false,
+        "placement_s": 8.922,
+        "render_s": 6.5,
+        "maps_s": 0.625,
+        "total_s": 38.796
+      },
+      "preview_wall_s": 39.531,
+      "freshness": "NEW",
+      "missing_images": []
+    },
+    "T01": {
+      "status": "partial",
+      "support_surface": "surf_6",
+      "soft_surfaces": [],
+      "soft_sink_m": 0.11340000000000001,
+      "surface_match_status": "matched",
+      "max_support_gap_m": 0.18387886488349292,
+      "gap_parts": [
+        "pelvis",
+        "shin.L"
+      ],
+      "part_gaps_m": {
+        "pelvis": 0.03754312756488021,
+        "shin.L": 0.18387886488349292
+      },
+      "support_parts": {
+        "pelvis": "surf_6"
+      },
+      "flags": [
+        "orient_clamped:21.1",
+        "support_gap"
+      ],
+      "orientation": {
+        "tilt_final_deg": 51.1,
+        "roll_final_deg": -13.2
+      },
+      "frame": {
+        "body": {
+          "inside_fraction": 1.0,
+          "out_of_frame": false
+        }
+      },
+      "timings": {
+        "reference_s": 13.406,
+        "placement_cache_hit": false,
+        "placement_s": 11.063,
+        "render_s": 6.344,
+        "maps_s": 0.609,
+        "total_s": 33.25
+      },
+      "preview_wall_s": 34.015,
+      "freshness": "NEW",
+      "missing_images": []
+    },
+    "T05": {
+      "status": "partial",
+      "support_surface": "floor_1",
+      "soft_surfaces": [],
+      "soft_sink_m": null,
+      "surface_match_status": null,
+      "max_support_gap_m": -4.336808689942018e-19,
+      "gap_parts": [],
+      "part_gaps_m": {
+        "foot.R": -4.336808689942018e-19
+      },
+      "support_parts": {
+        "foot.R": "floor_1"
+      },
+      "flags": [
+        "orient_clamped:46.8",
+        "orient_fail",
+        "table_side_mismatch"
+      ],
+      "orientation": {
+        "tilt_final_deg": 28.6,
+        "roll_final_deg": 2.1
+      },
+      "frame": {
+        "ok": true,
+        "bbox_px": [
+          683,
+          231,
+          916,
+          662
+        ],
+        "frame_px": [
+          1536,
+          864
+        ]
+      },
+      "timings": {
+        "total_s": 377.468,
+        "runner": "existing table seed"
+      },
+      "preview_wall_s": 377.468,
+      "freshness": "NEW",
+      "missing_images": []
+    }
+  }
+}

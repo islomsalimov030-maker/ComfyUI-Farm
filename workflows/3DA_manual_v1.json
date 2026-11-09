@@ -710,6 +710,76 @@
   },
   {
    "id": 15,
+   "type": "PreviewImage",
+   "title": "Превью · объекты / ID",
+   "pos": [
+    2080,
+    950
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 14,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 20
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 16,
+   "type": "PreviewImage",
+   "title": "Превью · init",
+   "pos": [
+    1690,
+    500
+   ],
+   "size": [
+    330,
+    380
+   ],
+   "flags": {},
+   "order": 15,
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 21
+    }
+   ],
+   "outputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "links": []
+    }
+   ],
+   "properties": {
+    "Node name for S&R": "PreviewImage"
+   },
+   "widgets_values": [],
+   "widgets_values_named": {}
+  },
+  {
+   "id": 17,
    "type": "3DAProp",
    "title": "3DA Prop",
    "pos": [
@@ -721,7 +791,7 @@
     380
    ],
    "flags": {},
-   "order": 14,
+   "order": 16,
    "mode": 4,
    "inputs": [
     {
@@ -752,6 +822,7 @@
     0.0,
     0.0,
     1.0,
+    0.3,
     0.35
    ],
    "widgets_values_named": {
@@ -764,78 +835,9 @@
     "pitch": 0.0,
     "roll": 0.0,
     "scale": 1.0,
+    "size_m": 0.3,
     "prop_strength": 0.35
    }
-  },
-  {
-   "id": 16,
-   "type": "PreviewImage",
-   "title": "Превью · объекты / ID",
-   "pos": [
-    2080,
-    950
-   ],
-   "size": [
-    330,
-    380
-   ],
-   "flags": {},
-   "order": 15,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "images",
-     "type": "IMAGE",
-     "link": 20
-    }
-   ],
-   "outputs": [
-    {
-     "name": "images",
-     "type": "IMAGE",
-     "links": []
-    }
-   ],
-   "properties": {
-    "Node name for S&R": "PreviewImage"
-   },
-   "widgets_values": [],
-   "widgets_values_named": {}
-  },
-  {
-   "id": 17,
-   "type": "PreviewImage",
-   "title": "Превью · init",
-   "pos": [
-    1690,
-    500
-   ],
-   "size": [
-    330,
-    380
-   ],
-   "flags": {},
-   "order": 16,
-   "mode": 0,
-   "inputs": [
-    {
-     "name": "images",
-     "type": "IMAGE",
-     "link": 21
-    }
-   ],
-   "outputs": [
-    {
-     "name": "images",
-     "type": "IMAGE",
-     "links": []
-    }
-   ],
-   "properties": {
-    "Node name for S&R": "PreviewImage"
-   },
-   "widgets_values": [],
-   "widgets_values_named": {}
   },
   {
    "id": 18,
@@ -921,7 +923,7 @@
   ],
   [
    6,
-   15,
+   17,
    0,
    6,
    3,
@@ -1035,7 +1037,7 @@
    20,
    5,
    3,
-   16,
+   15,
    0,
    "IMAGE"
   ],
@@ -1043,7 +1045,7 @@
    21,
    6,
    1,
-   17,
+   16,
    0,
    "IMAGE"
   ]

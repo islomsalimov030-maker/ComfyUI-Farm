@@ -12,7 +12,7 @@ def placement_key(ref_path, profile, config, spec, height, seed, body):
     for p in [Path(ref_path), profile.path, Path(config['repo'])/'config/placement.yaml']:
         h.update(p.read_bytes())
     root=Path(__file__).resolve().parent
-    for name in ['place.py','assembly.py','pose_fit.py','orient.py','refine.py','top_region.py','profiles.py','body.py']:
+    for name in ['place.py','assembly.py','pose_fit.py','orient.py','refine.py','top_region.py','profiles.py','body.py','auto_surfaces.py']:
         h.update((root/name).read_bytes())
     for obj in profile.data['objects']:
         for key in ('top_grid_npz','pts_npz'):
@@ -86,6 +86,11 @@ def revalidate(base,ref,plate,profile,spec,seed,height,values):
     treg.wall_planes=profile.walls()
     treg.diagnostic_surfaces=[{'id':o['id'],'soft':bool(o.get('soft',False)),'region':profile.region(o)}
                               for o in profile.data['objects'] if 'top_grid_npz' in o]
+    if hasattr(treg,'auto_support_surfaces'):
+        treg.diagnostic_surfaces=[{'id':r.object_id,'region':r,
+            'soft':r.object_id in treg.auto_soft_ids or
+                   (r.object_id==treg.object_id and bool(oinfo.get('soft')))}
+            for r in treg.auto_support_surfaces]
     wall=None
     if spec.secondary_on('wall') and treg.wall_planes:
         i=place.zn.pick_wall(treg.wall_planes,seed[:2]);wall=treg.wall_planes[i] if i is not None else None

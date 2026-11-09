@@ -1,8 +1,8 @@
 {
  "id": "3DA_h3_server_v1",
  "revision": 0,
- "last_node_id": 29,
- "last_link_id": 42,
+ "last_node_id": 34,
+ "last_link_id": 47,
  "nodes": [
   {
    "id": 6,
@@ -25,7 +25,7 @@
      "name": "IMAGE",
      "type": "IMAGE",
      "links": [
-      35
+      40
      ]
     },
     {
@@ -65,7 +65,7 @@
      "name": "IMAGE",
      "type": "IMAGE",
      "links": [
-      36
+      41
      ]
     },
     {
@@ -144,7 +144,7 @@
      "name": "NOISE",
      "type": "NOISE",
      "links": [
-      39
+      44
      ]
     }
    ],
@@ -181,7 +181,7 @@
      "name": "STRING",
      "type": "STRING",
      "links": [
-      34
+      39
      ]
     }
    ],
@@ -224,7 +224,7 @@
      "name": "IMAGE",
      "type": "IMAGE",
      "links": [
-      40
+      45
      ]
     },
     {
@@ -264,7 +264,7 @@
      "name": "IMAGE",
      "type": "IMAGE",
      "links": [
-      38
+      43
      ]
     },
     {
@@ -304,7 +304,7 @@
      "name": "IMAGE",
      "type": "IMAGE",
      "links": [
-      41
+      46
      ]
     },
     {
@@ -363,7 +363,7 @@
    }
   },
   {
-   "id": 27,
+   "id": 32,
    "type": "2eee89c1-2176-54f4-adeb-1f983c8855ad",
    "title": "Движок H3 (не трогать)",
    "pos": [
@@ -381,37 +381,37 @@
     {
      "name": "String · промпт H3 + правки [0]",
      "type": "STRING",
-     "link": 34
+     "link": 39
     },
     {
      "name": "Плита комнаты [0]",
      "type": "IMAGE",
-     "link": 35
+     "link": 40
     },
     {
      "name": "Референс персонажа · SFW [0]",
      "type": "IMAGE",
-     "link": 36
+     "link": 41
     },
     {
      "name": "Вход · init [0]",
      "type": "IMAGE",
-     "link": 38
+     "link": 43
     },
     {
      "name": "Движок · D1_noise [0]",
      "type": "NOISE",
-     "link": 39
+     "link": 44
     },
     {
      "name": "Вход · playblast [0]",
      "type": "IMAGE",
-     "link": 40
+     "link": 45
     },
     {
      "name": "Вход · strength (белое = менять) [0]",
      "type": "IMAGE",
-     "link": 41
+     "link": 46
     }
    ],
    "outputs": [
@@ -434,7 +434,7 @@
    "widgets_values": []
   },
   {
-   "id": 28,
+   "id": 33,
    "type": "Note",
    "title": "README",
    "pos": [
@@ -454,7 +454,7 @@
    ]
   },
   {
-   "id": 29,
+   "id": 34,
    "type": "Note",
    "title": "Шпаргалка «симптом → крутилка»",
    "pos": [
@@ -476,72 +476,72 @@
  ],
  "links": [
   [
-   34,
+   39,
    19,
    0,
-   27,
+   32,
    0,
    "STRING"
   ],
   [
-   35,
+   40,
    6,
    0,
-   27,
+   32,
    1,
    "IMAGE"
   ],
   [
-   36,
+   41,
    7,
    0,
-   27,
+   32,
    2,
    "IMAGE"
   ],
   [
    9,
-   27,
+   32,
    0,
    9,
    0,
    "IMAGE"
   ],
   [
-   38,
+   43,
    23,
    0,
-   27,
+   32,
    3,
    "IMAGE"
   ],
   [
-   39,
+   44,
    13,
    0,
-   27,
+   32,
    4,
    "NOISE"
   ],
   [
-   40,
+   45,
    22,
    0,
-   27,
+   32,
    5,
    "IMAGE"
   ],
   [
-   41,
+   46,
    24,
    0,
-   27,
+   32,
    6,
    "IMAGE"
   ],
   [
    33,
-   27,
+   32,
    1,
    26,
    0,
@@ -624,7 +624,7 @@
     },
     "inputs": [
      {
-      "id": "32c49a6d-e6a3-4120-887e-31da7301cc7a",
+      "id": "40b104e5-7553-4e3d-b854-b7a39f29644e",
       "name": "String · промпт H3 + правки [0]",
       "type": "STRING",
       "linkIds": [
@@ -632,7 +632,7 @@
       ]
      },
      {
-      "id": "72e23322-aad2-4073-ba34-16ca341416fd",
+      "id": "24750aec-1f95-48b4-b966-2f5bca76399d",
       "name": "Плита комнаты [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -641,7 +641,7 @@
       ]
      },
      {
-      "id": "3a565c91-db6b-4603-a30d-aa34d5b196be",
+      "id": "b13d9f2c-0a82-431b-9660-da29248dbdd9",
       "name": "Референс персонажа · SFW [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -649,7 +649,7 @@
       ]
      },
      {
-      "id": "ebe5d67b-b3f4-419e-bdff-950db29e9b4d",
+      "id": "f6d02545-4eb5-48da-9d8f-7a86846be708",
       "name": "Вход · init [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -657,7 +657,7 @@
       ]
      },
      {
-      "id": "46e22801-84b5-4c2a-963f-e14aa42eace3",
+      "id": "521aded4-cdab-4e6a-8d05-50fb3d957964",
       "name": "Движок · D1_noise [0]",
       "type": "NOISE",
       "linkIds": [
@@ -665,7 +665,7 @@
       ]
      },
      {
-      "id": "c25c494e-56f4-4cb9-8fbf-5251212ef67f",
+      "id": "1c3e7111-4728-4262-89ce-fd9ca369b342",
       "name": "Вход · playblast [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -673,7 +673,7 @@
       ]
      },
      {
-      "id": "6776a067-6270-47c7-b621-17f6b864e182",
+      "id": "0ddd8942-2447-4643-94ba-4ee71ced3ccf",
       "name": "Вход · strength (белое = менять) [0]",
       "type": "IMAGE",
       "linkIds": [
@@ -683,19 +683,19 @@
     ],
     "outputs": [
      {
-      "id": "4b97381e-a712-4973-b519-1a609d20fa2e",
+      "id": "c4b2a66c-3307-49c8-a402-e68842f97f41",
       "name": "Вклейка · фон из плиты [0]",
       "type": "IMAGE",
       "linkIds": [
-       37
+       42
       ]
      },
      {
-      "id": "d8fab1f8-999a-4c0a-85b5-15274d128709",
+      "id": "39649d3d-c86d-4b2f-a0e4-431864b5264a",
       "name": "Движок · D1_select [0]",
       "type": "IMAGE",
       "linkIds": [
-       42
+       47
       ]
      }
     ],
@@ -1394,7 +1394,7 @@
         "type": "IMAGE",
         "links": [
          30,
-         42
+         47
         ]
        },
        {
@@ -1520,7 +1520,7 @@
         "name": "IMAGE",
         "type": "IMAGE",
         "links": [
-         37
+         42
         ]
        }
       ],
@@ -1566,6 +1566,211 @@
         "type": "MASK",
         "links": [
          16,
+         34
+        ]
+       }
+      ],
+      "properties": {
+       "Node name for S&R": "ImageToMask"
+      },
+      "widgets_values": [
+       "red"
+      ],
+      "widgets_values_named": {
+       "channel": "red"
+      }
+     },
+     {
+      "id": 27,
+      "type": "ThresholdMask",
+      "title": "Склейка · S > 0",
+      "pos": [
+       370,
+       2350
+      ],
+      "size": [
+       330,
+       380
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "mask",
+        "type": "MASK",
+        "link": 34
+       }
+      ],
+      "outputs": [
+       {
+        "name": "MASK",
+        "type": "MASK",
+        "links": [
+         35
+        ]
+       }
+      ],
+      "properties": {
+       "Node name for S&R": "ThresholdMask"
+      },
+      "widgets_values": [
+       0.0
+      ],
+      "widgets_values_named": {
+       "value": 0.0
+      }
+     },
+     {
+      "id": 28,
+      "type": "GrowMask",
+      "title": "Склейка · дилатация 16 px",
+      "pos": [
+       740,
+       2350
+      ],
+      "size": [
+       330,
+       380
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "mask",
+        "type": "MASK",
+        "link": 35
+       }
+      ],
+      "outputs": [
+       {
+        "name": "MASK",
+        "type": "MASK",
+        "links": [
+         36
+        ]
+       }
+      ],
+      "properties": {
+       "Node name for S&R": "GrowMask"
+      },
+      "widgets_values": [
+       16,
+       true
+      ],
+      "widgets_values_named": {
+       "expand": 16,
+       "tapered_corners": true
+      }
+     },
+     {
+      "id": 29,
+      "type": "MaskToImage",
+      "title": "Склейка · маска в RGB",
+      "pos": [
+       1110,
+       2350
+      ],
+      "size": [
+       330,
+       380
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "mask",
+        "type": "MASK",
+        "link": 36
+       }
+      ],
+      "outputs": [
+       {
+        "name": "IMAGE",
+        "type": "IMAGE",
+        "links": [
+         37
+        ]
+       }
+      ],
+      "properties": {
+       "Node name for S&R": "MaskToImage"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+     },
+     {
+      "id": 30,
+      "type": "ImageBlur",
+      "title": "Склейка · гаусс 8 px",
+      "pos": [
+       1480,
+       2350
+      ],
+      "size": [
+       330,
+       380
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "image",
+        "type": "IMAGE",
+        "link": 37
+       }
+      ],
+      "outputs": [
+       {
+        "name": "IMAGE",
+        "type": "IMAGE",
+        "links": [
+         38
+        ]
+       }
+      ],
+      "properties": {
+       "Node name for S&R": "ImageBlur"
+      },
+      "widgets_values": [
+       8,
+       1.0
+      ],
+      "widgets_values_named": {
+       "blur_radius": 8,
+       "sigma": 1.0
+      }
+     },
+     {
+      "id": 31,
+      "type": "ImageToMask",
+      "title": "Склейка · независимая альфа",
+      "pos": [
+       0,
+       2820
+      ],
+      "size": [
+       330,
+       380
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+       {
+        "name": "image",
+        "type": "IMAGE",
+        "link": 38
+       }
+      ],
+      "outputs": [
+       {
+        "name": "MASK",
+        "type": "MASK",
+        "links": [
          31
         ]
        }
@@ -1647,7 +1852,7 @@
       "type": "IMAGE"
      },
      {
-      "id": 37,
+      "id": 42,
       "origin_id": 21,
       "origin_slot": 0,
       "target_id": -20,
@@ -1824,7 +2029,7 @@
      },
      {
       "id": 31,
-      "origin_id": 25,
+      "origin_id": 31,
       "origin_slot": 0,
       "target_id": 21,
       "target_slot": 2,
@@ -1839,11 +2044,51 @@
       "type": "IMAGE"
      },
      {
-      "id": 42,
+      "id": 47,
       "origin_id": 18,
       "origin_slot": 0,
       "target_id": -20,
       "target_slot": 1,
+      "type": "IMAGE"
+     },
+     {
+      "id": 34,
+      "origin_id": 25,
+      "origin_slot": 0,
+      "target_id": 27,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 35,
+      "origin_id": 27,
+      "origin_slot": 0,
+      "target_id": 28,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 36,
+      "origin_id": 28,
+      "origin_slot": 0,
+      "target_id": 29,
+      "target_slot": 0,
+      "type": "MASK"
+     },
+     {
+      "id": 37,
+      "origin_id": 29,
+      "origin_slot": 0,
+      "target_id": 30,
+      "target_slot": 0,
+      "type": "IMAGE"
+     },
+     {
+      "id": 38,
+      "origin_id": 30,
+      "origin_slot": 0,
+      "target_id": 31,
+      "target_slot": 0,
       "type": "IMAGE"
      }
     ],

@@ -329,7 +329,7 @@
     0
    ],
    "mask": [
-    "strength_mask",
+    "composite_mask",
     0
    ],
    "x": 0,
@@ -391,6 +391,72 @@
   },
   "_meta": {
    "title": "Сохранить · raw H3"
+  }
+ },
+ "composite_binary": {
+  "class_type": "ThresholdMask",
+  "inputs": {
+   "mask": [
+    "strength_mask",
+    0
+   ],
+   "value": 0.0
+  },
+  "_meta": {
+   "title": "Склейка · S > 0"
+  }
+ },
+ "composite_grow": {
+  "class_type": "GrowMask",
+  "inputs": {
+   "mask": [
+    "composite_binary",
+    0
+   ],
+   "expand": 16,
+   "tapered_corners": true
+  },
+  "_meta": {
+   "title": "Склейка · дилатация 16 px"
+  }
+ },
+ "composite_image": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "composite_grow",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Склейка · маска в RGB"
+  }
+ },
+ "composite_blur": {
+  "class_type": "ImageBlur",
+  "inputs": {
+   "image": [
+    "composite_image",
+    0
+   ],
+   "blur_radius": 8,
+   "sigma": 1.0
+  },
+  "_meta": {
+   "title": "Склейка · гаусс 8 px"
+  }
+ },
+ "composite_mask": {
+  "class_type": "ImageToMask",
+  "inputs": {
+   "image": [
+    "composite_blur",
+    0
+   ],
+   "channel": "red"
+  },
+  "_meta": {
+   "title": "Склейка · независимая альфа"
   }
  }
 }

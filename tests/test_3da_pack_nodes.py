@@ -120,6 +120,8 @@ class NodeTests(unittest.TestCase):
                 self.assertEqual(len(entries), 2)
                 self.assertEqual(entries[0]['prop_strength'], .35)
                 self.assertEqual(entries[0]['anchor'], 'char_head')
+                self.assertEqual(entries[0]['size_m'], .30)
+                self.assertEqual(json.loads(nodes.Prop().execute(**args, size_m=.6)[0])[0]['size_m'], .6)
                 # Explicit widget value, not an undocumented metadata sentinel.
                 self.assertEqual(json.loads(nodes.Prop().execute(**args, prop_strength=.5)[0])[0]['prop_strength'], .5)
                 for bad in ({'prop_id': '../head'}, {'prop_id': 'missing'}, {'anchor': 'bone'},

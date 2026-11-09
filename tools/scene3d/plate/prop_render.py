@@ -21,6 +21,41 @@ from pathlib import Path
 import re
 import sys
 
+try:
+    from ..import_props_blender import normalization_transform
+except ImportError:
+    # Direct Blender CLI: only add the trusted repository script directory.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from import_props_blender import normalization_transform
+
+
+def projected_bbox_fraction(coords):
+    """CPU helper: fraction of projected bbox inside normalized frame [0,1]^2.
+
+    coords is an iterable of (x, y, positive_camera_depth), e.g. Blender's
+    world_to_camera_view output or (u/width, v/height, depth). This measures the
+    projected axis-aligned rectangle, NOT triangle coverage or occlusion.
+    Any corner on/behind the camera or a zero-area bbox returns 0 (conservative;
+    near-plane clipping is not attempted). Malformed/nonfinite input is rejected.
+    Use fraction < .95 for the advisory out_of_frame flag (body or prop).
+    """
+    points = [tuple(float(v) for v in p) for p in coords]
+    if not points or any(len(p) != 3 for p in points):
+        raise ValueError("expected nonempty projected points (N,3)")
+    if not all(math.isfinite(v) for p in points for v in p):
+        raise ValueError("projected points must be finite")
+    if any(p[2] <= 0 for p in points):
+        return 0.0
+    x0, x1 = min(p[0] for p in points), max(p[0] for p in points)
+    y0, y1 = min(p[1] for p in points), max(p[1] for p in points)
+    width, height = x1 - x0, y1 - y0
+    if width <= 0 or height <= 0:
+        return 0.0
+    # Divide the axes separately to avoid unnecessary area under/overflow.
+    ratio_x = max(0.0, min(x1, 1.0) - max(x0, 0.0)) / width
+    ratio_y = max(0.0, min(y1, 1.0) - max(y0, 0.0)) / height
+    return min(1.0, ratio_x * ratio_y)
+
 
 def anchors_from_mhr70(kp):
     import numpy as np
@@ -98,6 +133,7 @@ def _bounds(objects):
 
 def load_props(scene, props, anchors_world, library_dir):
     import bpy
+    from mathutils import Euler, Matrix, Vector
     library = Path(library_dir).resolve(strict=True)
     groups = []
     for index, prop in enumerate(props):
@@ -128,18 +164,30 @@ def load_props(scene, props, anchors_world, library_dir):
                 obj.parent = root
             obj.pass_index = index + 10
         bpy.context.view_layer.update()
-        lo, hi = _bounds(meshes)
-        longest = max(hi[i] - lo[i] for i in range(3))
-        size = float(metadata["size_m"])
-        if not math.isfinite(size) or size <= 0 or longest <= 1e-9:
-            raise ValueError("invalid prop size")
+        cache_bbox = _bounds(meshes)
+        # Runtime size is independent of source units and of the cache's target size.
+        # Missing Prop size means .30 m, including for legacy metre-sized caches.
+        size = float(prop.get("size_m", .30))
         xyz, rotation, scale = prop_transform(prop, anchors_world)
-        root.location = xyz
-        root.rotation_euler = rotation
-        root.scale = (size * scale / longest,) * 3
+        centre, factor, scaled_bbox = normalization_transform(cache_bbox, size_m=size, scale=scale)
+        root.matrix_world = (Matrix.Translation(Vector(xyz)) @ Euler(rotation, "XYZ").to_matrix().to_4x4()
+                             @ Matrix.Scale(factor, 4) @ Matrix.Translation(-Vector(centre)))
         bpy.context.view_layer.update()
+        facts = metadata.get("import_facts", {})
+        source_bbox = facts.get("source_bbox_m")
+        if source_bbox is None and "dimensions_m" in facts and "source_bbox_center_m" in facts:
+            # Importer v1 facts retain the original metres even though cache was not resized.
+            centre_source, dims = facts["source_bbox_center_m"], facts["dimensions_m"]
+            source_bbox = [[centre_source[i] + sign * dims[i] / 2 for i in range(3)] for sign in (-1, 1)]
+        final_bbox = _bounds(meshes)
         groups.append({"id": ident, "index": index, "meshes": meshes, "root": root,
-                       "strength": strength, "bbox_world": _bounds(meshes)})
+                       "strength": strength, "bbox_world": final_bbox,
+                       "size_m": size, "scale": scale, "normalization_factor": factor,
+                       "source_bbox_m": source_bbox, "cache_bbox_m": cache_bbox,
+                       "scaled_bbox_m": scaled_bbox, "final_bbox_m": final_bbox,
+                       "source_dimensions_m": ([source_bbox[1][i] - source_bbox[0][i] for i in range(3)]
+                                               if source_bbox is not None else None),
+                       "final_dimensions_m": [final_bbox[1][i] - final_bbox[0][i] for i in range(3)]})
     return groups
 
 
@@ -210,9 +258,10 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
         with _materials(scene, replacements):
             bpy.ops.render.render(write_still=True)
         return str(path)
-    result = {"props": [], "diagnostic_method": "world AABB overlap + projected bbox corners",
+    result = {"props": [], "diagnostic_method": "world AABB overlap + projected bbox intersection area ratio",
               "diagnostic_limits": "AABB false positives for concave/hollow meshes; containment not resolved; "
-                                   "frame flag tests bbox corners, not exact visible triangle coverage. Diagnostic only."}
+                                   "frame fraction measures projected bbox, not visible triangle coverage; "
+                                   "any corner on/behind camera conservatively returns zero. Diagnostic only."}
     try:
         scene.render.engine = "BLENDER_EEVEE"
         scene.render.film_transparent = True
@@ -243,9 +292,16 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
                      "prop_hits_body": any(aabb_overlap(g["bbox_world"], _bounds([o])) for o in body_objects)}
             coords = [world_to_camera_view(scene, scene.camera, o.matrix_world @ Vector(c))
                       for o in g["meshes"] for c in o.bound_box]
-            flags["prop_out_of_frame"] = any(p.z <= 0 or not 0 <= p.x <= 1 or not 0 <= p.y <= 1 for p in coords)
+            fraction = projected_bbox_fraction(coords)
+            flags["out_of_frame"] = flags["prop_out_of_frame"] = fraction < .95
+            diagnostics = {key: g[key] for key in ("size_m", "scale", "normalization_factor", "source_bbox_m",
+                                                  "source_dimensions_m", "cache_bbox_m", "scaled_bbox_m",
+                                                  "final_bbox_m", "final_dimensions_m")}
             result["props"].append({"prop_id": g["id"], "index": g["index"], "prop_strength": g["strength"],
-                                     "silhouette": str(mask), "bbox_world": g["bbox_world"], "flags": flags})
+                                     "silhouette": str(mask), "bbox_world": g["bbox_world"],
+                                     **diagnostics, "bbox_source_m": g["source_bbox_m"],
+                                     "bbox_final_m": g["final_bbox_m"],
+                                     "frame_inside_fraction": fraction, "flags": flags})
     finally:
         (scene.render.engine, scene.render.film_transparent, scene.render.filepath,
          scene.render.image_settings.file_format, scene.render.image_settings.color_mode,

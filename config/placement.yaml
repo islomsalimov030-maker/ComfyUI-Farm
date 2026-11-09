@@ -198,6 +198,9 @@ place:
   hull_in_mask_min: 0.9
   contact_tol: 0.01
   support_gap_partial_m: 0.05
+  surface_match_min_frac: 0.30
+  soft_above_support_m: 0.08
+  soft_sink_height_frac: 0.07
   height_lift_step_m: 0.005
   height_lift_extra_m: 0.01
   sup_gap_cm: 3.0

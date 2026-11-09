@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -89,7 +90,11 @@ def check_references(model: Path) -> None:
                             raise ValueError("external texture reference rejected")
 
 
-def import_one(model: Path, source: Path, library: Path, blender: str, *, timeout: int = 180) -> dict:
+def import_one(model: Path, source: Path, library: Path, blender: str, *, timeout: int = 180,
+               size_m: float = .30) -> dict:
+    size_m = float(size_m)
+    if not math.isfinite(size_m) or size_m <= 0:
+        raise ValueError("size_m must be finite and > 0")
     relative = model.relative_to(source).as_posix()
     check_references(model)
     target = library / prop_id(relative)
@@ -98,13 +103,15 @@ def import_one(model: Path, source: Path, library: Path, blender: str, *, timeou
     metadata = target / "prop.json"
     old = json.loads(metadata.read_text(encoding="utf-8")) if metadata.exists() else {}
     if (old.get("source_sha256") == fingerprint and (target / "model.glb").exists()
-            and old.get("importer_version") == 1):
+            and old.get("importer_version") == 2
+            and old.get("import_facts", {}).get("normalized_longest_side_m") == size_m):
         return {"id": target.name, "status": "cached", "metadata": old}
     facts_path = target / "import_facts.json"
     env = dict(os.environ, PYTHONNOUSERSITE="1", PYTHONSAFEPATH="1")
     command = [blender, "--background", "--factory-startup", "--disable-autoexec",
                "--python-exit-code", "1", "--python", str(Path(__file__).with_name("import_props_blender.py")),
-               "--", "--source", str(model), "--out", str(target / "model.glb"), "--facts", str(facts_path)]
+               "--", "--source", str(model), "--out", str(target / "model.glb"), "--facts", str(facts_path),
+               "--size-m", str(size_m)]
     completed = subprocess.run(command, cwd=REPO, env=env, text=True, encoding="utf-8", errors="replace",
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     (target / "import.log").write_text(completed.stdout, encoding="utf-8")
@@ -112,11 +119,11 @@ def import_one(model: Path, source: Path, library: Path, blender: str, *, timeou
         raise RuntimeError(f"Blender import failed ({completed.returncode}); see {target / 'import.log'}")
     facts = json.loads(facts_path.read_text(encoding="utf-8"))
     license_files = license_evidence(model, source)
-    info = {"name": old.get("name", model.stem), "size_m": old.get("size_m", facts["longest_side_m"]),
+    info = {"name": old.get("name", model.stem), "size_m": size_m,
             "description_en": old.get("description_en", ""), "prop_strength": old.get("prop_strength", 0.35),
             "model": "model.glb", "license_status": "unknown", "license_evidence_files": license_files,
             "license_note": "Accompanying text requires review; user ownership is not an automatic license.",
-            "source_file": relative, "source_sha256": fingerprint, "importer_version": 1,
+            "source_file": relative, "source_sha256": fingerprint, "importer_version": 2,
             "import_facts": facts}
     metadata.write_text(json.dumps(info, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return {"id": target.name, "status": "imported", "metadata": info}
@@ -128,6 +135,7 @@ def main():
     ap.add_argument("--library", type=Path, default=Path(os.environ.get("FARM_ROOT", "C:/work/scene3d_work/farm")) / "props")
     ap.add_argument("--blender", default="C:/Program Files/Blender Foundation/Blender 5.0/blender.exe")
     ap.add_argument("--include", action="append", default=[], help="Exact relative model path; repeat to import several")
+    ap.add_argument("--size-m", type=float, default=.30, help="Longest side of normalized cache in metres")
     ap.add_argument("--inventory-only", action="store_true")
     ap.add_argument("--facts", type=Path)
     ns = ap.parse_args()
@@ -142,7 +150,7 @@ def main():
             model = (source / rel).resolve(strict=True)
             if not model.is_relative_to(source) or model.suffix.lower() not in FORMATS:
                 ap.error("model must be a supported file inside source")
-            results.append(import_one(model, source, library, ns.blender))
+            results.append(import_one(model, source, library, ns.blender, size_m=ns.size_m))
     facts["results"] = results
     if ns.facts:
         ns.facts.parent.mkdir(parents=True, exist_ok=True)

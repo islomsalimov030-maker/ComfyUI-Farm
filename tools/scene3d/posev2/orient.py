@@ -19,13 +19,21 @@ CONFLICT_DEG = CFG["conflict_deg"]
 HEAD = [0, 1, 2, 3, 4]
 
 
-def axis(KP):
+SHOULDER_AXIS_CLASSES = ("stand", "kneel", "crouch")
+
+
+def torso_top(KP, pose_class=None):
+    """MHR shoulders 5/6, not the head/neck estimate, for root clamps."""
+    return (KP[5] + KP[6]) / 2 if pose_class in SHOULDER_AXIS_CLASSES else KP[69]
+
+
+def axis(KP, pose_class=None):
     pel = (KP[9] + KP[10]) / 2
-    return pel, KP[69], KP[HEAD].mean(0)
+    return pel, torso_top(KP, pose_class), KP[HEAD].mean(0)
 
 
 def check(KP, pose_class, H):
-    pel, neck, head = axis(KP)
+    pel, neck, head = axis(KP, pose_class)
     a = neck - pel
     from_v = math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), CFG["norm_eps"]), -1, 1)))
     elev = 90.0 - from_v
@@ -81,18 +89,25 @@ def left_vec(KP):
     return (KP[9] - KP[10]) + (KP[5] - KP[6])
 
 
-def tilt_deg(KP):
-    """наклон корпуса: ось таз→шея от вертикали, градусы."""
-    a = KP[69] - (KP[9] + KP[10]) / 2
+def tilt_deg(KP, pose_class=None):
+    """Torso axis from vertical; upright root clamps use shoulder midpoint."""
+    a = torso_top(KP, pose_class) - (KP[9] + KP[10]) / 2
     return math.degrees(math.acos(np.clip(a[2] / max(np.linalg.norm(a), CFG["norm_eps"]), -1, 1)))
 
 
 def roll_deg(KP, pose_class=None):
     """Для lie — полный крен вокруг длинной оси: спина=0, бок=±90, живот=±180.
 
+    Stand/kneel/crouch: боковой наклон оси таз→середина плеч.
     Для остальных классов сохраняется прежний наклон поперечной оси.
     """
     lv = left_vec(KP)
+    if pose_class in SHOULDER_AXIS_CLASSES:
+        a = torso_top(KP, pose_class) - (KP[9] + KP[10]) / 2
+        lat = lv.copy()
+        lat[2] = 0
+        lat /= max(np.linalg.norm(lat), CFG["norm_eps"])
+        return math.degrees(math.atan2(-a @ lat, a[2]))
     if pose_class == "lie":
         a = KP[69] - (KP[9] + KP[10]) / 2
         a = a / max(np.linalg.norm(a), CFG["norm_eps"])
@@ -161,16 +176,26 @@ def tilt_sign_candidate(kp, cam_axis, pose_class):
         if name == "up180":                                   # меняет только yaw — к знаку наклона отношения не имеет
             continue
         c = (kp[9] + kp[10]) / 2
-        t = tilt_deg(rot_about(kp, c, R))
+        t = tilt_deg(rot_about(kp, c, R), pose_class)
         dist = max(lo - t, 0.0, t - hi) + (0.0 if name == "identity" else CFG["identity_bias_deg"])
         if best is None or dist < best[0]:
             best = (dist, name, R)
     return best[1], best[2]
 
 
-def clamp_roll(V, kp):
-    """Зажать измеренный крен, не меняя наклон: поворот вокруг оси таз→шея."""
-    r = roll_deg(kp)
+def clamp_roll(V, kp, pose_class=None):
+    """Rigid root clamp; upright lateral lean comes from pelvis→shoulders."""
+    r = roll_deg(kp, pose_class)
+    if pose_class in SHOULDER_AXIS_CLASSES:
+        if abs(r) <= ROLL_MAX:
+            return V, kp
+        c = (kp[9] + kp[10]) / 2
+        lat = left_vec(kp).copy()
+        lat[2] = 0
+        if np.linalg.norm(lat) < CFG["direction_eps"]:
+            return V, kp  # validator retains the measured failure
+        R = rot_axis(np.cross(lat, UP), math.radians(math.copysign(ROLL_MAX, r) - r))
+        return rot_about(V, c, R), rot_about(kp, c, R)
     if abs(r) <= ROLL_MAX:
         return V, kp
     c = (kp[9] + kp[10]) / 2
@@ -197,15 +222,15 @@ def assemble_tilt_roll(V, kp, pose_class):
     Поворот вокруг центра таза.
     -> V, kp, info{tilt_ref, tilt, roll_ref, roll, clamped_deg}."""
     c = (kp[9] + kp[10]) / 2
-    t0, r0 = tilt_deg(kp), roll_deg(kp, pose_class)
+    t0, r0 = tilt_deg(kp, pose_class), roll_deg(kp, pose_class)
     info = {"tilt_ref_deg": round(t0, 1), "roll_ref_deg": round(r0, 1)}
     if pose_class != "lie":
-        V, kp = clamp_roll(V, kp)
+        V, kp = clamp_roll(V, kp, pose_class)
     lo, hi = TILT_RANGE[pose_class]
-    t1 = tilt_deg(kp)
+    t1 = tilt_deg(kp, pose_class)
     tt = min(max(t1, lo), hi)
     if abs(tt - t1) > CFG["tilt_change_deg"]:
-        a = kp[69] - c
+        a = torso_top(kp, pose_class) - c
         k = np.cross(a, UP)
         vertical = t1 < CFG["vertical_deg"]                                   # почти вертикальная ось — сторону наклона задаёт класс
         f = forward(kp)
@@ -215,18 +240,18 @@ def assemble_tilt_roll(V, kp, pose_class):
         for sgn in (1, -1):
             R = rot_axis(k, sgn * math.radians(tt - t1))
             k2 = rot_about(kp, c, R)
-            if abs(tilt_deg(k2) - tt) >= CFG["tilt_match_deg"]:
+            if abs(tilt_deg(k2, pose_class) - tt) >= CFG["tilt_match_deg"]:
                 continue
             if vertical and f is not None:
-                lean = (k2[69] - c) @ f
+                lean = (torso_top(k2, pose_class) - c) @ f
                 if (pose_class in LEAN_BACK) != (lean < 0):
                     continue
             V, kp = rot_about(V, c, R), k2
             break
     # Наклон выше мог снова внести крен. Финальный clamp сохраняет ось корпуса.
     if pose_class != "lie":
-        V, kp = clamp_roll(V, kp)
-    info.update(tilt_deg=round(tilt_deg(kp), 1), roll_deg=round(roll_deg(kp, pose_class), 1))
+        V, kp = clamp_roll(V, kp, pose_class)
+    info.update(tilt_deg=round(tilt_deg(kp, pose_class), 1), roll_deg=round(roll_deg(kp, pose_class), 1))
     info["clamped_deg"] = (0.0 if pose_class == "lie" else
                            round(abs(info["tilt_deg"] - t0) + abs(info["roll_deg"] - r0), 1))
     return V, kp, info
