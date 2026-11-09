@@ -1,6 +1,14 @@
 # 3D-A placement v2.6: метры, градусы и доли H/L_thigh/L_torso, если не указано иначе.
 # Значения шагов 7–8 сохранены; шаг 9: long_side_frac и kneel/place-валидатор.
 # Математические константы, индексы суставов и округление отчёта не являются порогами.
+source_vertical:
+  min_line_height: 0.06
+  max_vertical_slope: 0.35
+  min_lines: 5
+  min_span_width: 0.25
+  reject_angle_deg: 8.0
+  improvement_deg: 5.0
+
 h3:
   seed: 101
   steps: 25

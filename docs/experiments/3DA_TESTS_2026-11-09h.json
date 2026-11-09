@@ -1,0 +1,205 @@
+{
+  "unique_passed": 345,
+  "suites": 33,
+  "results": [
+    {
+      "file": "tools/scene3d/posev2/test_auto_surfaces_09e.py",
+      "exit": 0,
+      "passed": 11,
+      "summary": "11 passed in 0.42s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_config_v26.py",
+      "exit": 0,
+      "passed": 11,
+      "summary": "11 passed in 0.57s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_geometry_2ae.py",
+      "exit": 0,
+      "passed": 9,
+      "summary": "9 passed in 0.41s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_lie_09d.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": "5 passed, 3 subtests passed in 0.55s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_pose_fit.py",
+      "exit": 0,
+      "passed": 6,
+      "summary": "6 passed in 3.29s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_profile_ids_09e.py",
+      "exit": 0,
+      "passed": 7,
+      "summary": "7 passed in 0.30s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_runner_v26.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.34s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_v24.py",
+      "exit": 0,
+      "passed": 7,
+      "summary": "7 passed in 592.71s (0:09:52)"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_v25.py",
+      "exit": 0,
+      "passed": 7,
+      "summary": "7 passed in 19.12s"
+    },
+    {
+      "file": "tests/test_composite_09f2.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.30s"
+    },
+    {
+      "file": "tests/test_3da_h3_remote.py",
+      "exit": 0,
+      "passed": 8,
+      "summary": "8 passed, 4 subtests passed in 5.77s"
+    },
+    {
+      "file": "tools/scene3d/test_pack_cli.py",
+      "exit": 0,
+      "passed": 36,
+      "summary": "36 passed in 3.70s"
+    },
+    {
+      "file": "tools/scene3d/test_aio_v23.py",
+      "exit": 0,
+      "passed": 9,
+      "summary": "9 passed in 0.26s"
+    },
+    {
+      "file": "tools/scene3d/test_props.py",
+      "exit": 0,
+      "passed": 46,
+      "summary": "46 passed in 0.38s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_report_v26c.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.05s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_h3_v26.py",
+      "exit": 0,
+      "passed": 21,
+      "summary": "21 passed in 0.61s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_pose_gate_v26c.py",
+      "exit": 0,
+      "passed": 4,
+      "summary": "4 passed in 0.39s"
+    },
+    {
+      "file": "tools/scene3d/plate/test_manual_pack_verify.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.31s"
+    },
+    {
+      "file": "tests/test_diagnostics_09g.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 0.11s"
+    },
+    {
+      "file": "h3_img2img_latent/test_latent.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.043s\n\nOK"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_contact_speed_09e.py",
+      "exit": 0,
+      "passed": 10,
+      "summary": "10 passed in 0.58s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_manual_pose.py",
+      "exit": 0,
+      "passed": 6,
+      "summary": "6 passed in 0.38s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_support_09f2.py",
+      "exit": 0,
+      "passed": 20,
+      "summary": "20 passed in 0.60s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_step9c.py",
+      "exit": 0,
+      "passed": 12,
+      "summary": "12 passed, 16 subtests passed in 0.66s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_step9d.py",
+      "exit": 0,
+      "passed": 18,
+      "summary": "18 passed in 0.63s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_assembly_v26.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": "5 passed in 0.48s"
+    },
+    {
+      "file": "tests/test_3da_pack_nodes.py",
+      "exit": 0,
+      "passed": 14,
+      "summary": "14 passed, 18 subtests passed in 1.25s"
+    },
+    {
+      "file": "tests/test_3da_manual_workflow.py",
+      "exit": 0,
+      "passed": 17,
+      "summary": "17 passed, 4 subtests passed in 1.24s"
+    },
+    {
+      "file": "tests/test_prop_references_09g.py",
+      "exit": 0,
+      "passed": 17,
+      "summary": "17 passed in 1.62s"
+    },
+    {
+      "file": "tests/test_prop_gizmo_09h.py",
+      "exit": 0,
+      "passed": 13,
+      "summary": "13 passed in 0.27s"
+    },
+    {
+      "file": "tests/test_prop_composite_09h.py",
+      "exit": 0,
+      "passed": 4,
+      "summary": "4 passed in 1.30s"
+    },
+    {
+      "file": "tools/scene3d/posev2/test_review_09h.py",
+      "exit": 0,
+      "passed": 5,
+      "summary": "5 passed in 0.37s"
+    },
+    {
+      "file": "tests/test_prop_isolation_09h.py",
+      "exit": 0,
+      "passed": 2,
+      "summary": "2 passed in 1.33s"
+    }
+  ],
+  "subtests": 45
+}

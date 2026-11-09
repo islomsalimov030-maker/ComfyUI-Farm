@@ -78,7 +78,7 @@ def validated_props(text):
     if not isinstance(data, list):
         raise ValueError('props must be a JSON list')
     for prop in data:
-        if not isinstance(prop, dict) or set(prop) - {'size_m'} != PROP_FIELDS:
+        if not isinstance(prop, dict) or set(prop) - {'size_m', 'absolute_matrix_world'} != PROP_FIELDS:
             raise ValueError('Each prop requires prop_id, anchor, x/y/z, yaw/pitch/roll, scale, prop_strength; optional size_m')
         prop.setdefault('size_m', .30)
         if finite_number(prop['size_m'], 'size_m') <= 0:
@@ -91,6 +91,8 @@ def validated_props(text):
         if prop['scale'] <= 0:
             raise ValueError('scale must be positive')
         finite_number(prop['prop_strength'], 'prop_strength', minimum=0., maximum=1.)
+        if 'absolute_matrix_world' in prop:
+            gizmo_helpers().validate_matrix(prop['absolute_matrix_world'])
     return data
 
 
@@ -125,6 +127,16 @@ def load_mask(path):
     with Image.open(path) as im:
         a = np.array(im.convert('L'), dtype=np.float32) / 255
     return torch.from_numpy(a)[None]
+
+
+def content_fingerprint(paths):
+    import hashlib
+    h=hashlib.sha256()
+    for path in sorted({Path(p).resolve() for p in paths},key=str):
+        h.update(str(path).encode('utf-8'))
+        if path.is_file():h.update(path.read_bytes())
+        else:h.update(b'missing')
+    return h.hexdigest()
 
 
 def error_text(error):
@@ -195,6 +207,11 @@ def invoke(command, fields, images):
 
 class Location:
     @classmethod
+    def IS_CHANGED(cls,location_id,**kwargs):
+        cfg=config();root=Path(cfg['farm_root'])/'locations'/location_id
+        return content_fingerprint([HERE/'config.yaml',*root.rglob('*')])
+
+    @classmethod
     def INPUT_TYPES(cls):
         return {'required': {'plate': ('IMAGE',), 'location_id': ('STRING', {'default': 'mainroom2'})}}
     RETURN_TYPES = ('STRING', 'IMAGE', 'STRING', 'IMAGE')
@@ -214,6 +231,15 @@ class Location:
             return json.dumps({'status': 'error', 'error': error_text(exc)}, ensure_ascii=False), plate, error_text(exc), plate
 
 
+def gizmo_helpers():
+    import importlib.util
+    path = Path(config()['repo']) / 'tools/scene3d/prop_gizmo.py'
+    spec = importlib.util.spec_from_file_location('three_da_prop_gizmo', path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 class Prop:
     """JSON-only adapter. Import, transforms, contacts and rendering live in the CLI."""
     @classmethod
@@ -227,25 +253,56 @@ class Prop:
             'scale': ('FLOAT', {'default': 1., 'min': .001, 'step': .01}),
             'size_m': ('FLOAT', {'default': .30, 'min': .001, 'step': .01}),
             'prop_strength': ('FLOAT', {'default': .35, 'min': 0., 'max': 1., 'step': .01}),
-        }, 'optional': {'props_in': ('STRING', {'default': '[]', 'forceInput': True})}}
+        }, 'optional': {'props_in': ('STRING', {'default': '[]', 'forceInput': True}),
+                        'model_3d_info': ('LOAD3D_MODEL_INFO',), 'model_3d': ('FILE_3D',)}}
     RETURN_TYPES = ('STRING',)
     RETURN_NAMES = ('props',)
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
-    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30):
+    @classmethod
+    def IS_CHANGED(cls,prop_id,**kwargs):
+        directory=prop_library()/safe_prop_id(prop_id)
+        return content_fingerprint([HERE/'nodes.py',*directory.glob('*')])
+
+    def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30, model_3d_info=None, model_3d=None):
         props = validated_props(props_in)
         item = dict(prop_id=prop_id, anchor=anchor, x=x, y=y, z=z, yaw=yaw, pitch=pitch,
                     roll=roll, scale=scale, prop_strength=prop_strength, size_m=size_m)
+        if model_3d_info is not None:
+            item['absolute_matrix_world'] = gizmo_helpers().model_matrix(model_3d_info)
         props.append(item)
         validated_props(json.dumps(props, allow_nan=False))
         root = prop_library()
         for entry in props:
             prop_metadata(root, entry['prop_id'])
+        if model_3d_info is not None:
+            import hashlib
+            if model_3d is None or not hasattr(model_3d,'get_data'):
+                raise ValueError('Гизмо: подключите также model_3d из той же Load3DAdvanced')
+            directory=(root/prop_id).resolve()
+            model=(directory/prop_metadata(root,prop_id).get('model','model.glb')).resolve()
+            if not model.is_relative_to(directory):
+                raise ValueError('Prop model escapes library')
+            if hashlib.sha256(model_3d.get_data().read()).digest()!=hashlib.sha256(model.read_bytes()).digest():
+                raise ValueError('Гизмо: GLB не совпадает с выбранным prop_id; подготовьте правильный ресурс')
         return (json.dumps(props, ensure_ascii=False, allow_nan=False),)
 
 
 class PlacePose:
+    @classmethod
+    def IS_CHANGED(cls,location=None,props='[]',**kwargs):
+        cfg=config();repo=Path(cfg['repo']);root=repo/'tools/scene3d'
+        paths=[HERE/'config.yaml',HERE/'nodes.py',repo/'config/placement.yaml',
+               root/'pack_cli.py',root/'prop_composite.py',root/'plate/prop_render.py']
+        paths += [p for p in (root/'posev2').glob('*.py') if not p.name.startswith('test_')]
+        if isinstance(location,str) and Path(location).is_file():
+            paths += list(Path(location).parent.glob('*'))
+        for prop in validated_props(props) if isinstance(props,str) else []:
+            directory=Path(cfg['farm_root'])/'props'/prop['prop_id']
+            paths += list(directory.glob('*'))
+        return content_fingerprint(paths)
+
     @classmethod
     def INPUT_TYPES(cls):
         return {'required': {
@@ -262,8 +319,8 @@ class PlacePose:
                for name in ('body_dx', 'body_dy', 'body_dz', 'body_dyaw', 'body_dpitch', 'body_droll')},
         }, 'optional': {'pose_text': ('STRING', {'default': '', 'multiline': True}),
                         'props': ('STRING', {'default': '[]', 'forceInput': True})}}
-    RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE')
-    RETURN_NAMES = ('playblast', 'init', 'strength', 'silhouette', 'h3_prompt', 'status', 'debug')
+    RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE', 'IMAGE', 'MASK', '3DA_BODY_GUIDES')
+    RETURN_NAMES = ('playblast', 'init', 'strength', 'silhouette', 'h3_prompt', 'status', 'debug', 'prop_repair', 'prop_repair_mask', 'body_guides')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
@@ -292,12 +349,21 @@ class PlacePose:
                 status = json.dumps(status, ensure_ascii=False)
             status += '\n' + json.dumps({'report': result.get('report', {}),
                                          'timings': result.get('timings', {})}, ensure_ascii=False)
+            bundle=result.get('body_guides')
+            guides=({key:load_mask(bundle[key]) if key=='strength' else load_image(bundle[key])
+                     for key in ('plate','playblast','init','strength')} if bundle else {})
+            if bundle:
+                guides.update(prompt=bundle['prompt'] if h3_prompt else '',render_prompt=bundle['render_prompt'])
+                guides['prop_rgb']=load_image(bundle.get('prop_rgb',result['init']))
+                guides['prop_alpha']=load_mask(bundle['prop_alpha']) if bundle.get('prop_alpha') else torch.zeros_like(guides['strength'])
             return (load_image(result['playblast']), load_image(result['init']), load_mask(result['strength']),
-                    load_mask(result['silhouette']), h3_prompt, status, load_image(result['debug']))
+                    load_mask(result['silhouette']), h3_prompt, status, load_image(result['debug']),
+                    load_image(result['prop_repair']) if result.get('prop_repair') else load_image(result['init']),
+                    load_mask(result['prop_repair_mask']) if result.get('prop_repair_mask') else torch.zeros_like(load_mask(result['strength'])),guides)
         except Exception as exc:
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
             zero = torch.zeros((1, 64, 64), dtype=torch.float32)
-            return blank, blank.clone(), zero, zero.clone(), '', error_text(exc), blank.clone()
+            return blank, blank.clone(), zero, zero.clone(), '', error_text(exc), blank.clone(), blank.clone(), zero.clone(),{}
 
 
 def remote_client(cfg):
@@ -490,19 +556,68 @@ class H3Remote:
                              'init': ('IMAGE',), 'strength': ('MASK',),
                              'prompt': ('STRING', {'multiline': True, 'forceInput': True}),
                              'seed': ('INT', {'default': 101, 'min': 0, 'max': 0xffffffffffffffff})},
-                'optional': {f'ref_prop_{n}': ('IMAGE',) for n in range(1, 4)}}
+                'optional': {**{f'ref_prop_{n}': ('IMAGE',) for n in range(1, 4)},
+                             'prop_repair': ('IMAGE',), 'prop_repair_mask': ('MASK',),
+                             'body_guides': ('3DA_BODY_GUIDES',),
+                             'prop_handling': (['transfer','rendered_separately'], {'default':'transfer'})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'STRING')
     RETURN_NAMES = ('final', 'raw', 'info')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
     def execute(self, plate, ref_char, playblast, init, strength, prompt, seed,
-                ref_prop_1=None, ref_prop_2=None, ref_prop_3=None):
+                ref_prop_1=None, ref_prop_2=None, ref_prop_3=None, prop_repair=None, prop_repair_mask=None,
+                body_guides=None,prop_handling='transfer'):
         try:
             images = dict(plate=plate, ref_char=ref_char, playblast=playblast, init=init)
             images.update({f'ref_prop_{n}': value for n, value in enumerate(
                 (ref_prop_1, ref_prop_2, ref_prop_3), 1) if value is not None})
-            return remote_run(config(), images, strength, prompt, seed)
+            cfg=config()
+            if prop_handling not in ('transfer','rendered_separately'):
+                raise ValueError('Unknown prop_handling')
+            ignored=[]
+            if prop_handling=='rendered_separately':
+                if not body_guides or not body_guides.get('prompt','').strip():
+                    raise ValueError('Separate prop mode requires accepted body_guides')
+                if prop_repair is None or prop_repair_mask is None:
+                    raise ValueError('Separate prop mode requires prop_repair and prop_repair_mask')
+                original=body_guides.get('render_prompt','')
+                if not original or not prompt.startswith(original):
+                    raise ValueError('Separate prop mode: append prompt edits to generated prompt; do not replace its prefix')
+                suffix=prompt[len(original):]
+                prompt=body_guides['prompt']+suffix
+                ignored=[key for key in images if key.startswith('ref_prop_')]
+                images={key:value for key,value in images.items() if not key.startswith('ref_prop_')}
+                images.update(plate=body_guides['plate'],playblast=body_guides['playblast'],init=body_guides['init'])
+                # Validate restoration against the full final composite support;
+                # only the H3 noise map switches to the body-only strength below.
+            if (prop_repair is None) != (prop_repair_mask is None):
+                raise ValueError('Connect both prop_repair and prop_repair_mask')
+            if prop_repair is not None:
+                # Validate before spending a remote job, and never upload these
+                # local restoration layers as extra conditioning images.
+                import sys
+                sys.path.insert(0,str(Path(cfg['repo'])/'tools/scene3d'))
+                from prop_composite import restore, support, restore_isolated
+                restore(init,prop_repair,prop_repair_mask)
+                outside = ~support(strength.detach().cpu().numpy()[0])
+                if np.any(prop_repair_mask.detach().cpu().numpy()[0][outside] > 0):
+                    raise ValueError('Prop repair mask must stay inside actual composite support')
+            remote_strength=body_guides['strength'] if prop_handling=='rendered_separately' else strength
+            final,raw,info=remote_run(cfg, images, remote_strength, prompt, seed)
+            if prop_repair is not None:
+                if prop_handling=='rendered_separately':
+                    final,final_support,guard=restore_isolated(final,body_guides['prop_rgb'],body_guides['prop_alpha'],
+                        prop_repair,prop_repair_mask,remote_strength)
+                else:
+                    final=restore(final,prop_repair,prop_repair_mask)
+                detail=json.loads(info);detail['prop_material_preservation']='depth-occluded source RGB; local mask; raw H3 unchanged'
+                detail.update(prop_handling=prop_handling,prop_reference_inputs_not_sent=ignored)
+                if prop_handling=='rendered_separately':
+                    detail.update(final_composite_support='body composite support UNION background guard outside body UNION visible prop alpha>0',
+                        final_composite_support_pixels=int(final_support.sum()),background_guard_pixels=int(guard.sum()))
+                info=json.dumps(detail,ensure_ascii=False)
+            return final,raw,info
         except Exception as exc:
             # Deliberately recognisable placeholders, never masquerade as a final plate.
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)

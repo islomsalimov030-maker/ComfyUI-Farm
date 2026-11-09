@@ -402,7 +402,10 @@ def compose_props(directory, overlay_dir):
     import prop_render
     size = (1344, 768)
     desc = read_json(overlay_dir / "props_render.json")
-    for target, source in (("init.png", "textured_rgba"), ("playblast.png", "clay_rgba")):
+    # Props retain their source appearance in both guides. A grey prop video
+    # otherwise contradicts material refs at every guided frame. Body proxy
+    # remains unchanged; clay is still saved as a diagnostic render.
+    for target, source in (("init.png", "textured_rgba"), ("playblast.png", "textured_rgba")):
         base = Image.open(directory / target).convert("RGBA")
         overlay = Image.open(desc[source]).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
         Image.alpha_composite(base, overlay).convert("RGB").save(directory / target)
@@ -411,6 +414,16 @@ def compose_props(directory, overlay_dir):
               p["prop_strength"]) for p in desc["props"]]
     strength = prop_render.combine_strength(body, props)
     Image.fromarray(np.rint(strength * 255).astype("uint8")).save(directory / "strength.png")
+    from prop_composite import repair_mask
+    # Work from the actual quantized masks passed to Remote.
+    quantized = np.rint(strength*255).astype('uint8')
+    body_sil=np.asarray(Image.open(directory/'silhouette.png').convert('L'))>127
+    prop_sil=np.logical_or.reduce([np.asarray(mask)>127 for mask,_ in props])
+    repair = repair_mask(body,quantized,body_sil,prop_sil)
+    source = Image.open(directory/'plate.png').convert('RGBA')
+    layer = Image.open(desc['textured_rgba']).convert('RGBA').resize(size,Image.Resampling.LANCZOS)
+    Image.alpha_composite(source,layer).convert('RGB').save(directory/'prop_repair.png')
+    Image.fromarray(repair.astype('uint8')*255).save(directory/'prop_repair_mask.png')
     plate = np.asarray(Image.open(directory / "plate.png"), dtype=float)
     debug = plate * (1 - .45 * strength[..., None]) + np.array([255,70,30]) * (.45 * strength[..., None])
     Image.fromarray(np.rint(debug).astype("uint8")).save(directory / "debug.png")
@@ -489,7 +502,7 @@ def do_place(request, config):
     ref = pf.load_ref(rf)
     if ref["F"].ndim != 2 or ref["F"].shape[1] != 3 or not len(ref["F"]) or not np.isfinite(ref["V"]).all():
         raise ValueError("SAM reference body mesh missing/invalid")
-    ref.update(path=str(rf), body_cache_dir=str(cache / "body_geometry"))
+    ref.update(path=str(rf), body_cache_dir=str(cache / "body_geometry"), image_path=str(pose), vertical_python=config['python'])
     timings["reference_s"] = round(time.monotonic() - stage, 3)
     job = Path(config["farm_root"]) / "pack" / "jobs" / uuid.uuid4().hex
     job.mkdir(parents=True)
@@ -505,7 +518,7 @@ def do_place(request, config):
         refine_ctx = refine.load_ctx(config["comfy"])
         result = place.place(ref, plate, spec, seed, height, profile=profile,
                              body_src="profile" if body else "proxy", dims_override=body["body_dims"] if body else None,
-                             refine_ctx=refine_ctx)
+                             refine_ctx=refine_ctx, trace_dir=job/'trace')
         manual_pose.save_placement(cache_dir, result, ref, plate, spec, key)
         base = manual_pose.load_placement(cache_dir, key)
         if base is None:
@@ -521,14 +534,14 @@ def do_place(request, config):
     corners = np.array(list(itertools.product(*zip(X.min(axis=0), X.max(axis=0)))))
     u, v, z = plate.project(corners)
     fraction = prop_render.projected_bbox_fraction(np.column_stack((u / plate.Wp, v / plate.Hp, z)))
-    fit['frame'] = {'body': {'inside_fraction': fraction, 'out_of_frame': fraction < .95}}
+    placement_frame=dict(fit.get('frame',{}))
+    fit['frame'] = {**placement_frame,'body': {'inside_fraction': fraction, 'out_of_frame': fraction < .95,
+                                            'method':'advisory projected 3D AABB; not mesh coverage'}}
     flags = set(fit.get('flags', []))
     flags.discard('out_of_frame')
     flags.discard('body_out_of_frame')
-    if fraction < .95:
-        flags.update(('out_of_frame', 'body_out_of_frame'))
-    elif fit.get('status') == 'out_of_frame':
-        fit['status'] = 'partial' if flags else 'ok'
+    if fraction < .95:flags.add('body_out_of_frame')
+    if not placement_frame.get('ok',True):flags.add('out_of_frame')
     fit['flags'] = sorted(flags)
     manual_pose.write_transformed(job / "fit", X, KP, ref["F"], fit)
     timings["placement_cache_hit"] = cache_hit
@@ -548,6 +561,7 @@ def do_place(request, config):
     save_json(job / "fit/fit.json", fit)
     required_file(job / "fit/body.obj", f"placement body.obj (status={fit.get('status')})")
     h3_prompt = prompt_for(profile, config, fit)
+    body_h3_prompt = prompt_for(profile,config,{**fit,'props_prompt':[]}) if props_value else h3_prompt
     scene = {"name": "pose", "body_obj": str(job / "fit/body.obj"),
              "label_joints": str(job / "fit/label_joints.npz")}
     save_json(job / "render_spec.json", {"scenes": [scene]})
@@ -556,7 +570,7 @@ def do_place(request, config):
     env.setdefault("SCENE3D_BLENDER_SITE", str(REPO / ".blender_site"))
     if config.get("blender_pkgs"):
         env["FARM_BPY_PKGS"] = config["blender_pkgs"]
-    run_stage([config["blender"], "-b", "--python-exit-code", "1", "--python",
+    run_stage([config["blender"], "-b", "--factory-startup", "--disable-autoexec", "--python-exit-code", "1", "--python",
                HERE / "plate/render_plate_scene.py", "--", "--plate", plate_dir, "--spec", job / "render_spec.json",
                "--mannequin", mannequin, "--out", job / "render", "--label-pass", "--photo-emission", "2.5",
                "--samples", "48"], "Blender render", env=env)
@@ -565,13 +579,23 @@ def do_place(request, config):
     stage = time.monotonic()
     prepare_images(directory, plate_dir / "plate_rgb.png", mode, body_path, strength, config["cell_px"])
     if props_value:
+        from shutil import copy2
+        body_dir=directory/'body_guides';body_dir.mkdir(exist_ok=True)
+        for name in ('playblast.png','init.png','strength.png'):copy2(directory/name,body_dir/name)
+    else:
+        body_dir=directory
+    body_guides={key:str(body_dir/(key+'.png')) for key in ('playblast','init','strength')}
+    body_guides['plate']=str(directory/'plate.png')
+    body_guides.update(prompt=body_h3_prompt,render_prompt=h3_prompt)
+    if props_value:
         # Input offsets use the same camera-horizontal location axes as body_*.
         render_props_value = []
         basis = manual_pose.location_basis(plate)
         for prop in props_value:
             prop = dict(prop)
-            offset = basis @ np.asarray([prop.get(k, 0.) for k in "xyz"], dtype=float)
-            prop.update(dict(zip("xyz", offset.tolist())))
+            if 'absolute_matrix_world' not in prop:
+                offset = basis @ np.asarray([prop.get(k, 0.) for k in "xyz"], dtype=float)
+                prop.update(dict(zip("xyz", offset.tolist())))
             render_props_value.append(prop)
         props_path = job / "props.json"
         save_json(props_path, render_props_value)
@@ -582,6 +606,11 @@ def do_place(request, config):
                    "--props", props_path, "--library", library, "--out", overlay_dir], "Blender props", env=env)
         compose_props(directory, overlay_dir)
         prop_report = read_json(overlay_dir / "props_render.json")
+        from PIL import Image
+        layer=Image.open(prop_report['textured_rgba']).convert('RGBA').resize((1344,768),Image.Resampling.LANCZOS)
+        layer.convert('RGB').save(directory/'prop_layer_rgb.png')
+        layer.getchannel('A').save(directory/'prop_layer_alpha.png')
+        body_guides.update(prop_rgb=str(directory/'prop_layer_rgb.png'),prop_alpha=str(directory/'prop_layer_alpha.png'))
         fit["props"] = prop_report["props"]
         fit["flags"] = sorted(set(fit.get("flags", []) + [flag for prop in prop_report["props"]
                                     for flag, active in prop["flags"].items() if active]))
@@ -607,9 +636,13 @@ def do_place(request, config):
     canvas.save(directory / 'debug.png')
     timings["maps_s"] = round(time.monotonic() - stage, 3)
     timings["total_s"] = round(time.monotonic() - t0, 3)
+    save_json(job/'body_guides.json',body_guides)
     return dict(status=fit["status"], **{key: str((directory / filename).resolve()) for key, filename in
                 {"playblast": "playblast.png", "init": "init.png", "strength": "strength.png",
                  "silhouette": "silhouette.png", "debug": "debug.png"}.items()},
+                prop_repair=str(directory/'prop_repair.png') if props_value else None,
+                prop_repair_mask=str(directory/'prop_repair_mask.png') if props_value else None,
+                body_guides=body_guides,
                 h3_prompt=h3_prompt, report=fit, timings=timings)
 
 

@@ -1,0 +1,440 @@
+{
+  "schema": "3DA09h-v1",
+  "tests": {
+    "unique_passed": 345,
+    "suites": 33,
+    "failures": 0
+  },
+  "original_h3_budget": 8,
+  "additional_h3_explicitly_authorized": 1,
+  "actual_live_h3_jobs": 9,
+  "gizmo": [
+    {
+      "name": "release",
+      "max_delta_px": 1,
+      "silhouette_iou": 0.9729299363057324,
+      "passed": true,
+      "local_prompt_id": "76ae163e-0394-438c-a3b4-28099c4f7f5e"
+    },
+    {
+      "name": "translate_mouse",
+      "max_delta_px": 1,
+      "silhouette_iou": 0.9710811698981269,
+      "passed": true,
+      "local_prompt_id": "72103777-4dd0-45f4-86a1-8eb64d5d862b"
+    },
+    {
+      "name": "rotate_mouse",
+      "max_delta_px": 1,
+      "silhouette_iou": 0.9657869012707723,
+      "passed": true,
+      "local_prompt_id": "44b12009-35ef-4cc5-8360-195e54476bd8"
+    },
+    {
+      "name": "uniform",
+      "max_delta_px": 2,
+      "silhouette_iou": 0.9680417044424298,
+      "passed": true,
+      "local_prompt_id": "6bdc53aa-f6ac-4d10-a7a9-c70f7684d0e1"
+    },
+    {
+      "name": "offcentre_uniform_verified",
+      "max_delta_px": 2,
+      "silhouette_iou": 0.9558923938276662,
+      "contour_max_distance_px": 3.0,
+      "vertex_probe_symmetric_max_m": 1.3461097130620314e-07,
+      "passed": true,
+      "iou_095_advisory_passed": true,
+      "local_prompt_id": "ef009f85-9b49-4533-bf46-4d11020dfd58"
+    },
+    {
+      "name": "offcentre_nonuniform_verified",
+      "max_delta_px": 2,
+      "silhouette_iou": 0.9489318413021364,
+      "contour_max_distance_px": 2.0,
+      "vertex_probe_symmetric_max_m": 1.4504311997695488e-07,
+      "mode_correct": true,
+      "passed": true,
+      "iou_095_advisory_passed": false,
+      "local_prompt_id": "a3d35842-b648-48a4-bf67-1b4335402802"
+    },
+    {
+      "name": "numeric_verified",
+      "max_delta_px": 2,
+      "silhouette_iou": 0.9558923938276662,
+      "contour_max_distance_px": 3.0,
+      "vertex_probe_symmetric_max_m": 1.4701321239901787e-07,
+      "passed": true,
+      "iou_095_advisory_passed": true,
+      "local_prompt_id": "f3456f2e-4e49-45ac-8ab3-64ff70725b54"
+    }
+  ],
+  "finals": [
+    {
+      "shot": "Q01",
+      "kind": "material restored after live transfer",
+      "prompt_id": "5dc40fc9-f503-4c77-ac29-1e65e8f338de",
+      "outside_changed_pixels": 0,
+      "ssim_outside": 0.9999960683693147,
+      "outside_passed": true
+    },
+    {
+      "shot": "Q04",
+      "kind": "material restored after live transfer",
+      "prompt_id": "bc6a5488-aa1b-4e37-930f-121ff65b195f",
+      "outside_changed_pixels": 0,
+      "ssim_outside": 0.999994623465131,
+      "outside_passed": true
+    },
+    {
+      "shot": "Q04",
+      "kind": "live no-refs compatibility",
+      "prompt_id": "406a0cf7-982a-4464-82d0-3ff4873d984d",
+      "outside_changed_pixels": 0,
+      "ssim_outside": 0.9999945367580932,
+      "outside_passed": true
+    },
+    {
+      "shot": "T01",
+      "kind": "live corrected geometry",
+      "prompt_id": "a0b0b82d-9103-43e0-8c99-a27a46b172a2",
+      "outside_changed_pixels": 0,
+      "ssim_outside": 0.9999938850462007,
+      "outside_passed": true
+    },
+    {
+      "shot": "Q01",
+      "kind": "full manual; isolated body H3 + source RGBA",
+      "prompt_id": "dbd5200b-c951-4327-8a1f-b09021d936ee",
+      "prop_handling": "rendered_separately",
+      "verification": "live full manual job9 transport; updated local compositor replayed through production H3Remote.execute with exact server tensors; no new H3",
+      "outside_changed_pixels": 0,
+      "ssim_outside": 0.9999960445876891,
+      "outside_passed": true,
+      "local_prompt_id": "c6081afd-2935-47e0-961e-3a7d1ef87a82"
+    }
+  ],
+  "geometry": {
+    "count": 17,
+    "statuses": {
+      "ok": 14,
+      "partial": 2,
+      "wrong_surface": 1
+    },
+    "rows": [
+      {
+        "id": "Q01_stand_hand_face",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [
+          "table_side_mismatch"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q02_bed_cross_legs",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [
+          "no_access_side"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q03_bed_kneel",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [
+          "dominant_top_unavailable",
+          "support_gap"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q04_bed_side_lie",
+        "baseline_status": "partial",
+        "status": "ok",
+        "flags": [],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q05_crouch_shoelace",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [
+          "table_side_mismatch"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q06_floor_hug_knees",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q07_stretch_arms_up",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [
+          "table_side_mismatch"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q08_bed_recline_elbows",
+        "baseline_status": "partial",
+        "status": "partial",
+        "flags": [
+          "no_back_contact",
+          "orient_fail"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q09_lean_wall",
+        "baseline_status": "partial",
+        "status": "ok",
+        "flags": [
+          "table_side_mismatch"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q10_all_fours_cat",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q11_bench_side_sit",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "Q12_one_leg_ankle",
+        "baseline_status": "wrong_surface",
+        "status": "ok",
+        "flags": [
+          "table_side_mismatch"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "T01_sofa_legs_tucked",
+        "baseline_status": "partial",
+        "status": "ok",
+        "flags": [
+          "orient_clamped:3.6",
+          "support_gap"
+        ],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "T02_kneel_lunge",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "T03_armchair_side_sit",
+        "baseline_status": "partial",
+        "status": "wrong_surface",
+        "flags": [
+          "dominant_top_unavailable",
+          "footprint_fail",
+          "no_back_contact",
+          "orient_clamped:13.9"
+        ],
+        "provenance": "Retained historical V2 geometry after visual/physical regression; fresh final validator follows. trace/ belongs to rejected new candidate."
+      },
+      {
+        "id": "T04_floor_sit_knees_up",
+        "baseline_status": "ok",
+        "status": "ok",
+        "flags": [],
+        "provenance": "new placement + fresh validation"
+      },
+      {
+        "id": "T05_barre_standing_split",
+        "baseline_status": "partial",
+        "status": "partial",
+        "flags": [
+          "orient_clamped:46.8",
+          "orient_fail",
+          "table_side_mismatch"
+        ],
+        "provenance": "new placement + fresh validation"
+      }
+    ]
+  },
+  "excluded_attempts": [
+    "numeric_equivalent: UI application failed, still gizmo; excluded",
+    "isolated_Q01 prepared: stale normalization shrank twice; excluded"
+  ],
+  "limitations": [
+    "Q08/T03/T05 remain unaccepted; exact final status in geometry rows",
+    "Head_Close license unknown; production rights unresolved",
+    "Source GLB is not proven identical in shape to photo references",
+    "RefMod deferred by user; identity uses Picture2",
+    "Viewport background is 2D without occlusions",
+    "BVH surface crossing does not detect full volume containment",
+    "Native Comfy.Workflow.NamedValuesRestore must be enabled before opening supplied UI"
+  ],
+  "initial_matrix": {
+    "Q01": {
+      "S35": {
+        "status": "completed",
+        "prompt_id": "964b134f-41a0-447a-bdf9-a8d17ad6b160",
+        "outside_changed_pixels": 0,
+        "ssim_outside": 0.9999946469221048,
+        "outside_passed": true
+      },
+      "S80": {
+        "status": "completed",
+        "prompt_id": "fa9e5b31-f385-4b5b-85f0-ab1d5247af5b",
+        "outside_changed_pixels": 0,
+        "ssim_outside": 0.9999946450106427,
+        "outside_passed": true
+      }
+    },
+    "Q04": {
+      "S35": {
+        "status": "completed",
+        "prompt_id": "ca267568-686c-4b10-941a-09f5add1fc02",
+        "outside_changed_pixels": 0,
+        "ssim_outside": 0.9999921787279735,
+        "outside_passed": true
+      },
+      "S80": {
+        "status": "completed",
+        "prompt_id": "76d83f00-350b-4ea8-97f0-52ff2b6a3def",
+        "outside_changed_pixels": 0,
+        "ssim_outside": 0.9999922286179023,
+        "outside_passed": true
+      }
+    }
+  },
+  "live_mapping": [
+    {
+      "prompt_id": "964b134f-41a0-447a-bdf9-a8d17ad6b160",
+      "reference_count": 5
+    },
+    {
+      "prompt_id": "fa9e5b31-f385-4b5b-85f0-ab1d5247af5b",
+      "reference_count": 5
+    },
+    {
+      "prompt_id": "ca267568-686c-4b10-941a-09f5add1fc02",
+      "reference_count": 5
+    },
+    {
+      "prompt_id": "76d83f00-350b-4ea8-97f0-52ff2b6a3def",
+      "reference_count": 5
+    },
+    {
+      "prompt_id": "5dc40fc9-f503-4c77-ac29-1e65e8f338de",
+      "reference_count": 5
+    },
+    {
+      "prompt_id": "bc6a5488-aa1b-4e37-930f-121ff65b195f",
+      "reference_count": 5
+    },
+    {
+      "prompt_id": "406a0cf7-982a-4464-82d0-3ff4873d984d",
+      "reference_count": 2
+    },
+    {
+      "prompt_id": "a0b0b82d-9103-43e0-8c99-a27a46b172a2",
+      "reference_count": 2
+    },
+    {
+      "prompt_id": "dbd5200b-c951-4327-8a1f-b09021d936ee",
+      "reference_count": 2
+    }
+  ],
+  "body_controls": {
+    "before_prompt_id": "3363c0c2-914b-4a24-a6fe-4b3e48908804",
+    "after_prompt_id": "405a152b-aca8-4ae3-b8a0-31ee3447c8d6",
+    "body_dx_m": 0.03,
+    "joint_shift_norm_m": 0.030000000000000037,
+    "max_nonrigid_deviation_m": 5.898059818321144e-17,
+    "placement_cache_hit": true,
+    "status": "ok",
+    "revalidated_transform": {
+      "body_dx": 0.03,
+      "body_dy": 0.0,
+      "body_dz": 0.0,
+      "body_dyaw": 0.0,
+      "body_dpitch": 0.0,
+      "body_droll": 0.0
+    },
+    "h3_submitted": false
+  },
+  "delivery_runtime": {
+    "local_port": 8187,
+    "place_outputs": [
+      "playblast",
+      "init",
+      "strength",
+      "silhouette",
+      "h3_prompt",
+      "status",
+      "debug",
+      "prop_repair",
+      "prop_repair_mask",
+      "body_guides"
+    ],
+    "remote_optional": [
+      "ref_prop_1",
+      "ref_prop_2",
+      "ref_prop_3",
+      "prop_repair",
+      "prop_repair_mask",
+      "body_guides",
+      "prop_handling"
+    ],
+    "local_queue_running": 0,
+    "local_queue_pending": 0,
+    "installed_source_hashes": {
+      "nodes.py": {
+        "source": "0dc02ed0280c8297f272282d6cf6bd37da00eb1538fb8732ce777471c4c20730",
+        "installed": "0dc02ed0280c8297f272282d6cf6bd37da00eb1538fb8732ce777471c4c20730",
+        "equal": true
+      },
+      "README_RU.md": {
+        "source": "45dbad0a851c26ca621d94e1666ec83d293d733acfec6b09f2697e0cbd7d51f6",
+        "installed": "45dbad0a851c26ca621d94e1666ec83d293d733acfec6b09f2697e0cbd7d51f6",
+        "equal": true
+      },
+      "pyproject.toml": {
+        "source": "af73ce0dcfb122388ac8acd6f959c997bdc7b74ed615db54c3f376b368d9769a",
+        "installed": "af73ce0dcfb122388ac8acd6f959c997bdc7b74ed615db54c3f376b368d9769a",
+        "equal": true
+      }
+    }
+  },
+  "delivery_checks": {
+    "Q01": {
+      "max_delta_px": 2,
+      "silhouette_iou": 0.9299856527977044,
+      "contour_max_distance_px": 3.0,
+      "passed": true,
+      "iou_095_advisory_passed": false,
+      "local_prompt_id": "bac8ad6e-93b6-4373-8058-14e1f96b05b6"
+    },
+    "Q04": {
+      "max_delta_px": 1,
+      "silhouette_iou": 0.9729299363057324,
+      "contour_max_distance_px": 2.0,
+      "passed": true,
+      "iou_095_advisory_passed": true,
+      "local_prompt_id": "3363c0c2-914b-4a24-a6fe-4b3e48908804"
+    }
+  }
+}

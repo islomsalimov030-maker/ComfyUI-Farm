@@ -110,6 +110,10 @@ def prepare_body(ref, spec, height):
     names = list(dict.fromkeys(spec.support_regions()))
     sup_c = pf.ref_contacts(ref, reg, [f"{n}:h:target" for n in names])
     up, up_src = pf.ref_up(ref, planes, sup_c)
+    from source_vertical import check as check_vertical
+    up, up_validation = check_vertical(ref, up,allow_camera_prior=spec.pose_class!='recline')
+    if up_validation and up_validation['status'] == 'rejected_depth_vertical':
+        up_src = 'camera_image_lines'
     ref_c = pf.ref_contacts(ref, reg, None, up, planes) if planes else {}
     f = np.array([0, 0, 1.0]) - up[2] * up
     f /= np.linalg.norm(f)
@@ -119,7 +123,7 @@ def prepare_body(ref, spec, height):
     kp = (kp0 @ Rref.T) * s
     pel = (kp[9] + kp[10]) / 2
     side_ref = ori.side_to_camera(kp, np.zeros(3))               # камера рефа в начале координат
-    return {"torso_back_indices": torso_idx, "torso_back_unavailable": torso_reason,
+    return {"source_vertical": up_validation, "torso_back_indices": torso_idx, "torso_back_unavailable": torso_reason,
             "V0": V0, "kp0": kp0, "reg": reg, "up_src": up_src, "Rref": Rref, "s": s, "V": V, "kp": kp,
             "ref_c": ref_c, "dims": prof.body_dims_from_kp(kp), "n_planes": len(planes), "side_ref": side_ref,
             "cam_axis": Rref @ np.array([0, 0, 1.0]),
@@ -580,16 +584,23 @@ def support_contact(X, groups, S, spec, soft, reg=None):
     names = set(spec.support_regions())
     samples = {n: support_distances(S, s, X[idx]) for n, idx, s, role in groups
                if role == "support" and n in names and s in S and len(idx)}
-    gaps = {n: float(np.median(sd)) for n, sd in samples.items()}
-    if reg is not None:
-        idx = np.flatnonzero(np.isin(reg, spec.support_regions()))
-        distances = support_distances(S, "target", X[idx]) if len(idx) else np.empty(0)
-    else:
-        distances = np.concatenate(list(samples.values())) if samples else np.empty(0)
+    # A support region can slope away from its actual contact (thigh, pelvis).
+    # Its median is a useful diagnostic, but is not a contact gap. Only the
+    # low-band groups selected before fitting are obligations; candidate limbs
+    # must never be resurrected by a validator fallback after placement.
+    # Revalidate all vertices of each SELECTED part: refinement can make a new
+    # vertex its lowest contact. Inactive candidate parts remain excluded.
+    contact_samples = ({n: support_distances(S,'target',X[np.flatnonzero(reg==n)])
+                        for n in samples if np.any(reg==n)} if reg is not None else samples)
+    gaps = {n: float(sd[np.argmin(np.abs(sd))]) for n, sd in contact_samples.items() if len(sd)}
+    distances = np.concatenate(list(contact_samples.values())) if contact_samples else np.empty(0)
     min_abs = float(np.min(np.abs(distances))) if len(distances) else float("inf")
     flagged = [n for n, gap in gaps.items() if gap > CFG["contact_tol"]]
     foot_gaps = {n: float(np.min(np.abs(sd))) for n, sd in samples.items() if n.startswith("foot.")}
     return {"ok": min_abs <= CFG["contact_tol"], "min_abs_gap_m": min_abs,
+            "support_candidates": sorted(names), "selected_support_parts": sorted(samples),
+            "inactive_candidates": sorted(names - samples.keys()),
+            "part_median_gaps_m": {n: float(np.median(sd)) for n, sd in samples.items()},
             "contact_vertex_count": int(np.count_nonzero(np.abs(distances) <= CFG["contact_tol"])),
             "lowest_gap_m": body_lowest_gap(X, S) if spec.pose_class in ("stand", "crouch") else None,
             "foot_contact_parts": [n for n, gap in foot_gaps.items() if gap <= CFG["contact_tol"]],
@@ -651,11 +662,6 @@ def evaluate(X, KP, B, groups, S, plate, spec, treg, freg, H, soft):
     sup_gap = float(np.median(g[g <= np.percentile(g, CFG["gap_percentile"])]))
     sink = soft_limit(spec.pose_class) if soft else PEN_HARD_M
     contact_groups = list(groups)
-    present = {g[0] for g in groups if g[3] == "support"}
-    for name in spec.support_regions():
-        idx = np.flatnonzero(B["reg"] == name)
-        if spec.pose_class not in ("stand", "crouch") and name not in present and len(idx):
-            contact_groups.append((name, _lowest(X, idx), "target", "support"))
     contact = support_contact(X, contact_groups, S, spec, soft, reg=B["reg"])
     if spec.pose_class in ("stand", "crouch"):
         sup_gap = contact["lowest_gap_m"]
@@ -979,9 +985,17 @@ def zone_too_small(diagnostics):
 # ------------------------------------------------------------------------------------------------ поза целиком
 @pf.ref_plane_scope()
 def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dims_override=None, refine_ctx=None,
-               log=print):
+               log=print, trace_dir=None):
     """seed — 3D-точка из таблицы (поднятая точка сиденья / точка стоп). -> dict результата (X, KP, rep, …)."""
     B = prepare_body(ref, spec, height)
+    def trace(name, V, K, **extra):
+        if trace_dir is not None:
+            directory = Path(trace_dir)
+            directory.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(directory/(name+'.npz'), V=V, kp=K, **extra)
+    if trace_dir is not None:
+        trace('01_source_cv', ref['V'], ref['kp'], Rref=B['Rref'], source_up_cv=B['Rref'][2])
+        trace('02_source_zup', B['V'], B['kp'], Rref=B['Rref'])
     if dims_override:
         B["dims"] = dict(dims_override)
     H = B["dims"]["H"]
@@ -1016,6 +1030,7 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
             hard_back |= np.abs(treg.backrest @ w["n"] + w["d"]) <= CFG["wall_backrest_m"]
         treg.backrest_material = np.where(hard_back, "wall", "pillows")
     orient_body(B, spec)
+    trace('03_oriented', B['V'], B['kp'])
     flags = [f for f in treg.flags]
     if oinfo.get("surface_match") == "no_surface_match":
         flags.append("no_surface_match")
@@ -1239,6 +1254,8 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
         final = min(attempts, key=lambda a: (a["side_flip"], STATUS_RANK[a["status"]], a["ev"]["footprint"].get("n_out", 0),
                                             abs(a["ev"]["support_gap_cm"]) + a["ev"]["penetration"]["p95_cm"]))
     ev = final["ev"]
+    trace('03b_selected_rigid',final['fit']['X'],final['fit']['KP'])
+    trace('04_final_world', final['X'], final['KP'])
     fl = list(flags) + final["validation"].get("flags", [])
     diagnostics.update(geometry_diagnostics(final["X"], final["KP"], B, spec, treg, groups, S, plate, soft))
     oi = B["orient"]
@@ -1249,7 +1266,7 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
         fl.append(f"orient_clamped:{oi['clamped_deg']}")
     if final["yaw"]["side_conflict"]:
         fl.append("side_conflict")
-    if final["conflict"]:
+    if final["conflict"] and not ev['orient']['ok']:
         fl.append("orient_conflict")
     if final["side_flip"]:
         fl.append("side_flip")
@@ -1286,7 +1303,7 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                        "check": ev["orient"]},
                angle_to_camera_deg={"ref": round(B["rel_deg"], 1), "plate": round(ang_p, 1)},
                camera_elevation_deg={"ref": round(B["elev_ref"], 1), "plate": round(elev_p, 1)},
-               up_from=B["up_src"], ref_planes=B["n_planes"], height_scale=round(B["s"], 3),
+               source_vertical=B.get('source_vertical'), up_from=B["up_src"], ref_planes=B["n_planes"], height_scale=round(B["s"], 3),
                refine=final.get("refine"), stage=final["stage"],
                attempts=[{"attempt": a["attempt"], "stage": a["stage"], "status": a["status"],
                           "cell_xy": [round(x, 3) for x in a["cell"]["xy"]], "shift_m": a["shift_m"],

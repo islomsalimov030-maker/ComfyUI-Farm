@@ -47,7 +47,8 @@ class Contact09e(unittest.TestCase):
         for cls in (c for c in ss.POSE_CLASSES if c not in ('stand', 'crouch')):
             spec, contact = self.contact(cls, [.0, .04, .04, .0303])
             self.assertTrue(contact['ok'], cls)
-            self.assertEqual(contact['gap_parts'], ['pelvis', 'thigh.L'])
+            # Contact gaps use nearest signed contact; median remains diagnostic.
+            self.assertEqual(contact['gap_parts'], ['thigh.L'])
             self.assertEqual(self.validate(spec, contact)['status'], 'ok')
 
     def test_signed_contact_bounds_and_exact_partial_boundary(self):

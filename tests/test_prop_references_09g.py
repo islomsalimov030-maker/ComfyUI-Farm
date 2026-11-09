@@ -27,7 +27,7 @@ def full_prompt():
 
 def test_three_optional_inputs_no_new_node():
     schema=nodes.H3Remote.INPUT_TYPES()
-    assert schema['optional']=={f'ref_prop_{n}':('IMAGE',) for n in range(1,4)}
+    assert {k:v for k,v in schema['optional'].items() if k.startswith('ref_prop_')}=={f'ref_prop_{n}':('IMAGE',) for n in range(1,4)}
     assert len(nodes.NODE_CLASS_MAPPINGS)==4
 
 

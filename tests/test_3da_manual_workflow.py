@@ -23,6 +23,26 @@ def canonical(graph):
 
 
 class WorkflowTests(unittest.TestCase):
+    def test_force_input_string_is_not_marked_as_converted_widget(self):
+        api={'prompt':builder.node('Text','text',value='x'),
+             'remote':builder.node('Remote','remote',prompt=['prompt',0],seed=101)}
+        oi={'Text':{'input':{'required':{'value':('STRING',{})}},'output':['STRING']},
+            'Remote':{'input':{'required':{'prompt':('STRING',{'forceInput':True}),'seed':('INT',{'default':101})}},'output':[]}}
+        ui,ids=builder.as_ui(api,oi)
+        n=next(n for n in ui['nodes'] if n['id']==ids['remote'])
+        self.assertNotIn('widget',n['inputs'][0])
+        self.assertEqual(n['widgets_values_named']['seed'],101)
+
+    def test_linked_seed_still_occupies_native_widget_positions(self):
+        api={'seed':builder.node('PrimitiveInt','seed',value=101),
+             'place':builder.node('Place','place',seed=['seed',0],block_on_fail=False,body_dpitch=12.,pose_text='seated')}
+        oi={'PrimitiveInt':{'input':{'required':{'value':('INT',{'default':101})}},'output':['INT']},
+            'Place':{'input':{'required':{'seed':('INT',{'default':101}),'block_on_fail':('BOOLEAN',{'default':False}),
+                'body_dpitch':('FLOAT',{'default':0.})},'optional':{'pose_text':('STRING',{'default':''})}},'output':[]}}
+        ui,ids=builder.as_ui(api,oi)
+        n=next(n for n in ui['nodes'] if n['id']==ids['place'])
+        self.assertEqual(n['widgets_values'],[101,'fixed',False,12.,'seated'])
+
     def setUp(self):
         self.pc = read('3DA_manual_v1.api.json')
         self.server = read('3DA_h3_server_api.json')
@@ -157,7 +177,7 @@ class WorkflowTests(unittest.TestCase):
                 ui, _ = builder.as_ui(graph, oi)
                 self.assertEqual(ui['nodes'][0]['inputs'],
                                  [{'name': 'ref_prop_1', 'type': 'IMAGE', 'link': None}])
-                self.assertEqual(ui['nodes'][0]['widgets_values_named'], {'seed': 101})
+                self.assertEqual(ui['nodes'][0]['widgets_values_named'], {'seed': 101, 'control_after_generate':'fixed'})
                 self.assertEqual(canonical(graph), canonical(wfkit.to_api(ui)))
                 self.assertFalse(wfkit.check_ui(ui))
 

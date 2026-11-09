@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-3da"
-version = "0.1.0"
+version = "0.2.0"
 description = "Manual Scene3D placement bridge to the Next Genium farm CLI"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }

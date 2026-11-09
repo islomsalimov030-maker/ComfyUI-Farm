@@ -9,7 +9,7 @@ Python API inside existing bpy scene:
   render_props(scene, props, anchors_world, library_dir, out_dir,
                body_objects=None, room_objects=None) -> paths and diagnostics.
 Axes are location-world XYZ, Euler XYZ=(roll,pitch,yaw); world anchor is pelvis.
-CPU helpers are importable without bpy. Collisions are diagnostic AABB only.
+CPU helpers are importable without bpy. Collisions use world-space BVH surface intersections.
 """
 from __future__ import annotations
 
@@ -131,6 +131,16 @@ def _bounds(objects):
     return [[min(p[i] for p in pts) for i in range(3)], [max(p[i] for p in pts) for i in range(3)]]
 
 
+def _world_bvh(objects):
+    from mathutils.bvhtree import BVHTree
+    vertices,faces=[],[]
+    for ob in objects:
+        offset=len(vertices)
+        vertices.extend(ob.matrix_world@v.co for v in ob.data.vertices)
+        faces.extend(tuple(offset+i for i in p.vertices) for p in ob.data.polygons)
+    return BVHTree.FromPolygons(vertices,faces) if faces else None
+
+
 def load_props(scene, props, anchors_world, library_dir):
     import bpy
     from mathutils import Euler, Matrix, Vector
@@ -170,8 +180,15 @@ def load_props(scene, props, anchors_world, library_dir):
         size = float(prop.get("size_m", .30))
         xyz, rotation, scale = prop_transform(prop, anchors_world)
         centre, factor, scaled_bbox = normalization_transform(cache_bbox, size_m=size, scale=scale)
-        root.matrix_world = (Matrix.Translation(Vector(xyz)) @ Euler(rotation, "XYZ").to_matrix().to_4x4()
-                             @ Matrix.Scale(factor, 4) @ Matrix.Translation(-Vector(centre)))
+        if 'absolute_matrix_world' in prop:
+            from prop_gizmo import validate_matrix
+            root.matrix_world = Matrix(validate_matrix(prop['absolute_matrix_world']).tolist())
+            # Absolute transform acts on the original GLB. Numeric size/anchor
+            # remain serializable for legacy mode but do not act a second time.
+            factor = None
+        else:
+            root.matrix_world = (Matrix.Translation(Vector(xyz)) @ Euler(rotation, "XYZ").to_matrix().to_4x4()
+                                 @ Matrix.Scale(factor, 4) @ Matrix.Translation(-Vector(centre)))
         bpy.context.view_layer.update()
         facts = metadata.get("import_facts", {})
         source_bbox = facts.get("source_bbox_m")
@@ -180,8 +197,15 @@ def load_props(scene, props, anchors_world, library_dir):
             centre_source, dims = facts["source_bbox_center_m"], facts["dimensions_m"]
             source_bbox = [[centre_source[i] + sign * dims[i] / 2 for i in range(3)] for sign in (-1, 1)]
         final_bbox = _bounds(meshes)
+        vertex_probe=[]
+        for mesh in meshes:
+            verts=mesh.data.vertices
+            step=max(1,(len(verts)+511)//512)
+            vertex_probe.extend([list(mesh.matrix_world@v.co) for v in list(verts)[::step]])
         groups.append({"id": ident, "index": index, "meshes": meshes, "root": root,
                        "strength": strength, "bbox_world": final_bbox,
+                       "vertex_probe_world":vertex_probe,"vertex_probe_complete":all(len(m.data.vertices)<=512 for m in meshes),
+                       "absolute_matrix_world":prop.get('absolute_matrix_world'),
                        "size_m": size, "scale": scale, "normalization_factor": factor,
                        "source_bbox_m": source_bbox, "cache_bbox_m": cache_bbox,
                        "scaled_bbox_m": scaled_bbox, "final_bbox_m": final_bbox,
@@ -258,8 +282,9 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
         with _materials(scene, replacements):
             bpy.ops.render.render(write_still=True)
         return str(path)
-    result = {"props": [], "diagnostic_method": "world AABB overlap + projected bbox intersection area ratio",
-              "diagnostic_limits": "AABB false positives for concave/hollow meshes; containment not resolved; "
+    room_bvh,body_bvh=_world_bvh(room_objects),_world_bvh(body_objects)
+    result = {"props": [], "diagnostic_method": "world BVH surface intersections; AABB recorded separately; projected bbox area ratio",
+              "diagnostic_limits": "Complete closed-volume containment without surface crossing is not resolved; "
                                    "frame fraction measures projected bbox, not visible triangle coverage; "
                                    "any corner on/behind camera conservatively returns zero. Diagnostic only."}
     try:
@@ -288,16 +313,21 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
             image.filepath_raw, image.file_format = str(mask), "PNG"
             image.save()
             bpy.data.images.remove(image)
-            flags = {"prop_hits_room": any(aabb_overlap(g["bbox_world"], _bounds([o])) for o in room_objects),
-                     "prop_hits_body": any(aabb_overlap(g["bbox_world"], _bounds([o])) for o in body_objects)}
+            prop_bvh=_world_bvh(g['meshes'])
+            intersections={name:len(prop_bvh.overlap(tree)) if tree is not None else 0
+                           for name,tree in [('room',room_bvh),('body',body_bvh)]}
+            aabb={name:any(aabb_overlap(g['bbox_world'],_bounds([o])) for o in objects)
+                  for name,objects in [('room',room_objects),('body',body_objects)]}
+            flags = {"prop_hits_room": intersections['room']>0, "prop_hits_body": intersections['body']>0}
             coords = [world_to_camera_view(scene, scene.camera, o.matrix_world @ Vector(c))
                       for o in g["meshes"] for c in o.bound_box]
             fraction = projected_bbox_fraction(coords)
             flags["out_of_frame"] = flags["prop_out_of_frame"] = fraction < .95
-            diagnostics = {key: g[key] for key in ("size_m", "scale", "normalization_factor", "source_bbox_m",
+            diagnostics = {key: g[key] for key in ("vertex_probe_world","vertex_probe_complete","absolute_matrix_world","size_m", "scale", "normalization_factor", "source_bbox_m",
                                                   "source_dimensions_m", "cache_bbox_m", "scaled_bbox_m",
                                                   "final_bbox_m", "final_dimensions_m")}
             result["props"].append({"prop_id": g["id"], "index": g["index"], "prop_strength": g["strength"],
+                                     "surface_intersection_pairs":intersections,"aabb_overlap":aabb,
                                      "silhouette": str(mask), "bbox_world": g["bbox_world"],
                                      **diagnostics, "bbox_source_m": g["source_bbox_m"],
                                      "bbox_final_m": g["final_bbox_m"],

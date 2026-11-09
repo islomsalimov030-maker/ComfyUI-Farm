@@ -133,7 +133,8 @@ def build_pc_api(manual):
     g['place']['inputs']['seed'] = ['seed', 0]
     g['remote'] = node('3DAH3Remote', '3DA H3 Remote', plate=['location', 1], ref_char=['ref_char', 0],
                         playblast=['place', 0], init=['place', 1], strength=['place', 2],
-                        prompt=['prompt_text', 0], seed=['seed', 0])
+                        prompt=['prompt_text', 0], seed=['seed', 0], prop_repair=['place',7], prop_repair_mask=['place',8],
+                        body_guides=['place',9],prop_handling='rendered_separately')
     g['save']['inputs']['images'] = ['remote', 0]
     g['preview_raw_H3']['inputs']['images'] = ['remote', 1]
     g['preview_remote_info'] = node('PreviewAny', 'Статус · H3 Remote', source=['remote', 2])
@@ -181,14 +182,23 @@ def as_ui(api, oi):
             widget_type = isinstance(typ, list) or typ in ('COMBO', 'INT', 'FLOAT', 'STRING', 'BOOLEAN')
             if linked:
                 inp = {'name': field, 'type': 'COMBO' if isinstance(typ, list) else typ, 'link': None}
-                if widget_type:
+                if widget_type and not (entry[1] if entry and len(entry)>1 else {}).get('forceInput'):
                     inp['widget'] = {'name': field}
                 inputs.append(inp)
+                opts = entry[1] if entry and len(entry)>1 else {}
+                if widget_type and not opts.get('forceInput'):
+                    # Core still constructs/serializes converted widgets. Its
+                    # hidden seed and control widget occupy real UI positions.
+                    default = opts.get('default', typ[0] if isinstance(typ,list) else
+                                       '' if typ=='STRING' else False if typ=='BOOLEAN' else 0)
+                    widgets.append(default); named[field]=default
+                    if opts.get('control_after_generate') or field in ('seed','noise_seed'):
+                        widgets.append('fixed'); named['control_after_generate']='fixed'
             elif widget_type:
                 named[field] = value
                 widgets.append(value)
                 opts = entry[1] if len(entry) > 1 else {}
-                if opts.get('control_after_generate') or (n['class_type'] == 'RandomNoise' and field == 'noise_seed'):
+                if opts.get('control_after_generate') or field in ('seed','noise_seed'):
                     named['control_after_generate'] = 'fixed'
                     widgets.append('fixed')
         for field, entry in schema.items():

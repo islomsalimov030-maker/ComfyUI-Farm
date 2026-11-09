@@ -117,7 +117,7 @@ def do_profiles():
             + f"; якоря {[(a['id'], a['pose_classes']) for a in lp.data['anchors']]}", flush=True)
 
 
-def do_place(refs, only, comfy, iters):
+def do_place(refs, only, comfy, iters, refs_img=None):
     import place
     import profiles as prof
     import shot_spec as ss
@@ -138,6 +138,9 @@ def do_place(refs, only, comfy, iters):
         spec = ss.from_table(p)
         ref = pf.load_ref(rf)
         ref["path"] = str(rf)
+        if refs_img is not None:
+            ref['image_path'] = str(Path(refs_img)/(p['id']+'.png'))
+            ref['vertical_python'] = os.environ.get('SCENE3D_VERTICAL_PYTHON')
         ref["body_cache_dir"] = str(farm_env.ROOT / "characters" / CHAR_ID / "geometry_cache")
         anatomy = os.environ.get("SCENE3D_BODY_ANATOMY")
         if anatomy:
@@ -152,7 +155,7 @@ def do_place(refs, only, comfy, iters):
         res = place.place_pose(ref, plate, spec, seed, height, profile=profs[p["loc"]],
                                body_src="profile" if body else "proxy",
                                dims_override=body["body_dims"] if body else None, refine_ctx=ctx,
-                               log=lambda m: print(m, flush=True))
+                               log=lambda m: print(m, flush=True), trace_dir=root/p['id']/'trace')
         z = res["rep"].get("zone", {})
         fh = pf.fit_input_hash(rf, plate.dir, {"spec": spec.to_dict(), "height": height, "zone": z.get("source"),
                                                "cell": z.get("cell"),
@@ -271,7 +274,7 @@ def do_render(only):
             "--plate", pr.PLATE.format(n), "--spec", str(spec), "--mannequin", os.environ["FARM_MANNEQUIN"],
             "--out", str(out), "--only", ",".join(render_ids), "--label-pass", "--photo-emission", "2.5", "--samples", "48"]
         if farm_env.BLENDER:
-            cmd[1:1] = ["--python-exit-code", "1"]
+            cmd[1:1] = ["--factory-startup", "--disable-autoexec", "--python-exit-code", "1"]
         r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         for line in r.stdout.splitlines():
             if line.startswith(("[plate]",)) or "Error" in line or "Traceback" in line:
@@ -442,6 +445,6 @@ if __name__ == "__main__":
     {"collect": lambda: do_collect(a.confluence, a.out), "fit": lambda: do_fit(a.refs, only),
      "render": lambda: do_render(only), "summary": do_summary,
      "sheet": lambda: do_sheet(a.refs_img, a.refs, a.out), "profiles": do_profiles,
-     "place": lambda: do_place(a.refs, only, a.comfy, a.iters),
+     "place": lambda: do_place(a.refs, only, a.comfy, a.iters, a.refs_img),
      "diagnostics": lambda: do_diagnostics(a.refs, only, a.out),
      "sheet24": lambda: do_sheet24(a.refs_img, a.refs, a.out)}[a.cmd]()

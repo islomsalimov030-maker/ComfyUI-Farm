@@ -12,10 +12,11 @@ def placement_key(ref_path, profile, config, spec, height, seed, body):
     for p in [Path(ref_path), profile.path, Path(config['repo'])/'config/placement.yaml']:
         h.update(p.read_bytes())
     root=Path(__file__).resolve().parent
-    for name in ['place.py','assembly.py','pose_fit.py','orient.py','refine.py','top_region.py','profiles.py','body.py','auto_surfaces.py']:
+    for name in ['place.py','assembly.py','pose_fit.py','orient.py','refine.py','top_region.py','profiles.py','body.py','auto_surfaces.py',
+                 'manual_pose.py','shot_spec.py','zone.py','support_geometry.py','placement_config.py','source_vertical.py']:
         h.update((root/name).read_bytes())
     for obj in profile.data['objects']:
-        for key in ('top_grid_npz','pts_npz'):
+        for key in ('top_grid_npz','pts_npz','backrest_npz','mask_png'):
             if obj.get(key):h.update((profile.dir/obj[key]).read_bytes())
     assets=Path(config.get('location_asset_dirs',{}).get(profile.data['loc_id'],profile.dir))
     for name in ('plate.json','plate_mesh.obj','depth_loc.png'):
@@ -109,14 +110,20 @@ def revalidate(base,ref,plate,profile,spec,seed,height,values):
     rep.update(status=val['status'],validation=val,penetration=ev['penetration'],footprint=ev['footprint'],
                frame=ev['frame'],contacts=ev['contacts'],support_object=ev['support_object'],
                support_parts_on=ev['support_parts_on'],support_gap_cm=ev['support_gap_cm'],
+               back_contact_gap_m=ev['back_contact_gap_m'],back_gap_cm=ev['back_gap_cm'],wall_gap_cm=ev['wall_gap_cm'],
+               cells=ev['cells'],cells_ok=ev['cells_ok'],balance_ok=ev['balance_ok'],
+               max_penetration_cm=ev['penetration']['max_cm'],
                body_transform=values,transform_applied=True)
     # Old failure flags must not masquerade as current transformed diagnostics.
     diagnostic={'support_gap','height_conflict','no_back_contact','orient_fail','penetration_fail',
-                'footprint_fail','cells_fail','refine_limits_fail'}
+                'footprint_fail','cells_fail','refine_limits_fail','out_of_frame','body_out_of_frame',
+                'orient_conflict','side_conflict','side_flip'}
     rep['flags']=sorted(set([f for f in rep.get('flags',[]) if f not in diagnostic]+val.get('flags',[])))
     rep['zone_diagnostics'].update(place.geometry_diagnostics(X,K,B,spec,treg,base['groups'],S,plate,soft))
     rep['orient'].update(tilt_final_deg=ev['tilt_deg'],roll_final_deg=ev['roll_deg'],check=ev['orient'])
     rep['support_contact']=ev.get('support_contact',{})
+    rep.update(support_gap_parts=ev['support_contact']['gap_parts'],
+               support_part_gaps_m=ev['support_part_gaps_m'],max_support_gap_m=ev['max_support_gap_m'])
     return X,K,rep
 
 

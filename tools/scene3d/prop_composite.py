@@ -1,0 +1,51 @@
+"""Deterministic source-material preservation for rigid props after H3.
+
+The repair region is restricted to the actual composite support and excludes
+the body's composite support. The original depth-occluded RGBA provides edges;
+the plate restores unwanted H3 halos around an isolated rigid prop.
+"""
+import numpy as np
+from scipy.ndimage import binary_dilation, gaussian_filter, distance_transform_edt
+
+
+def support(strength):
+    return gaussian_filter(binary_dilation(np.asarray(strength)>0,iterations=16).astype(np.float32),
+                           sigma=8.,radius=8,mode='mirror')>0
+
+
+def repair_mask(body_strength, total_strength, body_silhouette=None, prop_silhouette=None):
+    if body_silhouette is not None and prop_silhouette is not None:
+        body=np.asarray(body_silhouette,dtype=bool);prop=np.asarray(prop_silhouette,dtype=bool)
+        if not prop.any():return np.zeros_like(prop)
+        # Noise-map tails overlap even when the actual objects do not. Excluding
+        # the whole body noise support would cut a horizontal seam through props
+        # near the head. Assign shared background to the nearest real silhouette.
+        nearest_prop=distance_transform_edt(~prop)<distance_transform_edt(~body)
+        return support(total_strength)&nearest_prop
+    return support(total_strength) & ~support(body_strength)
+
+
+def restore(final, image, mask):
+    if tuple(image.shape)!=tuple(final.shape) or tuple(mask.shape)!=tuple(final.shape[:3]):
+        raise ValueError('Prop repair image/mask must match final raster')
+    import torch
+    if not torch.isfinite(image).all() or not torch.isfinite(mask).all() or mask.min()<0 or mask.max()>1:
+        raise ValueError('Invalid prop repair image/mask')
+    alpha=mask[...,None]
+    return final*(1-alpha)+image*alpha
+
+
+def restore_isolated(final, prop_rgb, prop_alpha, repair, repair_mask, body_strength):
+    """Restore the room around the prop without overwriting generated body.
+
+    The background guard is an actual compositing operation, recorded as part
+    of its support. Keep body support intact, even where noise tails overlap.
+    """
+    import torch
+    body_support=support(body_strength.detach().cpu().numpy()[0])
+    guard=(repair_mask.detach().cpu().numpy()[0]>0)&~body_support
+    guard_tensor=torch.from_numpy(guard.astype(np.float32))[None].to(final.device)
+    final=restore(final,repair,guard_tensor)
+    final=restore(final,prop_rgb,prop_alpha)
+    final_support=body_support|guard|(prop_alpha.detach().cpu().numpy()[0]>0)
+    return final,final_support,guard

@@ -16,9 +16,35 @@ spec.loader.exec_module(nodes)
 
 
 class NodeTests(unittest.TestCase):
+    def test_external_content_fingerprint_invalidates_same_filename(self):
+        with tempfile.TemporaryDirectory() as td:
+            p=Path(td)/'model.glb';p.write_bytes(b'first')
+            a=nodes.content_fingerprint([p]);p.write_bytes(b'second')
+            self.assertNotEqual(a,nodes.content_fingerprint([p]))
+
+    def test_gizmo_requires_same_asset_and_overrides_numeric_anchor(self):
+        import io
+        import numpy as np
+        helper_spec=importlib.util.spec_from_file_location('gizmo_node_test',PATH.parents[2]/'tools/scene3d/prop_gizmo.py')
+        helper=importlib.util.module_from_spec(helper_spec);helper_spec.loader.exec_module(helper)
+        class Asset:
+            def __init__(self,data):self.data=data
+            def get_data(self):return io.BytesIO(self.data)
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td);d=root/'a';d.mkdir();(d/'prop.json').write_text(json.dumps({'name':'test'}));(d/'model.glb').write_bytes(b'asset')
+            info=[dict(position=dict(x=1.,y=2.,z=3.),quaternion=dict(x=0.,y=0.,z=0.,w=1.),scale=dict(x=1.1,y=.8,z=1.3))]
+            values=dict(prop_id='a',anchor='char_head',x=999.,y=-444.,z=77.,yaw=180.,pitch=30.,roll=40.,scale=1000.,size_m=50.,model_3d_info=info)
+            with patch.object(nodes,'prop_library',return_value=root),patch.object(nodes,'gizmo_helpers',return_value=helper):
+                result=nodes.Prop().execute(**values,model_3d=Asset(b'asset'))
+                m=np.array(json.loads(result[0])[0]['absolute_matrix_world'])
+                np.testing.assert_allclose(m[:3,3],[1,-3,2])
+                np.testing.assert_allclose(m[:3,:3],np.diag([1.1,1.3,.8]))
+                with self.assertRaisesRegex(ValueError,'GLB'):
+                    nodes.Prop().execute(**values,model_3d=Asset(b'other'))
+
     def test_registered_io(self):
         self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote'})
-        self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 7)
+        self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 10)
         self.assertEqual(len(nodes.CLASSES), 9)
 
     def test_error_does_not_raise_and_returns_status(self):
@@ -29,7 +55,7 @@ class NodeTests(unittest.TestCase):
             self.assertEqual(json.loads(loc)['status'], 'error')
             self.assertIs(plate, image)
             result = nodes.PlacePose().execute(loc, image, 'stand', 'floor', '', '', '', 1.62, '', 'grey', 1., 101)
-            self.assertEqual(len(result), 7)
+            self.assertEqual(len(result), 10)
             self.assertIn('status=error', result[5])
             self.assertEqual(result[2].shape, (1, 64, 64))
 

@@ -103,7 +103,7 @@ def import_one(model: Path, source: Path, library: Path, blender: str, *, timeou
     metadata = target / "prop.json"
     old = json.loads(metadata.read_text(encoding="utf-8")) if metadata.exists() else {}
     if (old.get("source_sha256") == fingerprint and (target / "model.glb").exists()
-            and old.get("importer_version") == 2
+            and old.get("importer_version") == 3
             and old.get("import_facts", {}).get("normalized_longest_side_m") == size_m):
         return {"id": target.name, "status": "cached", "metadata": old}
     facts_path = target / "import_facts.json"
@@ -123,7 +123,7 @@ def import_one(model: Path, source: Path, library: Path, blender: str, *, timeou
             "description_en": old.get("description_en", ""), "prop_strength": old.get("prop_strength", 0.35),
             "model": "model.glb", "license_status": "unknown", "license_evidence_files": license_files,
             "license_note": "Accompanying text requires review; user ownership is not an automatic license.",
-            "source_file": relative, "source_sha256": fingerprint, "importer_version": 2,
+            "source_file": relative, "source_sha256": fingerprint, "importer_version": 3,
             "import_facts": facts}
     metadata.write_text(json.dumps(info, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return {"id": target.name, "status": "imported", "metadata": info}

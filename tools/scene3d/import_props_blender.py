@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 import sys
 
+
 def normalization_transform(bbox, *, size_m=.30, scale=1.0):
     """CPU helper: centre a metre-space AABB, then size_m * scale longest side.
 
@@ -59,6 +60,8 @@ def main():
         bpy.ops.import_scene.gltf(filepath=str(source))
     else:
         raise ValueError("only FBX/OBJ/glTF/GLB assets are accepted")
+    # FBX already packs embedded images; repacking reads their missing disk path.
+    embedded_images = [dict(image=im.name, size=list(im.size)) for im in bpy.data.images if im.packed_file]
     imported = list(sc.objects)
     # Static geometry only. A downloaded file never controls Python or Blender drivers.
     for ob in imported:
@@ -98,7 +101,7 @@ def main():
     bpy.context.view_layer.update()
     missing = []
     for image in bpy.data.images:
-        if image.source == "FILE":
+        if image.source == "FILE" and not image.packed_file:
             try:
                 image.pack()
             except RuntimeError:
@@ -112,7 +115,8 @@ def main():
     bpy.ops.export_scene.gltf(filepath=str(temp), export_format="GLB", use_selection=True,
                               export_animations=False, export_cameras=False, export_lights=False)
     temp.replace(ns.out)
-    facts = {"longest_side_m": longest, "dimensions_m": list(dimensions), "source_bbox_center_m": centre,
+    facts = {"preserved_embedded_images": embedded_images,
+             "longest_side_m": longest, "dimensions_m": list(dimensions), "source_bbox_center_m": centre,
              "source_bbox_m": source_bbox, "normalized_bbox_m": normalized_bbox,
              "normalized_dimensions_m": [normalized_bbox[1][i] - normalized_bbox[0][i] for i in range(3)],
              "normalized_longest_side_m": ns.size_m, "normalization_factor": factor,
