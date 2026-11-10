@@ -861,12 +861,41 @@ class SceneExport:
         return {'ui': {'text': [text]}, 'result': (result['model_file'], result['manifest'])}
 
 
+class CoreWeights:
+    """Explicit one-time download of MoGe-2 / SAM 3D Body weights for the core nodes (Comfy-Org HF)."""
+    CATEGORY = '3DA'
+    RETURN_TYPES = ('STRING',)
+    RETURN_NAMES = ('report',)
+    FUNCTION = 'execute'
+    OUTPUT_NODE = True
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'moge': ('BOOLEAN', {'default': True}), 'sam_3d_body': ('BOOLEAN', {'default': True})}}
+
+    def execute(self, moge, sam_3d_body):
+        import sys
+        sys.path.insert(0, str(ROOT / 'tools/scene3d'))
+        import core_weights
+        lines = []
+        for kind, wanted in (('moge', moge), ('sam', sam_3d_body)):
+            if not wanted:
+                continue
+            if core_weights.free_gb(kind) < 4:
+                raise RuntimeError(f'{kind}: less than 4 GB free in the model folder')
+            name, state = core_weights.download(kind)
+            lines.append(f'{kind}: {name} ({state})')
+        text = '\n'.join(lines) or 'nothing selected'
+        return {'ui': {'text': [text]}, 'result': (text,)}
+
+
 NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
                        '3DANativeGuides': NativeGuides, '3DANativeComposite': NativeComposite,
-                       '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport}
+                       '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport, '3DACoreWeights': CoreWeights}
 NODE_DISPLAY_NAME_MAPPINGS = {'3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
                               '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote',
                               '3DANativeGuides': '3DA · native H3 guides + gate',
                               '3DANativeComposite': '3DA · final room + rigid props',
                               '3DASceneEdits': '3DA · правки выбранных объектов',
-                              '3DASceneExport': '3DA · подготовить 3D-сцену для гизмо'}
+                              '3DASceneExport': '3DA · подготовить 3D-сцену для гизмо',
+                              '3DACoreWeights': '3DA Core Weights (MoGe-2, SAM 3D Body)'}

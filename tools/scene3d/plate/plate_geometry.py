@@ -32,6 +32,7 @@ def core_inference(comfy, image):
     sys.path.insert(0, comfy)
     sys.argv = [sys.argv[0], '--lowvram', '--cache-none']
     from comfy_extras import nodes_moge as n
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     import comfy.model_management as mm
 
     async def call(cls, **kwargs):
@@ -41,7 +42,7 @@ def core_inference(comfy, image):
         return (result.result if hasattr(result, 'result') else result)[0]
 
     async def run():
-        model = await call(n.LoadMoGeModel, model_name='moge_2_vitl_normal_fp16.safetensors')
+        model = await call(n.LoadMoGeModel, model_name=__import__('core_weights').resolve('moge'))
         tensor = torch.tensor(np.asarray(image) / 255., dtype=torch.float32)[None]
         with torch.inference_mode():
             output = await call(n.MoGeInference, moge_model=model, image=tensor, resolution_level=9,
