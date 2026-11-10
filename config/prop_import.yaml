@@ -1,0 +1,4 @@
+# Separate from placement.yaml: import settings must not invalidate body placement.
+lod:
+  max_sampled_error_m: 0.0005
+  surface_samples_per_mesh: 2500

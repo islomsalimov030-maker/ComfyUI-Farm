@@ -99,7 +99,8 @@ export function sceneSelection(view, node, initialTransforms = null) {
     syncMode();
     view.forceRender();
   }
-  select(node.properties['3DA Selected Entity'] ?? 'body');
+  const savedSelection = node.properties['3DA Selected Entity'];
+  select(entities.some(e => e.id === savedSelection) ? savedSelection : entities[0].id);
   setMode(initialMode);
   return { root, entities, capture, select, setMode, syncMode, selected: () => selected.id,
     dispose: () => {

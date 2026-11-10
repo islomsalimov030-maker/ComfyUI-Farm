@@ -1,6 +1,6 @@
 schema: 1
 release: 3DA_AIO_v1.0
-pack_version: 0.3.1
+pack_version: 0.3.2
 source:
   git_url: https://github.com/islomsalimov030-maker/ComfyUI-Farm
   branch: scene3d-pilot
@@ -11,18 +11,21 @@ source:
   install_method: Manager Install via Git URL; verify the branch and checksums
   restart: administrator maintenance window required
 observed_2026_11_10:
-  core: 0.34.6
-  frontend: 1.53.6
+  core: 0.44.2
+  frontend: 1.57.6
   python: 3.13.14
   torch: 2.13.0+cu130
   gpu: RTX 5090
   vram_bytes: 33668726784
-  manager: V4.2.1
+  manager: V4.2.2
   manager_api_prefix: /v2
   update_policy: stable-comfyui
   manager_jobs_processing: false
   custom_3da_classes: absent
-  update_completed: false
+  update_completed: true
+  geometry_core_classes: present_but_Linux_forward_NOT_RUN
+  queue_running_at_snapshot: 1
+  snapshot_suffix: 10f
   install_permission: not_proven_by_read_only_API
   administrator_restart_permission: not_confirmed
 required_3da_classes:

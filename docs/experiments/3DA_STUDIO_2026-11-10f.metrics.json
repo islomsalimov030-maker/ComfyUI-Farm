@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "server_core": "0.44.2",
+  "server_frontend": "1.57.6",
+  "server_manager": "V4.2.2",
+  "server_3da_installed": false,
+  "geometry_core_classes_present": true,
+  "props": {
+    "pelvis_ass_low_4afbd9b9": {
+      "longest_side_m": 0.29999998211860657,
+      "dimensions_m": [
+        0.29999998211860657,
+        0.21780823171138763,
+        0.27299410104751587
+      ],
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 9991,
+      "uv_loop_count": 57093,
+      "missing_images": [],
+      "bvh_intersection_detected": true,
+      "bvh_disjoint_clear": true,
+      "absolute_transform_max_error_m": 2.9802322387695312e-08,
+      "elapsed_s": 19.078
+    },
+    "stick_stick_d4a11633": {
+      "longest_side_m": 0.30000001192092896,
+      "dimensions_m": [
+        0.10606489330530167,
+        0.30000001192092896,
+        0.14278869330883026
+      ],
+      "meshes": 2,
+      "materials": 2,
+      "vertices": 599778,
+      "uv_loop_count": 599994,
+      "missing_images": [],
+      "bvh_intersection_detected": true,
+      "bvh_disjoint_clear": true,
+      "absolute_transform_max_error_m": 2.9802322387695312e-08,
+      "elapsed_s": 2.203
+    }
+  },
+  "mouse_drags": 6,
+  "camera_unchanged": true,
+  "independent_props": true,
+  "roundtrip_tolerance": 1e-10,
+  "js_errors": 0,
+  "pytest": {
+    "passed": 432,
+    "skipped": 3,
+    "subtests": 26
+  },
+  "full_studio_AIO": "NOT_RUN",
+  "Linux_geometry_forward": "NOT_RUN",
+  "studio_uploads": 0,
+  "new_H3_sampling_jobs": 0,
+  "licenses": "user assets unknown",
+  "lod": {
+    "full_model": "model_full.glb",
+    "source_triangles": 1509888,
+    "target_triangles": 200000,
+    "output_triangles": 199998,
+    "sampled_bidirectional_max_error_m": 3.8334426790243015e-05,
+    "samples": 15156,
+    "max_sampled_error_m": 0.0005,
+    "normalization_adjustment": {
+      "centre": [
+        1.6614794731140137e-06,
+        7.82310962677002e-07,
+        -2.942979335784912e-06
+      ],
+      "factor": 0.9999579904244194
+    },
+    "method": "Blender Decimate COLLAPSE; existing UV/material attributes retained"
+  }
+}

@@ -43,6 +43,10 @@ def main():
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--facts", required=True, type=Path)
     ap.add_argument("--size-m", type=float, default=.30)
+    ap.add_argument("--materials", type=Path)
+    ap.add_argument("--max-triangles", type=int, default=0)
+    ap.add_argument("--lod-max-error-m", type=float)
+    ap.add_argument("--lod-samples", type=int)
     ns = ap.parse_args(sys.argv[sys.argv.index("--") + 1:])
     source = ns.source.resolve(strict=True)
     bpy.ops.object.select_all(action="SELECT")
@@ -82,12 +86,18 @@ def main():
         # Bake hierarchy and unit transforms into vertices, retaining UVs/material slots.
         mesh.transform(ob.matrix_world)
         item = bpy.data.objects.new("prop_" + ob.name, mesh)
+        item['source_object'] = ob.name
         sc.collection.objects.link(item)
         meshes.append(item)
     for ob in imported:
         bpy.data.objects.remove(ob, do_unlink=True)
     if not meshes:
         raise ValueError("asset has no mesh")
+    bindings = []
+    if ns.materials:
+        sys.path.insert(0,str(Path(__file__).resolve().parent))
+        from prop_materials import material_plan, apply_materials
+        bindings = apply_materials(meshes, material_plan(ns.materials,source), source)
     bpy.context.view_layer.update()
     pts = [Vector(c) for ob in meshes for c in ob.bound_box]
     lo = Vector(tuple(min(p[i] for p in pts) for i in range(3)))
@@ -100,7 +110,9 @@ def main():
         ob.data.transform(Matrix.Scale(factor, 4) @ Matrix.Translation(-Vector(centre)))
     bpy.context.view_layer.update()
     missing = []
-    for image in bpy.data.images:
+    used_images={n.image for ob in meshes for mat in ob.data.materials if mat and mat.node_tree
+                 for n in mat.node_tree.nodes if n.type=='TEX_IMAGE' and n.image}
+    for image in used_images:
         if image.source == "FILE" and not image.packed_file:
             try:
                 image.pack()
@@ -111,11 +123,56 @@ def main():
         ob.select_set(True)
     bpy.context.view_layer.objects.active = meshes[0]
     ns.out.parent.mkdir(parents=True, exist_ok=True)
+    lod = {}
+    triangles = sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes)
+    if ns.max_triangles and triangles > ns.max_triangles:
+        if not ns.lod_samples or ns.lod_samples<=0 or not ns.lod_max_error_m or ns.lod_max_error_m<=0:
+            raise ValueError('LOD requires explicit sampled-error thresholds from config')
+        from mathutils.bvhtree import BVHTree
+        full=ns.out.with_name('model_full.glb')
+        bpy.ops.export_scene.gltf(filepath=str(full),export_format='GLB',use_selection=True,
+                                  export_animations=False,export_cameras=False,export_lights=False)
+        probes=[]
+        for ob in meshes:
+            mesh=ob.data
+            points=[mesh.vertices[i].co.copy() for i in range(0,len(mesh.vertices),max(1,len(mesh.vertices)//ns.lod_samples))]
+            points += [mesh.polygons[i].center.copy() for i in range(0,len(mesh.polygons),max(1,len(mesh.polygons)//ns.lod_samples))]
+            original=BVHTree.FromPolygons([v.co.copy() for v in mesh.vertices],[tuple(p.vertices) for p in mesh.polygons])
+            probes.append((ob,original,points))
+        for ob in meshes:
+            bpy.context.view_layer.objects.active=ob
+            modifier=ob.modifiers.new('3DA_Viewport_LOD','DECIMATE');modifier.decimate_type='COLLAPSE'
+            modifier.ratio=ns.max_triangles/triangles;modifier.use_collapse_triangulate=True
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+        bpy.context.view_layer.update()
+        pts=[ob.matrix_world@Vector(c) for ob in meshes for c in ob.bound_box]
+        reduced_bounds=[[min(p[i] for p in pts) for i in range(3)],[max(p[i] for p in pts) for i in range(3)]]
+        lod_centre,lod_factor,normalized_bbox=normalization_transform(reduced_bounds,size_m=ns.size_m)
+        for ob in meshes:ob.data.transform(Matrix.Scale(lod_factor,4)@Matrix.Translation(-Vector(lod_centre)))
+        bpy.context.view_layer.update()
+        error=0.;samples=0
+        for ob,original,points in probes:
+            mesh=ob.data;reduced=BVHTree.FromPolygons([v.co.copy() for v in mesh.vertices],[tuple(p.vertices) for p in mesh.polygons])
+            for point in points:
+                hit=reduced.find_nearest(point)
+                if hit[0] is None:raise ValueError('LOD surface disappeared')
+                error=max(error,float(hit[3]));samples+=1
+            for i in range(0,len(mesh.vertices),max(1,len(mesh.vertices)//ns.lod_samples)):
+                hit=original.find_nearest(mesh.vertices[i].co)
+                if hit[0] is None:raise ValueError('source surface disappeared')
+                error=max(error,float(hit[3]));samples+=1
+        # This is a measured sampled error, never a complete Hausdorff proof.
+        if error > ns.lod_max_error_m:raise ValueError('LOD sampled error exceeds configured limit; full normalized GLB retained')
+        lod=dict(full_model=full.name,source_triangles=triangles,target_triangles=ns.max_triangles,
+                 output_triangles=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes),
+                 sampled_bidirectional_max_error_m=error,samples=samples,max_sampled_error_m=ns.lod_max_error_m,
+                 normalization_adjustment=dict(centre=lod_centre,factor=lod_factor),
+                 method='Blender Decimate COLLAPSE; existing UV/material attributes retained')
     temp = ns.out.with_name("model.pending.glb")
     bpy.ops.export_scene.gltf(filepath=str(temp), export_format="GLB", use_selection=True,
                               export_animations=False, export_cameras=False, export_lights=False)
     temp.replace(ns.out)
-    facts = {"preserved_embedded_images": embedded_images,
+    facts = {"preserved_embedded_images": embedded_images, "material_bindings": bindings, "lod":lod,
              "longest_side_m": longest, "dimensions_m": list(dimensions), "source_bbox_center_m": centre,
              "source_bbox_m": source_bbox, "normalized_bbox_m": normalized_bbox,
              "normalized_dimensions_m": [normalized_bbox[1][i] - normalized_bbox[0][i] for i in range(3)],
