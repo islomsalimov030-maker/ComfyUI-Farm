@@ -45,11 +45,17 @@ def collect(source, location, character, props=(), extras=()):
         if required not in files:
             raise ValueError('Missing profile: ' + required)
     # Validate before sending any data. Never carry old PC paths to Linux.
+    skipped = []
     for name, path in files.items():
         if path.suffix == '.json':
             text = json.dumps(json.loads(path.read_text(encoding='utf-8-sig')), ensure_ascii=False)
             if re.search(r'[A-Za-z]:[\\/]|(?:\.\.[\\/])', text):
+                if name.startswith('cache/'):  # diagnostic cache metadata only; never carry PC paths
+                    skipped.append(name)
+                    continue
                 raise ValueError('Nonportable path in ' + name)
+    for name in skipped:
+        files.pop(name)
     return files
 
 
