@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import threeda_blender  # bpy wheel in a child process, else Blender binary
 import sys
 import time
 import uuid
@@ -335,15 +336,14 @@ def prompt_for(profile, config, fit):
 
 
 def prompt_direct(profile, config, fit):
-    import table_round
-    import pose_h3_v26
+    import prompt_h3
     context = dict(profile.data.get("prompt_context", {}))
     context.update(config.get("prompt_context_by_location", {}).get(profile.data["loc_id"], {}))
     if not context.get("anchor"):
         raise ValueError("prompt scale anchor missing: prepare profile.prompt_context.anchor or "
                          "config.prompt_context_by_location[id].anchor")
     scene = {"action": context.get("action", "holding the body pose shown in <Video 1>"), "anchor": context["anchor"]}
-    text = pose_h3_v26.prompt_d(table_round.prompt({"room": context.get("room", "the room in <Picture 1>")}, scene), fit)
+    text = prompt_h3.prompt_d(prompt_h3.table_prompt({"room": context.get("room", "the room in <Picture 1>")}, scene), fit)
     additions = []
     pose_text = str(fit.get("pose_text", "")).strip()
     if pose_text:
@@ -358,7 +358,7 @@ def prompt_direct(profile, config, fit):
     if additions:
         marker = "\noverall_soundscape:"
         text = text.replace(marker, "\n" + " ".join(additions) + marker, 1)
-    pose_h3_v26.require_lint(text, video=True)
+    prompt_h3.require_lint(text, video=True)
     return text
 
 
@@ -574,10 +574,9 @@ def do_place(request, config):
     env.setdefault("SCENE3D_BLENDER_SITE", str(Path(config["farm_root"]) / "runtime/blender_pkgs"))
     if config.get("blender_pkgs"):
         env["FARM_BPY_PKGS"] = config["blender_pkgs"]
-    run_stage([config["blender"], "-b", "--factory-startup", "--disable-autoexec", "--python-exit-code", "1", "--python",
-               HERE / "plate/render_plate_scene.py", "--", "--plate", plate_dir, "--spec", job / "render_spec.json",
+    run_stage(threeda_blender.command(config, HERE / "plate/render_plate_scene.py", ["--plate", plate_dir, "--spec", job / "render_spec.json",
                "--mannequin", mannequin, "--out", job / "render", "--label-pass", "--photo-emission", "2.5",
-               "--samples", "48"], "Blender render", env=env)
+               "--samples", "48"]), "Blender render", env=env)
     timings["render_s"] = round(time.monotonic() - stage, 3)
     directory = job / "render/pose"
     stage = time.monotonic()
@@ -605,10 +604,9 @@ def do_place(request, config):
         props_path = job / "props.json"
         save_json(props_path, render_props_value)
         overlay_dir = job / "props_render"
-        run_stage([config["blender"], "-b", "--factory-startup", "--disable-autoexec", "--python-exit-code", "1",
-                   "--python", HERE / "plate/prop_render.py", "--", "--plate", plate_dir,
+        run_stage(threeda_blender.command(config, HERE / "plate/prop_render.py", ["--plate", plate_dir,
                    "--body", job / "fit/body.obj", "--joints", job / "fit/label_joints.npz",
-                   "--props", props_path, "--library", library, "--out", overlay_dir], "Blender props", env=env)
+                   "--props", props_path, "--library", library, "--out", overlay_dir]), "Blender props", env=env)
         compose_props(directory, overlay_dir)
         prop_report = read_json(overlay_dir / "props_render.json")
         from PIL import Image

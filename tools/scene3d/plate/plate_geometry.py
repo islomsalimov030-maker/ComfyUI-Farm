@@ -45,7 +45,7 @@ def core_inference(comfy, image):
         tensor = torch.tensor(np.asarray(image) / 255., dtype=torch.float32)[None]
         with torch.inference_mode():
             output = await call(n.MoGeInference, moge_model=model, image=tensor, resolution_level=9,
-                                fov_x_degrees=0., batch_size=1, force_projection=True, apply_mask=True)
+                                fov_x_degrees=0., batch_size=1, force_projection=True, apply_mask=True, **({'refine_steps': 3} if 'refine_steps' in __import__('inspect').signature(n.MoGeInference.execute).parameters else {}))
         return {k: v[0].detach().float().cpu() for k, v in output.items() if k != 'image'}
 
     try:

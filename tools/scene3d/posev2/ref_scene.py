@@ -70,7 +70,7 @@ def main():
         t0 = time.monotonic()
         with torch.inference_mode():
             g = call("MoGeInference", moge_model=moge, image=t, resolution_level=9, fov_x_degrees=0.0, batch_size=1,
-                     force_projection=True, apply_mask=True)[0]
+                     force_projection=True, apply_mask=True, **({'refine_steps': 3} if 'refine_steps' in __import__('inspect').signature(NC["MoGeInference"].execute).parameters else {}))[0]
             fov = call("MoGeGeometryToFOV", moge_geometry=g, axis="vertical", unit="degrees")
         keys = list(g.keys()) if isinstance(g, dict) else [k for k in dir(g) if not k.startswith("_")]
 

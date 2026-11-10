@@ -90,8 +90,8 @@ def export(setup, cfg):
         request_path = directory/'request.json'
         request_path.write_text(json.dumps(request), encoding='utf-8')
         with (directory/'export.log').open('w',encoding='utf-8') as log:
-            subprocess.run([cfg['blender'], '-b', '--factory-startup', '--disable-autoexec', '--python-exit-code', '1',
-                            '--python', str(helper), '--', str(request_path)], stdout=log, stderr=subprocess.STDOUT,
+            import threeda_blender
+            subprocess.run(threeda_blender.command(cfg, helper, [request_path]), stdout=log, stderr=subprocess.STDOUT,
                            check=True, timeout=120)
         facts = json.loads((directory/'facts.json').read_text(encoding='utf-8'))
         manifest = dict(schema=1, placement_key=setup['placement_key'], location_id=setup['location_id'],

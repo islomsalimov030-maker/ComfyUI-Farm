@@ -1,4 +1,4 @@
-"""Upload a prepared SFW data tree using ComfyUI 0.34.6 userdata API (stdlib only).
+"""Upload a prepared SFW data tree using the ComfyUI userdata API (stdlib only).
 
 Credentials: COMFY_USER/COMFY_PASS in environment. No credentials in arguments.
 Custom roots must be inside user/default and --remote-root must match them.
@@ -14,7 +14,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ALLOWED = {'.json', '.npz', '.png', '.jpg', '.jpeg', '.obj', '.mtl', '.glb', '.gltf', '.bin', '.blend'}
+ALLOWED = {'.json', '.npz', '.png', '.jpg', '.jpeg', '.obj', '.mtl', '.glb', '.gltf', '.bin', '.blend', '.txt'}
 
 
 def relative(value):
@@ -26,12 +26,13 @@ def relative(value):
     return p.as_posix()
 
 
-def collect(source, location, character, props=()):
+def collect(source, location, character, props=(), extras=()):
     source = Path(source).resolve()
     if any(not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', value) for value in [location, character, *props]):
         raise ValueError('Location, character and prop IDs must be plain slugs')
     selected = [f'locations/{location}', f'characters/{character}', 'assets']
     selected += [f'props/{p}' for p in props]
+    selected += [relative(e) for e in extras]  # e.g. cache/pose_ref (precomputed SAM/MoGe)
     files = {}
     for folder in selected:
         directory = source / relative(folder)
@@ -52,12 +53,12 @@ def collect(source, location, character, props=()):
     return files
 
 
-def push(source, url, location, character, props=(), remote_root='3da_data', user_id=None):
+def push(source, url, location, character, props=(), remote_root='3da_data', user_id=None, extras=()):
     root = relative(remote_root)
     parsed = urllib.parse.urlsplit(url)
     if parsed.scheme not in ('http', 'https') or not parsed.netloc or parsed.username or parsed.query or parsed.fragment:
         raise ValueError('Use a base HTTP(S) URL without credentials/query/fragment')
-    files = collect(source, relative(location), relative(character), [relative(p) for p in props])
+    files = collect(source, relative(location), relative(character), [relative(p) for p in props], extras)
     headers = {}
     user, password = os.environ.get('COMFY_USER'), os.environ.get('COMFY_PASS')
     if user and password:
@@ -109,9 +110,10 @@ def main():
     p.add_argument('--prop', action='append', default=[])
     p.add_argument('--remote-root', default='3da_data')
     p.add_argument('--user-id')
+    p.add_argument('--extra', action='append', default=[], help='extra relative folder, e.g. cache/pose_ref')
     a = p.parse_args()
     try:
-        print(json.dumps(push(a.source, a.url, a.location, a.character, a.prop, a.remote_root, a.user_id)))
+        print(json.dumps(push(a.source, a.url, a.location, a.character, a.prop, a.remote_root, a.user_id, a.extra)))
     except (ValueError, RuntimeError, OSError) as exc:
         # Do not echo URLs, headers or third-party exception bodies.
         p.exit(1, f'Upload failed ({type(exc).__name__}); check data paths, API and credentials.\n')

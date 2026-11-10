@@ -14,6 +14,8 @@ import torch
 import yaml
 
 HERE = Path(__file__).resolve().parent
+# Standalone pack: tools/ next to this file; farm checkout: two levels up.
+ROOT = HERE if (HERE / 'tools/scene3d').is_dir() else HERE.parents[1]
 CLASSES = ['stand', 'kneel', 'sit_edge', 'sit_tucked', 'sit_floor', 'crouch', 'recline', 'lie', 'all_fours']
 ANCHORS = ['world', 'char_head', 'char_chest', 'char_hand_l', 'char_hand_r', 'char_pelvis']
 PROP_FIELDS = {'prop_id', 'anchor', 'x', 'y', 'z', 'yaw', 'pitch', 'roll', 'scale', 'prop_strength'}
@@ -98,7 +100,7 @@ def validated_props(text):
 
 def config_module():
     import importlib.util
-    helper = HERE.parents[1] / 'tools/scene3d/server_config.py'
+    helper = ROOT / 'tools/scene3d/server_config.py'
     spec = importlib.util.spec_from_file_location('three_da_server_config', helper)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -490,7 +492,7 @@ def remote_run(cfg, images, strength, prompt, seed):
         raise ValueError('Remote timeout_s and poll_s must be finite and positive')
     if not prompt.strip():
         raise ValueError('Empty H3 prompt: check geometry status before remote generation')
-    template = Path(cfg['repo']) / 'workflows/3DA_h3_server_api.json'
+    template = next((p for p in (Path(cfg['repo']) / 'workflows/3DA_h3_server_api.json', Path(cfg['repo']) / 'examples/3DA_h3_server_api.json') if p.is_file()), Path(cfg['repo']) / 'workflows/3DA_h3_server_api.json')
     graph = json.loads(template.read_text(encoding='utf-8'))
     titles = {'plate': 'Плита комнаты', 'ref_char': 'Референс персонажа · SFW',
               'playblast': 'Вход · playblast', 'init': 'Вход · init', 'strength': 'Вход · strength (белое = менять)'}
