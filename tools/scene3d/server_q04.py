@@ -140,6 +140,40 @@ class Server:
             save(self.out / f'{node}.json', info)
             print(json.dumps(info), flush=True)
 
+    def install(self, version):
+        registry = requests.get('https://api.comfy.org/nodes/comfyui-3da-scene/install',
+                                params={'version': version}, timeout=40)
+        registry.raise_for_status()
+        if not registry.json().get('downloadUrl'):
+            raise RuntimeError('Registry has no downloadUrl; nothing installed')
+        self.wait_empty()
+        status = self.request('GET', '/v2/manager/queue/status').json()
+        if status.get('is_processing'):
+            raise RuntimeError('Manager is busy; nothing installed')
+        item = {'id': 'comfyui-3da-scene', 'version': version, 'selected_version': version,
+                'channel': 'default', 'mode': 'remote', 'ui_id': '3da-scene',
+                'skip_post_install': False}
+        for operation in ['install', 'update']:
+            result = self.request('POST', '/v2/manager/queue/batch', json={
+                operation: [item], 'batch_id': str(uuid.uuid4())}).json()
+            save(self.out / f'install_{version}_{operation}.json', result)
+            print(redact(json.dumps({operation: result})), flush=True)
+            failed = json.dumps(result.get('failed', []))
+            if 'comfyui-3da-scene' not in failed:
+                break
+        else:
+            raise RuntimeError('Manager rejected both install and update')
+        deadline = time.monotonic() + 15 * 60
+        while time.monotonic() < deadline:
+            status = self.request('GET', '/v2/manager/queue/status').json()
+            if not status.get('is_processing'):
+                save(self.out / f'install_{version}_status.json', status)
+                print(redact(json.dumps({'manager': status})), flush=True)
+                print(self.logs('install_' + version), flush=True)
+                return
+            time.sleep(5)
+        raise TimeoutError('Manager still processing; do not reboot or resubmit')
+
     def workflow(self, graph_path, label, h3, minutes):
         from playwright.sync_api import sync_playwright
         graph = json.loads(graph_path.read_text(encoding='utf-8-sig'))
@@ -185,7 +219,8 @@ def main():
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument('--url', required=True)
     parser.add_argument('--out', type=Path, default=Path('.tmp_3da_port/server_Q04'))
-    parser.add_argument('action', choices=['health', 'weights', 'run'])
+    parser.add_argument('action', choices=['health', 'weights', 'run', 'install'])
+    parser.add_argument('--version', default='0.1.2')
     parser.add_argument('--graph', type=Path, default=Path('workflows/3DA_scene_server_v1.json'))
     parser.add_argument('--label', default='A')
     parser.add_argument('--h3', action='store_true')
@@ -198,6 +233,8 @@ def main():
             server.health()
         elif args.action == 'weights':
             server.weights()
+        elif args.action == 'install':
+            server.install(args.version)
         else:
             server.workflow(args.graph, args.label, args.h3, args.minutes)
     except Exception as exc:

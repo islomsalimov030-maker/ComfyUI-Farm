@@ -38,8 +38,10 @@
 
 ## Продолжение
 
-1. Пользователь публикует0.1.2 (pull --rebase перед push), проверяет GitHub Action.
-2. Проверить Registry downloadUrl, пустые Comfy/Manager queues, установить **только** comfyui-3da-scene0.1.2 через Manager batch install/update из задания.
+Уточнение S5 после сообщения пользователя «вроде опубликовано»10.11: Registry version0.1.2 отвечает200 с downloadUrl, пакет main синхронизирован с origin/main. При пустых Comfy/Manager очередях POST batch install вернул `failed:[]`; batch `378471e7-59a9-4b13-8db8-21f3eca9d630` завершён, log `Installation reserved: comfyui-3da-scene`. Imported inventory по-прежнему сообщает0.1.1 — обновление зарезервировано до reboot, активация0.1.2 не подтверждена. Сохранены install_0.1.2_{install,status,inventory}.json и install_0.1.2.logs.txt в приватной папке server_Q04. Перезапуск не выполнялся, ожидается отдельное «да» пользователя. Runner дополнен install action без reboot; перед install проверяет Registry и обе очереди.
+
+1. Публикация0.1.2 подтверждена.
+2. Manager batch install0.1.2 принят, обновление зарезервировано до reboot; повторную установку без новых оснований не выполнять.
 3. Спросить отдельное «да» на конкретный reboot и дождаться ответа; затем S1/S3. При runtime Blender/bpy/EEVEE ошибке не повторять и прекратить дальнейшие серверные операции по заданию.
 4. После валидного S3 выполнить S4, M1/M3; M2 после наличия двух SFW бытовых GLB и лицензий. Максимум4H3финала суммарно. Между каждым run — пустая очередь.
 5. Runner: `python tools/scene3d/server_q04.py --url <server> health|weights|run`; для постановки `run --label A`, для финала `run --label B --h3`; для матрицы подготовить private variant UI JSON и передать `--graph ... --out .tmp_3da_port/server_tests/<run>`. URL/credentials в публичный код не вшиты. Автоматического reboot runner не содержит.
