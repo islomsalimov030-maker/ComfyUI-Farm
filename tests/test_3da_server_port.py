@@ -97,6 +97,25 @@ def test_no_core_package_in_requirements():
             assert not re.match(r'(?i)^(torch|torchvision|torchaudio|numpy)(?:[=<>~! ]|$)', line)
 
 
+@pytest.mark.parametrize('source_url', ['https://polyhaven.com/a/ceramic_vase_01',
+                                       'http://example.com/asset'])
+def test_prop_source_urls_and_nonportable_paths(tmp_path, source_url):
+    loc = tmp_path / 'locations/room'
+    char = tmp_path / 'characters/person'
+    prop = tmp_path / 'props/vase'
+    for folder in (loc, char, prop):
+        folder.mkdir(parents=True)
+    (loc / 'profile.json').write_text('{}')
+    (char / 'body.json').write_text('{}')
+    metadata = prop / 'prop.json'
+    metadata.write_text(json.dumps({'source': source_url, 'license': 'CC0-1.0'}))
+    assert 'props/vase/prop.json' in collect(tmp_path, 'room', 'person', ['vase'])
+    for path in ('C:/private/model.glb', 'C:\\private\\model.glb', '../private/model.glb'):
+        metadata.write_text(json.dumps({'source': source_url, 'model': path}))
+        with pytest.raises(ValueError, match='Nonportable path'):
+            collect(tmp_path, 'room', 'person', ['vase'])
+
+
 def test_userdata_0346_handlers_idempotent_and_update(tmp_path):
     """Run actual local 0.34.6 UserManager routes; stub only ComfyUI boot globals."""
     source = Path(os.environ.get('COMFY0346_SOURCE', ROOT.parent / '_src/ComfyUI0346'))
