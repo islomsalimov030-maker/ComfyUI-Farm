@@ -31,6 +31,7 @@ KPS5 = (468, 473, 1, 61, 291)
 POSE = {"nose": 0, "l_eye": 2, "r_eye": 5, "l_ear": 7, "r_ear": 8, "l_shoulder": 11, "r_shoulder": 12,
         "l_wrist": 15, "r_wrist": 16, "l_hip": 23, "r_hip": 24, "l_knee": 25, "r_knee": 26,
         "l_ankle": 27, "r_ankle": 28, "l_foot": 31, "r_foot": 32}
+MAX_POSES = 4       # 25.10: счёт людей по фигуре (qa/image/people.py) — больше двух поз
 
 
 def _dirs() -> list[Path]:
@@ -75,7 +76,7 @@ def _task(key: str):
                 base_options=base, num_hands=4, min_hand_detection_confidence=0.3))
         else:
             t = v.PoseLandmarker.create_from_options(v.PoseLandmarkerOptions(
-                base_options=base, num_poses=2, min_pose_detection_confidence=0.3))
+                base_options=base, num_poses=MAX_POSES, min_pose_detection_confidence=0.3))
         _tasks[key] = t
         return t
 
@@ -104,7 +105,8 @@ def _resize(img: np.ndarray, long_side: int) -> tuple[np.ndarray, float]:
 # --- поза -----------------------------------------------------------------------------
 
 def pose(img: np.ndarray, long_side: int = 1280) -> list[dict]:
-    """Позы: [{name: (x, y, visibility)}], пиксели исходника; по убыванию размера."""
+    """Позы: [{name: (x, y, visibility)}], пиксели исходника; по убыванию размера.
+    `_area` — доля кадра рамки всех 33 точек, `_box` — та же рамка в пикселях (x0, y0, x1, y1)."""
     small, s = _resize(img, long_side)
     res = _task("pose_landmarker").detect(_mp_image(small))
     h, w = small.shape[:2]
@@ -114,6 +116,7 @@ def pose(img: np.ndarray, long_side: int = 1280) -> list[dict]:
         xs = [lm.x for lm in lms]
         ys = [lm.y for lm in lms]
         pts["_area"] = (max(xs) - min(xs)) * (max(ys) - min(ys))
+        pts["_box"] = np.array([min(xs) * w, min(ys) * h, max(xs) * w, max(ys) * h]) / s
         out.append(pts)
     return sorted(out, key=lambda p: -p["_area"])
 

@@ -23,12 +23,14 @@ import shutil
 import sys
 from pathlib import Path
 
+
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "tools")]
+from stacy_data import stacy_data
 
-SRC = Path("C:/stacy-lora")
+SRC = stacy_data()
 BASE = SRC / "refmod_inputs/round_456f4.yaml"
 DST = SRC / "refmod_inputs/round_456f5.yaml"
 KIT = SRC / "_claude/ss456/kit_d169"

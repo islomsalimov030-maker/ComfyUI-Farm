@@ -115,6 +115,15 @@ def main() -> int:
     OUT.write_text(json.dumps(g, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     OUT.with_name("frame_ls@1.params.yaml").write_text(PARAMS, encoding="utf-8")
     print(OUT, len(g), "узлов")
+
+    # @2 — склеенные одинаковые загрузчики (WS-14, OOM: два CLIPLoader по 25 ГБ).
+    import dedup_loaders as DL
+    g2, notes = DL.dedup(g)
+    out2 = OUT.with_name("frame_ls@2.api.json")
+    out2.write_text(json.dumps(g2, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(out2, len(g2), "узлов; склеено:", len(notes))
+    for n in notes:
+        print("   •", n)
     return 0
 
 

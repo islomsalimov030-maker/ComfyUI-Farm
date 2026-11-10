@@ -62,6 +62,64 @@ def check_graph(graph: dict, info: dict) -> tuple[set, list]:
     return missing_cls, bad
 
 
+def mem_check(url: str) -> list:
+    """Проверка памяти контейнера и флагов ComfyUI (WS-14, OOM).
+
+    Ключевое: `/system_stats` и `POST /free` меряют ОЗУ ХОСТА, а не лимит
+    контейнера — на RunPod хост 755 ГБ, контейнер ограничен 94 ГБ, и ComfyUI
+    об этом не знает: LRU-кэш и pinned memory набивают память сверх лимита,
+    и процесс убивает OOM-kill. Настоящий лимит — в cgroup.
+    """
+    out = []
+    lim = cur = None
+    for path, name in (("/sys/fs/cgroup/memory.max", "max"),
+                        ("/sys/fs/cgroup/memory.current", "current")):
+        try:
+            with open(path) as f:
+                val = f.read().strip()
+        except OSError:
+            continue
+        if val == "max":
+            continue
+        try:
+            n = int(val)
+        except ValueError:
+            continue
+        if name == "max":
+            lim = n
+        else:
+            cur = n
+    if lim:
+        out.append(f"лимит ОЗУ контейнера (cgroup): {lim / 2**30:.0f} ГБ")
+        if cur:
+            out.append(f"занято сейчас: {cur / 2**30:.0f} ГБ, свободно {(lim - cur) / 2**30:.0f} ГБ")
+        if lim < 200 * 2**30:
+            out.append("!! лимит < 200 ГБ: ComfyUI ОБЯЗАН запускаться с "
+                       "--disable-pinned-memory --cache-lru 10, а для видео — с --cache-none "
+                       "(COMFY_ARGS=\"--cache-none\")")
+    else:
+        out.append("лимит ОЗУ контейнера: не виден (cgroup v1 или без лимита)")
+    # версия ядра и флаги запуска ComfyUI
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/system_stats", timeout=30) as r:
+            sysinfo = json.loads(r.read()).get("system") or {}
+        ver = sysinfo.get("comfyui_version")
+        out.append(f"ядро ComfyUI: {ver or 'не указано'}")
+        for key, label in (("python_version", "python"), ("pytorch_version", "torch")):
+            if sysinfo.get(key):
+                out.append(f"{label}: {sysinfo[key]}")
+        argv = sysinfo.get("argv") or []
+        if argv:
+            flags = " ".join(argv[1:])
+            out.append(f"флаги ComfyUI: {flags}")
+            if "--cache-none" not in flags and ("--cache-lru" in flags or "--cache-ram" in flags):
+                out.append("!! включён RAM-кэш ComfyUI — при лимите контейнера он и есть "
+                           "причина OOM; перезапустить с --cache-none")
+    except Exception as e:  # noqa: BLE001
+        out.append(f"версия/флаги ComfyUI: не прочитать ({e})")
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("graphs", nargs="*", help="*.api.json (по умолчанию все в workflows/)")
@@ -74,6 +132,9 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         print(f"ComfyUI {a.url} не отвечает: {e}")
         return 2
+    print("Память:")
+    for line in mem_check(a.url):
+        print("   ", line)
     ok = True
     for f in files:
         graph = json.loads(f.read_text(encoding="utf-8"))

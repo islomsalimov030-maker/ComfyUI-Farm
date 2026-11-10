@@ -184,15 +184,10 @@
 | SeedVR2 nodes `4490bd1` + `numz/SeedVR2_comfyUI` (3B fp8 3.39 ГБ, 7B fp8 8.24 ГБ, VAE 0.50 ГБ) | Apache-2.0 | ✅; модели качает сам при первом запуске → путь задать заранее | [GitHub](https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler) · [HF](https://huggingface.co/numz/SeedVR2_comfyUI) |
 | Nvidia RTX nodes (`RTXVideoSuperResolution`) | код Apache-2.0, `nvidia-vfx` проприетарная NVIDIA; Linux — драйвер 570.190+, torch cu130+ | ⚠ проверить на поде | [GitHub](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI) |
 | `malcolmrey/minimaxh3` (RefMod/refLoRA) | Apache-2.0, но это моды реальных людей и знаменитостей | ⚠ не используем, моды Стейси извлекаем сами | [HF](https://huggingface.co/malcolmrey/minimaxh3) |
-| 10Eros Max beta5 hybrid / TURBO-hybrid beta5 / beta6 8stepTURBO (int8 ≈ 21 ГБ, w4a8 14 ГБ — 15.10) | license:other = H3 CLA + лицензии доноров LTX 2.3 / Wan 2.2 / Krea 2 (перенос «характера») | ⚠ автор: beta5 — единственная функциональная, beta3/4 corrupted; beta6 — «mostly-reference», VSA-вариант unstable; reference без cache/spectrum | [TenStrip](https://huggingface.co/TenStrip/10Eros-Max) |
-| PinkCherry HF (SexGod1979): v1.5 fl2va int8 21.22, v1.8 hybrid int8 21.06, ref2va beta-0.6 int8 20.98 ГБ | карточка HF: apache-2.0 (+ H3 CLA как finetune) | ✅ v1.5 — euler/simple, совместимый turbo: lightx2v fl2v 8step (1.96 ГБ, в той же папке); v1.8 «hybrid» без описания в README | [HF](https://huggingface.co/SexGod1979/PinkCherry-NSFW_MiniMax-H3) |
-| PinkCherry-LoRA r768 неофиц. (maximsobolev275: H3 14.79, v18 12.36 ГБ, a3-r256/a5/b6) | лицензии нет | ⚠ только эксперимент; distill стороннего автора, r768 ≈ почти полноранговая | [HF](https://huggingface.co/maximsobolev275/PinkCherry-H3-lora-r768-convrot) |
-| SparseRef15_Hybrid (Aki7777777) | Civitai: Image/RentCivit/Rent, **нет Sell/SellMerge** | ⚠ для прода хуже остальных | [Civitai 2900456](https://civitai.com/models/2900456) |
-| H3 Remix v0.6 (FX_FeiHou) | Civitai: полный набор прав | ⚠ назначение/качество неясны, эксперимент | [Civitai 2879272](https://civitai.com/models/2879272) |
-| Гибриды fl2va-ref2va сообщества (smhfacct, berryber09 w4a8, binglingzhimeng w6a8, jfar-z NVFP4) | license:other (у всех — H3 CLA) | ⚠ эксперимент, экономия VRAM | [smhfacct](https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models) |
 | Ollama `qwen3-vl:8b-instruct` 6.1 / q8 9.8; `32b-instruct` 21 / q8 36; `qwen3.6:27b` q4 17 / q8 30 ГБ | Apache-2.0 (HF Qwen) | ✅ | [ollama](https://ollama.com/library/qwen3-vl/tags) · [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) |
 
 Факты по нодам (из исходников):
+- WS-07, 15.10: официальный non-turbo r2v-шаблон использует `res_multistep/simple`, 20 шагов и BasicGuider; это не подтверждение двухпроходного однокадрового ref-edit. Для выбранного SFW-раунда рецепт и совместимость пока экспериментальные — `docs/experiments/WS-07_round_a.md`. [Источник: Comfy-Org](https://github.com/Comfy-Org/workflow_templates/blob/main/templates/video_minimax_h3_r2v.json).
 - Image Studio **a138b50** (стоит в движке) не умеет `quality_profile = single image | 1 frame (image VAE)`: в нём только 5/9/13/20 кадров. Профиль появился в v23+, а HEAD `9834e55` требует ComfyUI ≥ 0.37 (на поде 0.34). [GitHub](https://github.com/astropuzzo/ComfyUI-MiniMax-H3-Image-Studio)
 - Fizgig: латент ровно на 1 кадр, `FizgigH3StillLatent`. Декод `FizgigH3StillDecode` размножает кадр в группу из 5 и декодирует обычным video VAE, отдельный image VAE не нужен. Ref-edit собирается на core `MiniMaxH3ReferenceToVideo` (только условие) + BasicGuider.
 - Core `MiniMaxH3ReferenceToVideo` (ComfyUI master): Autogrow-слоты в API выглядят как `ref_images.ref_image_N` (так в нашем video_h3_loop@1). Метки `<Picture N>` нумеруются по порядку слотов, поэтому при пропуске одежды метку позы надо сдвигать.
@@ -251,6 +246,277 @@
 - На поде с лимитом ОЗУ контейнера 94 ГБ (cgroup memory.max) ComfyUI падает по OOM на 3-м видео подряд: RAM-кэш и pinned memory меряют ОЗУ хоста (755 ГБ+). Лечится `--disable-pinned-memory --cache-lru 10`.
 - Если API-json грузить во вкладку ComfyUI, где нода-источник неизвестна (пакет не обновлён или вкладка открыта до рестарта), связи к виджетам теряются молча, и ноды работают на своих дефолтах (StacyPanel: seed 777, AUTO, 0.30, LoRA 1.0). Поэтому в stacy_facepass@1 STACY_SETTINGS отдаёт сам пульт, StacyPanel в графе нет. Проверка 23.10: дефолты нового графа дали AuraFace 0.664 / мин 0.605, как вариант I.
 - StacyOcclusionDenoise: при руке у лица (SIT-02 — рука под подбородком, 209/209 кадров) сила прохода под рукой ×0.2 (`hand_strength`) и «защита выражения» ×0.3 на половине кадров — проход в таких клипах слабее.
+
+
+## WS-10 (25.10) — лицензии: энкодер heretic и доноры 10Eros
+Проверка по первоисточникам (карточки HF / тексты лицензий), 25.10.2026. Только чтение веба, веса не качались.
+
+| Компонент | Лицензия | Прод? | Источник |
+|---|---|---|---|
+| `qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot` (движок H3) | Apache-2.0 (тег карточки) | ✅ да, но заменить | [ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot](https://huggingface.co/ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot) |
+| └ база `llmfan46/Qwen3-VL-32B-Instruct-ultra-uncensored-heretic` | Apache-2.0 | ✅ | [llmfan46/...](https://huggingface.co/llmfan46/Qwen3-VL-32B-Instruct-ultra-uncensored-heretic) |
+| └ база `Qwen/Qwen3-VL-32B-Instruct` | Apache-2.0 | ✅ | [Qwen/Qwen3-VL-32B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct) |
+| инструмент abliteration `p-e-w/heretic` | AGPL-3.0 | — на веса не распространяется | [GitHub](https://github.com/p-e-w/heretic) |
+| `qwen3vl_32b_minimax_h3_int8_convrot` (Comfy-Org, штатный) | ⚠ MiniMax H3 Community License | ✅ ниже $20 млн/год | [Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3/tree/main/text_encoders) |
+| `10Eros_Max_h3_hybrid_beta5_int8` (TenStrip) | ⚠ H3 CL + LTX-2 CL + Wan 2.2 + Krea 2 CL | ⚠ условно | [TenStrip/10Eros-Max](https://huggingface.co/TenStrip/10Eros-Max) |
+| └ донор LTX 2.3 | ⚠ LTX-2 Community License Agreement (05.01.2026) | ✅ ниже $10 млн/год | [LICENSE-2](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2) |
+| └ донор Wan 2.2 | ✅ Apache-2.0 | ✅ | [Wan-AI/Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) |
+| └ донор Krea 2 | ⚠ Krea 2 Community License (v1, 22.06.2026) | ⚠ ниже $1 млн/год | [krea/Krea-2-Raw](https://huggingface.co/krea/Krea-2-Raw) · [LICENSE.pdf](https://cdn.jsdelivr.net/gh/krea-ai/krea-2@db3984fbc6e13b34c0064990fc2d95ac64d00058/assets/hf_samples/LICENSE.pdf) |
+| MiniMax H3 (база, веса + энкодер в составе H3) | ⚠ MiniMax H3 Community License | ⚠ территориально | [LICENSE](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) |
+
+Выводы:
+- **Энкодер heretic лицензией чист.** Карточка ethanfel и база llmfan46 помечены `apache-2.0`; Qwen3-VL-32B — Apache-2.0, и сам H3-LICENSE это подтверждает: «the encoder of MiniMax H3 uses Qwen3-VL-32B, which is licensed under Apache 2.0 License». AGPL-3.0 у heretic — это лицензия **кода инструмента**, на модифицированные веса не распространяется (README heretic отдельной лицензии для результата не даёт). Проблема не в лицензии, а в происхождении: это неподписанная сторонняя сборка, плюс риск «отравленного» энкодера.
+- **Штатная замена Comfy-Org — не Apache, а H3 Community License** (`license_name: minimax-h3-community-license-agreement`): порог $20 млн/год выручки и требование «prominently display 'MiniMax H3'» в UI. Переход на неё **не выводит ферму из-под H3-лицензии** — это тот же класс, что у основных весов H3.
+- **10Eros Max beta5 — самый рискованный компонент.** README автора прямо: «The standard H3 community license applies… the community licenses for those source models apply as well to the portions of character that came from each» (LTX 2.3, Wan 2.2, Krea 2). Пороги: LTX-2 — «annual revenues of at least $10,000,000» → платная лицензия; Krea 2 — «total company-wide annual revenue of less than one million United States dollars ($1,000,000 USD)», при превышении «must immediately cease Commercial Use and contact Krea». Krea 2 ещё требует Content Filters («You must implement reasonable and appropriate Content Filter measures») и при распространении — префикс «Krea» в имени модели + Notice-файл. Wan 2.2 — Apache-2.0, без ограничений.
+- **Вывод по прод-продукту:** при выручке фермы **ниже $1 млн/год** 10Eros Max формально проходит по всем трём донорам, но с нагрузкой: content-фильтры, атрибуция/Notice, маркировка «MiniMax H3», раскрытие «AI-generated». Порог Krea в $1 млн — самый жёсткий, LTX ($10 млн) и H3 ($20 млн) — с большим запасом. **Рекомендация:** держать 10Eros как опцию, дефолтом идти на штатный MiniMax H3 + Comfy-Org-энкодер; версию 10Eros в коммерческий сервис выносить только после письменного разрешения Krea при приближении к $1 млн. Это пересказ текстов лицензий, не юрзаключение.
+
+## WS-10 (25.10) — Fizgig на студии, PinkCherry, счёт людей
+- Студия comfy.next-genium.com (RTX 5090 32 ГБ, ОЗУ 123 ГБ, ComfyUI 0.34): Fizgig-H3-Still стоит; Image Studio там уже с профилем `single image | 1 frame (image VAE)`. После прогонов кадров свободно ~10 ГБ ОЗУ из 123 — перед сменой модели обязательно `POST /free`.
+- Fizgig A/B (1 сид, `tools/fizgig_still.py`): img2img лица (`manual_frame`, кроп 1024) 11.7 → 6.4 с, AuraFace 0.619 → 0.650; кадр `frame_ls` 3 Мп (Саманта, моды ss456) 70.5 → 54.1 с, AuraFace 0.742 → 0.711, глазами равны. `H3LatentFromImage` работает с 1-кадровым латентом Fizgig (кодирует 1 кадр). Вывод: скорость −23…45 %, качество по одному сиду не хуже на глаз — нужен A/B на 4+ сидах до `@2`.
+- PinkCherry beta-0.6 int8 в `frame_ls` на студии: 85–86 с на кадр 3 Мп (ref2v тёплый 70 с) — медленнее ref2v на ~20 %.
+- Счёт людей: MediaPipe PoseLandmarker (Apache-2.0) с `num_poses=4` находит человека спиной без лица; лицо вне всех рамок поз = ещё человек (`farm/qa/image/people.py`).
+- **Видео 10 с FullHD (25.10, `video_h3_loop@1`, Саманта на диване, сид 3875932223, 8 шагов):** на студии не идёт — при старте сэмплинга свободно 5.4 ГБ ОЗУ (без моделей там занято ~84 ГБ из 123, `/free` не освобождает); выгрузка энкодера (`UnloadEncoderFromRAM`) не помогла. **На поде лимит памяти контейнера 94 ГБ (cgroup `memory.max`)** — `free` и `/system_stats` показывают ОЗУ хоста (755 ГБ) и врут; без мер ComfyUI убит OOM на стабилизаторе. Прошло с `--cache-none` + отдельный `CLIPLoader` для прохода лица (основной энкодер 25 ГБ освобождается после кодирования) + `free_vram: on`: ref2v 736 с, PinkCherry 763 с, запас до лимита 8.8 / 7.6 ГБ — впритык. Брак на этом сиде: ref2v — на 3.8 с появляется белый плед на диване; PinkCherry — на 3.8 с вставка крупного плана (нарушение «no close-up inserts»). Вывод VHS (`gifs`) новая вкладка истории не показывает — для видимости итога `CreateVideo` + `SaveVideo`.
+- Видео 10 с, второй сид 1234567 (26.10, под): ref2v 791 с, PinkCherry 757 с, оба **без брака** (нет пледа, нет вставок, жест и возврат есть, петля сходится; возврат руки ~0.6 с позже плана). На одном сиде PinkCherry даёт почти тот же клип, что ref2v (дообучение ref2v) — разница моделей в деталях, не в движении. Запас до лимита пода 6.6–7.6 ГБ. Плед/вставка на сиде 3875932223 — от сида, не от промпта.
+- `video_h3_loop@2` (26.10): `--cache-none` нужен именно из-за кэша выходов узлов — с `--cache-lru 10` (дефолт `pod_setup.sh` при лимите < 200 ГБ) объект энкодера 25 ГБ остаётся в кэше и после кодирования промпта. Отдельный `CLIPLoader` у прохода лица делает основной энкодер ненужным дальше по графу — с `--cache-none` он освобождается. `collect_outputs` фермы берёт любое поле-список с `filename` в записи history, так что выход `SaveVideo` подхватывается без правок (тест-прогоны 25.10 скачивали его так же).
+- Manager студии (V4.2.1, legacy-режим): ComfyUI-Farm поставлен по git-URL — в поиске Manager его нет, но обновляется API: `POST /v2/manager/queue/batch` с `{"batch_id": …, "update": [{"id": "ComfyUI-Farm", "version": "unknown", "files": ["https://github.com/islomsalimov030-maker/ComfyUI-Farm"], "ui_id": …}]}` (ставит ветку по умолчанию — `main`), затем `POST /v2/manager/reboot` (через прокси отвечает 502, но ComfyUI перезапускается за ~16 с). Версия пакета — `GET /v2/customnode/installed`. `/v2/manager/queue/task` (не-legacy API) на студии — 405.
+- `stacy_facepass@1` на студии (26.10, RTX 5090 32 ГБ, ОЗУ 123 ГБ, из них ~77 ГБ заняты без моделей): клип 1920×1080, 171 кадр — свободная ОЗУ 46 → 8.7 ГБ за 22 с, прерван страховкой на `H3InjectVideoLatent` (энкодер загружен и отработал, UNET ещё не грузился). С `UnloadEncoderFromRAM` сразу после кодирования (узел выполнился) — 5.9 ГБ на том же узле: выгрузка ОЗУ не возвращает (как у видео 25.10). Проход лица FullHD-видео на студии сейчас не прогнать; замер дрожи лица — `jitter.py` (рамка BlazeFace, d1 / flick / резкость / фон), у SIT-02 после facepass d1 4.72, flick 2.37.
+- Сервер студии (26.10, нода `VRGDG_LlamaCppDoctor`): Python 3.13, torch 2.13+cu130, **llama-cpp-python 0.3.33 без CUDA** (в system info только CPU-флаги; при загрузке Qwen3VL-8B Q4 VRAM не занимается) — архитектуру qwen3vl грузит, JSON-схема через `response_format` работает, но ~12 мин на промпт фермы (3 стадии = 39 мин). Официальные GGUF `Qwen/Qwen3-VL-8B-Instruct-GGUF` (Apache-2.0): `Qwen3VL-8B-Instruct-{Q4_K_M,Q8_0,F16}.gguf` + mmproj. Ollama на студии нет.
+- Студия, LLM на GPU (26.10): `transformers` в окружении ComfyUI грузит `Qwen/Qwen3-VL-8B-Instruct` (Apache-2.0) через `AutoModelForImageTextToText` bf16 `device_map=cuda` — 3 стадии промптов фермы за 14.5 с вместе с загрузкой (против 39 мин у llama.cpp на CPU). Скачивание с HF: `snapshot_download` (hf_xet) на студии ~1–3 МБ/с и зависает на больших шардах; прямой `GET …/resolve/main/<файл>` (httpx, Range) — 41–42 МБ/с.
+
+- Ноды для коллажа (28.10, студия comfy.next-genium.com, ComfyUI 0.32.0): **ядро** `ImageGrid` (`comfy_extras/nodes_dataset.py`, `ImageGridNode`) — принимает и список, и батч (`_ensure_image_list`); фото **растягивается** в ячейку `cell_w×cell_h` Lanczos (пропорции теряются), фон чёрный, `columns` — фиксированное число (1..20, авто нет), строки считаются как ceil(N/columns). `ImageScale` (ядро) `crop="disabled"` — **растяжение**, не letterbox (в `common_upscale` при crop!=center просто `interpolate`); aspect-fit с добором в ядре нет.
+- `ImageResizeKJv2` (KJNodes, GPL-3.0) `keep_proportion="pad"` — вписывает с сохранением пропорций, добивает цветом `pad_color`, работает с батчем целиком (один узел на все фото). `CR Image Grid Panel` (Comfyroll, лицензии нет) — паста без выравнивания, картинки разного размера «поедут»; не годится.
+- **Пустой `LoadImage` роняет прогон**: `Is a directory: '/root/ComfyUI/input'` (пустая строка → путь = каталог input). Решение — не подключать пустые слоты: `ImageBatchMultiSkipEmpty` (mickmumpitz, MIT) пропускает неподключённые входы (в отличие от KJNodes `ImageBatchMulti`, который заполняет чёрным), лимит 1000 входов, `inputcount` + кнопка Update inputs.
+- autogrow-ноды ядра в **API-формате** ждут составное имя входа: `BatchImagesNode` → `images.image0`, `BatchMasksNode` → `masks.mask0` (как в `tools/ws07_graphs.py`); в UI-формате — просто `image0`. Фронт ComfyUI 1.53.6 отдаёт лишний ключ `"Update inputs"` у нод с кнопкой Update — сервер его принимает без ошибки.
+
+## WS-10 (28.10) — ND_MMH3: переключатель 5 моделей H3 + Fizgig
+- Воркфлоу пользователя ND_MMH3 (id `83475475-233f-4143-a676-b867c9562dc0`, 21 верхних узлов + 6 сабграфов) переработан: `workflows/nd_mmh3@1.ui.json` + `.api.json`, гайд `docs/guides/nd_mmh3.md`, сборщик `tools/wf_switch_models_fizgig.py`.
+- **Взаимоисключающий переключатель 5 моделей H3** (индекс 0..4: fl2v / ref2v / 10Eros Max beta5 / PinkCherry ref2va beta-0.6 / Singularity ref2va v1.3) — 5 × `DiffusionModelLoaderKJ` + 5 × `ComfyMathExpression` (`idx == N`) + цепочка из 5 `ComfySwitchNode`. У `ComfySwitchNode` обе ветки `lazy: true` (`comfy_extras/nodes_logic.py`), поэтому считается **только выбранная** ветка: в VRAM одна модель ~20 ГБ int8, а не пять. **Именно поэтому не подходит idiом `ListCreate` + `easy indexAnything`** (как в старой части графа) — там грузились бы все пять сразу.
+- Все 5 файлов моделей на студии comfy.next-genium.com проверены через `/object_info/DiffusionModelLoaderKJ`: `minimax_h3_fl2va_pruned_int8_convrot`, `minimax_h3_ref2va_pruned_int8_convrot`, `10Eros_Max_h3_hybrid_beta5_int8`, `pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot`, `Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8`.
+- **Fizgig-переключатель** (MIT, `FizgigH3StillLatent` + `FizgigH3StillDecode`): латент ровно на 1 кадр + декод тем же video VAE (узел сам размножает кадр в группу из 5). Условие (`positive`) и `ConditioningZeroOut` не меняются — как в генераторе «B» серии WS-07 (`tools/ws07_graphs.py`).
+- **Найден и починен баг исходного воркфлоу:** `LoraLoaderModelOnly` 11309/11312 стояли в режиме bypass (mode 4). Тогда вход сабграфа `model_1` (→ `MiniMaxH3SigmaShift`) резолвился в выход самого сабграфа (`11316.out` = модель из LIST) — цикл; ComfyUI отклонял промпт с `required_input_missing` для `model`. Снятие bypass (mode 4 → 0) замкнуло правильную цепочку: `out сабграфа → LoRA → model_1 → SigmaShift → MODEL → ModelPreviewOverrideKJ → обратно в model`.
+- **`ImageResizeKJv2` (KJNodes) на GPU не поддерживает lanczos** — `ValueError: Lanczos is not supported on the GPU` (`nodes/image_nodes.py`, ветка `device == "gpu"`). На GPU разрешены `nearest-exact / bilinear / area / bicubic / nvidia_rtx_vsr`; для маски и референса bicubic неотличим от lanczos. **Ловушка:** ставить `device: gpu` без смены `upscale_method` — падение на первом же прогоне.
+- **Баг `wfkit.to_api`:** падал в `RecursionError` на воркфлоу с сабграфами, где инстанс ссылается на собственный выход (список моделей → «Models from LIST» → выход наружу). Починен в `tools/wfkit.py`: инстанс помечается «в работе» (`inst_out[nid] = {}`) **до** раскрытия его выходов, иначе resolve() уходит в бесконечную рекурсию. Побочный эффект: ре-энтрантный вызов возвращает пустой результат (ссылка на выход сабграфа не разрешается) — для этого воркфлоу не мешает, но учитывать при отладке.
+- **Имена входов `ComfyMathExpression` в API — `values.a` / `values.b` / `values.c`** (не `a`/`b`/`c`). Ошибка видна только на прогоне: ComfyUI → `required_input_missing` для `values.a`.
+- Шаги сэмплера **не подстраиваются** под модель автоматически: turbo (fl2v/ref2v штатные) — 6+6, дообученные без turbo (10Eros / PinkCherry / Singularity) — ориентир 20 шагов. В самом ND_MMH3 дефолт — **16 + 6** (слайдеры `mxSlider` «First Pass | Steps» 10303 и «Second Pass | Steps» 10304).
+- **Список файлов input на студии** берётся из `/object_info/LoadImage` → `input.required.image[0]` (массив имён, 733 файла). Эндпоинты `/api/files`, `/folder_paths`, `/view?dir=input` на студии отдают 404. Нужные для ND_MMH3 файлы (`Стейси_наколенях_1.png`, `ComfyUI_temp_aijxi_00002_.png`) на сервере **есть**. Пакет `rgthree-comfy` на студии установлен (24 ноды), `Any Switch (rgthree)` отработал штатно.
+
+## WS-10 (29.10) — проверка студии под ручной воркфлоу `farm_manual`
+**Вопрос:** должен ли на студии работать присланный ручной воркфлоу (ФОТО/ВИДЕО/проход лица, 4 сабграфа, last_node_id 193)? Проверено на живой студии (`$COMFY_URL`).
+
+**Студия (факты, `/system_stats` 29.10):** ядро ComfyUI **0.34.6**, pytorch 2.13.0+cu130, `deploy_environment: local-git`, linux. ОЗУ **132.47 ГБ всего / 69.72 ГБ свободно**. GPU: RTX 5090, VRAM **33.67 ГБ всего / 32.93 ГБ свободно**, `cudaMallocAsync`. Всего типов узлов в `/object_info` — **4114**.
+
+**Вердикт по `--cache-ram 8 24`:** оставить как есть, `--cache-none` НЕ нужен. Значения — верхние границы (8 ГБ кэш остаточной выборки + 24 ГБ мобильный/pseudo-VRAM пул), а не предаллокация; бюджет 32 ГБ помещается в 132 ГБ ОЗУ с запасом. `--cache-none` отключил бы не только кэш, но и повторное использование моделей — каждый H3/FlashVSR грузился бы заново (минуты на прогон). Если OOM всё же случится, правильные рычаги — уменьшить оба числа либо вынести проход лица в отдельный прогон (это уже заложено сабграфом «ПРОХОД ЛИЦА ГОТОВОГО ВИДЕО»), а не отключать кэши.
+
+**Инвентарь нод:** все типы узлов присланного UI-воркфлоу присутствуют в `/object_info` студии. Отсутствуют только два — `Fast Groups Muter (rgthree)` и `MarkdownNote` — это чисто фронтендовые узлы (мутер групп / заметка), для исполнения через API они не нужны. Сабграфы на студии поддерживаются (формат id `183:5` работает).
+
+**Модели — все на месте** (`/object_info/*` списки): `10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot`, `minimax_h3_ref2va_pruned_int8_convrot`, `minimax_h3_fl2va_pruned_int8_convrot`, `minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16`, `qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot` (CLIP), `minimax_h3_video_vae_fp16`, `minimax_h3_audio_vae_fp32`, `taeh3`, `stacy_h3_A_stills_000001750`, `stacy_h3_face_v1_000001800`. YOLO-веса `face_yolov8m.pt` / `hand_yolov8s.pt` — в дропдауне `H3FaceTrackCrop` на месте. Все 4 модели из таблицы `FARM_MODELS` (`farm/util_nodes.py`) есть, включая `Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8`.
+
+**Входные файлы:** `ND_MMH3__00086_.png`, `0003.png`, `stacy_kf_Sitting-8.png` — есть (HTTP 200). `location_sheet.png` и `спальня саманты.png` — **нет** (404), но обе ветки выключены (`mode: 2` / `M_on=false`), т.е. не блокеры. В `farm_manual@1.api.json` тот же принцип: `location_sheet.png` сидит в неактивной ветке `LazySwitchKJ.on_false` при `M_on=false` → на прогон не влияет.
+
+**Расхождения версий (студия старше репозитория) — и почему они не мешают:**
+- `NGFarmPanelVideo` на студии **без** ручки `steps_override` (добавлена в WS-14 от 29.10). API-граф её не передаёт → валидация проходит; пульт вернёт 20 шагов для Singularity (число из `FARM_MODELS`), как и задумано. Следствие: `web/farm_panels.js` на студии тоже старой редакции — миграция раскладок A/B/C там не работает, так что **в UI студии старые сохранённые воркфлоу фермы могут разъезжаться по виджетам**. Проверено только по API-графу; для UI-режима студию надо обновить до текущего коммита `ComfyUI-Farm`.
+- `VHS_VideoCombine` на студии без `pix_fmt`/`crf`/`save_metadata`/`trim_to_audio`; `RTXVideoSuperResolution` — без `resize_type.width/height`; `MiniMaxH3ReferenceToVideo` — `ref_images`/`ref_videos` в формате `COMFY_AUTOGROW_V3` вместо плоских `ref_images.ref_image_0`. **Проверено пробой:** промпт с лишними полями `VHS` (`pix_fmt`, `crf`, …) принят студией → HTTP 200, `node_errors: {}`; ComfyUI игнорирует неизвестные поля. Значит расхождения — только форма сериализации, не несовместимость.
+
+**Структура ручного воркфлоу:** в сохранённой версии (`.tmp_oom/wf/manual_10s.json`, last_node_id 193 / last_link_id 805 — совпадает с присланной) активен **только ВИДЕО-движок**: инстансы «ДВИЖОК ФОТО» (183), «ДВИЖОК ПРОХОДА ЛИЦА» (185) и «New Subgraph» (186) стоят в `mode: 2` (выключены), все 39 узлов внутри ФОТО-движока тоже `mode: 2`. Верхние `NGFarmPanelPhoto` (178) и `NGFarmPanelFace` (180) — `mode: 2`. То есть воркфлоу по замыслу генерирует **видео из готовых кадров** (`ND_MMH3__00086_.png` + `0003.png` + `stacy_kf_Sitting-8.png`), без генерации кадра. Развёрнутый API-граф — 81 узел (в `farm_manual@1.api.json` — 175, там ФОТО активен).
+
+**Пустой `model_override` — норма:** `NGFarmPanelVideo.use_Singularity=true`, остальные включатели выключены → пульт берёт первую включённую модель (Singularity, 20 шагов, turbo-LoRA 0). `model_override` — служебный вход, который ставит ферма при пакетной очереди.
+
+**Потребление памяти студии во время прогона (29.10, замер `/system_stats` в разгар работы):** ОЗУ **свободно 19.2 ГБ из 132.5** (занято ~113 ГБ), VRAM **свободно 20.9 ГБ из 33.7** (занято ~13 ГБ). Профиль соответствует оценке RESEARCH 25–26.10 (энкодер Qwen3-VL int8 ~25 ГБ + UNET Singularity int8 ~20 ГБ + латент 1344×768 ~4 ГБ + **RAM-кэш `--cache-ram 8 24` до 24 ГБ**). Запас по ОЗУ ~19 ГБ — впритык, но OOM не случилось. Это подтверждает, что 24 ГБ RAM-кэша — не «съеденная память впустую», а используемый бюджет под H3: без него повторная загрузка моделей стоила бы минут на каждый прогон.
+
+**Проблема WS-12 («промпт принят, но не исполняется») на этом графе НЕ воспроизводится:** ручной воркфлоу (81 узел, сабграфы `183:5`) принят (`node_errors: {}`), появился в `/queue` и **выполняется**. Значит отбрасывание относится к специфике ND_MMH3, а не к сабграфам/ядру как таковым.
+
+**Рестарт студии посреди прогона (29.10, ~09:48 UTC):** первый запуск воркфлоу дошёл до исполнения (в `/queue` — 81 узел, RAM занято 113 ГБ из 132.5, VRAM 13 ГБ из 33.7), но на ~1-й минуте работы **процесс ComfyUI перезапустился**: `/internal/logs` начинается с отметки `2026-10-29T09:48:49` (холодный старт), память вернулась к исходной (69.6 ГБ свободно), `/history` **обнулился** (исчезла и ранее успешная проба), `/queue` пуст. Признак перезапуска, а не OOM: в логах старта нет ни `Killed`, ни `MemoryError`, а сам лог — это буфер инициализации (WS-12), журнала исполнения он не содержит. Ядро при этом то же — 0.34.6, но **коммит другой**: Manager показывает `5851 [8fed3781]` (released 2026-09-07) вместо прежнего `79be670e`. Ошибка alembic `0008_drop_asset_meta` воспроизвелась в новом старте ровно та же. Версия 502 на `/system_stats` во время нагрузки — не «студия упала», а прокси-таймаут на тяжёлом опросе при 113 ГБ занятой ОЗУ (`/queue`, `/history`, `/object_info` отвечали 200).
+
+**Практический вывод:** 24 ГБ RAM-кэша на 132 ГБ ОЗУ оставляют ~19 ГБ запаса — прогон 10 с видео вписывается, но впритык, и пиковая нагрузка делает тяжёлые эндпоинты вроде `/system_stats` уязвимыми к таймауту прокси. Плюс студия — общий сервис: её могут перезапустить в любой момент (обновление ядра, чужая задача), и тогда промпт теряется без ошибки. Прогон дольше ~10 минут на студии нельзя считать надёжным.
+
+**Повторный прогон (29.10, после рестарта):** тот же API-граф (81 узел) принят (`node_errors: {}`), встал в очередь и выполнялся ~25 минут; пик памяти держался ровно — RAM свободно 19.0–19.8 ГБ, VRAM 20.0–23.7 ГБ на всём протяжении, **OOM не возникает**. Разница версий нод студии и репозитория на исполнении не проявилась. **Но прогон не успел завершиться: студия перезапустилась повторно** — `/internal/logs` снова показывает холодный старт (09:58:22), память вернулась к 69.8 ГБ, `/history` пуст.
+
+**Студия перезапускается каждые ~10 минут (29.10) — это главный блокер длинных прогонов.** Наблюдённые рестарты: 09:48:49 и 09:58:22 (второй — ровно через ~9.5 минут, во время нашего прогона). Признаки: `/internal/logs` обнуляется и начинается с нового холодного старта, `/history` пустеет, ОЗУ/VRAM возвращаются к исходным. В логах **нет** ни `Killed`, ни `MemoryError`, ни OOM — и ядро при этом то же (`5851 [8fed3781]`, released 2026-09-07), та же ошибка alembic `0008_drop_asset_meta`. Значит это не OOM-килл и не автообновление ядра, а **внешний рестарт процесса** (перезапуск контейнера/сервиса на стороне студии — supervisor, деплой, ручной рестарт). Побочный эффект: пока БД не инициализировалась (alembic), очередь и история живут в памяти — поэтому после рестарта пропазывает всё, включая успешные прогоны.
+
+### УТОЧНЕНИЕ (29.10, позже): рестарты провоцируют ПРОГОНЫ, а не таймер
+Первая версия выше («рестарт каждые ~10 минут — внешний таймер») **неверна**: контрольное наблюдение опровергло её, а верное объяснение — **cgroup OOM-kill на пике нагрузки**, который снаружи ComfyUI выглядит как рестарт без ошибки.
+
+Доказательства:
+- **Контрольный тест (пустая студия):** 8 замеров `/queue` за ~7 минут (10:05:48 → 10:13:01), очередь пуста, студия не тронута — **ни одного рестарта**; последний рестарт остался 10:03:37, аптайм > 10 минут. Пустая студия стоит.
+- **Все три рестарта (09:48:49, 09:58:22, 10:03:34) произошли ровно во время наших прогонов.** Интервалы между ними неодинаковы: 9.5 мин → 5.2 мин (таймер давал бы ровные ~10).
+- **Рестарт #2 — через 30 секунд после 95% сэмплера**: последняя строка лога `95%|█████▌| 19/20 [06:59<00:22]` (до финала 22 с) — удар по памяти в момент наибольшего потребления, а не совпадение с таймером.
+- **Механизм в логах старта:** `Enabled pinned memory 113702.0` (МБ = **111 ГБ**) — ComfyUI при `--cache-ram 8 24` резервирует пул pinned memory под CUDA; рядом `Using RAM pressure cache`. При нагрузке (энкодер Qwen3-VL int8 ~25 ГБ + UNET Singularity int8 ~20 ГБ + латент 243 кадра) ОЗУ упирается в лимит 132 ГБ → cgroup убивает процесс. Снаружи (внутри контейнера) OOM-kill не виден, поэтому в логах нет ни `Killed`, ни `MemoryError` — только холодный старт.
+- **Версии на студии (29.10):** `ComfyUI-Farm` = `6a03f2f` (коммит с `use_Singularity`, без `steps_override`), `ComfyUI-StacyLoop` = `095b77d`, ядро по Manager — `79be670e` (в стартовом логе — `8fed3781`, т.е. рестарт идёт на DETACHED-ветке). Ошибка alembic `0008_drop_asset_meta` — на каждом старте.
+- **`duration_sec` у `StacyPanel` на студии: min 5.0, max 10.0, сетка H3** (7 с = 175 кадров, 8 с = 192, 9 с = 209, 10 с = 243). Попытка поставить 3 с отклонена валидатором: `value_smaller_than_min` → `duration_sec` = 5 с (121 кадр) — самый короткий возможный клип.
+
+**Рестарт #4 (10:16:26) — 5 с / 8 шагов, тоже убит.** Самый лёгкий возможный клип (121 кадр) с 8 шагами: сэмплер шёл 8.34 s/it, 6/8 шагов за 49 с — и через ~1 минуту до конца процесс умер (холодный старт 10:16:26). Значит **длительность клипа и число шагов не спасают**: pinned memory резервируется на старте (111 ГБ) независимо от размера клипа, и добавка «модель + латент» всё равно переполняет 132 ГБ. Судя по логам, на пике висят `MiniMaxH3 19995MB Staged` + `MiniMaxH3TEModel_ 25140MB Staged` (~45 ГБ) поверх резерва. **Уменьшение длительности сокращает время до пика, но не сам пик.** Практический вывод для студии: без доступа к флагам запуска (`--cache-ram`, `--cache-none`) надёжного H3-прогона там нет; нужен под, где лимит контейнера известен и `--cache-none` обязателен.
+
+**Что из этого следует:** `--cache-ram 8 24` на студии при 132 ГБ ОЗУ — **пограничный** настрой: сам по себе не «сломан», но вместе с тяжёлым прогоном (10 с = 243 кадра) выедает запас. Уменьшить кэш без доступа к серверу нельзя (флаги — при старте процесса), но можно уменьшить нагрузку: короче клип (5 с), меньше шагов (`BasicScheduler.steps` константой в API-графе), ниже разрешение. Либо — под, где лимит известен и управляем.
+- **Практический вывод для фермы:** прогон на студии длиннее ~10 минут не гарантирует результата — промпт может исчезнуть без ошибки. Для 10 с видео (20 шагов, H3 + FlashVSR ULTRA) студия сейчас не годится как основная площадка: нужен под. Если прогон всё же идёт на студии — проверять результат по `/history/<prompt_id>` сразу после завершения и **сохранять выход** (`/view`), потому что после рестарта восстановить нечего.
+- **Как обойти окно рестарта (проверено):** сократить шаги сэмплера — в графе `BasicScheduler.steps` берётся из выхода пульта (`NGFarmPanelVideo`, индекс 2 → 20 для Singularity), но его можно заменить константой: `184:86.inputs.steps = 8`. На студии пульт без ручки `steps_override`, поэтому единственный способ ускорить прогон — ручная правка API-графа. 8 шагов вместо 20 даёт ~2.5× меньше времени сэмплирования.
+
+## WS-12 (29.10) — диагностика студии: «промпт принят, но не исполняется»
+- **Симптом:** `POST /prompt` на студии comfy.next-genium.com → HTTP 200, `node_errors: {}`, `prompt_id` выдан — но запись **не появляется ни в `/history`, ни в `/queue`**. Промпт пропадает молча. Проверено на 4 отправках `nd_mmh3@1.api.json`.
+- **Сервер при этом исправен:** синтетический граф (`EmptyLatentImage` → `VAEDecode` → `PreviewImage`) принимается, исполняется, появляется в истории за 0–3 с и отдаёт ошибку в `messages` (напр. `IndexError` на `VAEDecode` с video-VAE). Тот же синтетический граф с id вида `1:1 … 1:4` (двоеточие, формат сабграфов) **исполняется** → формат id не при чём. Малые графы (4 узла) работают, большой ND_MMH3 (11 верхних + 86 узлов сабграфов) — нет.
+- **Ключевая находка — версии студии:** ядро ComfyUI **0.34.6** (доступно через Manager: nightly, v0.43.1, v0.43.0, v0.42.5, v0.42.4), фронтенд-пакет 1.53.6 при `required_frontend_version` 1.49.6. В `/internal/logs` — **ошибка инициализации БД:** `alembic.util.exc.CommandError: Can't locate revision identified by '0008_drop_asset_meta'` → `Failed to initialize database`. Т.е. схема БД новее ядра 0.34.6 (миграция `0008_drop_asset_meta` отсутствует в этой версии ядра).
+- **Вероятная причина отбрасывания промпта — рассинхрон ядра и БД/схемы подграфов:** при неинициализированной БД очередь и история работают на памяти, а часть служебных путей (регистрация определений подграфов в `object_info`) может отдавать пустоту. Проверено: в `/object_info` студии **0 типов-подграфов** (uuid-типов нет), хотя UI-граф ND_MMH3 содержит 6 определений подграфов (`definitions.subgraphs`).
+- **Что НЕ является причиной (проверено):** формат id с двоеточием; отсутствие нод на студии (все 51 тип узла графа есть в `/object_info`); настройки фронтенда (`/settings` — только UI-параметры, гейтов исполнения нет); пустая очередь (сервер её принимает).
+- **Класс ошибок студии:** ошибки валидации отдаются явно — `missing_node_type`, `prompt_no_outputs` (400) с `extra_info`. То есть валидатор полный; проблема именно после валидации.
+- **Правильный порядок обновления студии:** обновить ядро ComfyUI 0.34.6 → v0.43.1 (Manager) **после** того, как БД будет приведена в порядок (иначе миграция падает ещё раз), затем перезапуск, затем проверка, что в `/internal/logs` нет ошибки alembic, и только после этого — прогон ND_MMH3.
+- **Повторность:** после рестарта студии (19:41) ошибка alembic воспроизводится ровно та же (`No such revision or branch '0008_drop_asset_meta'`, `app/database/db.py: _init_file_db`) — т.е. это устойчивое состояние, а не разовый сбой. **Ограничение метода:** `/internal/logs` отдаёт только буфер старта (406 строк), записей об исполнении промптов в нём нет — ошибки исполнения читать оттуда нельзя, только ошибки инициализации.
+- **Инструменты (в репо):** `tools/wf_run_studio.py` — прогон API-графа на студии с опросом и скачиванием итогов; `tools/wf_probe_exec.py` — диагностика «принят, но не исполняется» (валидация → очередь → история → статус) и `--bisect` (поиск узла-виновника отбрасыванием узлов с конца); `tools/_mgr_env.py`, `tools/_mgr_core.py`, `tools/_mgr_probe.py`, `tools/_mgr_switch.py` — read-only разведка ядра/Manager на студии.
+- **FlashVSR + защита лица (28–29.10, под RunPod):** готов воркфлоу v2 (UI-формат) — `tools/build_vsr_v2.py`, отчёт `docs/experiments/vsr_facesafe_v2.md`. Диагноз шва: FlashVSR каузальный, последние 16 кадров не проходят через DiT (добиваются VAE-паддингом) → хвост клипа замирает (энергия движения 0.62 → 0.23), а скачок на стыке остаётся → ratio шва 3.57. Лечится **финальным `StacyLoopSeam` после VSR** (ratio → **0.533**); `StacyLoopExtend`/`Fold` не помогают — они лишь переставляют кадры. Авто-детект crossfade в `StacyLoopSeam` занижает шов (замер по avg_pool4 grayscale) — нужен фиксированный crossfade 8–16.
+
+## WS-14 (29.10) — OOM: три варианта, разбор и решения
+
+### Общая модель памяти (измерено, RESEARCH 25–26.10)
+| Объект | ОЗУ | Источник |
+|---|---|---|
+| энкодер Qwen3-VL 32B int8 (`CLIPLoader`) | ~25 ГБ | замер на поде, 25.10 |
+| модель H3 int8 (`UNETLoader`/`DiffusionModelLoaderKJ`) | ~20 ГБ | там же |
+| H3 video VAE fp16 | ~1.5 ГБ | оценка по размеру файла |
+| H3 audio VAE fp32 | ~0.5 ГБ | оценка |
+| клип 1344×768 (FullHD 10 с ≈ 240 кадров) | ~5 ГБ | 26.10 |
+
+**ComfyUI не дедуплицирует загрузчики.** `CLIPLoader` (ядро, `nodes.py`) для каждого узла вызывает `comfy.sd.load_clip` заново → каждый узел = свой объект CLIP со своими ~25 ГБ. Одинаковое имя файла НЕ дедуплицируется. То же для `VAELoader`/`UNETLoader`.
+
+### OOM #1 — `farm_manual@1` на студии (10 с видео)
+Инвентарь загрузчиков (175 узлов):
+- **4 × `CLIPLoader`** — все с ОДНИМ файлом `qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors` → **~100 ГБ только на энкодеры**;
+- **7 × `VAELoader`** — 4 × video VAE + 3 × audio VAE;
+- 3 × `UNETLoader` + 2 × `DiffusionModelLoaderKJ` (имена 2 из них приходят из пульта → нельзя склеивать).
+
+Пик «всё живо одновременно» = **~168 ГБ**; по блокам (фото / видео / face pass) = 74 ГБ. При лимите студии (123 ГБ всего, ~59 ГБ свободно) и лимите контейнера пода (94 ГБ) — OOM гарантирован.
+
+**Причина — не в H3, а в том, как блоки склеивались.** `build_farm_wf.py` размножает экземпляры движков (`prefixed(base, "F1"/"V1"/"P2")`), и каждый экземпляр тянет СВОЮ копию загрузчиков. `farm_auto@1` (3 CLIP), `farm_table@1` (3 CLIP) — та же болезнь. `video_h3_loop@1` и `stacy_facepass@1` — по одному CLIP, там чисто.
+
+**Решение:** `tools/dedup_loaders.py` — склейка одинаковых загрузчиков в API-графе.
+- склеиваются `CLIPLoader` (по clip_name+type+device), `VAELoader` (по vae_name), `UNETLoader`/`DiffusionModelLoaderKJ` (по имени модели);
+- **НЕ** склеиваются: (а) загрузчики, чей объект уничтожает `UnloadEncoderFromRAM` (тултип прямо говорит «Must not be used anywhere else afterwards»); (б) загрузчики с признаком «свой загрузчик» в названии — это намеренная раздельная загрузка прохода лица (рецепт `--cache-none`, см. `video_h3_loop@2`); (в) узлы с ролью `facepass:*` — проход лица отдельная операция, её энкодер должен освобождаться отдельно; (г) узлы, у которых имя модели приходит из другого узла (`[PANEL, 0]` — выбор в рантайме);
+- результат по `farm_manual@1`: 16 → 11 загрузчиков, ОЗУ «всё одновременно» 168 → **114 ГБ**, по блокам 74 → **47 ГБ**; `farm_auto@1` 120 → 67 ГБ; `farm_table@1` 160 → 107 ГБ. `video_h3_loop@1/@2` и `stacy_facepass@1` не меняются.
+
+### OOM #2 — под, лимит контейнера 94 ГБ (cgroup `memory.max`)
+Причина OOM-kill (23–26.10): **кэш ComfyUI меряет ОЗУ хоста (755 ГБ+), а не лимит контейнера**, поэтому LRU-кэш (`--cache-lru 10`) и pinned memory держат энкодер 25 ГБ и клип 5 ГБ сверх лимита. Лечится `--disable-pinned-memory --cache-lru 10` + для видео `COMFY_ARGS="--cache-none"` (25.10: запас 7–9 ГБ).
+- `install/pod_setup.sh` уже умеет ставить `--disable-pinned-memory --cache-lru 10` при лимите < 200 ГБ; **но `--cache-none` ставится только вручную** через `COMFY_ARGS` — воркер фермы сам его не ставит, и `POST /free` кэш ОЗУ не чистит.
+- Проверка: `/system_stats` и `free` на поде показывают ОЗУ **хоста** (755 ГБ) и врут; мерить надо `cat /sys/fs/cgroup/memory.current`.
+
+### OOM #3 — студия не исполняет промпты
+Не OOM в строгом смысле, но сюда же: ядро 0.34.6 + непроходит миграция alembic `0008_drop_asset_meta` → промпт принимается валидатором и молча отбрасывается (4 отправки подряд, WS-12). Лечится обновлением ядра 0.34.6 → v0.43.1 через Manager в веб-интерфейсе студии (aux_id `Comfy-Org/ComfyUI`, текущий коммит `79be670e2d9be63e238785af307369d2b9039ed1`).
+
+### Флаги запуска студии (найдено 29.10) — ЭТО И ЕСТЬ ГЛАВНАЯ ПРИЧИНА OOM #1
+`argv` студии: `main.py --listen --port 8188 --enable-manager --enable-manager-legacy-ui --enable-cors-header "*" --cache-ram 8 24`.
+**`--cache-ram 8 24`** = RAM-кэш на 8 элементов / 24 ГБ — на машине со 123 ГБ это пятая часть памяти в кэше. `POST /free` кэш ОЗУ НЕ чистит (чистит только модели/VRAM).
+
+Бюджет пика для 10 с видео 1344×768 с проходом лица (измеренные величины выше):
+| Составляющая | ГБ |
+|---|---|
+| энкодер Qwen3-VL int8 | 25 |
+| UNET ref2va int8 | 20 |
+| UNET fl2va int8 (проход лица) | 20 |
+| video VAE fp16 + audio VAE fp32 | 2 |
+| латент 1344×768 (240 кадров) | 4 |
+| клип FullHD 1080p | 5 |
+| **итого** | **76** |
+| + RAM-кэш `--cache-ram 8 24` | до 24 |
+| **с кэшем** | **до 100** |
+
+Свободно на студии 59 ГБ → **не влезает**. С `--cache-none` и без прохода лица (один UNET) → 51 ГБ → **влезает**. С `--cache-none` и проходом лица (свой энкодер, `video_h3_loop@2`) → ~56 ГБ → **влезает**.
+
+### Важное уточнение: `frame_ls@1` — ПРОИЗВОДСТВЕННЫЙ путь, и в нём дубль был тоже
+`profiles/sfw_base.yaml` → `frame.workflow: frame_ls@1`. Инвентарь `frame_ls@1` (50 узлов): **2 × `CLIPLoader`** (`84:1` — генерация кадра, `fp_11190:11106` — проход лица; оба с одним файлом Qwen3-VL) + **2 × `VAELoader`** (video VAE) + 2 × `DiffusionModelLoaderKJ` (ref2va + fl2va лица). Дубль возник из-за того, что `build_frame_ls.py` прививает подграф прохода лица (`S.refine_graph`) целиком, вместе с его загрузчиками. Итого ~25 ГБ лишних на КАЖДЫЙ кадр фермы. После склейки (`frame_ls@2`) — 94 → 67 ГБ.
+
+`frame_h3@1` — то же (73 → 46 ГБ). `manual_frame@1` — 73 → 46 ГБ. `manual_video@1`, `video_h3_loop@1/@2`, `stacy_facepass@1` — не тронуты: там раздельная загрузка прохода лица НАМЕРЕННАЯ (рецепт `--cache-none`: основной энкодер освобождается после промпта, проход лица грузит свой).
+
+### Как проверять память (важно)
+`/system_stats` и `POST /free` на поде показывают ОЗУ **ХОСТА** (755 ГБ), а не лимит контейнера (94 ГБ) — и ComfyUI об этом не знает: LRU-кэш и pinned memory набивают память сверх лимита, и процесс убивает OOM-kill. Настоящий лимит и текущее потребление — только в cgroup: `cat /sys/fs/cgroup/memory.max` и `cat /sys/fs/cgroup/memory.current`. Это теперь проверяет `install/pod_doctor.py` (и печатает флаги запуска ComfyUI).
+
+### Версия ядра ComfyUI: где чью (WS-14, 29.10)
+- **Студия** `comfy.next-genium.com` — ядро **0.34.6**, фронтенд 1.53.6 (`required_frontend_version` 1.49.6). Manager предлагает v0.43.1. Ошибка БД `alembic: Can't locate revision '0008_drop_asset_meta'` — миграции 0008 нет в 0.34.6.
+- **Под** — ядро ставится **образом RunPod** (`/workspace/bootstrap.sh`), нами НЕ пиннится: `install/pod_setup.sh` только ставит `custom_nodes` и пакеты в venv ComfyUI, само ядро не трогает. Поэтому версия на поде = версия в образе на момент Start; в репозитории не зафиксирована. Штатный способ узнать: `sed -n "s/^__version__.*/&/p" /workspace/ComfyUI/comfyui_version.py` + `git -C /workspace/ComfyUI log -1` (коммит).
+- Поэтому: `install/pod_setup.sh` теперь печатает версию и коммит ядра при установке, `install/pod_doctor.py` — читает `comfyui_version` из `/system_stats` (плюс python/torch) и печатает флаги запуска. Обе проверки нужны, потому что studio-версия и pod-версия разные, а OOM-рецепт (`--cache-none`) зависит от лимита cgroup, а не от версии.
+
+- **Почему генерации на поде стали медленнее (29.10, WS-14)**: пульт `NGFarmPanelVideo` берёт модель и ЧИСЛО ШАГОВ из таблицы `FARM_MODELS` (`farm/util_nodes.py`): `ref2v` → turbo-LoRA 1.0 + **8 шагов**; `Singularity`/`10Eros`/`PinkCherry` → turbo-LoRA 0 + **20 шагов**. В ручном воркфлоу `farm_manual` переключатель пульта стоял на `use_Singularity`, а узел turbo-LoRA (id 57) был в режиме bypass (mode 4) — то есть модель шла 20 полных шагов без turbo-дистилляции. Штатный быстрый путь фермы (`ref2v` + turbo 8 шагов) на поде замерялся 736–791 с (25–26.10, RESEARCH ниже); переключение пульта на `use_Singularity` возвращает 20 шагов. Turbo-LoRA у Singularity сам по себе не запрещён — автор модели (RESEARCH: WS-01, 16.10) предлагает `ref2v_turbo_4step` для скорости, т.к. сама модель не дистиллирована.
+- **Шаги в ручном воркфлоу не настраиваются**: `farm_manual@2.api.json` берёт `BasicScheduler.steps` из выхода пульта (`PV`, индекс 2) — это жёстко заданное в `FARM_MODELS` число, ручки у пульта нет. В боевом воркфлоу фермы `video_h3_loop@2` шаги вынесены в отдельный `PrimitiveInt` «KNOB steps» = 8 (Singularity тоже гоняют на 8 шагах) — этот способ даёт скорость без смены модели.
+- **Студия (29.10): ядро 0.34.6, запускается с `--cache-ram 8 24`** (`/system_stats` → argv), свободно ~52–57 ГБ из 123 ГБ. Все ноды воркфлоу на месте (4114 классов в `/object_info`), промпты принимаются и исполняются (`success` в истории). Проблема не в нодах, а в (а) старой версии ядра — не проходит миграция alembic `0008_drop_asset_meta`, промпты молча отбрасываются (WS-12), и (б) 24 ГБ RAM-кэша при 52 ГБ свободных. Под 502 бэкенд отваливается — на студии уже висит посторонняя NSFW-задача (87 узлов, `hmnsfwAIOV25`), промпты стоят за ней в очереди.
+
+
+## Как ставить модель на студию (30.10, WS-10; перенесено WS-15 без имени модели)
+
+Проверено на `comfy.next-genium.com` (ComfyUI 0.34.6, ComfyUI-Manager v4.2.1 legacy, `db_mode: local`).
+
+- **Штатный путь менеджера НЕ работает** для произвольных моделей: `POST /v2/manager/queue/install_model`
+  требует, чтобы тройка `(save_path, base, filename)` была в whitelist — `model-list.json`
+  (`check_whitelist_for_model`, `comfyui_manager/legacy/manager_server.py`). В списках студии
+  (local 509 записей / cache 564) H3-лор нет → ответ **400 «Invalid model install request is detected»**.
+  Дополнительно: без поля `id` в payload батч-роут `/v2/manager/queue/batch` падает с **500**
+  (KeyError в `failed.add(x['id'])`).
+- **Рабочий путь** — кастомная нода `ComfyUI-Model-Manager` (на студии установлена), база `/model-manager`:
+  - `POST /model-manager/upload` — FormData: `folder` = **абсолютный путь** (`/root/ComfyUI/models/loras`),
+    `file` = файл. Поддерживаемые расширения: `.safetensors`, `.ckpt`, `.sft`, `.gguf`, `.bin`, `.pth`, `.pt`, `.pt2`.
+  - `GET /model-manager/models` — список папок моделей; `GET /model-manager/supported-extensions`.
+  - `DELETE /model-manager/model/{type}/{pathIndex}/{fullname}` — удалить (pathIndex — индекс в списке папок).
+  - В Git Bash путь в `folder` портится (`/root` → `C:/Program Files/Git/root`) — нужен `MSYS_NO_PATHCONV=1`
+    и `MSYS2_ARG_CONV_EXCL='*'`.
+- **Проверка установки**: `GET /api/models/loras` и `GET /api/object_info/LoraLoaderModelOnly` —
+  имя должно появиться в списке выбора ноды.
+
+## WS-15 (31.10) — лицензии весов и нод AIO_auto / AIO_manual V2.0
+
+Лицензия самого MiniMax H3 (база, VAE, turbo-LoRA, H3 CLA) здесь не рассматривается — решается отдельно; все H3-производные дополнительно несут её условия.
+
+| Компонент | Лицензия | Коммерция в ферме | Источник |
+|---|---|---|---|
+| 10Eros Max TURBO-hybrid **beta4** | H3 + доноры LTX 2.3 (< $10 млн/год), Wan 2.2 (Apache-2.0), Krea 2 (< $1 млн/год, фильтры, атрибуция) | ⚠ с условием; **beta4 — corrupted по словам автора, в AIO заменена на beta5** | [TenStrip/10Eros-Max](https://huggingface.co/TenStrip/10Eros-Max) |
+| Singularity ref2va v1.3 | Apache-2.0 (карточка HF) | ✅ | [WarmBloodAban](https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity) |
+| PinkCherry ref2va beta-0.6 | Apache-2.0 (карточка HF) | ✅ | [SexGod1979](https://huggingface.co/SexGod1979/PinkCherry-NSFW_MiniMax-H3) |
+| qwen3vl_32b … heretic int8 | Apache-2.0 по всей цепочке (ethanfel → llmfan46 → Qwen3-VL-32B); AGPL у инструмента heretic — только код | ✅; риск — неподписанная сторонняя сборка | [ethanfel](https://huggingface.co/ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot) |
+| face_yolov8m.pt, hand_yolov8s.pt (Bingsu/adetailer) | карточка apache-2.0, но Ultralytics: обученные YOLO-модели — **AGPL-3.0** | ⚠ прод без Enterprise License — нет; замена MediaPipe Face/Hand (Apache-2.0) | [Ultralytics License](https://www.ultralytics.com/license) |
+| SAM3 (comfyui-rmbg берёт зеркало 1038lab/sam3) | SAM License (Meta): royalty-free, запрет военного/ITAR | ✅ с условием | [facebook/sam3](https://huggingface.co/facebook/sam3) |
+| taeh3 (превью) | MIT (madebyollin/taehv) | ✅ | [taehv](https://github.com/madebyollin/taehv) |
+| stacy_h3_face_v1 / stacy_h3_A_stills | свои; обучены на outputs H3 | ⚠ трактовка H3 CLA (обучение на outputs) — решается вместе с лицензией H3 | RESEARCH §1 |
+| InsightFace buffalo_l/antelopev2 | non-commercial research | ⚠ нет. **Поправка 01.11 (по коду d8521d1, `nodes.py:1438`):** в `H3FaceTrackCrop` эмбеддер (и InsightFace) создаётся только при `identity_track=True`; в AIO `identity_track=false` → не грузится. Пакет `insightface` стоит по requirements, но без весов это MIT-код. Для страховки в AIO V2.2 `identity_model=clip_vision` | [insightface](https://github.com/deepinsight/insightface) |
+| ComfyUI-MiniMaxH3Mod f946208 | MIT | ✅ | LICENSE@f946208 |
+| comfyui-h3-facerefine d8521d1 (Carasibana) | MIT (код) | ✅ код; ⚠ веса InsightFace/YOLO | LICENSE@d8521d1 |
+| comfyui-inpaint-cropandstitch, kjnodes, VHS, comfyui-rmbg | GPL-3.0 | ✅ внутренне; при распространении — исходники; модели RMBG (BRIA и др.) — по своим лицензиям, не проверены | LICENSE в репо |
+| comfyui_nvidia_rtx_nodes 892515e (RTX VSR) | код Apache-2.0; `nvidia-vfx` — проприетарная (MAXINE SDK License: без сублицензии/распространения) | ⚠ SaaS на облачных GPU явно не разрешён и не запрещён — **не проверено**, нужен запрос в NVIDIA | [PyPI nvidia-vfx](https://pypi.org/project/nvidia-vfx/) |
+| minimax-h3-image-studio b4a2339 | Unlicense | ✅ | LICENSE@b4a2339 |
+| rgthree-comfy | MIT | ✅ | LICENSE |
+| ComfyUI-StacyLoop 095b77d (своё) | MIT; зависимость `ultralytics` (AGPL-3.0) | ✅ код; ⚠ YOLO | LICENSE@095b77d |
+| h3_img2img_latent | MIT с `de0b5df`; **на 512b1b3 (в воркфлоу) LICENSE ещё нет** | ✅ после обновления до de0b5df | GitHub |
+| ComfyUI-Farm (своё) | MIT — файл есть в `ws15-close`, **на origin/main не было** до слияния WS-15 | ✅ после слияния в main | репо |
+
+StacyLoop (`StacyAutoConfidence`) InsightFace не тянет — только YOLO-детектор. Не проверены: условия NVIDIA VFX SDK для SaaS, модели внутри comfyui-rmbg кроме SAM3.
+
+## WS-15 (01.11) — MediaPipe вместо YOLO в проходе лица: калибровка
+Проверено на 79 SFW-кадрах (9 петель SS-456, широкие планы FullHD, лица 68–176 px; 7 портретов из датасета лица),
+CPU, ultralytics 8.4 + `face_yolov8m.pt` / `hand_yolov8s.pt` против mediapipe 1.2.0 (Tasks API). Скрипт —
+`tools/calib_detectors.py`.
+- **Лицо, BlazeFace full range по целому кадру** — плохо на широких планах: уверенность по медиане 0.42 (YOLO 0.82),
+  на 16/79 кадрах лучшая рамка не на лице (лёжа, со спины). Причина — вход сети 192 px.
+- **То же + плитки с перекрытием** (сторона 0.5 короткой стороны кадра, перекрытие 1/3, NMS): лицо на 79/79,
+  все рамки совпадают с YOLO. Рамка BlazeFace уже и ниже, чем у face_yolov8m; после пересчёта (ширина ×0.90,
+  высота ×1.22, центр −0.084 высоты) IoU с YOLO по медиане **0.81** (p10 0.42), размеры ±3 % → `crop_factor` и
+  AUTO-размер лица сохраняют смысл. AUTO-пороги MediaPipe 0.50/0.40/0.30/0.20 — на всех 10 роликах выбран 0.50.
+- **Руки, Hand Landmarker** (на кропе лица ×2.5, 768 px, как в проходе лица): YOLO — 40/79 кропов, MediaPipe —
+  14/79 (все внутри находок YOLO). Плитки дают ложные «руки» на ушах/подбородке → для рук только целый кадр.
+  **Рука прямо у лица (L3, лёжа на диване): YOLO 8/8 кадров, MediaPipe 3/8** — защита рук слабее; в видео частично
+  компенсирует удержание по соседним кадрам (`hold_frames`), не проверено. YOLO остаётся выбором в поле `hand_model`.
+- InsightFace в `H3FaceTrackCrop` не грузится при `identity_track=false` (так в AIO).
+- **Студия (01.11):** обновлены ComfyUI-Farm `e435af3`, ComfyUI-StacyLoop `722b228`, h3_img2img_latent `de0b5df`
+  (Manager API, рецепт WS-10b). mediapipe 1.2.0 ставится по requirements, но **не запускается: в контейнере нет
+  `libGLESv2.so.2` / libEGL** (нужен `apt install libegl1 libgles2` — делает админ студии). Ноды StacyLoop в этом
+  случае пишут WARNING и берут YOLO-файл (`face_yolov8m.pt` / `hand_yolov8s.pt`) — проход лица не падает.
+  Проверочный граф (AUTO-порог, StacyFaceTrackCrop, StacyHandMask, ПУЛЬТ ВИДЕО → StacySettings) — success.
+  На поде `install/pod_setup.sh` уже ставит `libegl1 libgles2`.
+- Мелочь: отчёт StacySettings пишет «model: Singularity ref2va» — метка `model_10eros=false` из StacyLoop, модель
+  на самом деле задаёт пульт (косметика, не влияет на генерацию).
+
+### WS-15 (04.11) — решение по детекторам и перенос данных на диск D
+- **Детекторы в AIO V2.2 — YOLO** (решение пользователя): лицо `face_yolov8m.pt`, руки `hand_yolov8s.pt`.
+  Причины: MediaPipe на студии не стартует (нет `libGLESv2.so.2`/libEGL) и на руках слабее YOLO
+  (рука у лица 3/8 против 8/8). MediaPipe-поддержка в StacyLoop остаётся (`mp_detect.py`, `StacyFaceTrackCrop`) —
+  переключение = смена значений в воркфлоу, когда админ студии поставит `libegl1 libgles2`.
+  Лицензионный долг: веса YOLO — AGPL-3.0 (Ultralytics); лица, попавшие в коммерческую раздачу, надо
+  переоценить при переходе на MediaPipe.
+- **Данные Стейси перенесены с C на D** (`D:\stacy-lora`, `C:\stacy-lora` больше нет). Чтобы одноразовые
+  утилиты `tools/` не ломались, путь вынесен в `tools/stacy_data.py`: переменная окружения `STACY_DATA`,
+  дефолт `D:/stacy-lora`, при отсутствии — поиск старого `C:/stacy-lora`. Проверено: `frames/face_metrics_final.csv`
+  на месте. Ферма (`farm/`, `web/`) путей к данным Стейси не содержит — только `tools/`.
 
 ## 31.10 · SCENE3D — 3D-болванки для кадров
 - MPFB2 (Blender extension, `blender --command extension install mpfb`): код GPL-3.0, сетка и таргеты MakeHuman CC0; пакет system assets (волосы, одежда, кожа) — CC0, 94/94 ([files.makehumancommunity.org](https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/)). Риг `openpose` MPFB задаёт точки COCO через индексы вершин и хелперы суставов базовой сетки — по ним OpenPose считается из любой позы без детектора.
@@ -362,3 +628,7 @@
 - Готовый Blender Decimate уменьшил OBJ1.509888Mtriangles/163.7MB до199998triangles/22.6MB; full GLB сохранён. По15156samples maxbidirectional error0.03834мм при лимите0.5мм. Отдельный config/prop_import.yaml не меняет body placement keys. BVH intersect/disjoint, absoluteTRS,6реальных pointer-drag/camera/save-reopen PASS. Это не body-contact/frame/H3 acceptance этих assets.
 - На новом frontend AIO экспортируется67top/5subgraphs,8missing3DAinstances. Все11offline API schemas0errors/0unlistedmodels с подставленными pack schemas; frontend RefMod1/2/8 сохраняет1/2/8connections. No Queue/uploads в этом раунде. Studio native E2E NOT RUN.
 - Собран приватный portable data zip52files/247238538rawbytes/106415685zipbytes: profiles/plates3комнат,манекен,3props inclfull/LOD, allowlisted Linux config; без credentials/h3_remote/sourcephotos/weights/env. Не загружен. Preflight local imports/classes PASS, optional geometry cv2 отсутствует и помечен warning; Linux/service write probes NOT RUN. Отчёт/метрики docs/experiments/3DA_STUDIO_2026-11-10f.*. Новых зависимостей/моделей нет; используется уже установленный Blender GPL и прежние библиотеки.
+
+## 3D-A10g: фактический install permission и Farm compatibility
+- Стандартный `/v2/customnode/install/git_url` rawtext request при idle Comfy/Manager дал403, без restart/policy/auth изменений или попытки обхода. Текущий common.js подтверждает формат и связывает403 с install policy. `/v2/customnode/installed?mode=imported` показывает enabledFarm e435af38; getlist(local) его не показывал. Отсутствие в каталоге нельзя считать отсутствием установки.
+- ExistingFarm e435af38 имеет более новые panel settings/STACY_SETTINGS/RefMod outputs, чем прежняя scene3d ветка. Объединён origin/main3afc184;5схем сверены с живым object_info: inputs/тип/имя/порядокoutputs сохранены. Fullpytest486passed/3skipped/26subtests. Studio install/Linux/nativeE2E не выполнены. Нужен terminal/console access; logs-terminal неshell. Новых зависимостей/весов нет.

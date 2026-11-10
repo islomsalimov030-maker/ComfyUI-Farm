@@ -24,3 +24,4 @@ was-ns: {license: MIT, repo: ltdrdata/was-node-suite-comfyui}
 ComfyUI_Comfyroll_CustomNodes: {license: "⚠ нет LICENSE", repo: Suzie1/ComfyUI_Comfyroll_CustomNodes}
 ComfyUI-Crystools: {license: MIT, repo: crystian/ComfyUI-Crystools}
 Luisacaotica/ComfyUI-MiniMaxH3Mod: {license: "MIT (RefMod; проверено 12.10.2026, коммит f946208); веса malcolmrey/minimaxh3 Apache-2.0", repo: Luisacaotica/ComfyUI-MiniMaxH3Mod}
+comfyui-mickmumpitz-nodes: {license: MIT, repo: mickmumpitz/ComfyUI-mickmumpitz-nodes}

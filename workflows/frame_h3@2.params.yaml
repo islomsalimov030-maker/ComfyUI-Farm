@@ -1,0 +1,52 @@
+# Карта параметров frame_h3@1 (CONTRACTS §6). Адресация только по title. Сборка: tools/build_frame_h3.py
+workflow: frame_h3@2
+api: frame_h3@2.api.json
+ui: frame_h3@1.ui.json
+source: "ND_MMH3_batch2 (2).json"
+
+inputs:
+  plate:  {title: "IN plate · плита / исходник <Picture 1>", input: image, type: image}
+  sheet:  {title: "IN sheet · лист персонажа <Picture 2>", input: image, type: image}
+  outfit: {title: "IN outfit · одежда <Picture 3> (необязательно)", input: image, type: image,
+           optional: true, if_missing: drop_node}     # без одежды протекают фон и лицо — давать почти всегда
+  pose:   {title: "IN pose · поза <Picture 4> (необязательно)", input: image, type: image,
+           optional: true, if_missing: drop_node}
+  prompt: {title: "IN prompt · промпт кадра (ref-edit)", input: value, type: string}   # «image N» → <Picture N> сам
+  face_prompt_z:  {title: "IN face_prompt_z · промпт лица Z-image (Stacy_v1)", input: value, type: string,
+                   default: "Stacy_v1, brown eyes, sharp focus, detailed eyes"}
+  face_prompt_h3: {title: "IN face_prompt_h3 · промпт лица H3 (St4cy_H3)", input: value, type: string}
+  seed:      {title: "KNOB seed", input: value, type: int}
+  face_seed: {title: "KNOB face_seed", input: value, type: int}
+
+arm:                # «рука» бандита: модель + список LoRA
+  model: {title: "ARM model · модель H3", input: model_name, type: file, folder: diffusion_models,
+          default: 10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors}
+  loras: {title: "ARM loras · LoRA руки", type: lora_stack,
+          format: 'lora_<i>: {on: true, lora: <file>, strength: <w>}  (i = 1..N; лишние lora_<i> удалить)'}
+
+knobs:
+  megapixels:   {title: "KNOB megapixels", input: value, type: float, range: [1.0, 3.0], default: 2.0}  # и плита, и выход 16:9
+  ref_identity: {title: "KNOB ref_identity", input: value, type: float, range: [0.5, 1.0], default: 1.0}  # <1 = фигура крупнее
+  pass1_steps:  {title: "KNOB pass1_steps", input: value, type: int, range: [6, 16], default: 6}
+  pass2_total:  {title: "KNOB pass2_total", input: value, type: int, range: [10, 40], default: 40}   # больше = тоньше детали
+  pass2_steps:  {title: "KNOB pass2_steps", input: value, type: int, range: [2, 8], default: 8}      # больше = сильнее правит
+  shift:        {title: "KNOB shift", input: value, type: float, range: [10, 14], default: 12}
+  face_z:          {title: "KNOB face_z", input: value, type: bool, default: true}
+  face_z_denoise:  {title: "KNOB face_z_denoise", input: value, type: float, range: [0.4, 0.8], default: 0.6}
+  face_z_lora:     {title: "KNOB face_z_lora", input: value, type: float, range: [0.8, 1.5], default: 1.2}
+  face_z_size:     {title: "KNOB face_z_size", input: value, type: int, values: [512, 768, 1024, 1328], default: 1328}
+  face_h3:         {title: "KNOB face_h3", input: value, type: bool, default: true}
+  face_h3_denoise: {title: "KNOB face_h3_denoise", input: value, type: float, range: [0.3, 0.6], default: 0.45}
+  face_h3_lora:    {title: "KNOB face_h3_lora", input: value, type: float, range: [0.6, 1.3], default: 1.0}
+  face_h3_color:   {title: "KNOB face_h3_color", input: value, type: float, range: [0.7, 1.0], default: 0.95}
+  face_h3_max_crop: {title: "KNOB face_h3_max_crop", input: value, type: int, range: [640, 2048], default: 1024}  # ≈ лицо 640 px × контекст 1.6
+  face_h3_megapixels: {title: "KNOB face_h3_megapixels", input: value, type: float, range: [2.0, 4.0], default: 4.0}
+
+outputs:
+  frame:     {title: "OUT frame · итоговый кадр", kind: image}
+  frame_raw: {title: "OUT raw · кадр до доработки лица", kind: image}
+
+notes:
+  - "Проходы лица пропускаются сами: нет лица (YOLO/SAM3) → кадр без изменений; H3 — ещё и при кропе > face_h3_max_crop."
+  - "Модели вне руки (зашиты): Z-image turbo + Stacy_v1_z-image-base-prose_3500 (лицо Z), H3 fl2va + stacy_h3_face_v1 (лицо H3), Qwen3-VL-32B int8, SAM3, face_yolov8m."
+  - "ARM model по умолчанию — 10Eros Max (Civitai, лицензия не проверена). Для SFW-профиля руку задаёт profiles/*.yaml."

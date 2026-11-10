@@ -1,0 +1,44 @@
+{
+  "git_url_install_status": 403,
+  "install_completed": false,
+  "restart_requested": false,
+  "policy_changed": false,
+  "alternate_install_route_used": false,
+  "queue_running_before_request": 0,
+  "queue_pending_before_request": 0,
+  "installed_farm_revision": "e435af38c05171e3c6e141610026240c3a6b3308",
+  "merged_main": "3afc184",
+  "schemas": {
+    "NGFarmPanelPhoto": {
+      "lost_inputs": [],
+      "output_types_match": true,
+      "output_names_match": true
+    },
+    "NGFarmPanelVideo": {
+      "lost_inputs": [],
+      "output_types_match": true,
+      "output_names_match": true
+    },
+    "NGFarmPanelFace": {
+      "lost_inputs": [],
+      "output_types_match": true,
+      "output_names_match": true
+    },
+    "NGFarmPanelFacepass": {
+      "lost_inputs": [],
+      "output_types_match": true,
+      "output_names_match": true
+    },
+    "NGFarmShotFromTable": {
+      "lost_inputs": [],
+      "output_types_match": true,
+      "output_names_match": true
+    }
+  },
+  "pytest": {
+    "passed": 486,
+    "skipped": 3,
+    "subtests": 26
+  },
+  "Linux_studio_AIO": "NOT_RUN"
+}

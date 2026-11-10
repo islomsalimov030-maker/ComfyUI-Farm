@@ -20,13 +20,15 @@ import copy
 import sys
 from pathlib import Path
 
+
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "tools")]
+from stacy_data import stacy_data
 
-BASE = "C:/stacy-lora/refmod_inputs/round_456.yaml"
-DST = "C:/stacy-lora/refmod_inputs/round_456f4.yaml"
+BASE = str(stacy_data() / "refmod_inputs" / "round_456.yaml")
+DST = str(stacy_data() / "refmod_inputs" / "round_456f4.yaml")
 CANVAS = [2688, 1504]          # 4.04 Мп, 16:9 (4.0 Мп не кратно 32)
 
 # победители round_456_final (лучший сид на сцену)

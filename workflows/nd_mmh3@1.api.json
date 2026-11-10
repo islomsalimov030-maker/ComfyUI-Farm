@@ -1,0 +1,1571 @@
+{
+ "11299": {
+  "class_type": "PrimitiveInt",
+  "inputs": {
+   "value": 1
+  },
+  "_meta": {
+   "title": "Модель (0 fl2v · 1 ref2v · 2 10Eros · 3 PinkCherry · 4 Singularity)"
+  }
+ },
+ "11301": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "Стейси_наколенях_1.png"
+  },
+  "_meta": {
+   "title": "LoadImage"
+  }
+ },
+ "11302": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "ComfyUI_temp_aijxi_00002_.png"
+  },
+  "_meta": {
+   "title": "LoadImage"
+  }
+ },
+ "11304": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2
+  },
+  "_meta": {
+   "title": "Megapixels"
+  }
+ },
+ "11316:10269": {
+  "class_type": "Get resolution [Crystools]",
+  "inputs": {
+   "image": [
+    "11316:10288",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Get resolution [Crystools]"
+  }
+ },
+ "11316:10270": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "11316:10288",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "MaskToImage"
+  }
+ },
+ "11316:10271": {
+  "class_type": "CR Color Panel",
+  "inputs": {
+   "panel_width": [
+    "11316:10269",
+    0
+   ],
+   "panel_height": [
+    "11316:10269",
+    1
+   ],
+   "fill_color": "white",
+   "fill_color_hex": "#000000"
+  },
+  "_meta": {
+   "title": "CR Color Panel"
+  }
+ },
+ "11316:10272": {
+  "class_type": "ImageToMask",
+  "inputs": {
+   "image": [
+    "11316:10271",
+    0
+   ],
+   "channel": "red"
+  },
+  "_meta": {
+   "title": "ImageToMask"
+  }
+ },
+ "11316:10273": {
+  "class_type": "Get resolution [Crystools]",
+  "inputs": {
+   "image": [
+    "11316:10308",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Get resolution [Crystools]"
+  }
+ },
+ "11316:10274": {
+  "class_type": "Any Switch (rgthree)",
+  "inputs": {
+   "any_01": [
+    "11316:10277",
+    0
+   ],
+   "any_02": [
+    "11316:10272",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Any Switch (rgthree)"
+  }
+ },
+ "11316:10275": {
+  "class_type": "Image Blend by Mask",
+  "inputs": {
+   "image_a": [
+    "11316:10288",
+    0
+   ],
+   "image_b": [
+    "11316:10270",
+    0
+   ],
+   "mask": [
+    "11316:10270",
+    0
+   ],
+   "blend_percentage": 1
+  },
+  "_meta": {
+   "title": "Image Blend by Mask"
+  }
+ },
+ "11316:10277": {
+  "class_type": "GrowMask",
+  "inputs": {
+   "mask": [
+    "11316:10288",
+    3
+   ],
+   "expand": 10,
+   "tapered_corners": false
+  },
+  "_meta": {
+   "title": "GrowMask"
+  }
+ },
+ "11316:10278": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10284",
+    0
+   ],
+   "find": "image 2",
+   "replace": "<Picture 2>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10279": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10278",
+    0
+   ],
+   "find": "Image 3",
+   "replace": "<Picture 3>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10280": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10279",
+    0
+   ],
+   "find": "Image 4",
+   "replace": "<Picture 4>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10281": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10280",
+    0
+   ],
+   "find": "image 5",
+   "replace": "<Picture 5>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10282": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10281",
+    0
+   ],
+   "find": "Image 6",
+   "replace": "<Picture 6>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10283": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10282",
+    0
+   ],
+   "find": "image 7",
+   "replace": "<Picture 7>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10284": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11314",
+    0
+   ],
+   "find": "Image 1",
+   "replace": "<Picture 1>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10285": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10283",
+    0
+   ],
+   "find": "image 8",
+   "replace": "<Picture 8>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10286": {
+  "class_type": "easy showAnything",
+  "inputs": {
+   "anything": [
+    "11316:10306",
+    0
+   ],
+   "text": "St4cy_H3. Just a single photo. <<Picture 1>> is only a reference to the location and background, not the layout. <Image 2> is just an identification sheet, not a layout. The woman from <Image 2> is at the place indicated in <<Picture 1>>, near the dancing pole. Frontal close-up, focused on her face. She is sitting on her heels on a wooden floor with her back straight; her arms are behind her back and out of frame, and her mouth is open, ready for penetration. A separate, realistic, and disproportionately large erect penis <<Picture 3>> —floating in mid-air as an independent object—is oriented with its glans toward her mouth. Her eyes are open and she's looking straight at the camera.\n\nComposition: A frontal close-up of her face, with the penis positioned in front of it, floating in mid-air as a distinct object <<Picture 3>>. Her kneeling body and the wooden floor—including the pole—are partially visible around her, with her hands bound behind her back (as seen in <<Picture 1>>).\n\nCamera angle: You can choose the most natural and convincing frontal close-up of the face at eye level, from top to bottom. Bring the camera slightly closer and zoom in on the image compared to the cropping in <<Picture 1>> (keep the same location and overall composition, just shorten the frame a little). Static frame. Semi-realistic style. The lighting remains unchanged compared to <<Picture 1>>. The colors and saturation have not changed compared to <<Picture 1>>. Human proportions and natural anatomy are respected. Realistic scale: a woman of average height (about 168 cm), her dimensions correspond to the real objects in <<Picture 1>> - the wooden floor and metal pillar retain their true dimensions, she kneels at the required depth in the floor plane, her body is grounded and her height corresponds to the perspective of this place, and she never increases to fill in the frame."
+  },
+  "_meta": {
+   "title": "Final Prompt Preview"
+  }
+ },
+ "11316:10288": {
+  "class_type": "ImageResizeKJv2",
+  "inputs": {
+   "image": [
+    "11316:10308",
+    0
+   ],
+   "mask": [
+    "11301",
+    1
+   ],
+   "width": [
+    "11316:10273",
+    0
+   ],
+   "height": [
+    "11316:10273",
+    1
+   ],
+   "upscale_method": "bicubic",
+   "keep_proportion": "resize",
+   "pad_color": "0, 0, 0",
+   "crop_position": "center",
+   "divisible_by": 32,
+   "device": "gpu"
+  },
+  "_meta": {
+   "title": "ImageResizeKJv2"
+  }
+ },
+ "11316:10289": {
+  "class_type": "Any Switch (rgthree)",
+  "inputs": {
+   "any_01": [
+    "11316:10288",
+    0
+   ],
+   "any_02": [
+    "11316:10275",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Any Switch (rgthree)"
+  }
+ },
+ "11316:10295:10336": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "scheduler": "simple",
+   "steps": 6,
+   "denoise": 1
+  },
+  "_meta": {
+   "title": "BasicScheduler"
+  }
+ },
+ "11316:10295:10337": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  },
+  "_meta": {
+   "title": "KSamplerSelect"
+  }
+ },
+ "11316:10295:10338": {
+  "class_type": "Basic data handling: ListCreate",
+  "inputs": {
+   "item_0": ""
+  },
+  "_meta": {
+   "title": "Basic data handling: ListCreate"
+  }
+ },
+ "11316:10295:10339:10345": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "index": 0
+  },
+  "_meta": {
+   "title": "sampler_name"
+  }
+ },
+ "11316:10295:10339:10346": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "index": 1
+  },
+  "_meta": {
+   "title": "scheduler"
+  }
+ },
+ "11316:10292:10332": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "any": [
+    "11316:10295:10338",
+    0
+   ],
+   "index": 0
+  },
+  "_meta": {
+   "title": "sampler_name"
+  }
+ },
+ "11316:10292:10333": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "any": [
+    "11316:10295:10338",
+    0
+   ],
+   "index": 1
+  },
+  "_meta": {
+   "title": "scheduler"
+  }
+ },
+ "11316:10290": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "11317",
+    0
+   ],
+   "positive": [
+    "11316:10310",
+    0
+   ],
+   "negative": [
+    "11316:10309",
+    0
+   ],
+   "latent_image": [
+    "11316:10291",
+    0
+   ],
+   "noise_seed": [
+    "11315",
+    0
+   ],
+   "steps": [
+    "11316:10296",
+    0
+   ],
+   "sampler_name": [
+    "11316:10292:10332",
+    0
+   ],
+   "scheduler": [
+    "11316:10292:10333",
+    0
+   ],
+   "start_at_step": [
+    "11316:10294",
+    1
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "Sampler | Second  Pass"
+  }
+ },
+ "11316:10291": {
+  "class_type": "easy cleanGpuUsed",
+  "inputs": {
+   "anything": [
+    "11316:10293",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "easy cleanGpuUsed"
+  }
+ },
+ "11316:10293": {
+  "class_type": "KSamplerAdvanced",
+  "inputs": {
+   "model": [
+    "11317",
+    0
+   ],
+   "positive": [
+    "11316:10310",
+    0
+   ],
+   "negative": [
+    "11316:10309",
+    0
+   ],
+   "latent_image": [
+    "11316:11335",
+    0
+   ],
+   "noise_seed": [
+    "11315",
+    0
+   ],
+   "steps": [
+    "11316:10303",
+    0
+   ],
+   "sampler_name": [
+    "11316:10292:10332",
+    0
+   ],
+   "scheduler": [
+    "11316:10292:10333",
+    0
+   ],
+   "add_noise": "enable",
+   "cfg": 1,
+   "start_at_step": 0,
+   "end_at_step": 10000,
+   "return_with_leftover_noise": "disable"
+  },
+  "_meta": {
+   "title": "Sampler | First Pass"
+  }
+ },
+ "11316:10294": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "11316:10296",
+    0
+   ],
+   "values.b": [
+    "11316:10304",
+    0
+   ],
+   "expression": "a - b"
+  },
+  "_meta": {
+   "title": "Start Step Math"
+  }
+ },
+ "11316:10296": {
+  "class_type": "mxSlider",
+  "inputs": {
+   "Xi": 40,
+   "Xf": 40,
+   "isfloatX": 0
+  },
+  "_meta": {
+   "title": "Second Pass | Thick Details --------> Thin Details"
+  }
+ },
+ "11316:10320:10340": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "any": [
+    "11316:10322",
+    0
+   ],
+   "index": 0
+  },
+  "_meta": {
+   "title": "model"
+  }
+ },
+ "11316:10320:10341": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "any": [
+    "11316:10322",
+    0
+   ],
+   "index": 1
+  },
+  "_meta": {
+   "title": "clip"
+  }
+ },
+ "11316:10320:10342": {
+  "class_type": "easy indexAnything",
+  "inputs": {
+   "any": [
+    "11316:10322",
+    0
+   ],
+   "index": 2
+  },
+  "_meta": {
+   "title": "vae_video"
+  }
+ },
+ "11316:10297": {
+  "class_type": "H3ImageDecode",
+  "inputs": {
+   "samples": [
+    "11316:10290",
+    0
+   ],
+   "vae": [
+    "11316:10320:10342",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "H3ImageDecode"
+  }
+ },
+ "11316:10298": {
+  "class_type": "H3ImageFrameSelector",
+  "inputs": {
+   "frames": [
+    "11316:10297",
+    0
+   ],
+   "recommended_index": [
+    "11316:10297",
+    3
+   ],
+   "strategy": "best_quality",
+   "manual_index": 0,
+   "skip_first_frames": 0,
+   "candidate_start": 0,
+   "candidate_end": 1,
+   "similarity_weight": 0.25,
+   "top_k": 4,
+   "emit_candidate_batch": true
+  },
+  "_meta": {
+   "title": "H3ImageFrameSelector"
+  }
+ },
+ "11316:10299": {
+  "class_type": "ImpactGaussianBlurMask",
+  "inputs": {
+   "mask": [
+    "11316:10326",
+    0
+   ],
+   "kernel_size": 8,
+   "sigma": 4
+  },
+  "_meta": {
+   "title": "ImpactGaussianBlurMask"
+  }
+ },
+ "11316:10300": {
+  "class_type": "mxSlider",
+  "inputs": {
+   "Xi": 1,
+   "Xf": 1,
+   "isfloatX": 1
+  },
+  "_meta": {
+   "title": "Ref Identity Strenght"
+  }
+ },
+ "11316:10301": {
+  "class_type": "easy cleanGpuUsed",
+  "inputs": {
+   "anything": [
+    "11316:10307",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "easy cleanGpuUsed"
+  }
+ },
+ "11316:10302": {
+  "class_type": "InpaintStitchImproved",
+  "inputs": {
+   "stitcher": [
+    "11316:10328",
+    0
+   ],
+   "inpainted_image": [
+    "11316:11337",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "InpaintStitchImproved"
+  }
+ },
+ "11316:10303": {
+  "class_type": "mxSlider",
+  "inputs": {
+   "Xi": 16,
+   "Xf": 16,
+   "isfloatX": 0
+  },
+  "_meta": {
+   "title": "First Pass |  Steps"
+  }
+ },
+ "11316:10304": {
+  "class_type": "mxSlider",
+  "inputs": {
+   "Xi": 6,
+   "Xf": 6,
+   "isfloatX": 0
+  },
+  "_meta": {
+   "title": "Second Pass | Steps  (More = More Changes)"
+  }
+ },
+ "11316:10305": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "11316:10328",
+    1
+   ],
+   "megapixels": [
+    "11304",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "ImageScaleToTotalPixels"
+  }
+ },
+ "11316:10306": {
+  "class_type": "StringReplace",
+  "inputs": {
+   "string": [
+    "11316:10285",
+    0
+   ],
+   "find": "Image 9",
+   "replace": "<Picture 9>"
+  },
+  "_meta": {
+   "title": "StringReplace"
+  }
+ },
+ "11316:10307": {
+  "class_type": "ImageCompositeMasked",
+  "inputs": {
+   "destination": [
+    "11316:10288",
+    0
+   ],
+   "source": [
+    "11316:10302",
+    0
+   ],
+   "mask": [
+    "11316:10299",
+    0
+   ],
+   "x": 0,
+   "y": 0,
+   "resize_source": false
+  },
+  "_meta": {
+   "title": "ImageCompositeMasked"
+  }
+ },
+ "11316:10308": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "11301",
+    0
+   ],
+   "megapixels": [
+    "11304",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "ImageScaleToTotalPixels"
+  }
+ },
+ "11316:10309": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "11316:10310",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ConditioningZeroOut"
+  }
+ },
+ "11316:10310": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:10312",
+    0
+   ],
+   "on_true": [
+    "11316:10318",
+    0
+   ],
+   "switch": [
+    "11316:10317",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "ComfySwitchNode"
+  }
+ },
+ "11316:10311": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:10312",
+    1
+   ],
+   "on_true": [
+    "11316:10318",
+    1
+   ],
+   "switch": [
+    "11316:10317",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "ComfySwitchNode"
+  }
+ },
+ "11316:10312": {
+  "class_type": "H3TextToImagePrepare",
+  "inputs": {
+   "clip": [
+    "11316:10320:10341",
+    0
+   ],
+   "prompt": [
+    "11316:10306",
+    0
+   ],
+   "width": [
+    "11316:10313",
+    0
+   ],
+   "height": [
+    "11316:10313",
+    1
+   ],
+   "quality_profile": "recommended | 5 frames",
+   "optimize_for_still": true
+  },
+  "_meta": {
+   "title": "H3TextToImagePrepare"
+  }
+ },
+ "11316:10313": {
+  "class_type": "GetImageSize",
+  "inputs": {
+   "image": [
+    "11316:10305",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "GetImageSize"
+  }
+ },
+ "11316:10314": {
+  "class_type": "MiniMaxH3ReferenceSplitter",
+  "inputs": {
+   "references": [
+    "11316:10331",
+    19
+   ]
+  },
+  "_meta": {
+   "title": "MiniMaxH3ReferenceSplitter"
+  }
+ },
+ "11316:10315": {
+  "class_type": "MiniMaxH3ReferenceSplitter",
+  "inputs": {
+   "references": [
+    "11316:10331",
+    19
+   ]
+  },
+  "_meta": {
+   "title": "MiniMaxH3ReferenceSplitter"
+  }
+ },
+ "11316:10316": {
+  "class_type": "Any Switch (rgthree)",
+  "inputs": {
+   "any_01": [
+    "11316:10315",
+    0
+   ],
+   "any_02": [
+    "11316:10315",
+    1
+   ],
+   "any_06": [
+    "11316:10315",
+    5
+   ],
+   "any_07": [
+    "11316:10315",
+    6
+   ],
+   "any_08": [
+    "11316:10315",
+    7
+   ],
+   "any_09": [
+    "11316:10315",
+    8
+   ]
+  },
+  "_meta": {
+   "title": "Any Switch (rgthree)"
+  }
+ },
+ "11316:10317": {
+  "class_type": "ImageExists",
+  "inputs": {
+   "image": [
+    "11316:10316",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ImageExists"
+  }
+ },
+ "11316:10318": {
+  "class_type": "H3ReferenceEditPrepare",
+  "inputs": {
+   "clip": [
+    "11316:10320:10341",
+    0
+   ],
+   "vae": [
+    "11316:10320:10342",
+    0
+   ],
+   "source_image": [
+    "11316:10314",
+    0
+   ],
+   "reference_image_2": [
+    "11316:10314",
+    1
+   ],
+   "reference_image_3": [
+    "11316:10314",
+    2
+   ],
+   "reference_image_4": [
+    "11316:10314",
+    3
+   ],
+   "reference_image_5": [
+    "11316:10314",
+    4
+   ],
+   "reference_image_6": [
+    "11316:10314",
+    5
+   ],
+   "reference_image_7": [
+    "11316:10314",
+    6
+   ],
+   "reference_image_8": [
+    "11316:10314",
+    7
+   ],
+   "reference_image_9": [
+    "11316:10314",
+    8
+   ],
+   "edit_instruction": [
+    "11316:10306",
+    0
+   ],
+   "width": [
+    "11316:10313",
+    0
+   ],
+   "height": [
+    "11316:10313",
+    1
+   ],
+   "source_fidelity": [
+    "11316:10300",
+    0
+   ],
+   "quality_profile": "recommended | 5 frames",
+   "source_fit": "contain_pad",
+   "reference_detail": "max_identity_2048",
+   "optimize_for_still": true
+  },
+  "_meta": {
+   "title": "H3ReferenceEditPrepare"
+  }
+ },
+ "11316:10319": {
+  "class_type": "MiniMaxH3SigmaShift",
+  "inputs": {
+   "model": [
+    "11312",
+    0
+   ],
+   "shift_video": 12,
+   "shift_audio": 3
+  },
+  "_meta": {
+   "title": "MiniMaxH3SigmaShift"
+  }
+ },
+ "11316:10321": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "CLIPLoader"
+  }
+ },
+ "11316:10322": {
+  "class_type": "Basic data handling: ListCreate",
+  "inputs": {
+   "item_0": [
+    "11316:11329",
+    0
+   ],
+   "item_1": [
+    "11316:10321",
+    0
+   ],
+   "item_2": [
+    "11316:10324",
+    0
+   ],
+   "item_3": ""
+  },
+  "_meta": {
+   "title": "Basic data handling: ListCreate"
+  }
+ },
+ "11316:10324": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "Load VAE Video"
+  }
+ },
+ "11316:10326": {
+  "class_type": "ImpactConditionalBranch",
+  "inputs": {
+   "tt_value": [
+    "11316:10272",
+    0
+   ],
+   "ff_value": [
+    "11316:10277",
+    0
+   ],
+   "cond": [
+    "11316:10327",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "пусто → весь кадр | есть → маска"
+  }
+ },
+ "11316:10327": {
+  "class_type": "easy isMaskEmpty",
+  "inputs": {
+   "mask": [
+    "11316:10288",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "маска нарисована?"
+  }
+ },
+ "11316:10328": {
+  "class_type": "InpaintCropImproved",
+  "inputs": {
+   "image": [
+    "11316:10289",
+    0
+   ],
+   "mask": [
+    "11316:10326",
+    0
+   ],
+   "downscale_algorithm": "lanczos",
+   "upscale_algorithm": "lanczos",
+   "preresize": false,
+   "preresize_mode": "ensure minimum and maximum resolution",
+   "preresize_min_width": 1024,
+   "preresize_min_height": 1024,
+   "preresize_max_width": 1024,
+   "preresize_max_height": 1024,
+   "mask_fill_holes": true,
+   "mask_expand_pixels": 0,
+   "mask_invert": false,
+   "mask_blend_pixels": 40,
+   "mask_hipass_filter": 0,
+   "extend_for_outpainting": false,
+   "extend_up_factor": 1,
+   "extend_down_factor": 1,
+   "extend_left_factor": 1,
+   "extend_right_factor": 1,
+   "context_from_mask_extend_factor": 1,
+   "output_resize_to_target_size": false,
+   "output_target_width": 1024,
+   "output_target_height": 1024,
+   "output_padding": "16",
+   "device_mode": "gpu (much faster)"
+  },
+  "_meta": {
+   "title": "InpaintCropImproved"
+  }
+ },
+ "11316:10330": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "11316:10328",
+    1
+   ],
+   "megapixels": [
+    "11304",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "resolution_steps": 32
+  },
+  "_meta": {
+   "title": "ImageScaleToTotalPixels"
+  }
+ },
+ "11316:10331": {
+  "class_type": "MiniMaxH3PromptBuilder",
+  "inputs": {
+   "picture_1": [
+    "11316:10330",
+    0
+   ],
+   "picture_2": [
+    "11302",
+    0
+   ],
+   "prompt_text": "subject_definitions:\n\n\nsummary:\n[reference generation] \n\nretention_analysis:\n\n\ndetailed_description:\n\n\noverall_soundscape:\n\n\nnon_diegetic_music:\nN/A",
+   "builder_state": "{\"version\":1,\"mode\":\"REF\",\"off\":{},\"duration\":5,\"p2Shot\":1,\"lastShot\":1,\"imd\":\"\",\"soundscape\":\"\",\"music\":\"N/A\",\"ref\":{\"subjectDefs\":[],\"summaryTypes\":[\"reference generation\"],\"summaryText\":\"\",\"retention\":[],\"styleLine\":\"\",\"detail\":\"\",\"soundscape\":\"\",\"music\":\"N/A\"}}",
+   "Edit prompt…": null,
+   "+ Media loader": null,
+   "mmh3_summary": ""
+  },
+  "_meta": {
+   "title": "MiniMaxH3PromptBuilder"
+  }
+ },
+ "11316:10325:10343": {
+  "class_type": "Basic data handling: ListCreate",
+  "inputs": {
+   "item_0": ""
+  },
+  "_meta": {
+   "title": "Basic data handling: ListCreate"
+  }
+ },
+ "11316:10325:10344": {
+  "class_type": "ResolutionSelector",
+  "inputs": {
+   "aspect_ratio": "21:9 (Ultrawide)",
+   "megapixels": 4,
+   "multiple": 32
+  },
+  "_meta": {
+   "title": "ResolutionSelector"
+  }
+ },
+ "11316:11319": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "Модель 0: fl2v · MiniMax H3 fl2va"
+  }
+ },
+ "11316:11320": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "11299",
+    0
+   ],
+   "expression": "a == 0"
+  },
+  "_meta": {
+   "title": "Модель 0 выбрана? (idx == 0)"
+  }
+ },
+ "11316:11321": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "Модель 1: ref2v · MiniMax H3 ref2va"
+  }
+ },
+ "11316:11322": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "11299",
+    0
+   ],
+   "expression": "a == 1"
+  },
+  "_meta": {
+   "title": "Модель 1 выбрана? (idx == 1)"
+  }
+ },
+ "11316:11323": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "10Eros_Max_h3_hybrid_beta5_int8.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "Модель 2: 10Eros Max (hybrid beta5)"
+  }
+ },
+ "11316:11324": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "11299",
+    0
+   ],
+   "expression": "a == 2"
+  },
+  "_meta": {
+   "title": "Модель 2 выбрана? (idx == 2)"
+  }
+ },
+ "11316:11325": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "Модель 3: PinkCherry (ref2va beta-0.6)"
+  }
+ },
+ "11316:11326": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "11299",
+    0
+   ],
+   "expression": "a == 3"
+  },
+  "_meta": {
+   "title": "Модель 3 выбрана? (idx == 3)"
+  }
+ },
+ "11316:11327": {
+  "class_type": "DiffusionModelLoaderKJ",
+  "inputs": {
+   "model_name": "Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors",
+   "weight_dtype": "default",
+   "compute_dtype": "default",
+   "patch_cublaslinear": false,
+   "sage_attention": "disabled",
+   "enable_fp16_accumulation": false
+  },
+  "_meta": {
+   "title": "Модель 4: Singularity ref2va v1.3"
+  }
+ },
+ "11316:11328": {
+  "class_type": "ComfyMathExpression",
+  "inputs": {
+   "values.a": [
+    "11299",
+    0
+   ],
+   "expression": "a == 4"
+  },
+  "_meta": {
+   "title": "Модель 4 выбрана? (idx == 4)"
+  }
+ },
+ "11316:11329": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:11330",
+    0
+   ],
+   "on_true": [
+    "11316:11319",
+    0
+   ],
+   "switch": [
+    "11316:11320",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "Модель: fl2v"
+  }
+ },
+ "11316:11330": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:11331",
+    0
+   ],
+   "on_true": [
+    "11316:11321",
+    0
+   ],
+   "switch": [
+    "11316:11322",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "Модель: ref2v"
+  }
+ },
+ "11316:11331": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:11332",
+    0
+   ],
+   "on_true": [
+    "11316:11323",
+    0
+   ],
+   "switch": [
+    "11316:11324",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "Модель: 10Eros"
+  }
+ },
+ "11316:11332": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:11333",
+    0
+   ],
+   "on_true": [
+    "11316:11325",
+    0
+   ],
+   "switch": [
+    "11316:11326",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "Модель: PinkCherry"
+  }
+ },
+ "11316:11333": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:11319",
+    0
+   ],
+   "on_true": [
+    "11316:11327",
+    0
+   ],
+   "switch": [
+    "11316:11328",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "Модель: Singularity"
+  }
+ },
+ "11316:11334": {
+  "class_type": "FizgigH3StillLatent",
+  "inputs": {
+   "width": [
+    "11316:10313",
+    0
+   ],
+   "height": [
+    "11316:10313",
+    1
+   ],
+   "batch_size": 1
+  },
+  "_meta": {
+   "title": "Fizgig · латент 1 кадр"
+  }
+ },
+ "11316:11335": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:10311",
+    0
+   ],
+   "on_true": [
+    "11316:11334",
+    0
+   ],
+   "switch": [
+    "11338",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Fizgig: латент 1 кадр ↔ обычный H3 латент"
+  }
+ },
+ "11316:11336": {
+  "class_type": "FizgigH3StillDecode",
+  "inputs": {
+   "samples": [
+    "11316:10290",
+    0
+   ],
+   "vae": [
+    "11316:10320:10342",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Fizgig · декод 1 кадра"
+  }
+ },
+ "11316:11337": {
+  "class_type": "ComfySwitchNode",
+  "inputs": {
+   "on_false": [
+    "11316:10298",
+    0
+   ],
+   "on_true": [
+    "11316:11336",
+    0
+   ],
+   "switch": [
+    "11338",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Fizgig: декод 1 кадра ↔ H3ImageFrameSelector"
+  }
+ },
+ "11309": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "11316:10320:10340",
+    0
+   ],
+   "lora_name": "stacy_h3_A_stills_000001750.safetensors",
+   "strength_model": 1
+  },
+  "_meta": {
+   "title": "LoraLoaderModelOnly"
+  }
+ },
+ "11312": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "11309",
+    0
+   ],
+   "lora_name": "penisv2MinimaxH3.HbNF.safetensors",
+   "strength_model": 0.6
+  },
+  "_meta": {
+   "title": "LoraLoaderModelOnly"
+  }
+ },
+ "11314": {
+  "class_type": "Text Multiline",
+  "inputs": {
+   "text": "St4cy_H3. Just a single photo. <Image 1> is only a reference to the location and background, not the layout. <Image 2> is just an identification sheet, not a layout. The woman from <Image 2> is at the place indicated in <Image 1>, near the dancing pole. Frontal close-up, focused on her face. She is sitting on her heels on a wooden floor with her back straight; her arms are behind her back and out of frame, and her mouth is open, ready for penetration. A separate, realistic, and disproportionately large erect penis <Image 3> —floating in mid-air as an independent object—is oriented with its glans toward her mouth. Her eyes are open and she's looking straight at the camera.\n\nComposition: A frontal close-up of her face, with the penis positioned in front of it, floating in mid-air as a distinct object <Image 3>. Her kneeling body and the wooden floor—including the pole—are partially visible around her, with her hands bound behind her back (as seen in <Image 1>).\n\nCamera angle: You can choose the most natural and convincing frontal close-up of the face at eye level, from top to bottom. Bring the camera slightly closer and zoom in on the image compared to the cropping in <Image 1> (keep the same location and overall composition, just shorten the frame a little). Static frame. Semi-realistic style. The lighting remains unchanged compared to <Image 1>. The colors and saturation have not changed compared to <Image 1>. Human proportions and natural anatomy are respected. Realistic scale: a woman of average height (about 168 cm), her dimensions correspond to the real objects in <Image 1> - the wooden floor and metal pillar retain their true dimensions, she kneels at the required depth in the floor plane, her body is grounded and her height corresponds to the perspective of this place, and she never increases to fill in the frame."
+  },
+  "_meta": {
+   "title": "Text Multiline"
+  }
+ },
+ "11315": {
+  "class_type": "SeedNode",
+  "inputs": {
+   "seed": 512530701740972
+  },
+  "_meta": {
+   "title": "SeedNode"
+  }
+ },
+ "11317": {
+  "class_type": "ModelPreviewOverrideKJ",
+  "inputs": {
+   "model": [
+    "11316:10319",
+    0
+   ],
+   "max_resolution": 1024,
+   "jpeg_quality": 80,
+   "suppress_default_preview": true,
+   "preview_frames": 1,
+   "preview_fps": 1,
+   "tiny_vae": "taeh3.safetensors",
+   "preview": ""
+  },
+  "_meta": {
+   "title": "MiniMax Sampling Preview"
+  }
+ },
+ "11318": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "11316:10301",
+    0
+   ],
+   "filename_prefix": "ND_MMH3_"
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ },
+ "11338": {
+  "class_type": "PrimitiveBoolean",
+  "inputs": {
+   "value": false
+  },
+  "_meta": {
+   "title": "Fizgig (1 кадр, быстрее)"
+  }
+ }
+}

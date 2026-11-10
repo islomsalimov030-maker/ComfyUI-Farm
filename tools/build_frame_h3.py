@@ -358,6 +358,14 @@ def build(nd_path, compact_path, outdir):
     errs = K.check_api(api)
     assert not errs, errs
     K.dump(api, os.path.join(outdir, "frame_h3@1.api.json"))
+
+    # @2 — склеенные одинаковые загрузчики (WS-14, OOM: два CLIPLoader по 25 ГБ).
+    import dedup_loaders as DL
+    api2, notes = DL.dedup(api)
+    K.dump(api2, os.path.join(outdir, "frame_h3@2.api.json"))
+    print(f"frame_h3@2: {len(api2)} узлов; склеено: {len(notes)}")
+    for n in notes:
+        print("   •", n)
     return ui, api
 
 

@@ -1,0 +1,45 @@
+# WS-07: утверждённый SFW-раунд A, 15.10.2026. Не запускает старые серии.
+# Фото/ref-edit; не является тестом I2V. Рецепт hybrid пока экспериментальный.
+kit: /workspace/farm/experiments/kit
+out: /workspace/farm/experiments
+timeout_s: 900
+strict_models: true
+stop_on_error: true
+require_budget: true
+fingerprint_settings: true
+estimate_frame_s: null             # скорость — только после проб, не старые 50 с turbo
+
+poses: [Sitting-8, Standing-2, Sitting-2, Lying-4]
+seeds:
+  Sitting-8: [7964195526916, 55405436144670]
+  Standing-2: [27679282781481, 61875092394976]
+  Sitting-2: [17676988137143, 83539730532196]
+  Lying-4: [96719494912228, 29868172234514]
+
+# Comfy-Org r2v: base без turbo = res_multistep/simple, 20 шагов, BasicGuider (CFG 1).
+# Здесь два прохода Image Studio: 20 полных + последние 8 из 20 (denoise ~0.4).
+# Второй проход и shift 12 — экспериментальный рецепт фермы, не пресет авторов hybrid.
+arms:
+  base_ref2va:
+    model: minimax_h3_ref2va_pruned_int8_convrot.safetensors
+    loras: []
+    knobs: &plain_knobs {pass1_steps: 20, pass2_total: 20, pass2_steps: 8, shift: 12}
+    sampler: &plain_sampler {cfg: 1.0, sampler_name: res_multistep, scheduler: simple}
+  eros_beta5:
+    model: 10Eros_Max_h3_hybrid_beta5_int8.safetensors
+    loras: []
+    knobs: *plain_knobs
+    sampler: *plain_sampler
+  pinkcherry_v18:
+    model: PinkCherry_hybrid_v1.8_int8_minimax_h3_pruned.safetensors
+    loras: []
+    knobs: *plain_knobs
+    sampler: *plain_sampler
+
+series:
+  round_a:
+    kind: frame
+    gen: [A]
+    arm: [base_ref2va, eros_beta5, pinkcherry_v18]
+    variant: [fixe]
+    seeds: 2

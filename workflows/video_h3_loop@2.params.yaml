@@ -1,0 +1,64 @@
+# Карта параметров video_h3_loop@1 (CONTRACTS §6). Адресация только по title. Сборка: tools/build_video_h3_loop2.py (из @1)
+workflow: video_h3_loop@2
+api: video_h3_loop@2.api.json
+ui: video_h3_loop@2.ui.json
+source: "Stacy_H3_compact (5).json"
+
+inputs:            # подставляет оркестратор
+  keyframe:   {title: "IN keyframe · ключевой кадр (первый = последний)", input: image, type: image}
+  face_ref:   {title: "IN face_ref · эталон лица <Picture 2>", input: image, type: image}
+  end_frame:  {title: "IN end_frame · конечный кадр <Picture 3> (loop ВЫКЛ + end_frame ВКЛ)", input: image, type: image,
+               optional: true, if_missing: same_as_keyframe}   # узел валидируется всегда; читается только при end_frame_on
+  prompt:     {title: "IN prompt · промпт генерации", input: value, type: string}     # ref-гайд H3, [keyframe completion]
+  face_prompt: {title: "IN face_prompt · промпт face pass", input: value, type: string} # триггер St4cy_H3
+  motion_ref: {title: "IN motion_ref · видео-референс <Video 1> (необязательно)", input: video, type: video,
+               optional: true, if_missing: "(none)"}
+  seed:       {title: "PANEL", input: seed, type: int}                                # face pass берёт seed+17
+  duration_s: {title: "PANEL", input: duration_sec, type: float, range: [5, 10], step: 0.25}
+  loop:       {title: "PANEL", input: loop, type: bool, default: true}
+  end_frame_on: {title: "PANEL", input: end_frame, type: bool, default: false}         # только при loop=false
+
+arm:               # «рука» бандита для видео
+  model: {title: "ARM model · H3 ref2va", input: unet_name, type: file, folder: diffusion_models,
+          default: Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors}
+  lora:  {title: "ARM lora · LoRA персонажа (сила = PANEL char_lora)", input: lora_name, type: file, folder: loras,
+          default: stacy_h3_A_stills_000001750.safetensors}
+  lora_w: {title: "PANEL", input: char_lora, type: float, range: [0, 1.5], default: 1.0}  # 0 = выкл
+
+knobs:             # что крутит ремонтная петля (fail_code → ручка, qa/routing.yaml)
+  steps:          {title: "KNOB steps", input: value, type: int, range: [6, 20], default: 8}
+  shift:          {title: "KNOB shift", input: value, type: float, range: [10, 14], default: 12}
+  color_lock:     {title: "KNOB color_lock", input: value, type: float, range: [-1, 1], default: -1, auto: -1}
+  seam_crossfade: {title: "KNOB seam_crossfade", input: value, type: int, range: [-1, 16], default: -1, auto: -1}
+  temporal_strength: {title: "KNOB temporal_strength", input: value, type: float, range: [0, 1], default: 1.0}
+  face_pass:      {title: "PANEL", input: face_pass, type: enum, values: [auto, "on", "off"], default: auto}
+  face_denoise_auto: {title: "PANEL", input: face_denoise_auto, type: bool, default: true}
+  face_denoise:   {title: "PANEL", input: face_denoise, type: float, range: [0.1, 0.5], default: 0.3, needs: {face_denoise_auto: false}}
+  face_lora:      {title: "PANEL", input: face_lora, type: float, range: [0, 1.5], default: 1.0}
+  face_lock_temporal: {title: "PANEL", input: face_lock_temporal, type: float, range: [0, 0.95], default: 0.8}
+  face_confidence: {title: "KNOB face_confidence", input: value, type: float, range: [-1, 0.6], default: -1, auto: -1}
+  crop_factor:    {title: "KNOB crop_factor", input: value, type: float, range: [1.8, 3.5], default: 2.5}
+  large_face_mult: {title: "KNOB large_face_mult", input: value, type: float, range: [0.1, 1.0], default: 0.35}
+  face_lock:      {title: "KNOB face_lock", input: value, type: float, range: [0, 1], default: 1.0}
+  hand_strength:  {title: "KNOB hand_strength", input: value, type: float, range: [0, 1], default: 0.2}
+  free_vram:      {title: "PANEL", input: free_vram, type: enum, values: [auto, "on", "off"], default: "on"}  # @2: ВКЛ (под: лимит ОЗУ контейнера 94 ГБ)
+
+fixed:             # не трогать оркестратором
+  mode: {title: "PANEL", input: mode, value: true}          # true = GENERATE; режим face pass готового видео — только в ui
+  # StacyLoop ≥ feff837 (сейчас c93c08a): на PANEL есть model_10eros / steps / shift (для ручного Stacy_H3_compact). В этом движке
+  # они ни к чему не подключены — модель задаёт ARM model, шаги и shift — KNOB steps / KNOB shift. Значения только
+  # для валидации и строки в отчёте.
+  panel_model_10eros: {title: "PANEL", input: model_10eros, value: false}
+  panel_steps:        {title: "PANEL", input: steps, value: 8}
+  panel_shift:        {title: "PANEL", input: shift, value: 12.0}
+
+outputs:
+  video_fullhd: {title: "OUT video · итог FullHD 24 fps", kind: video}   # history: images[0] (SaveVideo)
+  last_frame:   {title: "OUT last_frame · последний кадр", kind: image}   # только в API (в UI нет)
+  report:       {title: "OUT report · отчёт генерации", kind: text}
+
+notes:
+  - "@2: видео 10 с FullHD на поде — ComfyUI с --cache-none (COMFY_ARGS), иначе OOM по лимиту контейнера 94 ГБ; запас 7–9 ГБ."
+  - "Длина привязывается к сетке H3 17k+5 при 24 fps: seconds_actual = (n-1)/24 (7 с → 175 кадров = 7.25 с). Промпт писать под seconds_actual: StacyPromptRetime сдвигает только конечную метку."
+  - "AUTO-ручки (-1): значение, которое реально применилось, печатается в OUT report — логировать его в attempts.params_json."
+  - "ARM model: Singularity ref2va — дообученная H3 с Civitai, лицензия автора не проверена (STATUS блокер 4); идёт без turbo-LoRA на 8 шагах."

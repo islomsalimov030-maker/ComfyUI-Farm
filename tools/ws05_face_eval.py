@@ -2,7 +2,7 @@
 
     .venv/Scripts/python tools/ws05_face_eval.py --det mediapipe   # и --det buffalo_l для сверки
 
-Данные только читаются (C:\\stacy-lora). Пишет JSON с метриками по каждому кадру/набору.
+Данные только читаются (STACY_DATA, по умолчанию D:/stacy-lora). Пишет JSON с метриками по каждому кадру/набору.
 """
 from __future__ import annotations
 
@@ -12,13 +12,16 @@ import json
 import sys
 from pathlib import Path
 
+
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from farm.qa import face as F  # noqa: E402
 from farm.qa.image.sharp import face_sharpness  # noqa: E402
+from stacy_data import stacy_data  # noqa: E402
 
-ROOT = Path(r"C:\stacy-lora")
+ROOT = stacy_data()
 SETS = {"new": ROOT / "frames/sfw_final_frames", "old": ROOT / "frames/sfw_final_frames/_old_c83",
         "src": ROOT / "frames/sfw"}
 RU = {"lying": "лежа", "sitting": "сидя", "standing": "стоя"}

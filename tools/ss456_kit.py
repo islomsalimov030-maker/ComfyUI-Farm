@@ -5,7 +5,7 @@
 target.json (стопы, ожидаемая высота и верх головы — для ss340_eval). Промпты — ref-формат H3, проверка линтером
 фермы. Без листа и без LoRA: Subject 1 описан словами (desc_en мода персонажа), одежда — desc_en мода одежды
 или одежда рефов персонажа. Только SFW.
-  python tools/ss456_kit.py --src C:/stacy-lora --out C:/stacy-lora/_claude/ss456/kit_d
+  python tools/ss456_kit.py --src $STACY_DATA --out $STACY_DATA/_claude/ss456/kit_d
 """
 from __future__ import annotations
 
@@ -15,11 +15,13 @@ import math
 import sys
 from pathlib import Path
 
+
 import yaml
 from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "tools")]
+from stacy_data import stacy_data
 from farm.prompts.lint import errors, lint  # noqa: E402
 from farm.qa.image.scale import expected_height  # noqa: E402
 from ss340_scale_kit import card_from_draft  # noqa: E402
@@ -237,7 +239,7 @@ def prompt(sc: dict, desc_char: str, outfit: str, zone_desc: str, mode: str) -> 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default="C:/stacy-lora")
+    ap.add_argument("--src", default=str(stacy_data()))
     ap.add_argument("--out", required=True)
     ap.add_argument("--cards", default="_claude/ss456/plates_samantha_loft.yaml")
     ap.add_argument("--aspect", help="например 16:9 — плита = кроп исходника локации этого аспекта вокруг зоны")

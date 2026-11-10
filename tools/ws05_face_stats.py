@@ -7,11 +7,15 @@ from __future__ import annotations
 import csv
 import json
 import sys
+from pathlib import Path
 
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
 
-CSV = r"C:/stacy-lora/frames/face_metrics_final.csv"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from stacy_data import stacy_data  # noqa: E402
+
+CSV = str(stacy_data() / "frames" / "face_metrics_final.csv")
 GT_COL = {"new": "id_new", "old": "id_old_c83", "src": "id_src"}
 # решение пользователя по кадрам v2 (STACY_CONTEXT §6): не Стейси/не дотянуто — Лежа-2, Лежа-5;
 # ненадёжно — Стоя-11 (профиль, мелкое лицо); остальные — принять (Сидя-1/2 «на глаз нормально»)

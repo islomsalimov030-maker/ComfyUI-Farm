@@ -3,7 +3,7 @@
 высота камеры, слот) и позы одобренного кадра v2 → рамка тела нужного роста в нужном месте пола →
 зелёная рамка на копии плиты, скелет того же размера (Picture 4), промпты, card.json и target.json.
 
-    python tools/ss340_scale_kit.py --plates C:/stacy-lora/_claude/ws03/plates_apartment.yaml \\
+    python tools/ss340_scale_kit.py --plates $STACY_DATA/_claude/ws03/plates_apartment.yaml \\
         --plate apartment/window --pose Standing-2 --height 162 --slot A --name s2A
     python tools/ss340_scale_kit.py ... --feet 0.511,0.987 --name s2v2     # стопы там же, где у v2, рост 162
 
@@ -22,11 +22,13 @@ import statistics as st
 import sys
 from pathlib import Path
 
+
 import numpy as np
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "tools")]
+from stacy_data import stacy_data
 
 import ws07_lib as L  # noqa: E402
 from farm.prompts.lint import errors, lint  # noqa: E402
@@ -173,7 +175,7 @@ def green_box(plate, box, pad_x: float = 0.15):
 def main() -> int:
     from PIL import Image
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default="C:/stacy-lora")
+    ap.add_argument("--src", default=str(stacy_data()))
     ap.add_argument("--plates", required=True)
     ap.add_argument("--plate", required=True, help="ID плиты в черновике WS-03")
     ap.add_argument("--pose", default="Standing-2", help="поза кита WS-07 (плита, кадр v2)")

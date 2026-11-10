@@ -607,3 +607,10 @@ if __name__ == "__main__":
         api = K.to_api2(u)       # как сделал бы фронтенд: bypass-узлы (RefMod) выброшены, петли разрешены
         K.dump(api, os.path.join(outdir, f"{name}.api.json"))
         print(name, "ui nodes:", len(u["nodes"]), "api nodes:", len(api), "check:", K.check_api(api) or "ok")
+        # @2 — склеенные одинаковые загрузчики (WS-14, OOM).
+        import dedup_loaders as DL
+        api2, notes = DL.dedup(api)
+        K.dump(api2, os.path.join(outdir, f"{name[:-2]}@2.api.json"))
+        print(f"{name[:-2]}@2 api nodes:", len(api2), "склеено:", len(notes))
+        for n in notes:
+            print("   •", n)
