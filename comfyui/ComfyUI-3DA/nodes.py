@@ -3,6 +3,7 @@ import json
 import os
 import re
 import signal
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -904,13 +905,43 @@ class CoreWeights:
         return {'ui': {'text': [text]}, 'result': (text,)}
 
 
+class BlenderRuntime:
+    """Explicit user-space download/probe; bpy is imported only by a child process."""
+    CATEGORY = '3DA'
+    RETURN_TYPES = ('STRING',)
+    RETURN_NAMES = ('report',)
+    FUNCTION = 'execute'
+    OUTPUT_NODE = True
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'download': ('BOOLEAN', {'default': True})}}
+
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        return float('nan')  # an explicit probe must observe the current runtime
+
+    def execute(self, download=True):
+        sys.path.insert(0, str(ROOT / 'tools/scene3d'))
+        import bpy_runtime
+        try:
+            directory = config()['bpy_libs']
+            report = bpy_runtime.ensure(directory) if download else bpy_runtime.diagnose(directory)
+        except Exception as exc:
+            report = {'status': 'error', 'error': error_text(exc)}
+        text = json.dumps(report, ensure_ascii=False)
+        return {'ui': {'text': [text]}, 'result': (text,)}
+
+
 NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
                        '3DANativeGuides': NativeGuides, '3DANativeComposite': NativeComposite,
-                       '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport, '3DACoreWeights': CoreWeights}
+                       '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport, '3DACoreWeights': CoreWeights,
+                       '3DABlenderRuntime': BlenderRuntime}
 NODE_DISPLAY_NAME_MAPPINGS = {'3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
                               '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote',
                               '3DANativeGuides': '3DA · native H3 guides + gate',
                               '3DANativeComposite': '3DA · final room + rigid props',
                               '3DASceneEdits': '3DA · правки выбранных объектов',
                               '3DASceneExport': '3DA · подготовить 3D-сцену для гизмо',
-                              '3DACoreWeights': '3DA Core Weights (MoGe-2, SAM 3D Body)'}
+                              '3DACoreWeights': '3DA Core Weights (MoGe-2, SAM 3D Body)',
+                              '3DABlenderRuntime': '3DA Blender Runtime (bpy libs)'}

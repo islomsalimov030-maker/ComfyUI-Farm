@@ -10,6 +10,19 @@ import traceback
 
 
 def main():
+    if sys.argv[1:2] == ['--libs']:
+        if len(sys.argv) < 4:
+            raise ValueError('--libs requires DIR and SCRIPT')
+        directory = os.path.abspath(sys.argv[2])
+        paths = os.environ.get('LD_LIBRARY_PATH', '').split(os.pathsep)
+        if directory not in paths:
+            if os.environ.get('THREEDA_BPY_LIBS_REEXEC') == '1':
+                raise RuntimeError('bpy library environment lost after re-exec')
+            env = os.environ.copy()
+            env.update(LD_LIBRARY_PATH=os.pathsep.join([directory, *filter(None, paths)]),
+                       THREEDA_BPY_LIBS_REEXEC='1')
+            os.execve(sys.executable, [sys.executable, __file__, *sys.argv[1:]], env)
+        sys.argv = [sys.argv[0], *sys.argv[3:]]
     if len(sys.argv) < 2:
         print('usage: blender_worker.py SCRIPT.py -- ARGS', file=sys.stderr)
         return 2

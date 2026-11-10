@@ -13,7 +13,8 @@ comfyui/ComfyUI-3DA/web/cameraLock.js comfyui/ComfyUI-3DA/web/extension.js
 comfyui/ComfyUI-3DA/web/sceneSelection.js config/placement.yaml
 workflows/3DA_h3_server_api.json workflows/3DA_scene_server_v1.json
 farm/__init__.py farm/comfy_client.py farm/config.py farm/contracts.py
-farm/prompts/config.py farm/prompts/config.yaml farm/prompts/lint.py scripts/push_data.py'''.split()
+farm/prompts/config.py farm/prompts/config.yaml farm/prompts/lint.py scripts/push_data.py
+tools/scene3d/bpy_runtime.py'''.split()
 
 
 def git(out, *args):
@@ -22,7 +23,7 @@ def git(out, *args):
 
 
 def sources(out):
-    return FILES + [p for p in git(out, 'ls-files', 'tools/scene3d').splitlines() if p.endswith('.py')]
+    return list(dict.fromkeys(FILES + [p for p in git(out, 'ls-files', 'tools/scene3d').splitlines() if p.endswith('.py')]))
 
 
 def destination(name):

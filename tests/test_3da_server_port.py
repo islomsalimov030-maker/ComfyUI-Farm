@@ -28,6 +28,7 @@ def test_default_root_and_environment_override(tmp_path):
         cfg = load()
         assert Path(cfg['data_root']) == tmp_path / 'ComfyUI/user/default/3da_data'
         assert cfg['python'] == cfg['geometry_python'] == sys.executable
+        assert Path(cfg['bpy_libs']) == tmp_path / 'ComfyUI/user/default/3da_data/runtime/bpy_libs'
         with patch.dict(os.environ, {'THREEDA_DATA_ROOT': str(tmp_path / 'override')}):
             cfg = load()
             assert Path(cfg['cache_dir']) == tmp_path / 'override/cache'

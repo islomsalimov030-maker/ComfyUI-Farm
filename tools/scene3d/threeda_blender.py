@@ -27,7 +27,9 @@ def command(config, script, args):
     """argv for running a Blender script with `-- args` (same contract as `blender -b --python`)."""
     args = [str(a) for a in args]
     if str(config.get('blender_mode', 'auto')).lower() != 'binary' and bpy_available():
-        return [sys.executable, str(WORKER), str(script), '--', *args]
+        libs = config.get('bpy_libs')
+        flags = ['--libs', str(libs)] if libs and Path(libs).is_dir() else []
+        return [sys.executable, str(WORKER), *flags, str(script), '--', *args]
     blender = str(config.get('blender') or config.get('blender_path') or '')
     if not blender or not Path(blender).is_file():
         raise FileNotFoundError('Blender not available: install bpy (Python 3.13 wheel) or set blender_path in the 3DA config')

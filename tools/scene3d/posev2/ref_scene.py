@@ -31,6 +31,10 @@ def main():
     a = ap.parse_args()
     sys.path.insert(0, a.comfy)
     sys.argv = [sys.argv[0]] + (['--lowvram', '--cache-none'] if os.environ.get('THREEDA_SERVER_MODE') == '1' else [])
+    if os.environ.get('THREEDA_SERVER_MODE') == '1':
+        import comfy.options
+        comfy.options.enable_args_parsing()
+    import comfy.cli_args  # noqa: F401 (parse before folder_paths/nodes initialize model management)
     import numpy as np
     import torch
     from PIL import Image, ImageDraw

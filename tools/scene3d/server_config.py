@@ -48,7 +48,7 @@ def load(path=None):
         raise ValueError('cell_px must be 16')
     cfg['cell_px'] = 16
     for key, default in [('cache_dir', 'cache'), ('mannequin', 'assets/mannequin_162.blend'),
-                         ('blender_pkgs', 'runtime/blender_pkgs')]:
+                         ('blender_pkgs', 'runtime/blender_pkgs'), ('bpy_libs', 'runtime/bpy_libs')]:
         cfg[key] = str(data_path(cfg.get(key, default), root))
     cfg['location_asset_dirs'] = {k: str(data_path(v, root)) for k, v in cfg.get('location_asset_dirs', {}).items()}
     return cfg
