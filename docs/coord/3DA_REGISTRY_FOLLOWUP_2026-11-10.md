@@ -57,6 +57,28 @@ S4. Q04 финал с H3. Тот же граф, перед loadGraphData пос�
 
 S5. Если в шаге 5 вышел 0.1.2 и пользователь его запушил (Action прошёл, GET https://api.comfy.org/nodes/comfyui-3da-scene/install?version=0.1.2 отдаёт downloadUrl): /queue пуст и GET /v2/manager/queue/status is_processing=false → POST /v2/manager/queue/batch `{"install":[{"id":"comfyui-3da-scene","version":"0.1.2","selected_version":"0.1.2","channel":"default","mode":"remote","ui_id":"3da-scene","skip_post_install":false}],"batch_id":"<uuid>"}` (ответ `{"failed": []}`; если 0.1.2 в failed — тот же item под ключом "update") → опрос /v2/manager/queue/status до is_processing=false → хвост /internal/logs/raw. Перезапуск — только после «да» пользователя (спроси в чате). После перезапуска — снова S1 и S3.
 
+## Матрица тестов на сервере (после S4, требование пользователя)
+Цель — проверить, что пак работает не только на Q04: другие позы, 2 других 3D-модели предметов, другие локации. Персонаж тот же (stacy, body.json, манекен 162). Только SFW: одетые позы, предметы бытовые.
+
+Источник сцен — docs/tables/stacy_sfw_test.json (rows: «Зона», «Класс позы», «Объекты», «Поза (стартовая)», «3D (JSON)»), локации mainroom1, mainroom2, mainroom3.
+
+M0. Данные с ПК (как сделан .tmp_3da_port/data для mainroom3; источники — пути из .tmp_3da_port/config.private.yaml: farm_root, location_asset_dirs):
+- локации mainroom1 и mainroom2: `locations/<id>/` с теми же типами файлов, что у mainroom3 (profile.json, plate.json, plate_mesh.obj, plate_rgb.png, depth_loc.png, *_top/_edge/_center/_mask/_pts.npz …). Если готового profile.json для локации нет — локацию не готовить на сервере, а записать в HANDOFF «нет профиля» и взять только готовые;
+- позы: PNG-референсы для 3–4 сцен таблицы/рауда (Q01, Q11, T02 и т.п. — где лежит Q04.png, там ищи остальные). Перед заливкой открой каждую картинку: только одетый персонаж;
+- предметы: 2 разных модели из библиотеки props (farm_root/props/<id>/prop.json + model.glb …), например «mug» из таблицы и ещё одна (не head_close_a648e192). Лицензию модели/источник из prop.json запиши в HANDOFF;
+- `python scripts/push_data.py --source <дерево> --url https://comfy.next-genium.com --location <id> --character stacy --prop <id1> --prop <id2>` для каждой локации (credentials из env). HTTP 413 на большом .glb — записать размер, взять другой предмет;
+- копии картинок для LoadImage: для каждой новой plate_rgb.png и pose PNG — GET /api/userdata/<urlencoded 3da_data/...> → POST /upload/image (multipart: image, subfolder="3da_data/<папка>", type=input, overwrite=true).
+
+M1. Позы (без H3, только постановка; каждая — отдельный queuePrompt тем же способом, что S3): минимум 3 новые позы разных классов (например sit_edge, stand, kneel/recline) на mainroom3 и на локации из таблицы. В графе меняются: LoadImage 37 (pose_ref), 3DAPlacePose 39 (pose_class, target_object, pose_text из «Поза (стартовая)» одной фразой на английском), для другой локации — 3DALocation 38 (location_id) и LoadImage 35 (plate). Новая поза требует весов S2 (MoGe+SAM). Если S2 не удался: посчитай кэш позы на ПК тем же pack_cli (запрос как Q04.request.private.json с новым pose_ref) и залей `--extra cache/pose_ref`.
+
+M2. Предметы: одна сцена с двумя предметами. 3DAProp 47 включить (mode 0), второй 3DAProp — копия, цепочка через props_in (образец связей — workflows/3DA_props_Q04_09g.json, узел 17 → 3DAPlacePose). Постановка, затем финал с H3 (как S4).
+
+M3. Локации: по одной позе на mainroom1 и mainroom2 — постановка; на одной из них — финал с H3.
+
+Для каждого прогона: status, время (execution_start → execution_success), картинки в .tmp_3da_port/server_tests/<прогон>/, твоя оценка глазами: поза совпадает с референсом? тело на опоре (не висит, не в мебели)? масштаб человека к комнате? предметы на месте и правильного размера? на финале: лицо = reference, комната/свет/цвета = plate. Всего H3-финалов не больше 4 (общий сервер). Между прогонами — /queue пуст.
+
+M4. Другое телосложение (только разведка, не делать): прочитай, что задаёт body.json и где используется манекен (assets/mannequin_162.blend, height_m, posev2/body.py, profiles.py), и напиши в HANDOFF, что нужно для персонажа другого телосложения: какой файл/параметры, нужен ли новый .blend-манекен, что пересчитывать.
+
 Картинки посмотри сам и опиши в HANDOFF; файлы оставь в .tmp_3da_port/server_Q04/ (не коммитить).
 
 ## HANDOFF (выдай в конце, одним блоком для копирования в чат)
@@ -73,6 +95,11 @@ Q04 ПК: status=…, тайминги …, prompt diff пуст да/нет, bi
 Q04 S3 постановка: status …, время …, картинка: <описание>, файлы .tmp_3da_port/server_Q04/A_*
 Q04 S4 финал H3: status …, время …, картинка: <описание>, файлы B_*
 S5 0.1.2: установлен да/нет, перезапуск спрошен/сделан
+M0 данные: локации …, позы …, предметы <id: лицензия>…
+M1 позы: <прогон: класс, локация, status, время, оценка>…
+M2 предметы: status, время, оценка постановки и финала
+M3 локации: <локация: status, время, оценка>…
+M4 телосложение: что нужно …
 пропущено и почему: …
 команды push: git -C C:/work/ComfyUI-Farm push origin scene3d-pilot ; git -C C:/work/ComfyUI-3DA-Scene push origin main
 ```
