@@ -98,9 +98,17 @@ class Server:
                 end = stamps.get('execution_success') or stamps.get('execution_error')
                 result = dict(status=history['status']['status_str'],
                               seconds=(end - start) / 1000 if start is not None and end is not None else None)
-                reported_errors = [value for output in history.get('outputs', {}).values()
-                                   for value in output.get('text', [])
-                                   if isinstance(value, str) and value.startswith('status=error')]
+                reported_errors = []
+                for output in history.get('outputs', {}).values():
+                    for value in output.get('text', []):
+                        if not isinstance(value, str):
+                            continue
+                        try:
+                            diagnostic = json.loads(value)
+                        except ValueError:
+                            diagnostic = None
+                        if value.startswith('status=error') or (isinstance(diagnostic, dict) and diagnostic.get('status') == 'error'):
+                            reported_errors.append(value)
                 if reported_errors:
                     result.update(graph_status=result['status'], status='error', node_errors=reported_errors)
                 count = 0

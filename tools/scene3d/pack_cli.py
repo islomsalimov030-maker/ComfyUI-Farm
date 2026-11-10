@@ -81,6 +81,13 @@ def config_for(request):
     return config
 
 
+def worker_python(config, executable):
+    # Server dependencies may live in user-site/PYTHONPATH supplied by its
+    # launcher. -I discards those paths even with the same sys.executable.
+    # Workers remain separate OS processes; explicit PC environments stay isolated.
+    return [executable] if config.get('server_mode') else [executable, '-I']
+
+
 def stderr_tail(value):
     if isinstance(value, bytes):
         value = value.decode("utf-8", errors="replace")
@@ -329,7 +336,7 @@ def prompt_for(profile, config, fit):
     with tempfile.TemporaryDirectory(prefix="3da-prompt-") as temp:
         request_path, output_path = Path(temp) / "request.json", Path(temp) / "result.json"
         save_json(request_path, {"config": config, "profile_data": profile.data, "fit": fit})
-        run_stage([config["python"], "-I", Path(__file__).resolve(), "place", "--request", request_path,
+        run_stage([*worker_python(config, config["python"]), Path(__file__).resolve(), "place", "--request", request_path,
                    "--output", output_path, "--prompt-worker"], "step9 prompt")
         result = read_json(required_file(output_path, "step9 prompt result"))
         if result.get("status") == "error":
@@ -694,7 +701,7 @@ def main(argv=None):
             worker_flag = "--geometry-worker" if args.worker else "--worker"
             worker_out = Path(args.output).resolve().with_name(".pack-" + uuid.uuid4().hex + ".json")
             try:
-                run_stage([executable, "-I", Path(__file__).resolve(), args.command,
+                run_stage([*worker_python(config, executable), Path(__file__).resolve(), args.command,
                            "--request", Path(args.request).resolve(), "--output", worker_out, worker_flag], "farm worker")
                 result = read_json(required_file(worker_out, "worker result"))
             finally:

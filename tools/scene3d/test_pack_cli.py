@@ -381,6 +381,25 @@ def test_main_roundtrip_uses_requested_farm_python(tmp_path):
     assert not list(tmp_path.glob(".pack-*.json"))
 
 
+def test_server_worker_preserves_launcher_pythonpath(tmp_path, monkeypatch):
+    profile_dir(tmp_path)
+    # A launcher-provided sitecustomize is observable only in the child process.
+    # This reproduces deployments supplying Comfy dependencies through PYTHONPATH.
+    packages = tmp_path / 'launcher_packages'
+    packages.mkdir()
+    marker = tmp_path / 'child_environment_loaded'
+    (packages / 'sitecustomize.py').write_text(
+        'from pathlib import Path\nPath(' + repr(str(marker)) + ').write_text("loaded")\n',
+        encoding='utf-8')
+    monkeypatch.setenv('PYTHONPATH', str(packages))
+    req, output = tmp_path / 'request.json', tmp_path / 'result.json'
+    cfg = {**config(tmp_path), 'server_mode': True}
+    cli.save_json(req, {'config': cfg, 'location_id': 'room'})
+    assert cli.main(['location', '--request', str(req), '--output', str(output)]) == 0
+    assert cli.read_json(output)['status'] == 'ok'
+    assert marker.read_text() == 'loaded'
+
+
 def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypatch):
     directory = profile_dir(tmp_path)
     # The mocked geometry/renderer still exchange the real filesystem artifacts.
