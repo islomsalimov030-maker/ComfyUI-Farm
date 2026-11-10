@@ -25,10 +25,15 @@ def outside_metrics(final, plate, composite_support, cfg):
     changed=int(np.any(a!=b,axis=-1)[outside].sum())
     scores=[]
     if outside.any():
-        sigma=cfg['h3']['ssim_sigma'];c1=(cfg['h3']['ssim_k1']*255)**2;c2=(cfg['h3']['ssim_k2']*255)**2
+        sigma=cfg['h3']['ssim_sigma']
+        c1=(cfg['h3']['ssim_k1']*255)**2
+        c2=(cfg['h3']['ssim_k2']*255)**2
         for channel in range(3):
-            x,y=a[...,channel],b[...,channel];mx=gaussian_filter(x,sigma);my=gaussian_filter(y,sigma)
-            vx=gaussian_filter(x*x,sigma)-mx*mx;vy=gaussian_filter(y*y,sigma)-my*my
+            x,y=a[...,channel],b[...,channel]
+            mx=gaussian_filter(x,sigma)
+            my=gaussian_filter(y,sigma)
+            vx=gaussian_filter(x*x,sigma)-mx*mx
+            vy=gaussian_filter(y*y,sigma)-my*my
             cov=gaussian_filter(x*y,sigma)-mx*my
             value=((2*mx*my+c1)*(2*cov+c2))/((mx*mx+my*my+c1)*(vx+vy+c2))
             scores.append(float(value[outside].mean()))
@@ -41,8 +46,10 @@ def outside_metrics(final, plate, composite_support, cfg):
 
 def repair_mask(body_strength, total_strength, body_silhouette=None, prop_silhouette=None):
     if body_silhouette is not None and prop_silhouette is not None:
-        body=np.asarray(body_silhouette,dtype=bool);prop=np.asarray(prop_silhouette,dtype=bool)
-        if not prop.any():return np.zeros_like(prop)
+        body=np.asarray(body_silhouette,dtype=bool)
+        prop=np.asarray(prop_silhouette,dtype=bool)
+        if not prop.any():
+            return np.zeros_like(prop)
         # Noise-map tails overlap even when the actual objects do not. Excluding
         # the whole body noise support would cut a horizontal seam through props
         # near the head. Assign shared background to the nearest real silhouette.

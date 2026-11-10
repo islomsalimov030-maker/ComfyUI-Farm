@@ -636,6 +636,8 @@ CPU, ultralytics 8.4 + `face_yolov8m.pt` / `hand_yolov8s.pt` против mediap
 
 ## 3D-A: server port 2026-11-10 (до Registry)
 
+- Registry followup10.11: autopep8 2.3.2 и pycodestyle2.15.0 — MIT, LICENSE проверены в локальных wheel metadata (`.tmp_3da_port/lint_tools/*dist-info/licenses/LICENSE`); используются только для форматирования, в зависимости пака не добавлены. Коммерческое использование разрешено. Новый launcher импортируется в изолированном `-I` subprocess только после явного добавления script-dir; проверено реальным Q04 и47offline-тестами.
+
 - Установочные/update-скрипты и скачивание Blender отменены прямым изменением задания. Новых моделей/нод и внешнего SAM/MoGe venv нет. Core-классы проверены по локальным исходникам ComfyUI 0.34.6; MoGeInference не принимает `refine_steps`.
 - Требования пака: PyYAML >=6.0.3,<7 — MIT ([LICENSE 6.0.3](https://github.com/yaml/pyyaml/blob/6.0.3/LICENSE)); HTTPX >=0.28.1,<1 — BSD-3-Clause ([LICENSE 0.28.1](https://github.com/encode/httpx/blob/0.28.1/LICENSE.md)); SciPy >=1.15.3,<2 — BSD-3-Clause, бинарные wheels содержат дополнительные permissive runtime-лицензии ([LICENSE 1.15.3](https://github.com/scipy/scipy/blob/v1.15.3/LICENSE.txt), [метаданные и CPython 3.13 wheels](https://pypi.org/pypi/scipy/1.15.3/json)). Это уже используемые зависимости, минимумы уточнены для 3.13; torch/torchvision/NumPy в requirements пака отсутствуют.
 - Blender 5.0.0 (версия фактического ПК binary): GNU GPL, COPYING ссылается на GPLv2 ([COPYING](https://github.com/blender/blender/blob/v5.0.0/COPYING), [текст лицензии](https://github.com/blender/blender/blob/v5.0.0/doc/license/GPL-license.txt)). Коммерческое использование не запрещено. В этой задаче не скачивается и не устанавливается.

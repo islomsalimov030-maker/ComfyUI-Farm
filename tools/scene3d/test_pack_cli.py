@@ -47,8 +47,8 @@ def profile_dir(tmp_path):
 def test_config_defaults_and_fixed_cell(tmp_path):
     cfg = config(tmp_path)
     assert cfg["cell_px"] == 16
-    assert cfg["geometry_python"] == "C:/work/ComfyUI-next/venv/Scripts/python.exe"
-    assert cfg["comfy"] == "C:/work/ComfyUI-next"
+    assert cfg["geometry_python"] == sys.executable
+    assert cfg["comfy"] == __import__('os').environ.get('THREEDA_COMFY_ROOT', str(cli.REPO.parent.parent))
     for cell in (8, 16.5, True):
         with pytest.raises(ValueError, match="cell_px"):
             cli.config_for({"config": {"farm_root": str(tmp_path), "cell_px": cell}})
@@ -391,6 +391,8 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
     mannequin.write_bytes(b"fixture")
     cfg = config(tmp_path)
     cfg.update(blender="blender-fixture", mannequin=str(mannequin), blender_pkgs="Pillow-fixture")
+    monkeypatch.setattr(cli.threeda_blender, "command",
+                        lambda config, script, args: [config['blender'], '--python', str(script), '--', *args])
     events = []
     profile = Profile()
     pf = SimpleNamespace(

@@ -138,8 +138,10 @@ def content_fingerprint(paths):
     h=hashlib.sha256()
     for path in sorted({Path(p).resolve() for p in paths},key=str):
         h.update(str(path).encode('utf-8'))
-        if path.is_file():h.update(path.read_bytes())
-        else:h.update(b'missing')
+        if path.is_file():
+            h.update(path.read_bytes())
+        else:
+            h.update(b'missing')
     return h.hexdigest()
 
 
@@ -222,7 +224,8 @@ def invoke(command, fields, images):
 class Location:
     @classmethod
     def IS_CHANGED(cls,location_id,**kwargs):
-        cfg=config();root=Path(cfg['farm_root'])/'locations'/location_id
+        cfg=config()
+        root=Path(cfg['farm_root'])/'locations'/location_id
         assets=Path(cfg.get('location_asset_dirs',{}).get(location_id,root))
         return content_fingerprint([Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml'))),
                                     *root.rglob('*'),*assets.glob('*')])
@@ -280,15 +283,18 @@ class Prop:
     @classmethod
     def IS_CHANGED(cls,prop_id,**kwargs):
         directory=prop_library()/safe_prop_id(prop_id)
-        cfg=config();paths=[HERE/'nodes.py',HERE/'config.yaml',*directory.glob('*')]
-        if cfg.get('repo'):paths += [Path(cfg['repo'])/'tools/scene3d/prop_gizmo.py',Path(cfg['repo'])/'config/placement.yaml']
+        cfg=config()
+        paths=[HERE/'nodes.py',HERE/'config.yaml',*directory.glob('*')]
+        if cfg.get('repo'):
+            paths += [Path(cfg['repo'])/'tools/scene3d/prop_gizmo.py',Path(cfg['repo'])/'config/placement.yaml']
         location=kwargs.get('location')
         if location and Path(location).is_file():
             paths.append(Path(location))
             try:
                 loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
                 paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
-            except (ValueError,KeyError,OSError):pass
+            except (ValueError,KeyError,OSError):
+                pass
         return content_fingerprint(paths)
 
     def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30, model_3d_info=None, model_3d=None,
@@ -296,7 +302,8 @@ class Prop:
         if model_3d_info is not None and (camera_info is not None or location is not None):
             if camera_info is None or not location:
                 raise ValueError('Гизмо: подключите camera_info и location для проверки камеры')
-            cfg=config();profile=json.loads(Path(location).read_text(encoding='utf-8'))
+            cfg=config()
+            profile=json.loads(Path(location).read_text(encoding='utf-8'))
             plate=json.loads((Path(cfg['location_asset_dirs'][profile['loc_id']])/'plate.json').read_text(encoding='utf-8'))
             import yaml
             limits=yaml.safe_load((Path(cfg['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))['gizmo_camera']
@@ -328,7 +335,9 @@ class Prop:
 class PlacePose:
     @classmethod
     def IS_CHANGED(cls,location=None,props='[]',**kwargs):
-        cfg=config();repo=Path(cfg['repo']);root=repo/'tools/scene3d'
+        cfg=config()
+        repo=Path(cfg['repo'])
+        root=repo/'tools/scene3d'
         paths=[HERE/'config.yaml',HERE/'nodes.py',repo/'config/placement.yaml',
                root/'pack_cli.py',root/'prop_composite.py',root/'prop_validation.py',root/'plate/prop_render.py',
                root/'scene_edit.py',root/'scene_export_blender.py',Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))]
@@ -665,7 +674,8 @@ class H3Remote:
                         prop_repair,prop_repair_mask,remote_strength)
                 else:
                     final=restore(final,prop_repair,prop_repair_mask)
-                detail=json.loads(info);detail['prop_material_preservation']='depth-occluded source RGB; local mask; raw H3 unchanged'
+                detail=json.loads(info)
+                detail['prop_material_preservation']='depth-occluded source RGB; local mask; raw H3 unchanged'
                 detail.update(prop_handling=prop_handling,prop_reference_inputs_not_sent=ignored)
                 if prop_handling=='rendered_separately':
                     detail.update(final_composite_support='body composite support UNION background guard outside body UNION visible prop alpha>0',
@@ -720,7 +730,8 @@ def accepted_guides(guides):
 class NativeGuides:
     @classmethod
     def IS_CHANGED(cls,**kwargs):
-        cfg=config();repo=Path(cfg['repo'])
+        cfg=config()
+        repo=Path(cfg['repo'])
         return content_fingerprint([HERE/'nodes.py',repo/'config/placement.yaml',repo/'tools/scene3d/prop_composite.py',
                                     Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])
     @classmethod
@@ -799,15 +810,18 @@ class NativeComposite:
 class SceneEdits:
     @classmethod
     def IS_CHANGED(cls,manifest='',**kwargs):
-        cfg=config();repo=Path(cfg['repo'])
+        cfg=config()
+        repo=Path(cfg['repo'])
         paths=[HERE/'nodes.py',repo/'tools/scene3d/scene_edit.py',repo/'tools/scene3d/prop_gizmo.py',
                repo/'config/placement.yaml',Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))]
-        if manifest:paths.append(Path(manifest))
+        if manifest:
+            paths.append(Path(manifest))
         location=kwargs.get('location')
         if isinstance(location,str) and Path(location).is_file():
             paths.append(Path(location))
             loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
-            if loc_id in cfg.get('location_asset_dirs',{}):paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
+            if loc_id in cfg.get('location_asset_dirs',{}):
+                paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
         return content_fingerprint(paths)
     @classmethod
     def INPUT_TYPES(cls):
@@ -837,7 +851,8 @@ class SceneEdits:
 class SceneExport:
     @classmethod
     def IS_CHANGED(cls,**kwargs):
-        cfg=config();repo=Path(cfg['repo'])
+        cfg=config()
+        repo=Path(cfg['repo'])
         return content_fingerprint([HERE/'nodes.py',repo/'tools/scene3d/scene_edit.py',
                                     repo/'tools/scene3d/scene_export_blender.py',
                                     Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])

@@ -17,7 +17,8 @@ def placement_key(ref_path, profile, config, spec, height, seed, body):
         h.update((root/name).read_bytes())
     for obj in profile.data['objects']:
         for key in ('top_grid_npz','pts_npz','backrest_npz','mask_png'):
-            if obj.get(key):h.update((profile.dir/obj[key]).read_bytes())
+            if obj.get(key):
+                h.update((profile.dir/obj[key]).read_bytes())
     assets=Path(config.get('location_asset_dirs',{}).get(profile.data['loc_id'],profile.dir))
     for name in ('plate.json','plate_mesh.obj','depth_loc.png'):
         h.update((assets/name).read_bytes())
@@ -28,9 +29,11 @@ def placement_key(ref_path, profile, config, spec, height, seed, body):
 
 def save_placement(directory,result,ref,plate,spec,key):
     import place
-    directory=Path(directory);directory.mkdir(parents=True,exist_ok=True)
+    directory=Path(directory)
+    directory.mkdir(parents=True,exist_ok=True)
     place.write(directory,result,ref,plate,spec,key)
-    if 'X' not in result:return
+    if 'X' not in result:
+        return
     state=result['state']
     np.savez_compressed(directory/'manual_base.npz',X=result['X'],KP=result['KP'],reg=result['reg_lbl'],
                         groups=np.array([f'{g[0]}:{g[2]}:{g[3]}' for g in state['groups']]),
@@ -40,12 +43,15 @@ def save_placement(directory,result,ref,plate,spec,key):
 
 def load_placement(directory,key):
     directory=Path(directory)
-    if not (directory/'complete.json').is_file():return None
-    if json.loads((directory/'complete.json').read_text())['key']!=key:return None
+    if not (directory/'complete.json').is_file():
+        return None
+    if json.loads((directory/'complete.json').read_text())['key']!=key:
+        return None
     with np.load(directory/'manual_base.npz',allow_pickle=False) as d:
         groups=[]
         for item in d['groups']:
-            name,surf,role=str(item).split(':');groups.append((name,d['g_'+name].copy(),surf,role))
+            name,surf,role=str(item).split(':')
+            groups.append((name,d['g_'+name].copy(),surf,role))
         return {'X':d['X'].copy(),'KP':d['KP'].copy(),'reg':d['reg'].copy(),'groups':groups,
                 'report':json.loads((directory/'fit.json').read_text(encoding='utf-8'))}
 
@@ -54,8 +60,10 @@ def location_basis(plate):
     """Camera-horizontal right/depth/up basis; never apply CV downward Y to offsets."""
     x=np.array([plate.R[0,0],plate.R[1,0],0.],float)
     x/=np.linalg.norm(x)
-    up=np.array([0.,0.,1.]);y=np.cross(up,x)
-    if y@plate.R[:,2]<0:y=-y
+    up=np.array([0.,0.,1.])
+    y=np.cross(up,x)
+    if y@plate.R[:,2]<0:
+        y=-y
     return np.column_stack([x,y,up])
 
 
@@ -67,7 +75,8 @@ def transform(X,KP,plate,values):
         scale = float(np.cbrt(np.linalg.det(m[:3,:3])))
         return X @ m[:3,:3].T + m[:3,3], KP @ m[:3,:3].T + m[:3,3], {'body_matrix': m.tolist(), 'body_scale': scale}
     values={k:float(values.get(k,0.)) for k in ('body_dx','body_dy','body_dz','body_dyaw','body_dpitch','body_droll')}
-    if not all(math.isfinite(v) for v in values.values()):raise ValueError('body transforms must be finite')
+    if not all(math.isfinite(v) for v in values.values()):
+        raise ValueError('body transforms must be finite')
     basis=location_basis(plate)
     R=(ori.rot_axis(basis[:,2],math.radians(values['body_dyaw'])) @
        ori.rot_axis(basis[:,0],math.radians(values['body_dpitch'])) @
@@ -88,7 +97,8 @@ def revalidate(base,ref,plate,profile,spec,seed,height,values):
     rep['body_dims']={k:float(v)*scale for k,v in rep['body_dims'].items()}
     H=rep['body_dims']['H']
     treg,freg,_,oinfo=place.resolve_regions(plate,spec,seed,H,profile)
-    if treg is None:raise ValueError('cached target disappeared')
+    if treg is None:
+        raise ValueError('cached target disappeared')
     treg=tr.pose_region(treg,spec.pose_class)
     treg.object_id=oinfo.get('object_id',spec.target_object)
     treg.wall_planes=profile.walls()
@@ -101,10 +111,12 @@ def revalidate(base,ref,plate,profile,spec,seed,height,values):
             for r in treg.auto_support_surfaces]
     wall=None
     if spec.secondary_on('wall') and treg.wall_planes:
-        i=place.zn.pick_wall(treg.wall_planes,seed[:2]);wall=treg.wall_planes[i] if i is not None else None
+        i=place.zn.pick_wall(treg.wall_planes,seed[:2])
+        wall=treg.wall_planes[i] if i is not None else None
     if treg.backrest is not None:
         hard=np.zeros(len(treg.backrest),bool)
-        for w in treg.wall_planes:hard |= np.abs(treg.backrest@w['n']+w['d'])<=place.CFG['wall_backrest_m']
+        for w in treg.wall_planes:
+            hard |= np.abs(treg.backrest@w['n']+w['d'])<=place.CFG['wall_backrest_m']
         treg.backrest_material=np.where(hard,'wall','pillows')
     S=place.build_surfaces(plate,treg,freg,wall)
     B={'reg':base['reg']}
@@ -135,10 +147,13 @@ def revalidate(base,ref,plate,profile,spec,seed,height,values):
 
 
 def write_transformed(directory,X,K,faces,report):
-    p=Path(directory);p.mkdir(parents=True,exist_ok=True)
+    p=Path(directory)
+    p.mkdir(parents=True,exist_ok=True)
     # Full precision cached base is authoritative; OBJ used only by Blender.
     np.savez_compressed(p/'label_joints.npz',kp=K)
     with (p/'body.obj').open('w',encoding='utf-8') as out:
-        for v in X:out.write('v '+' '.join(format(float(t),'.10g') for t in v)+'\n')
-        for f in faces:out.write('f '+' '.join(str(int(i)+1) for i in f)+'\n')
+        for v in X:
+            out.write('v '+' '.join(format(float(t),'.10g') for t in v)+'\n')
+        for f in faces:
+            out.write('f '+' '.join(str(int(i)+1) for i in f)+'\n')
     (p/'fit.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')

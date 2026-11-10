@@ -109,6 +109,7 @@ def export(setup, cfg):
     background_name = '3da_scene_' + hashlib.sha256((Path(setup['plate_dir'])/'plate_rgb.png').read_bytes()).hexdigest()[:16] + '.png'
     from shutil import copy2
     background_path = Path(cfg['comfy'])/'input'/background_name
-    if not background_path.exists(): copy2(Path(setup['plate_dir'])/'plate_rgb.png', background_path)
+    if not background_path.exists():
+        copy2(Path(setup['plate_dir'])/'plate_rgb.png', background_path)
     return dict(model_file=model_file, manifest=str(manifest_path), entities=manifest['entities'],
                 camera=camera_config(plate,[1344,768]), background=background_name)

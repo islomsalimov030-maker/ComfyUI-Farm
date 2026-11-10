@@ -35,7 +35,8 @@ def main():
     import torch
     from PIL import Image, ImageDraw
     import folder_paths  # noqa: F401
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1])); import core_weights
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import core_weights
     a.moge = core_weights.resolve('moge', a.moge)
     a.sam = core_weights.resolve('sam', a.sam)
     import nodes as comfy_nodes

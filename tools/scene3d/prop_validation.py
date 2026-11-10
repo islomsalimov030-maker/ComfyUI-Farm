@@ -9,7 +9,8 @@ def blocking_reasons(report):
     for index,prop in enumerate(report.get('props',[])):
         flags=prop.get('flags',{})
         for name in ('prop_out_of_frame','out_of_frame','prop_hits_body','prop_hits_room'):
-            if flags.get(name):reasons.append(f'prop[{index}] {name}')
+            if flags.get(name):
+                reasons.append(f'prop[{index}] {name}')
     return reasons
 
 
@@ -23,10 +24,12 @@ def include_props(report):
             unit='frame',excess=float(bool(flags.get('out_of_frame') or flags.get('prop_out_of_frame')))))
         for name in ('prop_hits_body','prop_hits_room'):
             checks.append(dict(check=f'prop[{index}]:{name}',ok=not flags.get(name,False),unit='intersection',excess=float(bool(flags.get(name)))))
-    if not checks:return report
+    if not checks:
+        return report
     report['flags']=sorted(set(report.get('flags',[])+[name for prop in props for name,active in prop.get('flags',{}).items() if active]))
     report['body_status']=report['status']
-    body=copy.deepcopy(report.get('validation',{}));report['body_validation']=body
+    body=copy.deepcopy(report.get('validation',{}))
+    report['body_validation']=body
     failure=next((c for c in checks if not c['ok']),None)
     if failure and report['status'] in ('ok','partial'):
         report['status']='out_of_frame' if failure['unit']=='frame' else 'contact_fail'

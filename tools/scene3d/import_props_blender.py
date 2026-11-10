@@ -141,28 +141,38 @@ def main():
             probes.append((ob,original,points))
         for ob in meshes:
             bpy.context.view_layer.objects.active=ob
-            modifier=ob.modifiers.new('3DA_Viewport_LOD','DECIMATE');modifier.decimate_type='COLLAPSE'
-            modifier.ratio=ns.max_triangles/triangles;modifier.use_collapse_triangulate=True
+            modifier=ob.modifiers.new('3DA_Viewport_LOD','DECIMATE')
+            modifier.decimate_type='COLLAPSE'
+            modifier.ratio=ns.max_triangles/triangles
+            modifier.use_collapse_triangulate=True
             bpy.ops.object.modifier_apply(modifier=modifier.name)
         bpy.context.view_layer.update()
         pts=[ob.matrix_world@Vector(c) for ob in meshes for c in ob.bound_box]
         reduced_bounds=[[min(p[i] for p in pts) for i in range(3)],[max(p[i] for p in pts) for i in range(3)]]
         lod_centre,lod_factor,normalized_bbox=normalization_transform(reduced_bounds,size_m=ns.size_m)
-        for ob in meshes:ob.data.transform(Matrix.Scale(lod_factor,4)@Matrix.Translation(-Vector(lod_centre)))
+        for ob in meshes:
+            ob.data.transform(Matrix.Scale(lod_factor,4)@Matrix.Translation(-Vector(lod_centre)))
         bpy.context.view_layer.update()
-        error=0.;samples=0
+        error=0.
+        samples=0
         for ob,original,points in probes:
-            mesh=ob.data;reduced=BVHTree.FromPolygons([v.co.copy() for v in mesh.vertices],[tuple(p.vertices) for p in mesh.polygons])
+            mesh=ob.data
+            reduced=BVHTree.FromPolygons([v.co.copy() for v in mesh.vertices],[tuple(p.vertices) for p in mesh.polygons])
             for point in points:
                 hit=reduced.find_nearest(point)
-                if hit[0] is None:raise ValueError('LOD surface disappeared')
-                error=max(error,float(hit[3]));samples+=1
+                if hit[0] is None:
+                    raise ValueError('LOD surface disappeared')
+                error=max(error,float(hit[3]))
+                samples+=1
             for i in range(0,len(mesh.vertices),max(1,len(mesh.vertices)//ns.lod_samples)):
                 hit=original.find_nearest(mesh.vertices[i].co)
-                if hit[0] is None:raise ValueError('source surface disappeared')
-                error=max(error,float(hit[3]));samples+=1
+                if hit[0] is None:
+                    raise ValueError('source surface disappeared')
+                error=max(error,float(hit[3]))
+                samples+=1
         # This is a measured sampled error, never a complete Hausdorff proof.
-        if error > ns.lod_max_error_m:raise ValueError('LOD sampled error exceeds configured limit; full normalized GLB retained')
+        if error > ns.lod_max_error_m:
+            raise ValueError('LOD sampled error exceeds configured limit; full normalized GLB retained')
         lod=dict(full_model=full.name,source_triangles=triangles,target_triangles=ns.max_triangles,
                  output_triangles=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes),
                  sampled_bidirectional_max_error_m=error,samples=samples,max_sampled_error_m=ns.lod_max_error_m,

@@ -19,12 +19,14 @@ import os
 from pathlib import Path
 import re
 import subprocess
-import threeda_blender  # bpy wheel in a child process, else Blender binary
 import sys
 import time
 import uuid
 
 HERE = Path(__file__).resolve().parent
+# Isolated (-I) worker processes omit the script directory from sys.path.
+sys.path.insert(0, str(HERE))
+import threeda_blender  # bpy wheel in a child process, else Blender binary
 REPO = HERE.parents[1]
 TIMEOUT = 600
 # Input defaults only; support selection/geometry belongs exclusively to posev2.
@@ -544,8 +546,10 @@ def do_place(request, config):
     flags = set(fit.get('flags', []))
     flags.discard('out_of_frame')
     flags.discard('body_out_of_frame')
-    if fraction < .95:flags.add('body_out_of_frame')
-    if not placement_frame.get('ok',True):flags.add('out_of_frame')
+    if fraction < .95:
+        flags.add('body_out_of_frame')
+    if not placement_frame.get('ok',True):
+        flags.add('out_of_frame')
     fit['flags'] = sorted(flags)
     manual_pose.write_transformed(job / "fit", X, KP, ref["F"], fit)
     timings["placement_cache_hit"] = cache_hit
@@ -583,8 +587,10 @@ def do_place(request, config):
     prepare_images(directory, plate_dir / "plate_rgb.png", mode, body_path, strength, config["cell_px"])
     if props_value:
         from shutil import copy2
-        body_dir=directory/'body_guides';body_dir.mkdir(exist_ok=True)
-        for name in ('playblast.png','init.png','strength.png'):copy2(directory/name,body_dir/name)
+        body_dir=directory/'body_guides'
+        body_dir.mkdir(exist_ok=True)
+        for name in ('playblast.png','init.png','strength.png'):
+            copy2(directory/name,body_dir/name)
     else:
         body_dir=directory
     body_guides={key:str(body_dir/(key+'.png')) for key in ('playblast','init','strength')}

@@ -28,7 +28,8 @@ def load_head(comfy, model_file):
     sys.path.insert(0, comfy)
     sys.argv = [sys.argv[0]] + (['--lowvram', '--cache-none'] if os.environ.get('THREEDA_SERVER_MODE') == '1' else [])
     import folder_paths  # noqa: F401
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1])); import core_weights
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import core_weights
     model_file = core_weights.resolve('sam', model_file)
     from comfy_extras import nodes_sam3d_body as n
 
