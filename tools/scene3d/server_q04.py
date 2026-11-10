@@ -202,8 +202,16 @@ class Server:
                 if urlsplit(response.url).path in ('/prompt', '/api/prompt') and response.request.method == 'POST':
                     captured.append(response.json())
             page.on('response', capture)
-            page.goto(self.url, wait_until='domcontentloaded', timeout=120000)
-            page.wait_for_function('window.app && app.graph', timeout=120000)
+            try:
+                page.goto(self.url, wait_until='domcontentloaded', timeout=120000)
+                page.wait_for_function('window.app && app.graph', timeout=120000)
+            except Exception as exc:
+                save(self.out / f'{label}.bootstrap.json', {
+                    'error': str(exc), 'errors': browser_errors,
+                    'title': page.title(), 'body': page.locator('body').inner_text(timeout=10000)})
+                page.screenshot(path=str(self.out / f'{label}.bootstrap.png'))
+                browser.close()
+                raise
             page.evaluate('(graph) => app.loadGraphData(graph)', graph)
             print(f'{label}: frontend ready; waiting for the shared queue', flush=True)
             self.wait_empty()
