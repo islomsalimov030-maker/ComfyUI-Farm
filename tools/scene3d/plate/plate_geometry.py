@@ -25,6 +25,36 @@ from PIL import Image
 MODEL = "Ruicheng/moge-2-vitl-normal"
 
 
+def core_inference(comfy, image):
+    """Use installed core weights/classes; no pip, external repo or download."""
+    import asyncio
+    import sys
+    sys.path.insert(0, comfy)
+    sys.argv = [sys.argv[0], '--lowvram', '--cache-none']
+    from comfy_extras import nodes_moge as n
+    import comfy.model_management as mm
+
+    async def call(cls, **kwargs):
+        result = cls.execute(**kwargs)
+        if asyncio.iscoroutine(result):
+            result = await result
+        return (result.result if hasattr(result, 'result') else result)[0]
+
+    async def run():
+        model = await call(n.LoadMoGeModel, model_name='moge_2_vitl_normal_fp16.safetensors')
+        tensor = torch.tensor(np.asarray(image) / 255., dtype=torch.float32)[None]
+        with torch.inference_mode():
+            output = await call(n.MoGeInference, moge_model=model, image=tensor, resolution_level=9,
+                                fov_x_degrees=0., batch_size=1, force_projection=True, apply_mask=True)
+        return {k: v[0].detach().float().cpu() for k, v in output.items() if k != 'image'}
+
+    try:
+        return asyncio.run(run())
+    finally:
+        mm.unload_all_models()
+        mm.soft_empty_cache()
+
+
 def fit_floor(points, normals, valid, h, rng):
     """RANSAC plane over the lower 45% of the frame where the predicted normal points up (OpenCV: -Y)."""
     rows = np.arange(points.shape[0])[:, None] >= int(points.shape[0] * 0.55)
@@ -66,18 +96,22 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--size", default="1536x864")
     ap.add_argument("--stride", type=int, default=4, help="mesh decimation")
+    ap.add_argument("--comfy", help="Use existing ComfyUI core MoGe classes")
     a = ap.parse_args()
     W, H = map(int, a.size.split("x"))
     os.makedirs(a.out, exist_ok=True)
 
-    from moge.model.v2 import MoGeModel
-    dev = "cuda" if torch.cuda.is_available() else "cpu"
-    model = MoGeModel.from_pretrained(MODEL).to(dev).eval()
     img = Image.open(a.photo).convert("RGB").resize((W, H), Image.LANCZOS)
     img.save(os.path.join(a.out, "plate_rgb.png"))
-    x = torch.tensor(np.asarray(img) / 255.0, dtype=torch.float32, device=dev).permute(2, 0, 1)
-    with torch.no_grad():
-        o = model.infer(x)
+    if a.comfy:
+        o = core_inference(a.comfy, img)
+    else:
+        from moge.model.v2 import MoGeModel
+        dev = "cuda" if torch.cuda.is_available() else "cpu"
+        model = MoGeModel.from_pretrained(MODEL).to(dev).eval()
+        x = torch.tensor(np.asarray(img) / 255.0, dtype=torch.float32, device=dev).permute(2, 0, 1)
+        with torch.no_grad():
+            o = model.infer(x)
     pts = o["points"].float().cpu().numpy()          # H,W,3 metric, OpenCV camera (x right, y down, z fwd)
     dep = o["depth"].float().cpu().numpy()
     valid = o["mask"].cpu().numpy().astype(bool) & np.isfinite(dep) & (dep > 0)

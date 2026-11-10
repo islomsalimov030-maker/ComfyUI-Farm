@@ -62,9 +62,9 @@ def config_for(request):
     config = dict(supplied)
     defaults = {
         "farm_root": os.environ.get("FARM_ROOT", ""),
-        "comfy": "C:/work/ComfyUI-next",
-        "python": str(REPO / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")),
-        "geometry_python": "C:/work/ComfyUI-next/venv/Scripts/python.exe",
+        "comfy": os.environ.get("THREEDA_COMFY_ROOT", str(REPO.parent.parent)),
+        "python": sys.executable,
+        "geometry_python": sys.executable,
         "blender": os.environ.get("FARM_BLENDER", ""),
         "mannequin": os.environ.get("FARM_MANNEQUIN", ""), "cell_px": 16,
     }
@@ -211,8 +211,9 @@ def do_location(request, config):
         photo = required_file(request.get("plate"), "plate")
         directory.mkdir(parents=True, exist_ok=True)
         if not all((directory / n).is_file() for n in ("plate.json", "plate_mesh.obj", "plate_rgb.png", "depth_loc.png")):
+            core = ["--comfy", config["comfy"]] if config.get('server_mode') else []
             run_stage([config["geometry_python"], HERE / "plate/plate_geometry.py", photo, directory,
-                       "--size", "1344x768"], "plate MoGe")
+                       "--size", "1344x768", *core], "plate MoGe")
         geometry_dir = plate_assets(directory)
         hints = hints_for(config, loc_id)
         if "seeds" not in hints:
@@ -260,7 +261,7 @@ def do_location(request, config):
     pf, _ = modules(config)
     import auto_surfaces
     # Preview lives outside the immutable prepared location profile.
-    preview_dir = Path(config["farm_root"]) / "cache" / "objects_preview" / loc_id
+    preview_dir = Path(config.get("cache_dir", str(Path(config["farm_root"]) / "cache"))) / "objects_preview" / loc_id
     preview_dir.mkdir(parents=True, exist_ok=True)
     preview = preview_dir / "objects_preview.png"
     auto_surfaces.render_objects_preview(pf.Plate(geometry_dir), profile_path, preview)
@@ -485,7 +486,7 @@ def do_place(request, config):
     seed = seed_for(profile, spec, config)
     # Validate required prompt metadata before spending GPU time.
     prompt_for(profile, config, {"shot_spec": spec.to_dict()})
-    cache = Path(config["farm_root"]) / "cache" / "pose_ref" / hashlib.sha256(pose.read_bytes()).hexdigest()
+    cache = Path(config.get("cache_dir", str(Path(config["farm_root"]) / "cache"))) / "pose_ref" / hashlib.sha256(pose.read_bytes()).hexdigest()
     cache.mkdir(parents=True, exist_ok=True)
     rf = cache / "pose.ref.npz"
     stage = time.monotonic()
@@ -510,7 +511,7 @@ def do_place(request, config):
     stage = time.monotonic()
     import manual_pose
     key = manual_pose.placement_key(rf, profile, config, spec, height, seed, {"body": body, "random_seed": seed_value})
-    cache_dir = Path(config["farm_root"]) / "cache" / "placement" / key
+    cache_dir = Path(config.get("cache_dir", str(Path(config["farm_root"]) / "cache"))) / "placement" / key
     base = manual_pose.load_placement(cache_dir, key)
     cache_hit = base is not None
     if base is None:
@@ -570,7 +571,7 @@ def do_place(request, config):
     save_json(job / "render_spec.json", {"scenes": [scene]})
     stage = time.monotonic()
     env = os.environ.copy()
-    env.setdefault("SCENE3D_BLENDER_SITE", str(REPO / ".blender_site"))
+    env.setdefault("SCENE3D_BLENDER_SITE", str(Path(config["farm_root"]) / "runtime/blender_pkgs"))
     if config.get("blender_pkgs"):
         env["FARM_BPY_PKGS"] = config["blender_pkgs"]
     run_stage([config["blender"], "-b", "--factory-startup", "--disable-autoexec", "--python-exit-code", "1", "--python",
@@ -636,7 +637,7 @@ def do_place(request, config):
     canvas = Image.new('RGB', (preview.width, preview.height + 24 * len(lines) + 10), '#141414')
     canvas.paste(preview)
     draw = ImageDraw.Draw(canvas)
-    font = ImageFont.truetype('C:/Windows/Fonts/arial.ttf', 18) if os.name == 'nt' else ImageFont.load_default()
+    font = ImageFont.load_default()
     for i, line in enumerate(lines):
         draw.text((8, preview.height + 5 + i * 24), line, fill='white', font=font)
     canvas.save(directory / 'debug.png')

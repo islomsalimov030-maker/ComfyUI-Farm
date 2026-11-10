@@ -1,0 +1,199 @@
+{
+  "13": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": [
+        "44",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Движок · D1_noise"
+    }
+  },
+  "35": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "3da_data/locations/mainroom3/plate_rgb.png"
+    },
+    "_meta": {
+      "title": "Плита комнаты"
+    }
+  },
+  "36": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "3da_data/characters/stacy/reference.png"
+    },
+    "_meta": {
+      "title": "Референс персонажа · SFW"
+    }
+  },
+  "37": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "3da_data/characters/stacy/Q04.png"
+    },
+    "_meta": {
+      "title": "Референс позы · SFW"
+    }
+  },
+  "38": {
+    "class_type": "3DALocation",
+    "inputs": {
+      "plate": [
+        "35",
+        0
+      ],
+      "location_id": "mainroom3"
+    },
+    "_meta": {
+      "title": "3DA Location"
+    }
+  },
+  "39": {
+    "class_type": "3DAPlacePose",
+    "inputs": {
+      "location": [
+        "38",
+        0
+      ],
+      "pose_ref": [
+        "37",
+        0
+      ],
+      "seed": [
+        "44",
+        0
+      ],
+      "pose_class": "lie",
+      "target_object": "bed",
+      "support_parts": "",
+      "secondary_contacts": "",
+      "instance_hint": "",
+      "height_m": 1.62,
+      "body_json": "characters/stacy/body.json",
+      "proxy": "grey",
+      "strength": 1.0,
+      "block_on_fail": false,
+      "body_dx": 0.0,
+      "body_dy": 0.0,
+      "body_dz": 0.0,
+      "body_dyaw": 0.0,
+      "body_dpitch": 0.0,
+      "body_droll": 0.0,
+      "pose_text": "She lies on her side with her head resting on her bent arm."
+    },
+    "_meta": {
+      "title": "3DA Place Pose"
+    }
+  },
+  "40": {
+    "class_type": "StringConcatenate",
+    "inputs": {
+      "string_a": [
+        "39",
+        4
+      ],
+      "string_b": "",
+      "delimiter": ""
+    },
+    "_meta": {
+      "title": "String · промпт H3 + правки"
+    }
+  },
+  "41": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "39",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Превью · playblast"
+    }
+  },
+  "42": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "39",
+        6
+      ]
+    },
+    "_meta": {
+      "title": "Превью · debug"
+    }
+  },
+  "43": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "39",
+        5
+      ]
+    },
+    "_meta": {
+      "title": "Статус · опора / p95 / углы"
+    }
+  },
+  "44": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 101
+    },
+    "_meta": {
+      "title": "Seed · общий для геометрии и H3"
+    }
+  },
+  "45": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "38",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "Превью · объекты / ID"
+    }
+  },
+  "46": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "39",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Превью · init"
+    }
+  },
+  "48": {
+    "class_type": "MaskToImage",
+    "inputs": {
+      "mask": [
+        "39",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Карта силы · RGB для движка"
+    }
+  },
+  "49": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "39",
+        0
+      ],
+      "filename_prefix": "3DA_scene_server/Q04"
+    },
+    "_meta": {
+      "title": "Сохранить · Q04 геометрия без H3"
+    }
+  }
+}

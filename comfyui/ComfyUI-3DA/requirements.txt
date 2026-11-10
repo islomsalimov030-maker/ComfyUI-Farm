@@ -1,6 +1,8 @@
 # No SAM/MoGe/Blender installations in the ComfyUI environment.
-PyYAML>=6.0
+PyYAML>=6.0.3,<7
 # H3 Remote reuses farm/comfy_client.py (HTTPX BSD-3-Clause).
-httpx>=0.27,<1
+httpx>=0.28.1,<1
 # Native final composition reuses the existing CPU mask support implementation.
-scipy>=1.14,<2
+scipy>=1.15.3,<2
+# Existing source_vertical check; CPython 3.13 supported through abi3 wheels.
+opencv-python-headless==4.11.0.86

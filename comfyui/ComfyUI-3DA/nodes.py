@@ -96,15 +96,17 @@ def validated_props(text):
     return data
 
 
+def config_module():
+    import importlib.util
+    helper = HERE.parents[1] / 'tools/scene3d/server_config.py'
+    spec = importlib.util.spec_from_file_location('three_da_server_config', helper)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def config():
-    path = Path(os.environ.get('THREEDA_CONFIG', str(HERE / 'config.yaml')))
-    data = yaml.safe_load(path.read_text(encoding='utf-8'))
-    if data.get('cell_px') != 16:
-        raise ValueError('config.yaml: cell_px must be 16 for this pack version')
-    for key in ('python', 'repo', 'farm_root', 'comfy', 'blender'):
-        if not data.get(key):
-            raise ValueError(f'config.yaml: required {key}')
-    return data
+    return config_module().load()
 
 
 def save_image(tensor, path):
@@ -155,6 +157,13 @@ def invoke(command, fields, images):
     # Persist request artifacts so a CLI cache/manifest never points at a
     # TemporaryDirectory deleted when the node returns.
     work = Path(tempfile.mkdtemp(prefix=command + '_', dir=root))
+    fields = dict(fields)
+    for key in ('body_json', 'location'):
+        if fields.get(key):
+            if cfg.get('server_mode'):
+                fields[key] = str(config_module().data_path(fields[key], cfg['data_root']))
+            elif not Path(fields[key]).is_absolute():
+                fields[key] = str(Path(cfg['farm_root']) / fields[key])
     request = {'config': cfg, **fields}
     for key, tensor in images.items():
         path = work / (key + '.png')
@@ -167,9 +176,12 @@ def invoke(command, fields, images):
         raise FileNotFoundError(f'CLI not installed: {script}')
     t0 = time.monotonic()
     options = {'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {'start_new_session': True}
+    env = os.environ.copy()
+    if cfg.get('server_mode'):
+        env['THREEDA_SERVER_MODE'] = '1'
     proc = subprocess.Popen([cfg['python'], str(script), command, '--request', str(req), '--output', str(out)],
                             cwd=cfg['repo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                            encoding='utf-8', errors='replace', **options)
+                            encoding='utf-8', errors='replace', env=env, **options)
     try:
         stdout, stderr = proc.communicate(timeout=600)
     except subprocess.TimeoutExpired:
@@ -319,6 +331,9 @@ class PlacePose:
                root/'pack_cli.py',root/'prop_composite.py',root/'prop_validation.py',root/'plate/prop_render.py',
                root/'scene_edit.py',root/'scene_export_blender.py',Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))]
         paths += [p for p in (root/'posev2').glob('*.py') if not p.name.startswith('test_')]
+        if kwargs.get('body_json'):
+            body = Path(kwargs['body_json'])
+            paths.append(body if body.is_absolute() else Path(cfg['farm_root']) / body)
         if isinstance(location,str) and Path(location).is_file():
             paths += list(Path(location).parent.glob('*'))
             loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']

@@ -286,7 +286,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(by_type['3DALocation']['widgets_values_named']['location_id'], location)
             self.assertEqual((place['pose_class'], place['target_object'], place['body_dx']), (pose, target, dx))
             self.assertEqual(place['strength'], 1.)
-            self.assertEqual(place['body_json'], '../scene3d_work/farm/characters/stacy/body.json')
+            self.assertEqual(place['body_json'], 'characters/stacy/body.json')
             sockets = {i['name']: i for i in by_type['3DAPlacePose']['inputs']}
             self.assertIsNotNone(sockets['location']['link'])
             self.assertIsNotNone(sockets['pose_ref']['link'])

@@ -360,7 +360,7 @@ def build_prop_reference_preset(baseline, request, oi, shot):
         if field in request and field not in ('location', 'pose_ref', 'seed', 'props', 'body_json'):
             place[field] = request[field]
     body = request.get('body_json', '')
-    place['body_json'] = Path(os.path.relpath(body, request['config']['repo'])).as_posix() if body else ''
+    place['body_json'] = Path(body).relative_to(Path(request['config']['farm_root'])).as_posix() if body else ''
     prop = json.loads(request['props'])
     if len(prop) != 1:
         raise ValueError('09g preset requires exactly one prop')
@@ -404,7 +404,7 @@ def build_prop_reference_preset(baseline, request, oi, shot):
                     'Для H3 вернуть mode0 у Remote, final Save, raw Preview, Remote status. '
                     'S=.35 и S=.80 — экспериментальные варианты (extra); preset открыт с .35. '
                     'Seed101, steps25. Референсы: input/3da_prop_refs_09g/ref_prop_1/2/3.png. '
-                    'body_json задан относительно local config.repo: профиль тела 09f2 должен '
+                    'body_json задан относительно data_root: профиль тела 09f2 должен '
                     'оставаться доступным по этому пути. Новые IMAGE-входы требуют reload '
                     'локального пака, если загруженная схема ещё старая.']
             ui['last_node_id'] += 1

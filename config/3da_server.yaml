@@ -1,0 +1,9 @@
+# Runtime executables may be absolute; all data paths are relative to data_root.
+# Empty data_root => ComfyUI/user/default/3da_data. Env overrides this key.
+data_root: null
+blender_path: /opt/blender-5.0.0/blender
+cache_dir: cache
+mannequin: assets/mannequin_162.blend
+cell_px: 16
+location_hints_by_id: {}
+prompt_context_by_location: {}

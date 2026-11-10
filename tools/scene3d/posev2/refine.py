@@ -6,6 +6,7 @@ v2.4 (07.11f): refine_mem — для попытки place.py в памяти: о
 import asyncio
 import json
 import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -25,7 +26,7 @@ W_SUP, W_SEC, W_PEN, W_PRIOR, W_RIG = (CFG[k] for k in ("w_sup", "w_sec", "w_pen
 
 def load_head(comfy, model_file):
     sys.path.insert(0, comfy)
-    sys.argv = [sys.argv[0]]
+    sys.argv = [sys.argv[0]] + (['--lowvram', '--cache-none'] if os.environ.get('THREEDA_SERVER_MODE') == '1' else [])
     import folder_paths  # noqa: F401
     from comfy_extras import nodes_sam3d_body as n
 

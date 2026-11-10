@@ -1,4 +1,4 @@
-import { app } from '../../../scripts/app.js';
+const { app } = await import(new URL('scripts/app.js', document.baseURI).href);
 import { lockCamera } from './cameraLock.js';
 import { sceneSelection } from './sceneSelection.js';
 
