@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import time
 from urllib.parse import urlsplit
 import uuid
@@ -71,9 +72,12 @@ class Server:
         try:
             data = response.json()
             if isinstance(data, dict):
-                data = data.get('logs', data)
-            lines = data if isinstance(data, list) else str(data).splitlines()
-            lines = [str(x) for x in lines]
+                data = data.get('entries', data.get('logs', data))
+            entries = data if isinstance(data, list) else [data]
+            lines = []
+            for entry in entries:
+                message = entry.get('m', entry.get('message', str(entry))) if isinstance(entry, dict) else str(entry)
+                lines.extend(message.splitlines())
         except ValueError:
             lines = response.text.splitlines()
         tail = redact('\n'.join(lines[-40:]))
@@ -94,6 +98,11 @@ class Server:
                 end = stamps.get('execution_success') or stamps.get('execution_error')
                 result = dict(status=history['status']['status_str'],
                               seconds=(end - start) / 1000 if start is not None and end is not None else None)
+                reported_errors = [value for output in history.get('outputs', {}).values()
+                                   for value in output.get('text', [])
+                                   if isinstance(value, str) and value.startswith('status=error')]
+                if reported_errors:
+                    result.update(graph_status=result['status'], status='error', node_errors=reported_errors)
                 count = 0
                 for node, output in history.get('outputs', {}).items():
                     if output.get('text'):
@@ -145,17 +154,25 @@ class Server:
             context = browser.new_context(http_credentials={
                 'username': os.environ['COMFY_USER'], 'password': os.environ['COMFY_PASS']})
             page = context.new_page()
+            browser_errors = []
+            page.on('pageerror', lambda error: browser_errors.append(str(error)))
+            page.on('console', lambda message: browser_errors.append(message.text) if message.type == 'error' else None)
             def capture(response):
-                if urlsplit(response.url).path == '/prompt' and response.request.method == 'POST':
+                if urlsplit(response.url).path in ('/prompt', '/api/prompt') and response.request.method == 'POST':
                     captured.append(response.json())
             page.on('response', capture)
             page.goto(self.url, wait_until='domcontentloaded', timeout=120000)
             page.wait_for_function('window.app && app.graph', timeout=120000)
             page.evaluate('(graph) => app.loadGraphData(graph)', graph)
             self.wait_empty()
-            page.evaluate('() => app.queuePrompt(0)')
+            queued = page.evaluate('() => app.queuePrompt(0)')
             if not captured:
                 page.wait_for_timeout(2000)
+                save(self.out / f'{label}.frontend.json', {
+                    'queued': queued, 'errors': browser_errors,
+                    'dialogs': page.locator('[role="dialog"]').all_text_contents(),
+                    'queuePromptSource': page.evaluate('() => app.queuePrompt.toString()')})
+                page.screenshot(path=str(self.out / f'{label}.frontend.png'))
             browser.close()
         if len(captured) != 1 or captured[0].get('node_errors') or not captured[0].get('prompt_id'):
             save(self.out / f'{label}.rejected.json', captured)
@@ -164,6 +181,7 @@ class Server:
 
 
 def main():
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument('--url', required=True)
     parser.add_argument('--out', type=Path, default=Path('.tmp_3da_port/server_Q04'))
