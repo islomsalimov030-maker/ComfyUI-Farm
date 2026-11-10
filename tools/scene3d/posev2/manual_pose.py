@@ -61,6 +61,11 @@ def location_basis(plate):
 
 def transform(X,KP,plate,values):
     import orient as ori
+    if values.get('body_matrix') is not None:
+        from scene_edit import body_matrix
+        m = body_matrix(values['body_matrix'])
+        scale = float(np.cbrt(np.linalg.det(m[:3,:3])))
+        return X @ m[:3,:3].T + m[:3,3], KP @ m[:3,:3].T + m[:3,3], {'body_matrix': m.tolist(), 'body_scale': scale}
     values={k:float(values.get(k,0.)) for k in ('body_dx','body_dy','body_dz','body_dyaw','body_dpitch','body_droll')}
     if not all(math.isfinite(v) for v in values.values()):raise ValueError('body transforms must be finite')
     basis=location_basis(plate)
@@ -79,6 +84,8 @@ def revalidate(base,ref,plate,profile,spec,seed,height,values):
     import top_region as tr
     X,K,values=transform(base['X'],base['KP'],plate,values)
     rep=json.loads(json.dumps(base['report']))
+    scale=values.get('body_scale',1.)
+    rep['body_dims']={k:float(v)*scale for k,v in rep['body_dims'].items()}
     H=rep['body_dims']['H']
     treg,freg,_,oinfo=place.resolve_regions(plate,spec,seed,H,profile)
     if treg is None:raise ValueError('cached target disappeared')

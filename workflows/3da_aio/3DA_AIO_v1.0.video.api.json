@@ -1,0 +1,1379 @@
+{
+  "54": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "ComfyUI_temp_ykupg_00001_.png"
+    },
+    "_meta": {
+      "title": "ВИДЕО · ключевой кадр (первый = последний)"
+    }
+  },
+  "55": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "0003.png"
+    },
+    "_meta": {
+      "title": "ВИДЕО · эталон лица <Picture 2>"
+    }
+  },
+  "56": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": [
+        "179",
+        0
+      ],
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "ARM model · из пульта"
+    }
+  },
+  "184:58": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "model": [
+        "192",
+        0
+      ],
+      "shift_video": [
+        "179",
+        4
+      ],
+      "shift_audio": 3
+    },
+    "_meta": {
+      "title": "shift"
+    }
+  },
+  "184:59": {
+    "class_type": "ModelAttentionBackend",
+    "inputs": {
+      "model": [
+        "184:58",
+        0
+      ],
+      "attention": "comfy kitchen attention"
+    },
+    "_meta": {
+      "title": "attention"
+    }
+  },
+  "184:60": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "Qwen3-VL"
+    }
+  },
+  "184:61": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "H3 video VAE"
+    }
+  },
+  "184:62": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "H3 audio VAE"
+    }
+  },
+  "184:63": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "H3 FL2VA (face)"
+    }
+  },
+  "184:64": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "184:63",
+        0
+      ],
+      "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "FL2V turbo 4-step"
+    }
+  },
+  "184:65": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "184:64",
+        0
+      ],
+      "strength_model": [
+        "184:122",
+        12
+      ],
+      "lora_name": "stacy_h3_face_v1_000001800.safetensors"
+    },
+    "_meta": {
+      "title": "Stacy face LoRA"
+    }
+  },
+  "184:66": {
+    "class_type": "StacyFitFrame",
+    "inputs": {
+      "images": [
+        "54",
+        0
+      ],
+      "width": 1344,
+      "height": 768,
+      "method": "lanczos",
+      "anchor_y": 0.5
+    },
+    "_meta": {
+      "title": "keyframe 1344x768"
+    }
+  },
+  "184:67": {
+    "class_type": "StacyFitFrame",
+    "inputs": {
+      "images": [
+        "131",
+        0
+      ],
+      "width": 1344,
+      "height": 768,
+      "method": "lanczos",
+      "anchor_y": 0.5
+    },
+    "_meta": {
+      "title": "конечный кадр → 1344x768"
+    }
+  },
+  "184:68": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:67",
+        0
+      ],
+      "on_true": [
+        "184:66",
+        0
+      ],
+      "switch": [
+        "184:122",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "последний кадр = ключевой (петля) или конечный"
+    }
+  },
+  "184:69": {
+    "class_type": "StacyPromptRetime",
+    "inputs": {
+      "prompt": [
+        "129",
+        0
+      ],
+      "seconds": [
+        "184:122",
+        1
+      ],
+      "loop": [
+        "184:122",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "промпт ← длительность и петля"
+    }
+  },
+  "184:70": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": [
+        "184:60",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "audio_vae": [
+        "184:62",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "184:66",
+        0
+      ],
+      "ref_images.ref_image_1": [
+        "55",
+        0
+      ],
+      "prompt": [
+        "184:69",
+        0
+      ],
+      "length": [
+        "184:122",
+        0
+      ],
+      "width": 1344,
+      "height": 768,
+      "ref_image_size": "match"
+    },
+    "_meta": {
+      "title": "ref2va conditioning"
+    }
+  },
+  "184:71": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": [
+        "184:60",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "audio_vae": [
+        "184:62",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "184:66",
+        0
+      ],
+      "ref_images.ref_image_1": [
+        "55",
+        0
+      ],
+      "ref_videos.ref_video_0": [
+        "132",
+        0
+      ],
+      "prompt": [
+        "184:69",
+        0
+      ],
+      "length": [
+        "184:122",
+        0
+      ],
+      "width": 1344,
+      "height": 768,
+      "ref_image_size": "match"
+    },
+    "_meta": {
+      "title": "ref2va conditioning + <Video 1>"
+    }
+  },
+  "184:72": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": [
+        "184:60",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "audio_vae": [
+        "184:62",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "184:66",
+        0
+      ],
+      "ref_images.ref_image_1": [
+        "55",
+        0
+      ],
+      "ref_images.ref_image_2": [
+        "184:67",
+        0
+      ],
+      "prompt": [
+        "184:69",
+        0
+      ],
+      "length": [
+        "184:122",
+        0
+      ],
+      "width": 1344,
+      "height": 768,
+      "ref_image_size": "match"
+    },
+    "_meta": {
+      "title": "ref2va conditioning + <Picture 3> (конечный кадр)"
+    }
+  },
+  "184:73": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": [
+        "184:60",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "audio_vae": [
+        "184:62",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "184:66",
+        0
+      ],
+      "ref_images.ref_image_1": [
+        "55",
+        0
+      ],
+      "ref_images.ref_image_2": [
+        "184:67",
+        0
+      ],
+      "ref_videos.ref_video_0": [
+        "132",
+        0
+      ],
+      "prompt": [
+        "184:69",
+        0
+      ],
+      "length": [
+        "184:122",
+        0
+      ],
+      "width": 1344,
+      "height": 768,
+      "ref_image_size": "match"
+    },
+    "_meta": {
+      "title": "ref2va conditioning + <Picture 3> + <Video 1>"
+    }
+  },
+  "184:74": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:70",
+        0
+      ],
+      "on_true": [
+        "184:72",
+        0
+      ],
+      "switch": [
+        "184:122",
+        26
+      ]
+    },
+    "_meta": {
+      "title": "конечный кадр <Picture 3>? conditioning (без видео)"
+    }
+  },
+  "184:75": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:71",
+        0
+      ],
+      "on_true": [
+        "184:73",
+        0
+      ],
+      "switch": [
+        "184:122",
+        26
+      ]
+    },
+    "_meta": {
+      "title": "конечный кадр <Picture 3>? conditioning (с видео)"
+    }
+  },
+  "184:76": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:74",
+        0
+      ],
+      "on_true": [
+        "184:75",
+        0
+      ],
+      "switch": [
+        "132",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "видео-референс? conditioning"
+    }
+  },
+  "184:77": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:70",
+        1
+      ],
+      "on_true": [
+        "184:72",
+        1
+      ],
+      "switch": [
+        "184:122",
+        26
+      ]
+    },
+    "_meta": {
+      "title": "конечный кадр <Picture 3>? latent (без видео)"
+    }
+  },
+  "184:78": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:71",
+        1
+      ],
+      "on_true": [
+        "184:73",
+        1
+      ],
+      "switch": [
+        "184:122",
+        26
+      ]
+    },
+    "_meta": {
+      "title": "конечный кадр <Picture 3>? latent (с видео)"
+    }
+  },
+  "184:79": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:77",
+        0
+      ],
+      "on_true": [
+        "184:78",
+        0
+      ],
+      "switch": [
+        "132",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "видео-референс? latent"
+    }
+  },
+  "184:80": {
+    "class_type": "MiniMaxH3AddGuide",
+    "inputs": {
+      "positive": [
+        "184:76",
+        0
+      ],
+      "latent": [
+        "184:79",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "image": [
+        "184:66",
+        0
+      ],
+      "frame_idx": 0
+    },
+    "_meta": {
+      "title": "anchor frame 0"
+    }
+  },
+  "184:81": {
+    "class_type": "MiniMaxH3AddGuide",
+    "inputs": {
+      "positive": [
+        "184:80",
+        0
+      ],
+      "latent": [
+        "184:79",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "image": [
+        "184:68",
+        0
+      ],
+      "frame_idx": -1
+    },
+    "_meta": {
+      "title": "anchor last frame"
+    }
+  },
+  "184:82": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:80",
+        0
+      ],
+      "on_true": [
+        "184:81",
+        0
+      ],
+      "switch": [
+        "184:122",
+        23
+      ]
+    },
+    "_meta": {
+      "title": "якорь последнего кадра? (петля или конечный кадр)"
+    }
+  },
+  "184:83": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "184:59",
+        0
+      ],
+      "conditioning": [
+        "184:82",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "guider (cfg 1)"
+    }
+  },
+  "184:84": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": [
+        "184:122",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "seed"
+    }
+  },
+  "184:85": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "_meta": {
+      "title": "res_multistep"
+    }
+  },
+  "184:86": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": [
+        "184:59",
+        0
+      ],
+      "steps": [
+        "179",
+        2
+      ],
+      "scheduler": "simple",
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "simple"
+    }
+  },
+  "184:87": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "184:84",
+        0
+      ],
+      "guider": [
+        "184:83",
+        0
+      ],
+      "sampler": [
+        "184:85",
+        0
+      ],
+      "sigmas": [
+        "184:86",
+        0
+      ],
+      "latent_image": [
+        "184:79",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "sample"
+    }
+  },
+  "184:88": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "184:87",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "decode"
+    }
+  },
+  "184:89": {
+    "class_type": "StacyFreeVRAM",
+    "inputs": {
+      "images": [
+        "184:88",
+        0
+      ],
+      "enabled": [
+        "184:122",
+        9
+      ]
+    },
+    "_meta": {
+      "title": "освободить VRAM (до цвета и апскейла)"
+    }
+  },
+  "184:90": {
+    "class_type": "StacyColorLock",
+    "inputs": {
+      "image_target": [
+        "184:89",
+        0
+      ],
+      "image_ref": [
+        "184:66",
+        0
+      ],
+      "strength": [
+        "179",
+        5
+      ],
+      "chunk": 16
+    },
+    "_meta": {
+      "title": "цвет → как у ключевого кадра"
+    }
+  },
+  "184:91": {
+    "class_type": "StacyLoopSeam",
+    "inputs": {
+      "images": [
+        "184:90",
+        0
+      ],
+      "prev_report": [
+        "184:90",
+        1
+      ],
+      "crossfade": [
+        "179",
+        6
+      ],
+      "curve": "smootherstep"
+    },
+    "_meta": {
+      "title": "loop seam"
+    }
+  },
+  "184:92": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:90",
+        0
+      ],
+      "on_true": [
+        "184:91",
+        0
+      ],
+      "switch": [
+        "184:122",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "петля? шов"
+    }
+  },
+  "184:93": {
+    "class_type": "StacyTemporalStabilize",
+    "inputs": {
+      "images": [
+        "184:92",
+        0
+      ],
+      "strength": [
+        "179",
+        7
+      ],
+      "loop": [
+        "184:122",
+        4
+      ],
+      "radius": 2,
+      "threshold": 4,
+      "motion_compensation": true,
+      "keep_sharpness": true
+    },
+    "_meta": {
+      "title": "анти-дрожь до RTX (выравнивание по движению)"
+    }
+  },
+  "184:95": {
+    "class_type": "RTXVideoSuperResolution",
+    "inputs": {
+      "images": [
+        "184:93",
+        0
+      ],
+      "resize_type": "target dimensions",
+      "quality": "ULTRA"
+    },
+    "_meta": {
+      "title": "RTX VSR"
+    }
+  },
+  "184:96": {
+    "class_type": "StacyFitFrame",
+    "inputs": {
+      "images": [
+        "184:95",
+        0
+      ],
+      "width": 1920,
+      "height": 1080,
+      "method": "bicubic",
+      "anchor_y": 0.5
+    },
+    "_meta": {
+      "title": "exact 1920x1080"
+    }
+  },
+  "184:97": {
+    "class_type": "StacyLoopExtend",
+    "inputs": {
+      "images": [
+        "184:96",
+        0
+      ],
+      "is_loop": [
+        "184:122",
+        4
+      ],
+      "min_extra": 24,
+      "h3_grid": true
+    },
+    "_meta": {
+      "title": "loop extend (+head, grid)"
+    }
+  },
+  "184:98": {
+    "class_type": "StacyAutoConfidence",
+    "inputs": {
+      "images": [
+        "184:97",
+        0
+      ],
+      "prev_report": [
+        "184:122",
+        24
+      ],
+      "confidence": [
+        "179",
+        8
+      ],
+      "detector": "face_yolov8m.pt"
+    },
+    "_meta": {
+      "title": "порог детектора лица (AUTO)"
+    }
+  },
+  "184:99": {
+    "class_type": "H3FaceTrackCrop",
+    "inputs": {
+      "images": [
+        "184:97",
+        0
+      ],
+      "confidence": [
+        "184:98",
+        0
+      ],
+      "crop_factor": [
+        "179",
+        9
+      ],
+      "detector": "face_yolov8m.pt",
+      "canvas_width": 768,
+      "canvas_height": 768,
+      "canvas_mode": "manual",
+      "smooth_window": 21,
+      "size_smooth_window": 51,
+      "smooth_method": "gaussian",
+      "size_mode": "per_frame",
+      "identity_track": false,
+      "identity_threshold": 0.28,
+      "select": "largest_face",
+      "fallback_detector": "none",
+      "fallback_head_frac": 0.5,
+      "select_index": 0,
+      "identity_model": "insightface",
+      "cut_detection": "none",
+      "cut_threshold": 3,
+      "absent_shots": "off",
+      "X": 0,
+      "Y": 0,
+      "frame_index": 0
+    },
+    "_meta": {
+      "title": "face track + crop"
+    }
+  },
+  "184:100": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": [
+        "184:60",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ],
+      "audio_vae": [
+        "184:62",
+        0
+      ],
+      "prompt": [
+        "130",
+        0
+      ],
+      "width": [
+        "184:99",
+        4
+      ],
+      "height": [
+        "184:99",
+        5
+      ],
+      "length": [
+        "184:99",
+        6
+      ],
+      "ref_image_size": "match"
+    },
+    "_meta": {
+      "title": "face conditioning"
+    }
+  },
+  "184:101": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": [
+        "184:65",
+        0
+      ],
+      "denoise": [
+        "184:122",
+        11
+      ],
+      "scheduler": "simple",
+      "steps": 4
+    },
+    "_meta": {
+      "title": "legacy denoise"
+    }
+  },
+  "184:102": {
+    "class_type": "H3InjectVideoLatent",
+    "inputs": {
+      "av_latent": [
+        "184:100",
+        1
+      ],
+      "images": [
+        "184:99",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "inject crops"
+    }
+  },
+  "184:103": {
+    "class_type": "H3PerFrameDenoise",
+    "inputs": {
+      "model": [
+        "184:65",
+        0
+      ],
+      "av_latent": [
+        "184:102",
+        0
+      ],
+      "transform": [
+        "184:99",
+        1
+      ],
+      "denoise_multiplier_large_face": [
+        "179",
+        10
+      ],
+      "denoise_multiplier_small_face": 1,
+      "scale_mode": "absolute_px",
+      "face_px_small": 100,
+      "face_px_large": 300,
+      "gamma": 1,
+      "smooth_frames": 9
+    },
+    "_meta": {
+      "title": "per-frame denoise"
+    }
+  },
+  "184:104": {
+    "class_type": "StacyOcclusionDenoise",
+    "inputs": {
+      "av_latent": [
+        "184:103",
+        0
+      ],
+      "crops": [
+        "184:99",
+        0
+      ],
+      "hand_strength": [
+        "179",
+        12
+      ],
+      "hand_model": "hand_yolov8s.pt",
+      "confidence": 0.3,
+      "spread": 0.25,
+      "time_sigma": 2,
+      "expr_strength": 0.3,
+      "expr_frames": 6
+    },
+    "_meta": {
+      "title": "gentler under hands"
+    }
+  },
+  "184:105": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "184:103",
+        2
+      ],
+      "conditioning": [
+        "184:100",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "face guider"
+    }
+  },
+  "184:106": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": [
+        "184:122",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "face seed"
+    }
+  },
+  "184:107": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "_meta": {
+      "title": "euler (face)"
+    }
+  },
+  "184:108": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "184:106",
+        0
+      ],
+      "guider": [
+        "184:105",
+        0
+      ],
+      "sampler": [
+        "184:107",
+        0
+      ],
+      "sigmas": [
+        "184:101",
+        0
+      ],
+      "latent_image": [
+        "184:104",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "face sample"
+    }
+  },
+  "184:109": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "184:108",
+        0
+      ],
+      "vae": [
+        "184:61",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "face decode"
+    }
+  },
+  "184:110": {
+    "class_type": "StacyFlowAlign",
+    "inputs": {
+      "original": [
+        "184:99",
+        0
+      ],
+      "refined": [
+        "184:109",
+        0
+      ],
+      "align": [
+        "179",
+        11
+      ],
+      "temporal": [
+        "184:122",
+        15
+      ],
+      "align_blur": 0.02,
+      "flow_size": 384,
+      "temporal_mode": "ema",
+      "radius": 4
+    },
+    "_meta": {
+      "title": "lock face to source motion"
+    }
+  },
+  "184:111": {
+    "class_type": "H3FaceStitch",
+    "inputs": {
+      "base_images": [
+        "184:97",
+        0
+      ],
+      "refined_crops": [
+        "184:110",
+        0
+      ],
+      "transform": [
+        "184:99",
+        1
+      ],
+      "feather": [
+        "184:122",
+        17
+      ],
+      "paste_region": "face_only",
+      "mask_dilation": 24,
+      "colour_match": 1,
+      "blend": 1,
+      "undetected_frames": "fade_out",
+      "feather_scales_with_crop": false
+    },
+    "_meta": {
+      "title": "stitch face"
+    }
+  },
+  "184:112": {
+    "class_type": "StacyLoopFold",
+    "inputs": {
+      "images": [
+        "184:111",
+        0
+      ],
+      "original_frames": [
+        "184:97",
+        1
+      ],
+      "is_loop": [
+        "184:122",
+        4
+      ],
+      "fade": 16,
+      "curve": "smootherstep"
+    },
+    "_meta": {
+      "title": "loop fold"
+    }
+  },
+  "184:113": {
+    "class_type": "LazySwitchKJ",
+    "inputs": {
+      "on_false": [
+        "184:96",
+        0
+      ],
+      "on_true": [
+        "184:112",
+        0
+      ],
+      "switch": [
+        "184:122",
+        10
+      ]
+    },
+    "_meta": {
+      "title": "face pass? итог"
+    }
+  },
+  "184:122": {
+    "class_type": "StacySettings",
+    "inputs": {
+      "settings": [
+        "128",
+        0
+      ],
+      "probe_image": [
+        "184:66",
+        0
+      ],
+      "branch": "generate",
+      "face_detector": "face_yolov8m.pt"
+    },
+    "_meta": {
+      "title": "пульт → значения (+ AUTO по ключевому кадру)"
+    }
+  },
+  "184:123": {
+    "class_type": "StacyGate",
+    "inputs": {
+      "enabled": [
+        "184:122",
+        20
+      ],
+      "value": [
+        "184:113",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "режим: генерация"
+    }
+  },
+  "127": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "184:123",
+        0
+      ],
+      "filename_prefix": [
+        "182",
+        0
+      ],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "ИТОГ видео FullHD · ref2v"
+    }
+  },
+  "128": {
+    "class_type": "StacyPanel",
+    "inputs": {
+      "mode": true,
+      "seed": 1017246708686114,
+      "duration_sec": 8,
+      "loop": true,
+      "end_frame": false,
+      "model_10eros": false,
+      "steps": 20,
+      "shift": 12,
+      "char_lora": 1,
+      "free_vram": "on",
+      "face_pass": "off",
+      "face_denoise_auto": true,
+      "face_denoise": 0.3,
+      "face_lora": 0,
+      "face_lock_temporal": 0.8
+    },
+    "_meta": {
+      "title": "PANEL"
+    }
+  },
+  "129": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "subject_definitions:\n<Subject 1> is the young woman in <Picture 1> and <Picture 2>, with exactly the face, hair, skin tone and body proportions shown there, completely nude.\n<Subject 2> is the stretching class hall with the wooden floor, purple yoga mats, ballet barre and mirrors in <Picture 1>.\n<Picture 2> is a close-up identity reference of the face of <Subject 1>.\n<Picture 1> is the first frame of [Shot 1] and also its last frame.\nsummary:\n[keyframe completion] The target video is one continuous static shot of 7.96 seconds that begins from <Picture 1> and ends on <Picture 1>: <Subject 1> lies on the yoga mat while a large penis quickly thrusts forward and backward fully into her pussy without fully exiting, gradually slowing down in <Subject 2>, then returns to exactly the starting pose so the clip loops seamlessly.\nretention_analysis:\n<Subject 1> (appears in [Shot 1]): fully_preserved - her face, hair, skin tone, body proportions and outfit are retained.\n<Subject 2> (appears in [Shot 1]): fully_preserved - the room, furniture, light and colors are retained.\n<Picture 2>: fully_preserved - the facial identity of <Subject 1> is retained in every frame.\n<Picture 1>: fully_preserved - the first and the last frame of [Shot 1] match it exactly.\ndetailed_description:\nThe target video is photorealistic live-action footage with the soft warm lighting of the hall, filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, with no camera movement, no zoom and no pan. [Shot 1] The shot begins from <Picture 1>, showing <Subject 1> in <Subject 2>: a high-angle full shot from behind frames her lying face-down on the central purple yoga mat, completely nude, upper body lowered, legs spread wide, foam rollers under her chest and hips, a large realistic penis matching the reference shape partially inserted into her pussy. From 0.00 to 0.70 seconds she lies still in the starting pose, breathing softly. From 0.70 to 3.50 seconds the penis thrusts quickly forward and backward into her pussy multiple times in a fast rhythm, entering fully to the base each time until it is completely inside her pussy, but never exiting completely, the tip remaining inside; the motion is strictly forward and backward along the axis of the shaft, never up and down. From 3.50 to 5.50 seconds the thrusting gradually slows to a moderate pace while continuing the same forward-and-backward motion, entering fully each time without fully exiting. From 5.50 to 6.50 seconds the thrusting slows further to a gentle pace, still entering fully to the base and moving only forward and backward. From 6.50 to 7.96 seconds the penis returns to the starting partially inserted position and she lies relaxed in the starting pose, breathing softly. At 7.96 seconds the shot ends on <Picture 1>: she is back in exactly the starting pose, expression and position, so the last frame matches the first frame. The video is one continuous shot with no cuts and no close-up inserts; <Picture 2> is only a reference for her face and never appears on screen. Her facial expression stays natural; it never goes blank. Every movement happens at natural real-time speed, crisp and clearly visible, never in slow motion. Only the penis and a slight rhythmic shift of her hips move; her upper body, arms and legs stay still. The penis never moves up or down, only forward fully into her and backward out. Her face stays sharp, natural and recognisably the same person in every frame. Her clothing, the room and the furniture do not change. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image.\noverall_soundscape:\nQuiet hall tone with the soft wet rhythmic sounds of the penis thrusting and faint fabric movement from the yoga mat.\nnon_diegetic_music:\nN/A"
+    },
+    "_meta": {
+      "title": "ВИДЕО · промпт видео (H3)"
+    }
+  },
+  "130": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "St4cy_H3, a close-up of the face of a young woman, warm natural smile, natural skin texture, sharp focus on the eyes, warm soft daylight from the window. The camera is static. The lighting is preserved unchanged throughout. Colors and saturation stay unchanged from the reference image."
+    },
+    "_meta": {
+      "title": "ВИДЕО · промпт прохода лица"
+    }
+  },
+  "131": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "d2313164f19f7782c30c35fb6c80b47f.jpg"
+    },
+    "_meta": {
+      "title": "ВИДЕО · конечный кадр (только если петля ВЫКЛ)"
+    }
+  },
+  "132": {
+    "class_type": "StacyRefVideo",
+    "inputs": {
+      "settings": [
+        "128",
+        0
+      ],
+      "prompt": [
+        "129",
+        0
+      ],
+      "video": "(none)",
+      "start_sec": 0,
+      "length_sec": 0
+    },
+    "_meta": {
+      "title": "ВИДЕО · видео-референс движения (необязательно)"
+    }
+  },
+  "179": {
+    "class_type": "NGFarmPanelVideo",
+    "inputs": {
+      "use_Singularity": false,
+      "use_ref2v": false,
+      "use_10Eros": true,
+      "use_PinkCherry": false,
+      "shift": 10,
+      "color_lock": -1,
+      "seam_crossfade": -1,
+      "temporal_strength": 1,
+      "face_confidence": -1,
+      "crop_factor": 2.5,
+      "large_face_mult": 0.35,
+      "face_lock": 1,
+      "hand_strength": 0.2,
+      "model_override": "",
+      "steps_override": 0,
+      "seed": 1,
+      "duration_sec": 8,
+      "loop": true,
+      "end_frame": false,
+      "face_pass": "auto",
+      "free_vram": "auto",
+      "face_denoise_auto": true,
+      "face_denoise": 0.3,
+      "face_lora": 0,
+      "face_lock_temporal": 0.8
+    },
+    "_meta": {
+      "title": "ПУЛЬТ ВИДЕО — тонкая настройка (основное — в PANEL)"
+    }
+  },
+  "182": {
+    "class_type": "StringConcatenate",
+    "inputs": {
+      "string_b": [
+        "179",
+        3
+      ],
+      "string_a": "farm_manual/video_",
+      "delimiter": ""
+    },
+    "_meta": {
+      "title": "имя: NAMEV"
+    }
+  },
+  "192": {
+    "class_type": "ModelPreviewOverrideKJ",
+    "inputs": {
+      "model": [
+        "56",
+        0
+      ],
+      "max_resolution": 1024,
+      "jpeg_quality": 93,
+      "suppress_default_preview": true,
+      "preview_frames": 1024,
+      "preview_fps": 12,
+      "tiny_vae": "taeh3.safetensors"
+    },
+    "_meta": {
+      "title": "ПРЕВЬЮ генерации"
+    }
+  }
+}

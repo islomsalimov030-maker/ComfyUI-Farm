@@ -7,6 +7,10 @@ gizmo_camera:
   fov_deg: 0.01
   zoom: 0.0001
 
+native_composite:
+  outside_changed_pixels_max: 0
+  outside_ssim_min: 0.9999
+
 source_vertical:
   min_line_height: 0.06
   max_vertical_slope: 0.35

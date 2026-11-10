@@ -8,9 +8,35 @@ import numpy as np
 from scipy.ndimage import binary_dilation, gaussian_filter, distance_transform_edt
 
 
-def support(strength):
+def alpha(strength):
     return gaussian_filter(binary_dilation(np.asarray(strength)>0,iterations=16).astype(np.float32),
-                           sigma=8.,radius=8,mode='mirror')>0
+                           sigma=8.,radius=8,mode='mirror')
+
+
+def support(strength):
+    return alpha(strength)>0
+
+
+def outside_metrics(final, plate, composite_support, cfg):
+    """Actual PNG RGB spatial SSIM, same formula as pose_h3_v26.ssim_masked."""
+    a=np.clip(final.detach().cpu().numpy()[0]*255,0,255).astype('uint8').astype(float)
+    b=np.clip(plate.detach().cpu().numpy()[0]*255,0,255).astype('uint8').astype(float)
+    outside=~np.asarray(composite_support,dtype=bool)
+    changed=int(np.any(a!=b,axis=-1)[outside].sum())
+    scores=[]
+    if outside.any():
+        sigma=cfg['h3']['ssim_sigma'];c1=(cfg['h3']['ssim_k1']*255)**2;c2=(cfg['h3']['ssim_k2']*255)**2
+        for channel in range(3):
+            x,y=a[...,channel],b[...,channel];mx=gaussian_filter(x,sigma);my=gaussian_filter(y,sigma)
+            vx=gaussian_filter(x*x,sigma)-mx*mx;vy=gaussian_filter(y*y,sigma)-my*my
+            cov=gaussian_filter(x*y,sigma)-mx*my
+            value=((2*mx*my+c1)*(2*cov+c2))/((mx*mx+my*my+c1)*(vx+vy+c2))
+            scores.append(float(value[outside].mean()))
+    score=float(np.mean(scores)) if scores else None
+    limits=cfg['native_composite']
+    return dict(outside_changed_pixels=changed,outside_ssim=score,outside_pixels=int(outside.sum()),
+                support_pixels=int(composite_support.sum()),outside_passed=bool(score is not None and
+                changed<=limits['outside_changed_pixels_max'] and score>=limits['outside_ssim_min']))
 
 
 def repair_mask(body_strength, total_strength, body_silhouette=None, prop_silhouette=None):

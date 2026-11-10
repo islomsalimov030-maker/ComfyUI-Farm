@@ -1,0 +1,112 @@
+schema: 1
+release: 3DA_AIO_v1.0
+pack_version: 0.3.1
+source:
+  git_url: https://github.com/islomsalimov030-maker/ComfyUI-Farm
+  branch: scene3d-pilot
+  manager_entrypoint: __init__.py
+  bridge: comfyui/ComfyUI-3DA
+  frontend: web/3da
+  checksum_inventory: source_checksums.json
+  install_method: Manager Install via Git URL; verify the branch and checksums
+  restart: administrator maintenance window required
+observed_2026_11_10:
+  core: 0.34.6
+  frontend: 1.53.6
+  python: 3.13.14
+  torch: 2.13.0+cu130
+  gpu: RTX 5090
+  vram_bytes: 33668726784
+  manager: V4.2.1
+  manager_api_prefix: /v2
+  update_policy: stable-comfyui
+  manager_jobs_processing: false
+  custom_3da_classes: absent
+  update_completed: false
+  install_permission: not_proven_by_read_only_API
+  administrator_restart_permission: not_confirmed
+required_3da_classes:
+  - 3DALocation
+  - 3DAProp
+  - 3DAPlacePose
+  - 3DASceneExport
+  - 3DASceneEdits
+  - 3DANativeGuides
+  - 3DANativeComposite
+compatibility_class_retained: 3DAH3Remote
+forbidden_in_single_server_aio: 3DAH3Remote
+geometry_runtime:
+  isolation: separate Python 3.12 environment; no heavy installs in the H3 env
+  locally_verified:
+    os: Windows
+    python: 3.12.11
+    core: 0.44.2
+    torch: 2.11.0+cu128
+    torchvision: 0.26.0+cu128
+    numpy: 2.5.4
+    scipy: 1.18.1
+    pillow: 13.0.0
+    transformers: 5.22.2
+    blender: 5.0.0
+  linux_verified: false
+  required_core_classes:
+    - LoadMoGeModel
+    - MoGeInference
+    - MoGeGeometryToFOV
+    - SAM3DBody_Loader
+    - SAM3DBody_Predict
+  model_files:
+    detection: [sam_3d_body_dinov3_int8_convrot.safetensors]
+    geometry_estimation: [moge_2_vitl_normal_fp16.safetensors]
+  mhr: verify embedded MHR head, parameter transforms, keypoint/anatomy buffers via real forward
+  blender_flags: [-b, --factory-startup, --disable-autoexec, --python-exit-code, '1']
+pose_models_already_listed_and_loaded_in_smoke:
+  z_image:
+    diffusion: z_image_turbo_bf16.safetensors
+    clip: qwen_3_4b.safetensors
+    clip_type: lumina2
+    vae: ae.safetensors
+  qwen:
+    diffusion: qwen_image_edit_2511_fp8mixed.safetensors
+    clip: qwen_2.5_vl_7b_fp8_scaled.safetensors
+    clip_type: qwen_image
+    vae: qwen_image_vae.safetensors
+  download_required: false
+private_config:
+  env: THREEDA_CONFIG
+  example: config/3da_server.example.yaml
+  required_fields: [repo, python, geometry_python, comfy, farm_root, blender, mannequin, cell_px, location_asset_dirs]
+  required_private_data:
+    - locations/LOCATION_ID/profile.json plus every referenced NPZ/mask/anchor/sidecar
+    - plate assets: plate.json, plate_mesh.obj, plate_rgb.png, depth_loc.png
+    - reviewed scale anchors, spatial seeds and furniture footprints
+    - mannequin blend and optional character body.json
+    - props/PROP_ID/prop.json and its checksum-bound normalized GLB with embedded textures
+    - cache/body_geometry and cache/placement when transferring compatible caches
+  no_windows_paths_on_linux: true
+persistent_paths:
+  farm_state: /workspace/farm-state
+  data: /workspace/farm-data
+  models: /workspace/models
+  required_writable: [ComfyUI/input/3d/3da_scene, ComfyUI/input, ComfyUI/output, farm-state/cache/editor, farm-state/pack_requests, farm-state/pack/jobs]
+  refmod_save_observed: /root/ComfyUI/models/refmods/farm
+  refmod_mount_requirement: administrator must confirm persistent mapping to /workspace/models/refmods
+  free_disk_requirement: calculate from private data inventory and model/runtime sizes plus output reserve
+vram:
+  hardware_budget_bytes: 33668726784
+  actual_geometry_h3_combined_peak_measured: false
+  global_free_or_interrupt: forbidden
+  stage_order: pose reference preview; geometry and validation; native H3; face-pass; CPU final composition
+  fallback: save pose reference, select upload, run geometry as a separate stage
+  note: subprocess uses a second CUDA context; cache-none/lowvram is not proof of enough free VRAM
+acceptance_after_admin_install:
+  - fresh system_stats, object_info and source checksum comparison
+  - read/write and capacity checks under the actual service user
+  - Linux geometry import, Blender GLB export and one real reference reconstruction
+  - prepare scene; select body/prop; multiple drags, wheel/pan, Fit, fullscreen, save/reopen
+  - verify rigid vertices/pose/size/contact and current viewport camera against actual render
+  - negative camera/frame; no native H3 branch execution
+  - one SFW native photo with existing RefMods and face-pass; no self-submit
+  - original PNG outside pixels 0 and spatial RGB SSIM at least 0.9999
+  - visual material, single prop instance, alpha/halo, contact and occlusion review
+  - bounded original AIO video and ready-video face-pass regression jobs

@@ -1,0 +1,41 @@
+{
+  "body_translation_m": [
+    0.10508506793375061,
+    0.0,
+    0.0
+  ],
+  "body_vertex_count": 18439,
+  "body_rigid_max_vertex_error_m": 4.999911595859885e-10,
+  "geometry_status": "ok",
+  "scene_accepted": true,
+  "camera_equal_after_drags": true,
+  "scene_camera_negative_prompt_id": "eceaa180-33db-41db-b163-a2719f3d9da5",
+  "scene_frame_negative_prompt_id": "afd39575-dea2-467d-a778-36c0576e4648",
+  "native_sentinel_executed": false,
+  "new_H3_sampling_jobs": 0,
+  "working_plate_changed_pixels": 0,
+  "native_composite_no_new_H3": {
+    "outside_changed_pixels": 0,
+    "outside_ssim": 0.9999971416435304,
+    "outside_pixels": 1120716,
+    "support_pixels": 206388,
+    "outside_passed": true,
+    "guard_pixels": 26277,
+    "working_raster_hw": [
+      768,
+      1344
+    ],
+    "final_raster_hw": [
+      864,
+      1536
+    ],
+    "source_png_provided": true,
+    "appearance_validation": "requires visual review"
+  },
+  "original_png_outside_changed_pixels": 0,
+  "full_studio_aio_e2e": "NOT_RUN",
+  "latest_backend_runtime_reload": "BLOCKED_APPROVAL_REVIEW_USAGE_LIMIT",
+  "latest_related_tests": "80 passed, 26 subtests",
+  "full_latest_test_suite": "NOT_PASSED: sandbox collection failure",
+  "offline_schema_errors": {}
+}

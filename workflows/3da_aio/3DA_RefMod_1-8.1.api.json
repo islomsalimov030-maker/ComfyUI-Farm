@@ -1,0 +1,124 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "Фото 1 · подключено"
+    }
+  },
+  "9": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "RefMod · H3 video VAE"
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3RefModExtract",
+    "inputs": {
+      "refs_image.ref_image_0": [
+        "1",
+        0
+      ],
+      "vae": [
+        "9",
+        0
+      ],
+      "name": "my_concept",
+      "mode": "Full Reference",
+      "concept_type": "identity",
+      "background_retention": 0.0,
+      "ref_resolution": 512,
+      "pool_h": 16,
+      "pool_w": 16,
+      "latent_frames": 1,
+      "identity": 0,
+      "merge": false,
+      "motion_only": false,
+      "multiplier": 1,
+      "max_tokens": 16384,
+      "description": "",
+      "save": false,
+      "extraction_preset": "manual",
+      "subfolder": "farm",
+      "budget_policy": "error"
+    },
+    "_meta": {
+      "title": "RefMod · 1–8 фото → reference adapter"
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3RefModSave",
+    "inputs": {
+      "mods": [
+        "10",
+        0
+      ],
+      "filename_prefix": "",
+      "subfolder": "farm"
+    },
+    "_meta": {
+      "title": "RefMod · Save в models/refmods/farm"
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3RefModInspect",
+    "inputs": {
+      "mods": [
+        "11",
+        0
+      ],
+      "vae": [
+        "9",
+        0
+      ],
+      "index": 0,
+      "preview": "stored",
+      "strength": 1.0,
+      "visual_preview": "first_frame"
+    },
+    "_meta": {
+      "title": "RefMod · Inspect / preview сохранённого"
+    }
+  },
+  "13": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "11",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "RefMod · Путь результата"
+    }
+  },
+  "14": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "12",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "RefMod · Метаданные"
+    }
+  },
+  "15": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "12",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "RefMod · Превью"
+    }
+  }
+}

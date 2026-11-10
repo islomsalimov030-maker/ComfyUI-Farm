@@ -97,7 +97,7 @@ def validated_props(text):
 
 
 def config():
-    path = HERE / 'config.yaml'
+    path = Path(os.environ.get('THREEDA_CONFIG', str(HERE / 'config.yaml')))
     data = yaml.safe_load(path.read_text(encoding='utf-8'))
     if data.get('cell_px') != 16:
         raise ValueError('config.yaml: cell_px must be 16 for this pack version')
@@ -209,7 +209,9 @@ class Location:
     @classmethod
     def IS_CHANGED(cls,location_id,**kwargs):
         cfg=config();root=Path(cfg['farm_root'])/'locations'/location_id
-        return content_fingerprint([HERE/'config.yaml',*root.rglob('*')])
+        assets=Path(cfg.get('location_asset_dirs',{}).get(location_id,root))
+        return content_fingerprint([Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml'))),
+                                    *root.rglob('*'),*assets.glob('*')])
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -314,10 +316,13 @@ class PlacePose:
     def IS_CHANGED(cls,location=None,props='[]',**kwargs):
         cfg=config();repo=Path(cfg['repo']);root=repo/'tools/scene3d'
         paths=[HERE/'config.yaml',HERE/'nodes.py',repo/'config/placement.yaml',
-               root/'pack_cli.py',root/'prop_composite.py',root/'prop_validation.py',root/'plate/prop_render.py']
+               root/'pack_cli.py',root/'prop_composite.py',root/'prop_validation.py',root/'plate/prop_render.py',
+               root/'scene_edit.py',root/'scene_export_blender.py',Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))]
         paths += [p for p in (root/'posev2').glob('*.py') if not p.name.startswith('test_')]
         if isinstance(location,str) and Path(location).is_file():
             paths += list(Path(location).parent.glob('*'))
+            loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
+            paths += list(Path(cfg.get('location_asset_dirs',{}).get(loc_id,Path(location).parent)).glob('*'))
         for prop in validated_props(props) if isinstance(props,str) else []:
             directory=Path(cfg['farm_root'])/'props'/prop['prop_id']
             paths += list(directory.glob('*'))
@@ -338,7 +343,8 @@ class PlacePose:
             **{name: ('FLOAT', {'default': 0., 'step': .01 if name in ('body_dx', 'body_dy', 'body_dz') else 1.})
                for name in ('body_dx', 'body_dy', 'body_dz', 'body_dyaw', 'body_dpitch', 'body_droll')},
         }, 'optional': {'pose_text': ('STRING', {'default': '', 'multiline': True}),
-                        'props': ('STRING', {'default': '[]', 'forceInput': True})}}
+                        'props': ('STRING', {'default': '[]', 'forceInput': True}),
+                        'body_transform': ('STRING', {'default': '', 'forceInput': True})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE', 'IMAGE', 'MASK', '3DA_BODY_GUIDES')
     RETURN_NAMES = ('playblast', 'init', 'strength', 'silhouette', 'h3_prompt', 'status', 'debug', 'prop_repair', 'prop_repair_mask', 'body_guides')
     FUNCTION = 'execute'
@@ -347,7 +353,7 @@ class PlacePose:
     def execute(self, location, pose_ref, pose_class, target_object, support_parts, secondary_contacts,
                 instance_hint, height_m, body_json, proxy, strength, seed, block_on_fail=False,
                 body_dx=0., body_dy=0., body_dz=0., body_dyaw=0., body_dpitch=0., body_droll=0.,
-                pose_text='', props='[]'):
+                pose_text='', props='[]', body_transform=''):
         try:
             if not isinstance(block_on_fail, bool) or not isinstance(pose_text, str):
                 raise ValueError('block_on_fail must be BOOLEAN; pose_text must be STRING')
@@ -360,7 +366,7 @@ class PlacePose:
                             support_parts=support_parts, secondary_contacts=secondary_contacts,
                             instance_hint=instance_hint, height_m=height_m, body_json=body_json,
                             proxy=proxy, strength=strength, seed=seed, block_on_fail=block_on_fail,
-                            pose_text=pose_text, props=props, **transforms), {'pose_ref': pose_ref})
+                            pose_text=pose_text, props=props, body_transform=body_transform, **transforms), {'pose_ref': pose_ref})
             status = result['status']
             # Manual mode retains diagnostics without using status as an H3 gate.
             accepted = isinstance(status, str) and status in ('ok', 'partial')
@@ -374,6 +380,9 @@ class PlacePose:
                      for key in ('plate','playblast','init','strength')} if bundle else {})
             if bundle:
                 guides.update(prompt=bundle['prompt'] if h3_prompt else '',render_prompt=bundle['render_prompt'])
+                guides['scene_setup']=result.get('scene_setup')
+                if guides['scene_setup']:
+                    guides['original_plate']=load_image(Path(guides['scene_setup']['plate_dir'])/'plate_rgb.png')
                 guides['validation']=bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+result['status']]})
                 guides['prop_rgb']=load_image(bundle.get('prop_rgb',result['init']))
                 guides['prop_alpha']=load_mask(bundle['prop_alpha']) if bundle.get('prop_alpha') else torch.zeros_like(guides['strength'])
@@ -654,6 +663,193 @@ class H3Remote:
             return blank, blank.clone(), remote_error(exc)
 
 
-NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote}
+def scene_helpers():
+    import sys
+    sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
+    import scene_edit
+    return scene_edit
+
+
+def accepted_guides(guides):
+    # Fail closed, including old error placeholders ({}). Never use an empty
+    # prompt as a surrogate gate for a native sampler.
+    validation = guides.get('validation') if isinstance(guides, dict) else None
+    if not isinstance(validation, dict) or validation.get('ok') is not True:
+        reasons = validation.get('reasons', []) if isinstance(validation, dict) else ['missing geometry validation']
+        raise GeometryRejected('3DA: непринятая геометрия: ' + '; '.join(map(str, reasons)))
+    for key in ('plate', 'playblast', 'init'):
+        value = guides.get(key)
+        if not isinstance(value, torch.Tensor) or value.ndim != 4 or value.shape[0] != 1 or value.shape[-1] != 3 or not torch.isfinite(value).all():
+            raise GeometryRejected('3DA: invalid ' + key)
+    shape = guides['plate'].shape
+    if any(guides[key].shape != shape for key in ('playblast', 'init')) or min(shape[1:3]) < 64:
+        raise GeometryRejected('3DA: body guides raster mismatch')
+    mask = guides.get('strength')
+    if not isinstance(mask, torch.Tensor) or tuple(mask.shape) != tuple(shape[:3]) or not torch.isfinite(mask).all() or mask.min() < 0 or mask.max() > 1:
+        raise GeometryRejected('3DA: invalid body strength')
+    if not isinstance(guides.get('prompt'), str) or not guides['prompt'].strip():
+        raise GeometryRejected('3DA: empty body prompt')
+    original=guides.get('original_plate')
+    if original is not None and (not isinstance(original,torch.Tensor) or original.ndim!=4 or original.shape[0]!=1 or original.shape[-1]!=3 or not torch.isfinite(original).all()):
+        raise GeometryRejected('3DA: invalid original room PNG')
+    prop_rgb, prop_alpha = guides.get('prop_rgb'), guides.get('prop_alpha')
+    if not isinstance(prop_rgb, torch.Tensor) or prop_rgb.shape != shape or not torch.isfinite(prop_rgb).all():
+        raise GeometryRejected('3DA: invalid source prop RGB')
+    if not isinstance(prop_alpha, torch.Tensor) or tuple(prop_alpha.shape) != tuple(shape[:3]) or not torch.isfinite(prop_alpha).all() or prop_alpha.min() < 0 or prop_alpha.max() > 1:
+        raise GeometryRejected('3DA: invalid source prop alpha')
+    return guides
+
+
+class NativeGuides:
+    @classmethod
+    def IS_CHANGED(cls,**kwargs):
+        cfg=config();repo=Path(cfg['repo'])
+        return content_fingerprint([HERE/'nodes.py',repo/'config/placement.yaml',repo/'tools/scene3d/prop_composite.py',
+                                    Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'body_guides': ('3DA_BODY_GUIDES',)}}
+    RETURN_TYPES = ('IMAGE', 'IMAGE', 'IMAGE', 'MASK', 'STRING', 'INT', 'INT', 'BOOLEAN')
+    RETURN_NAMES = ('plate', 'playblast', 'init', 'strength', 'prompt', 'width', 'height', 'accepted')
+    FUNCTION = 'execute'
+    CATEGORY = '3DA/native'
+
+    def execute(self, body_guides):
+        g = accepted_guides(body_guides)
+        return g['plate'], g['playblast'], g['init'], g['strength'], g['prompt'], g['plate'].shape[2], g['plate'].shape[1], True
+
+
+class NativeComposite:
+    @classmethod
+    def IS_CHANGED(cls,**kwargs):
+        return NativeGuides.IS_CHANGED(**kwargs)
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'image': ('IMAGE',), 'body_guides': ('3DA_BODY_GUIDES',),
+                             'prop_repair': ('IMAGE',), 'prop_repair_mask': ('MASK',)}}
+    RETURN_TYPES = ('IMAGE', 'MASK', 'STRING')
+    RETURN_NAMES = ('final', 'composite_support', 'metrics')
+    FUNCTION = 'execute'
+    CATEGORY = '3DA/native'
+
+    def execute(self, image, body_guides, prop_repair, prop_repair_mask):
+        g = accepted_guides(body_guides)
+        if image.shape != g['plate'].shape or not torch.isfinite(image).all():
+            raise ValueError('3DA: final image must match geometry raster')
+        import sys
+        sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
+        from prop_composite import alpha, restore, outside_metrics
+        import torch.nn.functional as F
+        original = g.get('original_plate', g['plate']).to(image.device)
+        if original.ndim!=4 or original.shape[0]!=1 or original.shape[-1]!=3 or not torch.isfinite(original).all():
+            raise ValueError('3DA: expected one original room PNG')
+        # Validate the paired legacy repair data, even though native body-only
+        # generation needs a CLEAN room guard and one RGBA overlay. Applying
+        # the already-coloured repair and then RGBA again doubles edge alpha.
+        restore(g['plate'], prop_repair, prop_repair_mask)
+        body_alpha=torch.from_numpy(alpha(g['strength'].detach().cpu().numpy()[0]))[None].to(image.device)
+        guard=(prop_repair_mask.detach().cpu().numpy()[0]>0)&~(body_alpha.cpu().numpy()[0]>0)
+        size=original.shape[1:3]
+        def rgb(value):
+            value=value.to(image.device)
+            return value if value.shape[1:3]==size else F.interpolate(value.movedim(-1,1),size=size,mode='bilinear',align_corners=False).movedim(1,-1)
+        def mask(value):
+            value=value.to(image.device)
+            return value if value.shape[1:3]==size else F.interpolate(value[:,None],size=size,mode='bilinear',align_corners=False)[:,0]
+        body_alpha=mask(body_alpha)
+        guard=mask(torch.from_numpy(guard.astype(np.float32))[None])>0
+        guard &= ~(body_alpha>0)
+        final=restore(original,rgb(image),body_alpha)
+        final=restore(final,original,guard.float())
+        prop_alpha=mask(g['prop_alpha'])
+        # Interpolate premultiplied RGB so transparent black never bleeds into
+        # the material at the original PNG resolution. Overlay exactly once.
+        premul=rgb(g['prop_rgb']*g['prop_alpha'][...,None])
+        final=final*(1-prop_alpha[...,None])+premul
+        full_support=(body_alpha>0)|guard|(prop_alpha>0)
+        final=torch.where(full_support[...,None],final,original)
+        parameters=yaml.safe_load((Path(config()['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))
+        metrics=outside_metrics(final,original,full_support.cpu().numpy()[0],parameters)
+        metrics.update(guard_pixels=int(guard.sum()),working_raster_hw=list(image.shape[1:3]),
+                       final_raster_hw=list(original.shape[1:3]),source_png_provided='original_plate' in g,
+                       appearance_validation='requires visual review')
+        if not metrics['outside_passed']:
+            raise ValueError('3DA: outside composite contract failed: '+json.dumps(metrics))
+        return final,full_support.float().cpu(),json.dumps(metrics)
+
+
+
+class SceneEdits:
+    @classmethod
+    def IS_CHANGED(cls,manifest='',**kwargs):
+        cfg=config();repo=Path(cfg['repo'])
+        paths=[HERE/'nodes.py',repo/'tools/scene3d/scene_edit.py',repo/'tools/scene3d/prop_gizmo.py',
+               repo/'config/placement.yaml',Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))]
+        if manifest:paths.append(Path(manifest))
+        location=kwargs.get('location')
+        if isinstance(location,str) and Path(location).is_file():
+            paths.append(Path(location))
+            loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
+            if loc_id in cfg.get('location_asset_dirs',{}):paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
+        return content_fingerprint(paths)
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'model_3d': ('FILE_3D',), 'model_3d_info': ('LOAD3D_MODEL_INFO',),
+                             'camera_info': ('LOAD3D_CAMERA',), 'location': ('STRING', {'forceInput': True}),
+                             'manifest': ('STRING', {'default': '', 'multiline': True})}}
+    RETURN_TYPES = ('STRING', 'STRING')
+    RETURN_NAMES = ('body_transform', 'props')
+    FUNCTION = 'execute'
+    CATEGORY = '3DA'
+
+    def execute(self, model_3d, model_3d_info, camera_info, location, manifest):
+        helpers = scene_helpers()
+        cfg = config()
+        data = helpers.read_manifest(manifest, cfg)
+        helpers.check_file(model_3d, data)
+        profile = json.loads(Path(location).read_text(encoding='utf-8'))
+        if profile['loc_id'] != data['location_id']:
+            raise ValueError('3DA: сцена от другой комнаты; подготовьте её заново')
+        plate = json.loads((Path(cfg['location_asset_dirs'][profile['loc_id']]) / 'plate.json').read_text(encoding='utf-8'))
+        limits = yaml.safe_load((Path(cfg['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))['gizmo_camera']
+        helper = gizmo_helpers()
+        helper.validate_camera(camera_info, helper.camera_config(plate, [1344, 768]), limits)
+        return helpers.edits(data, model_3d_info)
+
+
+class SceneExport:
+    @classmethod
+    def IS_CHANGED(cls,**kwargs):
+        cfg=config();repo=Path(cfg['repo'])
+        return content_fingerprint([HERE/'nodes.py',repo/'tools/scene3d/scene_edit.py',
+                                    repo/'tools/scene3d/scene_export_blender.py',
+                                    Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'body_guides': ('3DA_BODY_GUIDES',)}}
+    RETURN_TYPES = ('STRING', 'STRING')
+    RETURN_NAMES = ('model_file', 'manifest')
+    FUNCTION = 'execute'
+    CATEGORY = '3DA'
+    OUTPUT_NODE = True
+
+    def execute(self, body_guides):
+        # A diagnostic scene can be edited to fix failed geometry. Export is
+        # not an H3 acceptance and does not change its validation result.
+        setup = body_guides.get('scene_setup')
+        if not setup:
+            raise ValueError('3DA: сначала подготовьте геометрию сцены')
+        result = scene_helpers().export(setup, config())
+        text = json.dumps(result, ensure_ascii=False)
+        return {'ui': {'text': [text]}, 'result': (result['model_file'], result['manifest'])}
+
+
+NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
+                       '3DANativeGuides': NativeGuides, '3DANativeComposite': NativeComposite,
+                       '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport}
 NODE_DISPLAY_NAME_MAPPINGS = {'3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
-                              '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote'}
+                              '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote',
+                              '3DANativeGuides': '3DA · native H3 guides + gate',
+                              '3DANativeComposite': '3DA · final room + rigid props',
+                              '3DASceneEdits': '3DA · правки выбранных объектов',
+                              '3DASceneExport': '3DA · подготовить 3D-сцену для гизмо'}

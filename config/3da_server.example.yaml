@@ -1,0 +1,18 @@
+# Private deployment file outside the git checkout. Point THREEDA_CONFIG here.
+# Replace paths only after verifying actual mounts and service-user access.
+repo: /workspace/farm
+python: /workspace/venvs/3da-farm/bin/python
+geometry_python: /workspace/venvs/3da-geometry/bin/python
+comfy: /root/ComfyUI
+farm_root: /workspace/farm-state
+blender: /workspace/bin/blender
+mannequin: /workspace/farm-data/mannequin_162.blend
+cell_px: 16
+location_asset_dirs:
+  mainroom1: /workspace/farm-data/plate/mainroom1
+  mainroom2: /workspace/farm-data/plate/mainroom2
+  mainroom3: /workspace/farm-data/plate/mainroom3
+# Copy reviewed seeds/footprints from the private source configuration.
+# Never invent a floor seed or use a Windows drive path on Linux.
+location_hints_by_id: {}
+prompt_context_by_location: {}

@@ -43,7 +43,8 @@ class NodeTests(unittest.TestCase):
                     nodes.Prop().execute(**values,model_3d=Asset(b'other'))
 
     def test_registered_io(self):
-        self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote'})
+        self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote',
+                         '3DANativeGuides', '3DANativeComposite', '3DASceneEdits', '3DASceneExport'})
         self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 10)
         self.assertEqual(len(nodes.CLASSES), 9)
 

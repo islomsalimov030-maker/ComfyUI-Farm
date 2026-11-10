@@ -1,0 +1,829 @@
+{
+  "id": "29cedd0a-746a-565e-ab5b-df4ab7561df8",
+  "version": 0.4,
+  "last_node_id": 16,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 1 · подключено",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        400,
+        0
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 2 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        800,
+        0
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 3 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 4,
+      "type": "LoadImage",
+      "pos": [
+        1200,
+        0
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 4 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        400
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 5 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        400,
+        400
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 6 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [
+        800,
+        400
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 7 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 8,
+      "type": "LoadImage",
+      "pos": [
+        1200,
+        400
+      ],
+      "size": [
+        350,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "Фото 8 · необязательно: загрузить и подключить",
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "image": "",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 9,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        950
+      ],
+      "size": [
+        350,
+        160
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · H3 video VAE",
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+      }
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3RefModExtract",
+      "pos": [
+        450,
+        950
+      ],
+      "size": [
+        450,
+        650
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "refs_image.ref_image_0",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mods",
+          "type": "H3_REF_MODS",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "details",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3RefModExtract",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · 1–8 фото → reference adapter",
+      "widgets_values": [
+        "my_concept",
+        "Full Reference",
+        "identity",
+        0.0,
+        512,
+        16,
+        16,
+        1,
+        0,
+        false,
+        false,
+        1,
+        16384,
+        "",
+        false,
+        "manual",
+        "farm",
+        "error"
+      ],
+      "widgets_values_named": {
+        "name": "my_concept",
+        "mode": "Full Reference",
+        "concept_type": "identity",
+        "background_retention": 0.0,
+        "ref_resolution": 512,
+        "pool_h": 16,
+        "pool_w": 16,
+        "latent_frames": 1,
+        "identity": 0,
+        "merge": false,
+        "motion_only": false,
+        "multiplier": 1,
+        "max_tokens": 16384,
+        "description": "",
+        "save": false,
+        "extraction_preset": "manual",
+        "subfolder": "farm",
+        "budget_policy": "error"
+      }
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3RefModSave",
+      "pos": [
+        1000,
+        950
+      ],
+      "size": [
+        350,
+        160
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mods",
+          "type": "H3_REF_MODS",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mods",
+          "type": "H3_REF_MODS",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "saved_paths",
+          "type": "STRING",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3RefModSave",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · Save в models/refmods/farm",
+      "widgets_values": [
+        "",
+        "farm"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "",
+        "subfolder": "farm"
+      }
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3RefModInspect",
+      "pos": [
+        1000,
+        1250
+      ],
+      "size": [
+        350,
+        160
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mods",
+          "type": "H3_REF_MODS",
+          "link": 4
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "details",
+          "type": "STRING",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "image_preview",
+          "type": "IMAGE",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "audio_preview",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "reference_map",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3RefModInspect",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · Inspect / preview сохранённого",
+      "widgets_values": [
+        0,
+        "stored",
+        1.0,
+        "first_frame"
+      ],
+      "widgets_values_named": {
+        "index": 0,
+        "preview": "stored",
+        "strength": 1.0,
+        "visual_preview": "first_frame"
+      }
+    },
+    {
+      "id": 13,
+      "type": "PreviewAny",
+      "pos": [
+        1450,
+        950
+      ],
+      "size": [
+        350,
+        160
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · Путь результата",
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 14,
+      "type": "PreviewAny",
+      "pos": [
+        1450,
+        1150
+      ],
+      "size": [
+        350,
+        160
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · Метаданные",
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        1450,
+        1400
+      ],
+      "size": [
+        400,
+        350
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "RefMod · Превью",
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "pos": [
+        0,
+        -550
+      ],
+      "size": [
+        1500,
+        500
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "3DA AIO": "3DA_AIO_v1.0"
+      },
+      "title": "README",
+      "widgets_values": [
+        "1–8 РАЗНЫХ фотографий одной концепции. Фото 1 подключено; дополнительные LoadImage необязательны: загрузите нужные и соедините с автоматически растущими refs_image. Неподключённые пустые фото не выполняются. Не смешивайте разных людей в identity.\nИмя my_concept → AIO MiniMaxH3RefModsLoader mod_1=farm/my_concept после Refresh. Save заменяет одноимённый файл: задавайте новое имя для версии.\nFull Reference + merge=false сохраняет отдельные refs (рекомендуется для лица). Compressed Reference + merge=false сжимает каждый ref отдельно; merge=true строит общий grid (теряет детали, refinement=0..2000). Это RefMod, не обучение LoRA.\nPreset manual оставляет ручки доступными. identity_encode принудительно меняет их на Full Reference/1024/0 steps/merge off: 8 фото потребуют большего token budget. По умолчанию resolution512, max_tokens16384, budget_policy=error: нет скрытого усечения фото. При memory error уменьшите разрешение или количество фото; не увеличивайте copies.\nСначала Inspect Save, затем загрузите полученный файл в действующий AIO Loader и проверьте Apply→conditioning→генерацию. Сохранение/превью сами по себе не доказывают качество личности."
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      9,
+      0,
+      10,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      10,
+      0,
+      11,
+      0,
+      "H3_REF_MODS"
+    ],
+    [
+      4,
+      11,
+      0,
+      12,
+      0,
+      "H3_REF_MODS"
+    ],
+    [
+      5,
+      9,
+      0,
+      12,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      11,
+      1,
+      13,
+      0,
+      "STRING"
+    ],
+    [
+      7,
+      12,
+      0,
+      14,
+      0,
+      "STRING"
+    ],
+    [
+      8,
+      12,
+      1,
+      15,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "1 · Вход",
+      "bounding": [
+        -40,
+        -40,
+        1600,
+        850
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "2 · ПУЛЬТ",
+      "bounding": [
+        400,
+        900,
+        520,
+        760
+      ],
+      "color": "#9c7442",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "3 · Движок",
+      "bounding": [
+        -40,
+        900,
+        420,
+        360
+      ],
+      "color": "#4d556b",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "4 · Результат",
+      "bounding": [
+        960,
+        900,
+        920,
+        950
+      ],
+      "color": "#427b61",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {}
+}

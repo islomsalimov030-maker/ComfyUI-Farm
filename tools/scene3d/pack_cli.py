@@ -151,7 +151,7 @@ def modules(config):
     # Set paths before importing farm_env (imported indirectly by step-9 helpers).
     os.environ["FARM_ROOT"] = config["farm_root"]
     os.environ["FARM_COMFY"] = config["comfy"]
-    for directory in (REPO, HERE / "plate", HERE / "posev2"):
+    for directory in (REPO, HERE, HERE / "plate", HERE / "posev2"):
         sys.path.insert(0, str(directory))
     import pose_fit
     import profiles
@@ -524,7 +524,10 @@ def do_place(request, config):
         if base is None:
             raise ValueError(f"placement has no body geometry (status={result['status']})")
     values = {k: request.get(k, 0.) for k in ("body_dx", "body_dy", "body_dz", "body_dyaw", "body_dpitch", "body_droll")}
-    if any(float(v) != 0 for v in values.values()):
+    if request.get('body_transform'):
+        from scene_edit import body_delta
+        values['body_matrix'] = body_delta(request['body_transform'], key)
+    if 'body_matrix' in values or any(float(v) != 0 for v in values.values()):
         X, KP, fit = manual_pose.revalidate(base, ref, plate, profile, spec, seed, height, values)
     else:
         X, KP, fit = base["X"], base["KP"], base["report"]
@@ -587,6 +590,7 @@ def do_place(request, config):
     body_guides={key:str(body_dir/(key+'.png')) for key in ('playblast','init','strength')}
     body_guides['plate']=str(directory/'plate.png')
     body_guides.update(prompt=body_h3_prompt,render_prompt=h3_prompt)
+    render_props_value = []
     if props_value:
         # Input offsets use the same camera-horizontal location axes as body_*.
         render_props_value = []
@@ -647,6 +651,10 @@ def do_place(request, config):
                 prop_repair=str(directory/'prop_repair.png') if props_value else None,
                 prop_repair_mask=str(directory/'prop_repair_mask.png') if props_value else None,
                 body_guides=body_guides,
+                scene_setup=dict(placement_key=key, body_obj=str(cache_dir/'body.obj'),
+                                 body_cache=str(cache_dir/'manual_base.npz'),
+                                 joints=str(cache_dir/'label_joints.npz'), location_id=profile.data['loc_id'],
+                                 plate_dir=str(plate_dir), props=render_props_value),
                 h3_prompt=h3_prompt, report=fit, timings=timings)
 
 

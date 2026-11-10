@@ -25,10 +25,10 @@ def full_prompt():
     return prompt({'room':'the room in <Picture 1>'},{'action':'holding a relaxed pose','anchor':'the table reaches her hips'}).replace('One single photorealistic static image.', 'One single photograph.')
 
 
-def test_three_optional_inputs_no_new_node():
+def test_three_optional_inputs_preserve_legacy_bridge():
     schema=nodes.H3Remote.INPUT_TYPES()
     assert {k:v for k,v in schema['optional'].items() if k.startswith('ref_prop_')}=={f'ref_prop_{n}':('IMAGE',) for n in range(1,4)}
-    assert len(nodes.NODE_CLASS_MAPPINGS)==4
+    assert {'3DALocation','3DAPlacePose','3DAProp','3DAH3Remote'} <= set(nodes.NODE_CLASS_MAPPINGS)
 
 
 @pytest.mark.parametrize('bits',list(itertools.product((False,True),repeat=3)))

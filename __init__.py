@@ -13,6 +13,17 @@ WEB_DIRECTORY = "./web"   # 26.10: кнопка «Загрузить табли�
 if __package__:  # загружен ComfyUI как пакет custom_nodes/<папка>
     from .farm.nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
+    # The Manager installs this git repository as a whole. Register the 3DA
+    # bridge here as well as supporting its standalone package installation.
+    # Heavy geometry remains in the explicitly configured separate runtime.
+    try:
+        import importlib
+        _scene3da = importlib.import_module('.comfyui.ComfyUI-3DA', __package__)
+        NODE_CLASS_MAPPINGS.update(_scene3da.NODE_CLASS_MAPPINGS)
+        NODE_DISPLAY_NAME_MAPPINGS.update(_scene3da.NODE_DISPLAY_NAME_MAPPINGS)
+    except Exception:
+        log.exception('3DA: bridge import failed; existing farm nodes remain available')
+
     try:
         from .farm import runtime as _runtime
         _runtime.register_routes()

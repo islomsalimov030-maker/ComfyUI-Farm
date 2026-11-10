@@ -1,0 +1,24 @@
+{
+  "mouse_drags": 4,
+  "rotation_and_scale_both_entities": true,
+  "camera_unchanged": true,
+  "independent_objects": true,
+  "room_visible": true,
+  "roundtrip_tolerance": 1e-10,
+  "js_errors": [],
+  "body_scale": 1.2999544545682054,
+  "effective_height_m": 2.105926216400493,
+  "body_vertex_count": 18439,
+  "viewport_render_max_vertex_error_m": 4.999929359428279e-10,
+  "geometry_status": "wrong_surface",
+  "h3_eligibility": {
+    "ok": false,
+    "reasons": [
+      "scene status=wrong_surface"
+    ]
+  },
+  "preview_prompt_id": "19618fe9-8c83-4f0e-94e7-f96033a2eb59",
+  "new_H3_sampling_jobs": 0,
+  "backend_restarted": true,
+  "full_studio_deployment": "NOT_RUN"
+}

@@ -1,4 +1,6 @@
-# Usually already present in ComfyUI; no SAM/MoGe/scipy/blender here.
+# No SAM/MoGe/Blender installations in the ComfyUI environment.
 PyYAML>=6.0
 # H3 Remote reuses farm/comfy_client.py (HTTPX BSD-3-Clause).
 httpx>=0.27,<1
+# Native final composition reuses the existing CPU mask support implementation.
+scipy>=1.14,<2
