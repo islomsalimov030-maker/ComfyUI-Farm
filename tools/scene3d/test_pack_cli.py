@@ -119,6 +119,8 @@ def test_new_location_runs_existing_moge_then_auto_surfaces_without_hints(tmp_pa
     assert data["auto_surfaces"]["floor_status"] == "ok"
     assert result["objects"][0]["id"] == "floor_1"
     assert Path(result["objects_preview"]).is_file()
+    assert result['timings']['profile_cache_hit'] is False
+    assert result['timings']['auto_profile_s'] >= 0
 
 
 def test_contacts_and_support_defaults():
@@ -355,6 +357,19 @@ def test_prompt_subprocess_uses_isolated_farm_python(tmp_path, monkeypatch):
     assert cli.prompt_for(Profile(), cfg, {"shot_spec": {}}) == "existing-generator"
 
 
+def test_cold_auto_profile_prompt_needs_no_manual_room_anchor(tmp_path):
+    cfg = config(tmp_path)
+    cli.modules(cfg)
+    profile = SimpleNamespace(data={'loc_id': 'fresh', 'auto_surfaces': {'floor_status': 'ok'}})
+    fit = {'shot_spec': {'pose_class': 'stand', 'target_object': 'floor', 'secondary_contacts': []}}
+    text = cli.prompt_direct(profile, cfg, fit)
+    assert 'reconstructed surfaces and body in <Video 1>' in text
+    assert 'bed reaches' not in text and 'table reaches' not in text
+    assert 'prompt_context' not in profile.data
+    profile.data['prompt_context'] = {'anchor': 'existing explicit anchor'}
+    assert 'existing explicit anchor' in cli.prompt_direct(profile, cfg, fit)
+
+
 def test_real_isolated_prompt_roundtrip(tmp_path):
     cfg = config(tmp_path)
     cfg["prompt_context_by_location"] = {"room": {"anchor": "the bed reaches her knees"}}
@@ -473,7 +488,8 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
     assert result["h3_prompt"] == "existing-prompt-fixture"
     for key in ("playblast", "init", "strength", "silhouette", "debug"):
         assert Path(result[key]).is_file()
-    assert set(result["timings"]) == {"reference_s", "placement_s", "placement_cache_hit", "render_s", "maps_s", "total_s"}
+    assert set(result["timings"]) == {"reference_s", "reference_cache_hit", "placement_s", "placement_cache_hit", "render_s", "maps_s", "total_s"}
+    assert result['timings']['reference_cache_hit'] is False
     assert result["timings"]["placement_cache_hit"] is False
     assert len(list((tmp_path / "cache/pose_ref").iterdir())) == 1
     events.clear()
@@ -483,6 +499,7 @@ def test_arbitrary_pose_pipeline_and_content_addressed_cache(tmp_path, monkeypat
     cached = cli.do_place(dict(request, pose_ref=str(alias)), cfg)
     assert events == ["write", "Blender render"]
     assert cached["timings"]["placement_cache_hit"] is True
+    assert cached['timings']['reference_cache_hit'] is True
 
 
 def test_pose_text_and_prop_sentences_use_existing_linter(monkeypatch):

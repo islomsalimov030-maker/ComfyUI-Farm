@@ -33,6 +33,44 @@ def test_native_gate_fails_closed():
     assert nodes.NativeGuides().execute(guides())[-1] is True
 
 
+def test_rejected_geometry_with_mesh_can_open_editor_but_cannot_run_h3():
+    from types import SimpleNamespace
+    g = guides()
+    g['validation'] = {'ok': False, 'reasons': ['support_gap']}
+    g['scene_setup'] = {'body_obj': 'real-body.obj', 'placement_key': 'fresh'}
+    calls = []
+    def export(setup, cfg):
+        calls.append(setup)
+        return {'model_file': 'scene.glb', 'manifest': 'scene.json'}
+    with patch.object(nodes, 'config', return_value={}), patch.object(nodes, 'scene_helpers', return_value=SimpleNamespace(export=export)):
+        result = nodes.SceneExport().execute(g)
+    assert result['result'] == ('scene.glb', 'scene.json')
+    assert calls == [g['scene_setup']]
+    with pytest.raises(nodes.GeometryRejected):
+        nodes.NativeGuides().execute(g)
+
+
+def test_scene_edits_new_room_camera_and_fingerprint(tmp_path):
+    from types import SimpleNamespace
+    directory = tmp_path / 'locations' / 'fresh'
+    directory.mkdir(parents=True)
+    profile = directory / 'profile.json'
+    profile.write_text(json.dumps({'loc_id': 'fresh'}))
+    plate = directory / 'plate.json'
+    plate.write_text('{}')
+    cfg = dict(repo=str(ROOT), data_root=str(tmp_path))
+    helper = SimpleNamespace(read_manifest=lambda *a: {'location_id': 'fresh'}, check_file=lambda *a: None,
+                             edits=lambda *a: ('body', 'props'))
+    cameras = []
+    camera = SimpleNamespace(camera_config=lambda p, size: (p, size), validate_camera=lambda *a: cameras.append(a))
+    with patch.object(nodes, 'config', return_value=cfg), patch.object(nodes, 'scene_helpers', return_value=helper), patch.object(nodes, 'gizmo_helpers', return_value=camera):
+        first = nodes.SceneEdits.IS_CHANGED(location=str(profile))
+        assert nodes.SceneEdits().execute(None, [], 'actual-camera', str(profile), '') == ('body', 'props')
+        plate.write_text('{"new": true}')
+        assert nodes.SceneEdits.IS_CHANGED(location=str(profile)) != first
+    assert cameras[0][0] == 'actual-camera'
+
+
 def test_final_composition_restores_room_after_facepass_and_source_prop():
     g=guides(512);g['plate'][:]=.125;g['prop_rgb'][:,10:15,10:15]=.75;g['prop_alpha'][:,10:15,10:15]=1
     facepass=torch.ones_like(g['plate']);repair=g['plate'].clone();repair_mask=torch.zeros_like(g['strength']);repair_mask[:,:40,:40]=1

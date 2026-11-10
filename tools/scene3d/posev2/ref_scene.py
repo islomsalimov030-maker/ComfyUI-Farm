@@ -79,8 +79,10 @@ def main():
         imgs[p] = (im, torch.from_numpy(im)[None])
 
     # ---- 1. MoGe на всех рефах, затем выгрузка
+    model_started = time.monotonic()
     moge = call("LoadMoGeModel", model_name=a.moge)[0]
-    geo = {}
+    moge_load_s = time.monotonic() - model_started
+    geo, moge_times = {}, {}
     for p, (im, t) in imgs.items():
         t0 = time.monotonic()
         with torch.inference_mode():
@@ -102,6 +104,7 @@ def main():
         nrm = None if nrm is None else (nrm.reshape(nrm.shape[-3:]) if nrm.ndim > 3 else nrm)
         msk = np.isfinite(pts).all(-1) if msk is None else (msk.reshape(msk.shape[-2:]) > 0.5) & np.isfinite(pts).all(-1)
         geo[p] = (pts, nrm, msk, float(fov[0]))
+        moge_times[p] = time.monotonic() - t0
         print(f"[ref] moge {Path(p).name}: {pts.shape[1]}x{pts.shape[0]} fov_y {float(fov[0]):.1f} "
               f"normals {'yes' if nrm is not None else 'no'} keys {keys} {time.monotonic() - t0:.1f}s", flush=True)
     del moge
@@ -110,13 +113,17 @@ def main():
 
     # ---- 2. SAM 3D Body с FOV от MoGe
     from comfy_extras import nodes_sam3d_body as n
+    model_started = time.monotonic()
     sam = loop.run_until_complete(run(n.SAM3DBody_Loader, model_file=a.sam))[0]
+    sam_load_s = time.monotonic() - model_started
     for p, (im, t) in imgs.items():
         pts, nrm, msk, fov_y = geo[p]
         H, W = im.shape[:2]
+        sam_started = time.monotonic()
         with torch.inference_mode():
             data = loop.run_until_complete(run(n.SAM3DBody_Predict, sam3d_body_model=sam, image=sam_input_tensor(sam, t),
                                                run_hand_refinement=True, fov=fov_y, batch_size=8))[0]
+        sam_s = time.monotonic() - sam_started
         persons = data["frames"][0]
         if not persons:
             print(f"[ref] {Path(p).name}: человека нет", flush=True)
@@ -171,7 +178,11 @@ def main():
               f"scene pts {len(sp)}, persons {len(persons)}", flush=True)
         (out / f"{stem}.ref.json").write_text(json.dumps({"image": str(p), "f": float(f), "fov_y_deg": fov_y,
                                                          "scene_scale": scale, "scene_pts": int(len(sp)),
-                                                         "body_px": int(sel.sum())}, indent=1), encoding="utf-8")
+                                                         "body_px": int(sel.sum()),
+                                                         "timings": {"sam_predict_s": round(sam_s, 3),
+                                                                     "sam_load_s": round(sam_load_s, 3),
+                                                                     "moge_load_s": round(moge_load_s, 3),
+                                                                     "moge_predict_s": round(moge_times[p], 3)}}, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

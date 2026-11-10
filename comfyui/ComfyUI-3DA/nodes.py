@@ -112,6 +112,10 @@ def config():
     return config_module().load()
 
 
+def location_assets(cfg, location):
+    return config_module().location_assets(cfg, location)
+
+
 def save_image(tensor, path):
     # A single pose/plate, not an implicit batch loop.
     if tensor.ndim != 4 or tensor.shape[0] != 1 or tensor.shape[-1] != 3:
@@ -293,7 +297,7 @@ class Prop:
             paths.append(Path(location))
             try:
                 loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
-                paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
+                paths.append(location_assets(cfg, location)/'plate.json')
             except (ValueError,KeyError,OSError):
                 pass
         return content_fingerprint(paths)
@@ -305,7 +309,7 @@ class Prop:
                 raise ValueError('Гизмо: подключите camera_info и location для проверки камеры')
             cfg=config()
             profile=json.loads(Path(location).read_text(encoding='utf-8'))
-            plate=json.loads((Path(cfg['location_asset_dirs'][profile['loc_id']])/'plate.json').read_text(encoding='utf-8'))
+            plate=json.loads((location_assets(cfg, location)/'plate.json').read_text(encoding='utf-8'))
             import yaml
             limits=yaml.safe_load((Path(cfg['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))['gizmo_camera']
             helpers=gizmo_helpers()
@@ -821,8 +825,7 @@ class SceneEdits:
         if isinstance(location,str) and Path(location).is_file():
             paths.append(Path(location))
             loc_id=json.loads(Path(location).read_text(encoding='utf-8'))['loc_id']
-            if loc_id in cfg.get('location_asset_dirs',{}):
-                paths.append(Path(cfg['location_asset_dirs'][loc_id])/'plate.json')
+            paths.append(location_assets(cfg, location)/'plate.json')
         return content_fingerprint(paths)
     @classmethod
     def INPUT_TYPES(cls):
@@ -842,7 +845,7 @@ class SceneEdits:
         profile = json.loads(Path(location).read_text(encoding='utf-8'))
         if profile['loc_id'] != data['location_id']:
             raise ValueError('3DA: сцена от другой комнаты; подготовьте её заново')
-        plate = json.loads((Path(cfg['location_asset_dirs'][profile['loc_id']]) / 'plate.json').read_text(encoding='utf-8'))
+        plate = json.loads((location_assets(cfg, location) / 'plate.json').read_text(encoding='utf-8'))
         limits = yaml.safe_load((Path(cfg['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))['gizmo_camera']
         helper = gizmo_helpers()
         helper.validate_camera(camera_info, helper.camera_config(plate, [1344, 768]), limits)

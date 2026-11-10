@@ -1,0 +1,209 @@
+{
+  "prepare": {
+    "missing_classes": [],
+    "schema_errors": [],
+    "models": [
+      {
+        "title": "Z-Image · model",
+        "input": "unet_name",
+        "file": "z_image_turbo_bf16.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · text encoder",
+        "input": "clip_name",
+        "file": "qwen_3_4b.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · VAE",
+        "input": "vae_name",
+        "file": "ae.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · model",
+        "input": "unet_name",
+        "file": "qwen_image_edit_2511_fp8mixed.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · text encoder",
+        "input": "clip_name",
+        "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · VAE",
+        "input": "vae_name",
+        "file": "qwen_image_vae.safetensors",
+        "listed": true
+      }
+    ],
+    "note": "listed model files and clean schemas do not prove runtime execution",
+    "disabled": [
+      {
+        "title": "ВКЛ/ВЫКЛ блоков и моделей (выключенные не грузят модели)",
+        "reason": "optional UI controller absent; stage modes remain explicit"
+      }
+    ]
+  },
+  "preview": {
+    "missing_classes": [],
+    "schema_errors": [],
+    "models": [
+      {
+        "title": "Z-Image · model",
+        "input": "unet_name",
+        "file": "z_image_turbo_bf16.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · text encoder",
+        "input": "clip_name",
+        "file": "qwen_3_4b.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · VAE",
+        "input": "vae_name",
+        "file": "ae.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · model",
+        "input": "unet_name",
+        "file": "qwen_image_edit_2511_fp8mixed.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · text encoder",
+        "input": "clip_name",
+        "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · VAE",
+        "input": "vae_name",
+        "file": "qwen_image_vae.safetensors",
+        "listed": true
+      },
+      {
+        "title": "3DA · Сцена: персонаж и предметы",
+        "input": "model_file",
+        "file": "none",
+        "listed": true
+      }
+    ],
+    "note": "listed model files and clean schemas do not prove runtime execution",
+    "disabled": [
+      {
+        "title": "ВКЛ/ВЫКЛ блоков и моделей (выключенные не грузят модели)",
+        "reason": "optional UI controller absent; stage modes remain explicit"
+      }
+    ]
+  },
+  "photo": {
+    "missing_classes": [],
+    "schema_errors": [],
+    "models": [
+      {
+        "title": "ARM lora · turbo",
+        "input": "lora_name",
+        "file": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+        "listed": true
+      },
+      {
+        "title": "gen · Qwen3-VL",
+        "input": "clip_name",
+        "file": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+        "listed": true
+      },
+      {
+        "title": "gen · H3 video VAE",
+        "input": "vae_name",
+        "file": "minimax_h3_video_vae_fp16.safetensors",
+        "listed": true
+      },
+      {
+        "title": "w7 · H3 audio VAE",
+        "input": "vae_name",
+        "file": "minimax_h3_audio_vae_fp32.safetensors",
+        "listed": true
+      },
+      {
+        "title": "11190:11105",
+        "input": "model_name",
+        "file": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "listed": true
+      },
+      {
+        "title": "11190:11106",
+        "input": "clip_name",
+        "file": "qwen3vl_32b_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+        "listed": true
+      },
+      {
+        "title": "11190:11107",
+        "input": "vae_name",
+        "file": "minimax_h3_video_vae_fp16.safetensors",
+        "listed": true
+      },
+      {
+        "title": "3DA H3 · unet",
+        "input": "model_name",
+        "file": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · model",
+        "input": "unet_name",
+        "file": "z_image_turbo_bf16.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · text encoder",
+        "input": "clip_name",
+        "file": "qwen_3_4b.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Z-Image · VAE",
+        "input": "vae_name",
+        "file": "ae.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · model",
+        "input": "unet_name",
+        "file": "qwen_image_edit_2511_fp8mixed.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · text encoder",
+        "input": "clip_name",
+        "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "listed": true
+      },
+      {
+        "title": "Qwen2511 · VAE",
+        "input": "vae_name",
+        "file": "qwen_image_vae.safetensors",
+        "listed": true
+      },
+      {
+        "title": "3DA · Сцена: персонаж и предметы",
+        "input": "model_file",
+        "file": "none",
+        "listed": true
+      }
+    ],
+    "note": "listed model files and clean schemas do not prove runtime execution",
+    "disabled": [
+      {
+        "title": "ВКЛ/ВЫКЛ блоков и моделей (выключенные не грузят модели)",
+        "reason": "optional UI controller absent; stage modes remain explicit"
+      }
+    ]
+  }
+}

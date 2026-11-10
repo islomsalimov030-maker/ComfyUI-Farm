@@ -209,24 +209,30 @@ def require_profile_geometry(profile):
 
 
 def do_location(request, config):
+    started = time.monotonic()
+    timings = {'moge_s': 0., 'auto_profile_s': 0.}
     loc_id = location_id(request.get("location_id"))
     directory = Path(config["farm_root"]) / "locations" / loc_id
     profile_path = directory / "profile.json"
+    timings['profile_cache_hit'] = profile_path.is_file()
     if profile_path.is_file():
         geometry_dir = assets_for(config, loc_id, directory)
         data = read_json(profile_path)
         if data.get("loc_id") != loc_id:
             raise ValueError("cached profile loc_id mismatch")
     else:
+        stage = time.monotonic()
         photo = required_file(request.get("plate"), "plate")
         directory.mkdir(parents=True, exist_ok=True)
         if not all((directory / n).is_file() for n in ("plate.json", "plate_mesh.obj", "plate_rgb.png", "depth_loc.png")):
             core = ["--comfy", config["comfy"]] if config.get('server_mode') else []
             run_stage([config["geometry_python"], HERE / "plate/plate_geometry.py", photo, directory,
                        "--size", "1344x768", *core], "plate MoGe")
+            timings['moge_s'] = round(time.monotonic() - stage, 3)
         geometry_dir = plate_assets(directory)
         hints = hints_for(config, loc_id)
         if "seeds" not in hints:
+            stage = time.monotonic()
             pf, profiles = modules(config)
             import auto_surfaces
             import tempfile
@@ -240,9 +246,11 @@ def do_location(request, config):
             data = read_json(profile_path)
             preview = directory / "objects_preview.png"
             auto_surfaces.render_objects_preview(plate, profile_path, preview)
+            timings['auto_profile_s'] = round(time.monotonic() - stage, 3)
+            timings['total_s'] = round(time.monotonic() - started, 3)
             return {"status": "ok", "location": str(profile_path.resolve()),
                     "plate": str((geometry_dir / "plate_rgb.png").resolve()),
-                    "objects": data["objects"], "objects_preview": str(preview.resolve())}
+                    "objects": data["objects"], "objects_preview": str(preview.resolve()), 'timings': timings}
         seeds = {name: vector(point, 3, f"seed {name}") for name, point in hints["seeds"].items()}
         pf, profiles = modules(config)
         plate = pf.Plate(directory)
@@ -275,8 +283,10 @@ def do_location(request, config):
     preview_dir.mkdir(parents=True, exist_ok=True)
     preview = preview_dir / "objects_preview.png"
     auto_surfaces.render_objects_preview(pf.Plate(geometry_dir), profile_path, preview)
+    timings['total_s'] = round(time.monotonic() - started, 3)
     return {"status": "ok", "location": str(profile_path.resolve()),
             "plate": str((geometry_dir / "plate_rgb.png").resolve()), "objects_preview": str(preview.resolve()),
+            'timings': timings,
             "objects": [{"id": o["id"], "type": o.get("type", o.get("name")),
                          "height_m": o.get("h0", o.get("z_m", [None, None])[-1])} for o in data["objects"]]}
 
@@ -348,6 +358,11 @@ def prompt_direct(profile, config, fit):
     import prompt_h3
     context = dict(profile.data.get("prompt_context", {}))
     context.update(config.get("prompt_context_by_location", {}).get(profile.data["loc_id"], {}))
+    if not context.get("anchor") and profile.data.get("auto_surfaces"):
+        # A fresh room has no human-authored furniture/anatomy scale caption.
+        # Use the actual guide's geometry rather than inventing a table/bed.
+        context["anchor"] = ("the reconstructed surfaces and body in <Video 1> define the projected scale; "
+                             "preserve their exact relative size and contact positions")
     if not context.get("anchor"):
         raise ValueError("prompt scale anchor missing: prepare profile.prompt_context.anchor or "
                          "config.prompt_context_by_location[id].anchor")
@@ -499,6 +514,7 @@ def do_place(request, config):
     cache.mkdir(parents=True, exist_ok=True)
     rf = cache / "pose.ref.npz"
     stage = time.monotonic()
+    timings['reference_cache_hit'] = rf.is_file()
     if not rf.is_file():
         canonical = cache / "pose.png"
         from PIL import Image
@@ -514,6 +530,8 @@ def do_place(request, config):
         raise ValueError("SAM reference body mesh missing/invalid")
     ref.update(path=str(rf), body_cache_dir=str(cache / "body_geometry"), image_path=str(pose), vertical_python=config['python'])
     timings["reference_s"] = round(time.monotonic() - stage, 3)
+    if (cache / 'pose.ref.json').is_file():
+        timings['reference_stages'] = read_json(cache / 'pose.ref.json').get('timings', {})
     job = Path(config["farm_root"]) / "pack" / "jobs" / uuid.uuid4().hex
     job.mkdir(parents=True)
     plate = pf.Plate(plate_dir)

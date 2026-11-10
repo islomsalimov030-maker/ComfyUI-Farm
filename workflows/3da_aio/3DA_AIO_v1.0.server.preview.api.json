@@ -1,0 +1,438 @@
+{
+ "194": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "3da_cold_20261111/pose.jpg"
+  },
+  "_meta": {
+   "title": "3DA · Поза: загруженный референс"
+  }
+ },
+ "195": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "3DA · Qwen Picture 1: персонаж и внешность"
+  }
+ },
+ "196": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": ""
+  },
+  "_meta": {
+   "title": "3DA · Qwen Picture 2: локация и композиция"
+  }
+ },
+ "216:198": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "z_image_turbo_bf16.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "Z-Image · model"
+  }
+ },
+ "216:199": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "lumina2",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Z-Image · text encoder"
+  }
+ },
+ "216:200": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  },
+  "_meta": {
+   "title": "Z-Image · VAE"
+  }
+ },
+ "216:201": {
+  "class_type": "EmptySD3LatentImage",
+  "inputs": {
+   "width": 768,
+   "height": 1024,
+   "batch_size": 1
+  },
+  "_meta": {
+   "title": "Z-Image · размер pose-reference"
+  }
+ },
+ "216:202": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "216:199",
+    0
+   ],
+   "text": "Wide full-length photograph of one adult woman wearing an opaque grey T-shirt, navy trousers and white sneakers. The frame contains space above her head and floor below her shoes. Her entire head, both hands and both feet are visible with generous empty margins. She is standing and raises her right forearm vertically, with her right hand beside her head; her left arm hangs relaxed. Natural human proportions, eye-level fixed camera, neutral room background."
+  },
+  "_meta": {
+   "title": "Z-Image · желаемая поза (текст)"
+  }
+ },
+ "216:203": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "216:202",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Z-Image · CFG1 negative"
+  }
+ },
+ "216:204": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "216:198",
+    0
+   ],
+   "positive": [
+    "216:202",
+    0
+   ],
+   "negative": [
+    "216:203",
+    0
+   ],
+   "latent_image": [
+    "216:201",
+    0
+   ],
+   "seed": 101,
+   "steps": 9,
+   "cfg": 1.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0
+  },
+  "_meta": {
+   "title": "Z-Image · перегенерировать seed"
+  }
+ },
+ "216:205": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "216:204",
+    0
+   ],
+   "vae": [
+    "216:200",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Z-Image · pose-reference IMAGE"
+  }
+ },
+ "216:206": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "Qwen2511 · model"
+  }
+ },
+ "216:207": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Qwen2511 · text encoder"
+  }
+ },
+ "216:208": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "qwen_image_vae.safetensors"
+  },
+  "_meta": {
+   "title": "Qwen2511 · VAE"
+  }
+ },
+ "216:209": {
+  "class_type": "EmptySD3LatentImage",
+  "inputs": {
+   "width": 1024,
+   "height": 1024,
+   "batch_size": 1
+  },
+  "_meta": {
+   "title": "Qwen2511 · размер pose-reference"
+  }
+ },
+ "216:210": {
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "inputs": {
+   "clip": [
+    "216:207",
+    0
+   ],
+   "vae": [
+    "216:208",
+    0
+   ],
+   "image1": [
+    "195",
+    0
+   ],
+   "image2": [
+    "196",
+    0
+   ],
+   "prompt": "Create one full-body photograph. Picture 1 supplies the adult character appearance and opaque clothing. Picture 2 supplies the room and composition. Place the same adult in that room, standing with one hand raised and the other relaxed. Both feet and both hands are visible. The desired pose comes from this instruction; do not copy the pose from either input. Keep natural body proportions."
+  },
+  "_meta": {
+   "title": "Qwen2511 · желаемая поза (текст)"
+  }
+ },
+ "216:211": {
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "inputs": {
+   "clip": [
+    "216:207",
+    0
+   ],
+   "vae": [
+    "216:208",
+    0
+   ],
+   "image1": [
+    "195",
+    0
+   ],
+   "image2": [
+    "196",
+    0
+   ],
+   "prompt": ""
+  },
+  "_meta": {
+   "title": "Qwen2511 · negative с теми же двумя refs"
+  }
+ },
+ "216:212": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "model": [
+    "216:206",
+    0
+   ],
+   "shift": 3.1
+  },
+  "_meta": {
+   "title": "Qwen2511 · shift"
+  }
+ },
+ "216:213": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "216:212",
+    0
+   ],
+   "positive": [
+    "216:210",
+    0
+   ],
+   "negative": [
+    "216:211",
+    0
+   ],
+   "latent_image": [
+    "216:209",
+    0
+   ],
+   "seed": 101,
+   "steps": 40,
+   "cfg": 4.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0
+  },
+  "_meta": {
+   "title": "Qwen2511 · перегенерировать seed"
+  }
+ },
+ "216:214": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "216:213",
+    0
+   ],
+   "vae": [
+    "216:208",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Qwen2511 · pose-reference IMAGE"
+  }
+ },
+ "197": {
+  "class_type": "ImpactSwitch",
+  "inputs": {
+   "input1": [
+    "194",
+    0
+   ],
+   "input2": [
+    "216:205",
+    0
+   ],
+   "input3": [
+    "216:214",
+    0
+   ],
+   "select": 1,
+   "sel_mode": true
+  },
+  "_meta": {
+   "title": "3DA · pose_source: 1=фото / 2=Z-Image / 3=Qwen2511"
+  }
+ },
+ "217": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "3da_cold_20261111/location.jpg"
+  },
+  "_meta": {
+   "title": "3DA · Фотоплита комнаты"
+  }
+ },
+ "221": {
+  "class_type": "3DALocation",
+  "inputs": {
+   "plate": [
+    "217",
+    0
+   ],
+   "location_id": "cold_20261111_vizcaya_b"
+  },
+  "_meta": {
+   "title": "3DA · Локация"
+  }
+ },
+ "225": {
+  "class_type": "Load3DAdvanced",
+  "inputs": {
+   "model_file": "none",
+   "width": 1344,
+   "height": 768,
+   "viewport_state": {}
+  },
+  "_meta": {
+   "title": "3DA · Сцена: персонаж и предметы"
+  }
+ },
+ "226": {
+  "class_type": "3DASceneEdits",
+  "inputs": {
+   "model_3d": [
+    "225",
+    0
+   ],
+   "model_3d_info": [
+    "225",
+    1
+   ],
+   "camera_info": [
+    "225",
+    2
+   ],
+   "location": [
+    "221",
+    0
+   ],
+   "manifest": ""
+  },
+  "_meta": {
+   "title": "3DA · Применить правки сцены"
+  }
+ },
+ "227": {
+  "class_type": "3DAPlacePose",
+  "inputs": {
+   "location": [
+    "221",
+    0
+   ],
+   "pose_ref": [
+    "197",
+    0
+   ],
+   "body_transform": [
+    "226",
+    0
+   ],
+   "props": [
+    "226",
+    1
+   ],
+   "pose_class": "stand",
+   "target_object": "floor",
+   "support_parts": "",
+   "secondary_contacts": "",
+   "instance_hint": "",
+   "height_m": 1.62,
+   "body_json": "characters/stacy/body.json",
+   "proxy": "color",
+   "strength": 1.0,
+   "seed": 101,
+   "block_on_fail": true,
+   "body_dx": 0.0,
+   "body_dy": 0.0,
+   "body_dz": 0.0,
+   "body_dyaw": 0.0,
+   "body_dpitch": 0.0,
+   "body_droll": 0.0,
+   "pose_text": ""
+  },
+  "_meta": {
+   "title": "3DA · Итог: повторная проверка сцены"
+  }
+ },
+ "247": {
+  "class_type": "PreviewImage",
+  "inputs": {
+   "images": [
+    "227",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "3DA · Проверить новый рендер до H3"
+  }
+ },
+ "248": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "227",
+    5
+   ]
+  },
+  "_meta": {
+   "title": "3DA · Контакты / кадр / статус"
+  }
+ }
+}

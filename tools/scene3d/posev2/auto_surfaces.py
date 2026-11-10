@@ -28,8 +28,9 @@ def surfaces_from_grid(origin, height, cam_xy, *, config=None):
 
     Four-connected components in anchored, disjoint height bins. Missing cells
     and holes remain missing: no fabricated bridges, floors or object footprints.
-    The floor must be BOTH uniquely largest and uniquely lowest among retained
-    components. A disagreement/tie is reported and all instances remain surf_N.
+    The floor must be BOTH uniquely largest and uniquely lowest. If fixed-bin
+    boundaries fragment one plane, compare observed coplanar unions using the
+    same height tolerance; never fill gaps or join different height bands.
     """
     cfg = _config(config)
     height = np.asarray(height, float)
@@ -68,6 +69,37 @@ def surfaces_from_grid(origin, height, cam_xy, *, config=None):
     largest = np.flatnonzero(np.asarray(counts) == max(counts)) if counts else np.array([], int)
     lowest = np.flatnonzero(np.asarray(heights) == min(heights)) if heights else np.array([], int)
     floor = int(largest[0]) if len(largest) == len(lowest) == 1 and largest[0] == lowest[0] else None
+    component_count = len(regions)
+    floor_components = 1 if floor is not None else 0
+    if floor is None and regions:
+        # Absolute bin boundaries (especially zero) can split a noisy floor.
+        # Cluster retained components by a bounded median-height range, not
+        # transitive chaining, so stairs cannot grow into one floor plane.
+        bands = []
+        for index in np.argsort(heights, kind='stable'):
+            if not bands or heights[index] - heights[bands[-1][0]] > cfg['height_bin_m']:
+                bands.append([])
+            bands[-1].append(int(index))
+        areas = [sum(counts[i] for i in band) for band in bands]
+        dominant = np.flatnonzero(np.asarray(areas) == max(areas))
+        if len(dominant) == 1 and dominant[0] == 0 and len(bands[0]) > 1:
+            members = bands[0]
+            seed_region = regions[max(members, key=lambda i: counts[i])]
+            mask = np.logical_or.reduce([regions[i].mask for i in members])
+            dt = ndimage.distance_transform_edt(np.pad(mask, 1))[1:-1, 1:-1] * tr.CELL
+            merged = tr.TopRegion('floor', 'auto_height_proxy', origin.copy(), height.shape,
+                np.where(mask, height, np.nan), mask, dt, float(np.median(height[mask])),
+                seed_region.seed_cell, cam_xy.copy(), object_mask=mask.copy(),
+                top_diagnostics={'method': 'observed_coplanar_floor_union',
+                    'component_count': len(members), 'height_bin_m': cfg['height_bin_m'],
+                    'component_medians_m': [heights[i] for i in members],
+                    'footprint_scope': 'union of observed cells only; holes and occlusions remain missing'})
+            regions = [merged] + [r for i, r in enumerate(regions) if i not in members]
+            counts = [int(r.mask.sum()) for r in regions]
+            heights = [r.h0 for r in regions]
+            largest = np.flatnonzero(np.asarray(counts) == max(counts))
+            lowest = np.flatnonzero(np.asarray(heights) == min(heights))
+            floor, floor_components = 0, len(members)
     k = 0
     for i, reg in enumerate(regions):
         if i == floor:
@@ -78,12 +110,13 @@ def surfaces_from_grid(origin, height, cam_xy, *, config=None):
     report = {"method": "height_proxy_connected_bins", "cell_m": tr.CELL,
               "height_bin_m": cfg["height_bin_m"], "min_area_m2": cfg["min_area_m2"],
               "surface_count": len(regions), "surf_count": k, "rejected_components": rejected,
+              "observed_component_count": component_count, "floor_component_count": floor_components,
               "floor_status": "no_surfaces" if not regions else "ok" if floor is not None else "floor_ambiguous",
               "floor_id": None if floor is None else "floor_1",
               "largest_candidates": [regions[i].object_id for i in largest],
               "lowest_candidates": [regions[i].object_id for i in lowest]}
     if regions and floor is None:
-        report["reason"] = "floor requires the same uniquely largest AND uniquely lowest component; no choice invented"
+        report["reason"] = "floor requires the same uniquely largest AND uniquely lowest observed plane; no choice invented"
     return regions, report
 
 

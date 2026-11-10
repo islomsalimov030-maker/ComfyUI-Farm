@@ -17,7 +17,32 @@ sys.path.insert(0, str(ROOT))
 from scripts.push_data import push, collect, relative
 from tools import wfkit
 from tools.fix_workflow_encoding import repair, fix
-from tools.scene3d.server_config import load, data_path
+from tools.scene3d.server_config import load, data_path, location_assets
+
+
+def test_new_room_asset_resolution_is_bound_and_tracks_plate(tmp_path):
+    root = tmp_path / 'data'
+    directory = root / 'locations' / 'fresh'
+    directory.mkdir(parents=True)
+    profile = directory / 'profile.json'
+    profile.write_text(json.dumps({'loc_id': 'fresh'}))
+    plate = directory / 'plate.json'
+    plate.write_text('{}')
+    cfg = dict(data_root=str(root), farm_root=str(root), repo=str(ROOT))
+    assert location_assets(cfg, str(profile)) == directory
+    external = root / 'geometry' / 'fresh'
+    assert location_assets({**cfg, 'location_asset_dirs': {'fresh': str(external)}}, profile) == external
+    with pytest.raises(ValueError, match='escapes'):
+        location_assets({**cfg, 'location_asset_dirs': {'fresh': str(tmp_path / 'outside')}}, profile)
+    alien = tmp_path / 'profile.json'
+    alien.write_text(profile.read_text())
+    with pytest.raises(ValueError, match='does not match'):
+        location_assets(cfg, alien)
+    for bad in ('../fresh', 'a/b', 'a\\b', 'C:bad'):
+        profile.write_text(json.dumps({'loc_id': bad}))
+        with pytest.raises(ValueError, match='Invalid location'):
+            location_assets(cfg, profile)
+
 
 
 def test_default_root_and_environment_override(tmp_path):

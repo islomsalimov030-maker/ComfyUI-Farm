@@ -23,6 +23,24 @@ def data_path(value, root):
     return path
 
 
+def location_assets(cfg, location):
+    """Resolve one bound profile and its assets, including new automatic rooms."""
+    import json
+    profile = Path(location).resolve()
+    data = json.loads(profile.read_text(encoding='utf-8'))
+    loc_id = data.get('loc_id')
+    if not isinstance(loc_id, str) or not loc_id or loc_id in ('.', '..') or any(c in loc_id for c in '/\\:'):
+        raise ValueError('Invalid location id in profile')
+    if cfg.get('data_root'):
+        root = Path(cfg['data_root']).resolve()
+        expected = data_path('locations/' + loc_id + '/profile.json', root)
+        if profile != expected:
+            raise ValueError('Location profile does not match data_root/locations/id')
+        return data_path(cfg.get('location_asset_dirs', {}).get(loc_id, profile.parent), root)
+    # Explicit legacy PC configs allow external assets, as before.
+    return Path(cfg.get('location_asset_dirs', {}).get(loc_id, profile.parent)).resolve()
+
+
 def load(path=None):
     selected = path or os.environ.get('THREEDA_CONFIG')
     selected = Path(selected) if selected else REPO / 'config/3da_server.yaml'

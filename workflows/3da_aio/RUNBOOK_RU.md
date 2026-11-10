@@ -4,6 +4,12 @@
 
 ## Файлы и этапы
 
+Серверные копии для cold-input теста 11.11: `3DA_AIO_v1.0.server.prepare.ui.json`, `3DA_AIO_v1.0.server.preview.ui.json`, `3DA_AIO_v1.0.server.ui.json`. В серверном userdata сохранены `workflows/3DA_COLD_20261111.prepare.json`, `workflows/3DA_COLD_20261111.preview.json`, `workflows/3DA_COLD_20261111.json`; JSON readback совпал. Это подготовленные шаблоны, сквозная приёмка пока **PARTIAL**: установленная 0.1.4 отвергла автопрофиль пола. Для исправлений подготовлен кандидат 0.1.6; установка и reboot требуют нового согласия пользователя.
+
+В prepare заменяются ровно два LoadImage: **3DA · Фотоплита комнаты** и **3DA · Поза: загруженный референс**. В них передаются исходные скачанные JPG через обычный upload. Identity берётся из `3da_data/characters/stacy/reference.png`, body JSON — `characters/stacy/body.json`, предмет — пользовательский `stick_stick_d4a11633` с исходными embedded текстурами, лицензия unknown. Источник позы select=1. Для следующего исправленного cold run задан новый `location_id=cold_20261111_vizcaya_b`; существующий `_a` не править и не переиспользовать для acceptance. Ручные NPZ/profile/masks/anchors не готовятся. До запуска снова проверить пустую очередь и отсутствие нового location/pose/placement cache.
+
+После успешного prepare продолжать **в этом же текущем графе**: выбрать отдельно `body` и `prop_0` в «Объект 3DA», переместить через TransformControls, сохранить workflow со всеми transforms и manifest. Камеру не двигать и Fit не нажимать. Сохранить before/after и screenshot настоящего окна. Затем выключить SceneExport, включить итоговый PlacePose и PreviewImage/status из preview-шаблона. Не загружать поверх текущей сцены чистый шаблон: это потеряет runtime-правки. Сверить новый preview и исходные материалы предмета, сохранить/перезагрузить текущий workflow и проверить persistence. Только при пройденных gates и визуальном соответствии включить существующий фото-движок и финальную композицию из final-шаблона, выполнить один H3-финал. H3 создаёт одетого персонажа, исходный предмет переносится deterministic RGBA composite. Видео и video face-pass остаются выключены; фото face-pass сохранён. Отсутствующий Fast Groups Muter muted; выбор этапов явный.
+
 | Файл | Действие |
 |---|---|
 | `3DA_AIO_v1.0.prepare.ui.json` | Выбрать источник позы, подготовить реальный меш и открыть общий GLB viewport |

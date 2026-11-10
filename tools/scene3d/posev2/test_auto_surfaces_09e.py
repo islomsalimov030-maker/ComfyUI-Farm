@@ -40,7 +40,7 @@ def test_bin_components_area_and_metadata():
     assert regs[1].dt.max() > 0 and np.isnan(regs[1].height[~regs[1].mask]).all()
 
 
-@pytest.mark.parametrize("mode", ["disagree", "area_tie", "height_tie"])
+@pytest.mark.parametrize("mode", ["disagree", "area_tie"])
 def test_floor_ambiguity_never_invents_choice(mode):
     height = np.full((60, 60), np.nan)
     height[:20, :20] = .005
@@ -51,15 +51,32 @@ def test_floor_ambiguity_never_invents_choice(mode):
     assert "no choice invented" in report["reason"]
 
 
-def test_bins_are_disjoint_and_connectivity_is_four_neighbour():
+def test_coplanar_floor_across_bin_boundary_keeps_only_observed_cells():
     height = np.full((50, 50), np.nan)
     height[:20, :20] = .019
     height[20:40, 20:40] = .019  # diagonal contact does not merge
     height[:20, 20:40] = .021  # directly adjoining, but different bin
-    regs, _ = discover(height)
-    assert len(regs) == 3
-    assert all(r.mask.sum() == 400 for r in regs)
+    regs, report = discover(height)
+    assert report['floor_status'] == 'ok'
+    assert report['observed_component_count'] == report['floor_component_count'] == 3
+    assert len(regs) == 1 and regs[0].mask.sum() == 1200
+    assert not regs[0].mask[30, 5]  # no hull or bridge over the missing quadrant
+    assert np.isnan(regs[0].height[30, 5])
     assert np.stack([r.mask for r in regs]).sum(0).max() == 1
+
+
+def test_floor_plane_union_does_not_chain_steps_or_win_over_larger_high_plane():
+    height = np.full((100, 100), np.nan)
+    height[:20, :20] = -.009
+    height[25:45, :20] = .008
+    height[50:70, :20] = .025  # outside the first band's 2cm range
+    regs, report = discover(height)
+    assert report['floor_status'] == 'ok' and report['floor_component_count'] == 2
+    assert regs[0].mask.sum() == 800 and not regs[0].mask[55, 5]
+    height[40:90, 40:90] = .8  # larger upper plane: disagreement remains ambiguous
+    regs, report = discover(height)
+    assert report['floor_status'] == 'floor_ambiguous'
+    assert all(r.object_id.startswith('surf_') for r in regs)
 
 
 def test_empty_and_subthreshold_grid_report():
