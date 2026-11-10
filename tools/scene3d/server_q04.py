@@ -189,7 +189,6 @@ class Server:
         for node in graph['nodes']:
             if node.get('title') in ['Движок H3 (не трогать)', 'Сохранить · финальная вклейка', 'Сохранить · raw H3']:
                 node['mode'] = 0 if h3 else 2
-        self.wait_empty()
         captured = []
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
@@ -206,6 +205,7 @@ class Server:
             page.goto(self.url, wait_until='domcontentloaded', timeout=120000)
             page.wait_for_function('window.app && app.graph', timeout=120000)
             page.evaluate('(graph) => app.loadGraphData(graph)', graph)
+            print(f'{label}: frontend ready; waiting for the shared queue', flush=True)
             self.wait_empty()
             queued = page.evaluate('() => app.queuePrompt(0)')
             if not captured:

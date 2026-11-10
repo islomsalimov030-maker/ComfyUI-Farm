@@ -190,6 +190,21 @@ def test_server_ref_scene_parses_flags_before_nodes(tmp_path):
     assert run.returncode != 0 and 'BOOTSTRAP_VERIFIED' in run.stderr, run.stderr
 
 
+@pytest.mark.parametrize('server', [False, True])
+def test_sam_image_dtype_matches_server_parameters_only(monkeypatch, server):
+    import torch
+    from tools.scene3d.posev2.ref_scene import sam_input_tensor
+    model = SimpleNamespace(model=torch.nn.Linear(3, 3).half())
+    image = torch.linspace(0, 1, 12).reshape(1, 2, 2, 3)
+    monkeypatch.setenv('THREEDA_SERVER_MODE', '1' if server else '0')
+    converted = sam_input_tensor(model, image)
+    assert converted.shape == image.shape and converted.device == image.device
+    assert converted.dtype == (torch.float16 if server else torch.float32)
+    torch.testing.assert_close(converted.float(), image, atol=.001, rtol=0)
+    if not server:
+        assert converted is image
+
+
 @pytest.mark.parametrize('download', [False, True])
 def test_runtime_node_reports_probe_or_explicit_download(monkeypatch, tmp_path, download):
     import importlib.util

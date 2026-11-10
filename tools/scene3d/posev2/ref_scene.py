@@ -20,6 +20,13 @@ MOGE_FILE = "moge_2_vitl_normal_fp16.safetensors"
 SAM_FILE = "sam_3d_body_dinov3_int8_convrot.safetensors"
 
 
+def sam_input_tensor(model, tensor):
+    """Match the server SAM parameters without altering the core or PC pipeline."""
+    if os.environ.get('THREEDA_SERVER_MODE') == '1':
+        return tensor.to(dtype=next(model.model.parameters()).dtype)
+    return tensor
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--comfy", required=True)
@@ -108,7 +115,7 @@ def main():
         pts, nrm, msk, fov_y = geo[p]
         H, W = im.shape[:2]
         with torch.inference_mode():
-            data = loop.run_until_complete(run(n.SAM3DBody_Predict, sam3d_body_model=sam, image=t,
+            data = loop.run_until_complete(run(n.SAM3DBody_Predict, sam3d_body_model=sam, image=sam_input_tensor(sam, t),
                                                run_hand_refinement=True, fov=fov_y, batch_size=8))[0]
         persons = data["frames"][0]
         if not persons:
