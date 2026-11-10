@@ -143,3 +143,13 @@
 15. ~~comfy.next-genium.com: StacyLoop на диске, правка подхватится при перезапуске~~ — 17.10 обновлён до `095b77d` через Manager (правка только JS, перезапуск не нужен), проверено в браузере.
 16. **Задача (19.10, от пользователя): внедрить Fizgig-H3-Still (MIT) во все стилл-ветки H3** — `frame_h3@1` (база и ref-edit), `manual_frame@1` и прочие ручные версии: `FizgigH3StillLatent` (1 кадр) вместо 5-кадрового латента, `FizgigH3StillDecode` вместо VAE Decode. Видео-ветки не трогать (декод сам пропускает >1 кадра в штатный). Сейчас Fizgig есть только в генераторе B серии WS-07 (`tools/ws07_graphs.py`). Перед продом — A/B на тех же сидах: скорость, детализация кожи, AuraFace; затем версия @2 воркфлоу и CONTRACTS.
 - WS-10 (23.10): от пользователя — моды Саманты в 7 нарядах (Open Robe, Мокрая форма, Госпожа в своих владениях, Шоколад, Oversized morning, Тренерская форма, Голая тренировка: что это и SFW ли?); листы ракурсов gym_hall / gym_arena / gym_shower (+ ракурсы оранжереи и ванной лофта); рефы поз из Confluence; лежа-4 (ванна) — SFW?; папка на ПК для выгрузки (запрос доступа к C:\stacy-lora отклонён автоматикой). Тест: Стейси без LoRA — 5/5 видео IDENTITY_DIP, Саманта 1/1 прошла. Проверка видео на CPU ~5 мин/ролик — узкое место.
+
+## 3DA_SERVER_PORT / Registry — 10.11.2026 (чат-исполнитель)
+- WIP Codex закоммичен как есть (881f072). Правки: c037fb5, 9596541.
+- Сверка с сервером (ComfyUI 0.44.2, /object_info): MoGeInference требует refine_steps (INT=3) — вызовы передают его по сигнатуре; comfy_api.input в v0.44.2 есть (shim), падение было только в копии 0.34.6.
+- Blender: tools/scene3d/threeda_blender.py — bpy-колесо (Py3.13) в отдельном процессе blender_worker.py, иначе blender_path. bpy в процесс ComfyUI не грузится.
+- Промпт H3: tools/scene3d/prompt_h3.py (байт-в-байт с table_round+pose_h3_v26, 18 комбинаций), pack_cli больше не тянет исследовательские скрипты.
+- Пакет: github islomsalimov030-maker/ComfyUI-3DA-Scene, Comfy Registry id comfyui-3da-scene 0.1.0 (publisher islomsalimov), GPL-3.0. Action успешен; версия NodeVersionStatusPending > 1 ч (на 14:55 UTC) — установка через Manager не выполнялась.
+- Сервер: в models нет весов MoGe и SAM 3D Body (списки пусты) → для Q04 залит кэш cache/pose_ref.
+- Данные залиты push_data.py: 35 файлов (mainroom3, stacy + reference.png, assets, cache/pose_ref, cache/placement) в user/default/3da_data; plate_rgb/reference/Q04 скопированы в input/3da_data/ через /upload/image.
+- Q04 на сервере: не прогонялся (ждёт Active в реестре → установка → перезапуск с согласия).
