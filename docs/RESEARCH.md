@@ -335,3 +335,8 @@
 ## 3D-A10a: core Fit и локальная вклейка
 - В пользовательском runtime core Fit дал scale16.66666766 для GLB.30м, итог5м и перемещённую камеру. Это физический transform, не масштаб холста. Снимки входов/реальные prompt_id: docs/experiments/3DA_GIZMO_GUARD_2026-11-10a.json.
 - Raw H3 bf264f02-4b46-4111-9665-abab9ed2a7a4 нормален; full-raster prop alpha/guard увеличенного GLB закрывал его при локальной композиции. Исправление: tools/scene3d/prop_validation.py, prop_gizmo.validate_camera, новые optional-входы Prop. Новых компонентов/весов/лицензий нет; Head_Close unknown остаётся.
+
+## 3D-A/AIO10b: факты передачи
+- В пользовательской ошибке10b scaleGLB≈1, а камера dolly на≈.56м при прежнем target/FOV; это не прежний Fit5м и не округление. Core GizmoManager dragging-changed ставит orbitControls.enabled=!event.value; UI-блокировка должна переживать отпускание мыши. Локальные snapshots сохранены в приватной передаче, публичный бриф docs/coord/3DA_AIO_HANDOFF_2026-11-10b.md. Исправления frontend пока нет.
+- Студия до планируемого обновления: ComfyUI0.34.6/Python3.13.14/torch2.13.0+cu130/RTX5090≈32ГБ. object_info перечисляет Z-Image Turbo, Qwen Image Edit2511 FP8mixed, RefMod Extract/MasterExtract/Save/Inspect; это наличие схем/файлов, не live-проверка новых веток.3DA-пак на сервере отсутствует. Источник: read-only object_info/system_stats10.11.2026.
+- Пользовательский AIO имеет41 верхний узел/4 сабграфа, root RefMods loaders и применение RefMods в движке. При серверной интеграции native H3 не должен отправляться Remote обратно в ту же занятую очередь. Исходный пользовательский JSON не публиковался.
