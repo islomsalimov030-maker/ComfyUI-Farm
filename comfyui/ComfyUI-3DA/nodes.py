@@ -17,7 +17,7 @@ import yaml
 HERE = Path(__file__).resolve().parent
 # Standalone pack: tools/ next to this file; farm checkout: two levels up.
 ROOT = HERE if (HERE / 'tools/scene3d').is_dir() else HERE.parents[1]
-CLASSES = ['stand', 'kneel', 'sit_edge', 'sit_tucked', 'sit_floor', 'crouch', 'recline', 'lie', 'all_fours']
+CLASSES = ['stand', 'kneel', 'sit_edge', 'sit_tucked', 'sit_floor', 'crouch', 'recline', 'lie', 'all_fours', 'auto']
 ANCHORS = ['world', 'char_head', 'char_chest', 'char_hand_l', 'char_hand_r', 'char_pelvis']
 PROP_FIELDS = {'prop_id', 'anchor', 'x', 'y', 'z', 'yaw', 'pitch', 'roll', 'scale', 'prop_strength'}
 
@@ -186,6 +186,7 @@ def invoke(command, fields, images):
     t0 = time.monotonic()
     options = {'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {'start_new_session': True}
     env = os.environ.copy()
+    env['THREEDA_STAGE_LOG_DIR'] = str(work / 'logs')
     if cfg.get('server_mode'):
         env['THREEDA_SERVER_MODE'] = '1'
     proc = subprocess.Popen([cfg['python'], str(script), command, '--request', str(req), '--output', str(out)],
@@ -237,7 +238,7 @@ class Location:
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'plate': ('IMAGE',), 'location_id': ('STRING', {'default': 'mainroom2'})}}
+        return {'required': {'plate': ('IMAGE',), 'location_id': ('STRING', {'default': 'auto'})}}
     RETURN_TYPES = ('STRING', 'IMAGE', 'STRING', 'IMAGE')
     RETURN_NAMES = ('location', 'plate', 'objects', 'objects_preview')
     FUNCTION = 'execute'
@@ -245,6 +246,17 @@ class Location:
 
     def execute(self, plate, location_id):
         try:
+            if location_id == 'auto' or location_id.startswith('auto_'):
+                import hashlib
+                import io
+                buffer = io.BytesIO()
+                if plate.ndim != 4 or plate.shape[0] != 1 or plate.shape[-1] != 3:
+                    raise ValueError('Expected one RGB location image')
+                pixels = plate[0].detach().cpu().float().numpy()
+                if not np.isfinite(pixels).all():
+                    raise ValueError('Non-finite location image')
+                Image.fromarray(np.clip(np.rint(pixels*255),0,255).astype('uint8')).save(buffer,format='PNG')
+                location_id = location_id + '_' + hashlib.sha256(buffer.getvalue()).hexdigest()[:24]
             result = invoke('location', {'location_id': location_id}, {'plate': plate})
             objects = result.get('objects', [])
             output_plate = load_image(result['plate'])

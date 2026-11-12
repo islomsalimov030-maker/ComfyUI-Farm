@@ -56,13 +56,13 @@ export function sceneSelection(view, node, initialTransforms = null) {
   let lastMode;
   let scaleStart;
   const beginScale = () => {
-    scaleStart = selected?.kind === 'body' && gizmo.getMode() === 'scale'
+    scaleStart = selected && gizmo.getMode() === 'scale'
       ? selected.object.scale.clone() : null;
   };
   const uniformScale = () => {
-    if (!scaleStart || selected?.kind !== 'body' || gizmo.getMode() !== 'scale') return;
+    if (!scaleStart || !selected || gizmo.getMode() !== 'scale') return;
     // Use the real core handle, including X/Y/Z. Each handle changes size
-    // uniformly for a character rather than stretching an individual limb.
+    // uniformly for a character and for props: no stretching along one axis.
     const axis = (controls.axis ?? 'X')[0].toLowerCase();
     const ratio = selected.object.scale[axis] / scaleStart[axis];
     if (Number.isFinite(ratio) && ratio > 0) selected.object.scale.copy(scaleStart).multiplyScalar(ratio);
