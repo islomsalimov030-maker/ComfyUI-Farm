@@ -98,6 +98,8 @@ def fit_floor(points, normals, valid, h, rng):
 # --- 0.2.0: any floor, several levels or no floor in the frame -------------------------------------
 LEVEL_TOL = 0.05       # m, one horizontal level
 HORIZONTAL_COS = np.cos(np.radians(15))
+BELOW_FLOOR_M = 0.10   # m: scene points this far below a level ...
+BELOW_FLOOR_FRAC = 0.03  # ... on more than this share of the frame -> that level is not the floor
 SIGMA = 0.08          # rad, angular width of a surface orientation in the vote
 
 
@@ -215,15 +217,25 @@ def scene_frame(points, valid, rng, prior_height=1.5):
     up, pitch, roll = gravity_up(normals[ok], rng)
     levels, n_horiz = horizontal_levels(points, normals, ok, up)
     n_valid = int(valid.sum())
-    floor = next((lv for lv in levels if lv["n"] >= 0.02 * n_valid and lv["n"] >= 0.1 * max(n_horiz, 1)), None)
+    h_all = points[valid] @ up
+
+    def is_floor(lv):
+        # A floor has (almost) nothing visible below it: a bed or a table top over a thin floor strip is not
+        # the floor (red room 13.11: 0.1.10 took the bed top, camera 0.58 m "above the floor").
+        big = lv["n"] >= 0.02 * n_valid and lv["n"] >= 0.1 * max(n_horiz, 1)
+        return big and float(np.mean(h_all < lv["h"] - BELOW_FLOOR_M)) <= BELOW_FLOOR_FRAC
+
+    floor = next((lv for lv in levels if is_floor(lv)), None)
     report = {"up_source": "scene_normals", "pitch_deg": pitch, "roll_deg": roll}
     if floor is not None:
         h = points @ up
         sel = ok & (normals @ up > HORIZONTAL_COS) & (np.abs(h - floor["h"]) <= LEVEL_TOL)
         p = points[sel]
         c = p.mean(0)
-        n = np.linalg.svd(p - c, full_matrices=False)[2][-1]
-        n = n if n @ up > 0 else -n
+        _, sv, vt = np.linalg.svd(p - c, full_matrices=False)
+        n = vt[-1] if vt[-1] @ up > 0 else -vt[-1]
+        if sv[1] < 0.25 * sv[0] or n @ up < np.cos(np.radians(8)):
+            n = up                          # thin floor strip: the plane is (almost) a line, keep the scene up
         d = -n @ c
         report.update(visible=True, source="lowest_level", inliers=int(sel.sum()), candidates=n_horiz)
     else:

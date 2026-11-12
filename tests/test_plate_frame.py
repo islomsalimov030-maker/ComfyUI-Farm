@@ -80,6 +80,24 @@ def test_bed_over_floor_strip_is_not_the_floor():
     assert any(abs(lv["z"] - 0.55) < 0.05 for lv in rep["levels"]), rep["levels"]
 
 
+def test_bed_filling_the_frame_is_not_the_floor():
+    # Red room 13.11 (real plate: camera ~9 deg down, bed top fills the lower frame, floor is a sliver):
+    # 0.1.10 took the bed top for the floor (camera 0.58 m above it). A level with a large part of the
+    # scene visible below it is not the floor -> no visible floor, prior camera height.
+    wall = ([-6, 4.5, 0], [12, 0, 0], [0, 0, 3])
+    for front, floor_seen in [(2.32, False), (2.9, True)]:
+        bed = ([-3, front, 0.6], [6, 0, 0], [0, 4.5 - front, 0])
+        bed_front = ([-3, front, 0], [6, 0, 0], [0, 0, 0.6])
+        pts, valid = render(1.27, 9, [FLOOR, wall, bed, bed_front])
+        n, d, rep, _ = frame(pts, valid)
+        assert angle(n, pg._up(9, 0)) < 2.0, rep
+        if floor_seen:   # a strip of floor in front of the bed: the floor, camera height right
+            assert rep["visible"] and abs(d - 1.27) < 0.04, (d, rep)
+        else:
+            assert rep["visible"] is False and rep["source"] == "prior_height" and d >= 1.27, (d, rep)
+        assert any(abs(lv["z"] - (d - 1.27 + 0.6)) < 0.06 for lv in rep["levels"]), (d, rep["levels"])
+
+
 def test_wall_close_up_without_floor_does_not_crash():
     wall = ([-3, 1.2, 0.0], [6, 0, 0], [0, 0, 4])
     pts, valid = render(1.4, 5, [wall])

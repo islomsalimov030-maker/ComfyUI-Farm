@@ -9,7 +9,8 @@
 //   no support        — nothing of the object is within 5 cm above a visible horizontal surface,
 //                       while such a surface is visible under it; unseen support is never reported.
 export const LIMITS = { penSoft: 0.06, penHard: 0.03, penDepthMax: 0.35, penMin: 0.002,
-  gap: 0.05, horizontal: 0.85, levelTol: 0.05, levelMinFrac: 0.2, sample: 3000, contact: 0.03 };
+  gap: 0.05, horizontal: 0.85, levelTol: 0.05, levelMinFrac: 0.2, sample: 3000, contact: 0.03,
+  belowFloor: 0.10, belowFloorFrac: 0.03 };
 
 // OBJ in the plate world (Blender: Z up) -> three.js world of the GLB (Y up): (x, z, -y).
 export function parseObj(text) {
@@ -107,7 +108,12 @@ export function buildRoom(mesh, cam, step = 4) {
   const hs = [];
   for (let k = 0; k < depth.length; k++) if (normal[3 * k + 1] > LIMITS.horizontal) hs.push(height[k]);
   const levels = clusterLevels(hs);
-  const floor = levels.find(l => l.n >= LIMITS.levelMinFrac * hs.length);
+  // A floor has (almost) nothing visible below it: a bed or a table top over a thin floor strip is not
+  // the floor (= plate_geometry.scene_frame, BELOW_FLOOR_M / BELOW_FLOOR_FRAC).
+  let seen = 0;
+  for (let k = 0; k < depth.length; k++) if (Number.isFinite(height[k])) seen++;
+  const below = y => { let n = 0; for (let k = 0; k < depth.length; k++) if (height[k] < y - LIMITS.belowFloor) n++; return n; };
+  const floor = levels.find(l => l.n >= LIMITS.levelMinFrac * hs.length && below(l.y) <= LIMITS.belowFloorFrac * seen);
   return { step, gw, gh, depth, normal, height, cell, hgrid, horizontal: new Float32Array(horizontal),
     floorY: floor ? floor.y : null,
     levels: levels.filter(l => l.n >= 0.02 * hs.length).map(l => ({ y: l.y, frac: l.n / hs.length })) };

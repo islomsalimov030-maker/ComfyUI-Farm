@@ -96,4 +96,21 @@ const text = lines => lines.map(l => l.text).join(' | ');
   const room2 = buildRoom(parseObj(obj([FLOOR, WALL])), low);
   assert.match(text(diagnose(room2, low, ents(box(0, -4, -0.2, 1.6)))), /внутри пола на (19|20) см/, 'grazing ray');
 }
+// 6. Bed filling the lower frame (red room 13.11): bed top is not the floor; a visible strip in front is.
+{
+  const p9 = 9 * Math.PI / 180;
+  const cam9 = cameraModel({ position: { x: 0, y: 1.27, z: 0 }, target: { x: 0, y: 1.27 - Math.sin(p9), z: -Math.cos(p9) },
+    customUp: { x: 0, y: Math.cos(p9), z: -Math.sin(p9) }, fov: 45 }, [1344, 768]);
+  const wall = [[-6, 4.5, 0], [12, 0, 0], [0, 0, 3]];
+  for (const [front, seen] of [[2.1, false], [2.9, true]]) {
+    const bed = [[-3, front, 0.6], [6, 0, 0], [0, 4.5 - front, 0]], bedFront = [[-3, front, 0], [6, 0, 0], [0, 0, 0.6]];
+    const room = buildRoom(parseObj(obj([FLOOR, wall, bed, bedFront])), cam9);
+    if (seen) assert.ok(room.floorY !== null && Math.abs(room.floorY) < 0.02, 'floor strip in front of the bed: ' + room.floorY);
+    else {
+      assert.equal(room.floorY, null, 'bed top is not the floor');
+      const t = text(diagnose(room, cam9, ents(box(0, -3.2, 0.6, 0.5))));     // on the bed: ok, no floor errors
+      assert.doesNotMatch(t, /нет опоры|внутри пола/, t);
+    }
+  }
+}
 console.log('ok');
