@@ -84,4 +84,16 @@ const text = lines => lines.map(l => l.text).join(' | ');
   assert.match(text(diagnose(room, cam2, ents(box(0, -0.4, -0.1, 0.3, 1.0)))), /внутри пола на (9|10|11) см/);
   const r = inspect(room, cam2, [[0, 0.3, -0.4]]); assert.equal(r.pen, 0);
 }
+// 5. Deep below the floor (yoga 645ee190: body 49 cm, prop fully under the floor) and a grazing ray.
+{
+  const room = buildRoom(parseObj(obj([FLOOR, WALL])), cam);
+  assert.match(text(diagnose(room, cam, ents(box(0, -3, -0.5, 1.4)))), /Персонаж: внутри пола на (4[5-9]|50) см/);
+  const prop = [{ id: 'body', kind: 'body', label: 'Персонаж', object: box(0, -3, 0, 1.6) },
+    { id: 'prop_0', kind: 'prop', label: 'Предмет 1', object: box(1.2, -3, -0.52, 0.18, 0.1) }];
+  assert.match(text(diagnose(room, cam, prop)), /Предмет 1: внутри пола на (4[5-9]|5[0-2]) см/, 'buried prop');
+  const low = cameraModel({ position: { x: 0, y: 0.5, z: 0 }, target: { x: 0, y: 0.5 - Math.sin(0.09), z: -Math.cos(0.09) },
+    customUp: { x: 0, y: Math.cos(0.09), z: -Math.sin(0.09) }, fov: 45 }, [1344, 768]);
+  const room2 = buildRoom(parseObj(obj([FLOOR, WALL])), low);
+  assert.match(text(diagnose(room2, low, ents(box(0, -4, -0.2, 1.6)))), /внутри пола на (19|20) см/, 'grazing ray');
+}
 console.log('ok');

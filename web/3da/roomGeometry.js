@@ -1,8 +1,11 @@
 // Room of the location in the 3D window: the same plate_mesh.obj the renderer occludes with.
 // Pure geometry, no three.js import: works with any floor, several levels or no floor at all.
 // Checks mirror the server (pose_fit.penetration, placement.yaml):
-//   inside a surface  — a point is behind the visible room surface by 0..35 cm along its pixel ray,
-//                       depth measured along the surface normal;
+//   inside a surface  — a point is behind the visible room surface by 0..35 cm along the surface
+//                       normal (the cap is the normal depth, not the depth along the pixel ray: a
+//                       grazing ray no longer hides a deep penetration);
+//   under the floor   — a point below the visible floor (the lowest level) right above it counts
+//                       with its full depth, no cap (below a table or a bed is not checked);
 //   no support        — nothing of the object is within 5 cm above a visible horizontal surface,
 //                       while such a surface is visible under it; unseen support is never reported.
 export const LIMITS = { penSoft: 0.06, penHard: 0.03, penDepthMax: 0.35, penMin: 0.002,
@@ -129,12 +132,20 @@ export function clusterLevels(hs, bin = 0.01, minFrac = 0.001) {
   return levels;
 }
 
-// Highest visible horizontal room surface below p (within penSoft above it), or null.
-function surfaceBelow(room, p) {
-  const list = room.hgrid.get(Math.floor(p[0] / room.cell) + ',' + Math.floor(p[2] / room.cell));
-  if (!list) return null;
-  const T = room.horizontal;
+// Visible floor-level surface right above/below p (same x, z), or null.
+function floorAbove(room, p) {
   let best = null;
+  forHorizontal(room, p, y => {
+    if (Math.abs(y - room.floorY) <= LIMITS.levelTol && y > p[1] && (best === null || y > best)) best = y;
+  });
+  return best;
+}
+
+// Calls fn(y) for every horizontal room triangle covering p in x, z.
+function forHorizontal(room, p, fn) {
+  const list = room.hgrid.get(Math.floor(p[0] / room.cell) + ',' + Math.floor(p[2] / room.cell));
+  if (!list) return;
+  const T = room.horizontal;
   for (const k of list) {
     const o = 9 * k;
     const ax = T[o], az = T[o + 2], bx = T[o + 3], bz = T[o + 5], cx = T[o + 6], cz = T[o + 8];
@@ -144,9 +155,14 @@ function surfaceBelow(room, p) {
     const w1 = ((cx - p[0]) * (az - p[2]) - (ax - p[0]) * (cz - p[2])) / area;
     const w2 = 1 - w0 - w1;
     if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
-    const y = w0 * T[o + 1] + w1 * T[o + 4] + w2 * T[o + 7];
-    if (y <= p[1] + LIMITS.penSoft && (best === null || y > best)) best = y;
+    fn(w0 * T[o + 1] + w1 * T[o + 4] + w2 * T[o + 7]);
   }
+}
+
+// Highest visible horizontal room surface below p (within penSoft above it), or null.
+function surfaceBelow(room, p) {
+  let best = null;
+  forHorizontal(room, p, y => { if (y <= p[1] + LIMITS.penSoft && (best === null || y > best)) best = y; });
   return best;
 }
 
@@ -173,22 +189,32 @@ export function inspect(room, cam, V) {
   const pens = [];
   let inFrame = 0, kind = null, deepest = 0;
   for (const p of V) {
+    let pen = 0, where = null;
     const [px, py, z] = cam.project(p);
-    if (!(z > 0 && px >= 0 && px < cam.W && py >= 0 && py < cam.H)) continue;
-    inFrame++;
-    const k = Math.floor(py / room.step) * room.gw + Math.floor(px / room.step);
-    const behind = z - room.depth[k];
-    if (!(behind > 0 && behind < LIMITS.penDepthMax)) continue;
-    const d = cam.ray(px, py), n = [room.normal[3 * k], room.normal[3 * k + 1], room.normal[3 * k + 2]];
-    const pen = behind / dot(d, cam.f) * Math.abs(dot(d, n));
+    if (z > 0 && px >= 0 && px < cam.W && py >= 0 && py < cam.H) {
+      inFrame++;
+      const k = Math.floor(py / room.step) * room.gw + Math.floor(px / room.step);
+      const behind = z - room.depth[k];
+      if (behind > 0) {
+        const d = cam.ray(px, py), n = [room.normal[3 * k], room.normal[3 * k + 1], room.normal[3 * k + 2]];
+        const along = behind / dot(d, cam.f) * Math.abs(dot(d, n));
+        if (along < LIMITS.penDepthMax) {
+          pen = along;
+          where = n[1] > LIMITS.horizontal
+            ? (room.floorY !== null && Math.abs(room.height[k] - room.floorY) <= LIMITS.levelTol ? 'floor' : 'surface')
+            : 'wall';
+        }
+      }
+    }
+    // Below the visible floor: full depth, whatever the camera angle (the pixel test skips it when
+    // the point is deeper than the cap, hidden behind something nearer or outside the frame).
+    if (room.floorY !== null && p[1] < room.floorY - LIMITS.penMin) {
+      const y = floorAbove(room, p);
+      if (y !== null && y - p[1] > pen) { pen = y - p[1]; where = 'floor'; }
+    }
     if (pen <= LIMITS.penMin) continue;
     pens.push(pen);
-    if (pen > deepest) {
-      deepest = pen;
-      kind = n[1] > LIMITS.horizontal
-        ? (room.floorY !== null && Math.abs(room.height[k] - room.floorY) <= LIMITS.levelTol ? 'floor' : 'surface')
-        : 'wall';
-    }
+    if (pen > deepest) { deepest = pen; kind = where; }
   }
   pens.sort((a, b) => a - b);
   const pen = pens.length ? pens[Math.min(pens.length - 1, Math.floor(0.95 * pens.length))] : 0;

@@ -187,19 +187,50 @@ class Plate:
         return self.R @ c + self.C
 
 
+FLOOR_LEVEL_TOL_M = 0.05      # = roomGeometry.js LIMITS.levelTol
+FLOOR_COVER_M = 0.10          # = roomGeometry.js hgrid cell: floor must be seen right above the point
+PEN_MIN_M = 0.002             # = roomGeometry.js LIMITS.penMin
+
+
+def _floor_tree(plate):
+    """XY-дерево видимого пола (горизонтали на уровне z=0), или None: пола в кадре нет."""
+    if not hasattr(plate, "_floor_xy"):
+        tree = None
+        if plate.info.get("floor", {}).get("visible", True):          # старые plate.json: пол есть всегда
+            hor = np.abs(plate.Nrm[:, 2]) > CFG["horizontal_normal_min"]
+            sel = hor & (np.abs(plate.P[:, 2]) <= FLOOR_LEVEL_TOL_M)
+            if sel.any():
+                tree = cKDTree(plate.P[sel][:, :2])
+        plate._floor_xy = tree
+    return plate._floor_xy
+
+
 def penetration(plate, X):
-    """Глубина проникновения (м, >0) по нормали поверхности: кандидат — точка за видимой поверхностью фото
-    (по глубине, 0..35 см), величина — по нормали ближайшей точки поверхности (а не вдоль луча камеры)."""
+    """Глубина проникновения (м, >0), как в 3D-окне (roomGeometry.inspect):
+    1) точка за видимой поверхностью фото; величина — по нормали ближайшей точки поверхности, кэп
+       penetration_depth_max_m тоже по нормали (а не вдоль луча камеры: скользящий луч больше не прячет
+       глубокое проникновение);
+    2) точка ниже видимого пола, и пол виден прямо над ней, — полная глубина, без кэпа (под столом или
+       кроватью это правило не действует: только самый нижний уровень — пол)."""
+    X = np.asarray(X, float)
     u, v, z = plate.project(X)
     zp = plate.depth_at(u, v)
     beh = z - zp
-    cand = (beh > 0) & (beh < CFG["penetration_depth_max_m"])
+    cand = np.isfinite(beh) & (beh > 0)
     pen = np.zeros(len(X))
     if cand.any():
         tree, P, N = plate.trees["any"]
         _, j = tree.query(X[cand])
         sd = np.einsum("ij,ij->i", X[cand] - P[j], N[j])
-        pen[cand] = np.maximum(-sd, 0.0)
+        d = np.maximum(-sd, 0.0)
+        d[d >= CFG["penetration_depth_max_m"]] = 0.0
+        pen[cand] = d
+    below = X[:, 2] < -PEN_MIN_M
+    ftree = _floor_tree(plate) if below.any() else None
+    if ftree is not None:
+        dist, _ = ftree.query(X[below][:, :2])
+        deep = np.where(dist <= FLOOR_COVER_M, -X[below][:, 2], 0.0)
+        pen[below] = np.maximum(pen[below], deep)
     return pen
 
 
