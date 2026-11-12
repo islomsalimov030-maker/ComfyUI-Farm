@@ -14,7 +14,7 @@ comfyui/ComfyUI-3DA/web/sceneSelection.js config/placement.yaml
 workflows/3DA_h3_server_api.json workflows/3DA_scene_server_v1.json
 farm/__init__.py farm/comfy_client.py farm/config.py farm/contracts.py
 farm/prompts/config.py farm/prompts/config.yaml farm/prompts/lint.py scripts/push_data.py
-tools/scene3d/bpy_runtime.py'''.split()
+tools/scene3d/bpy_runtime.py tools/scene3d/posev2/reference_place.py'''.split()
 
 
 def git(out, *args):

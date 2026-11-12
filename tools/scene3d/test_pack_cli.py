@@ -44,6 +44,19 @@ def profile_dir(tmp_path):
     return directory
 
 
+def test_stage_failure_retains_full_redacted_traceback(tmp_path, monkeypatch):
+    import os
+    monkeypatch.setenv('EXAMPLE_SECRET', 'synthetic-private-value')
+    monkeypatch.setenv('THREEDA_STAGE_LOG_DIR', str(tmp_path/'logs'))
+    script = tmp_path/'fail.py'
+    script.write_text("import sys\nfor i in range(70): print('line',i,file=sys.stderr)\nprint('synthetic-private-value',file=sys.stderr)\nsys.exit(1)\n")
+    with pytest.raises(cli.StageError):
+        cli.run_stage([sys.executable,str(script)],'SAM stage')
+    text = (tmp_path/'logs/sam_stage.stderr.txt').read_text()
+    assert 'line 0' in text and 'line 69' in text and len(text.splitlines()) == 71
+    assert 'synthetic-private-value' not in text and '[redacted]' in text
+
+
 def test_config_defaults_and_fixed_cell(tmp_path):
     cfg = config(tmp_path)
     assert cfg["cell_px"] == 16
@@ -128,7 +141,7 @@ def test_contacts_and_support_defaults():
     assert cli.contacts("hand.L:wall, hand.R:floor") == [
         {"part": "hand.L", "surface": "wall"}, {"part": "hand.R", "surface": "floor"}]
     assert cli.contacts('[{"part":"hand.L","surface":"wall"}]')[0]["surface"] == "wall"
-    assert len(cli.DEFAULT_SUPPORT) == 9
+    assert len(cli.DEFAULT_SUPPORT) == 10
     with pytest.raises(ValueError):
         cli.contacts([{"part": "hand.L"}])
 

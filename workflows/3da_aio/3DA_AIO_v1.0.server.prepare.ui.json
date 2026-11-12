@@ -266,10 +266,10 @@
    },
    "widgets_values": [
     false,
-    "ss456/split_face",
+    "ss340/char_face5",
     1,
     1,
-    "ss456/out_athleisure",
+    "ss340/char_body4",
     1,
     1,
     "(none)",
@@ -329,10 +329,10 @@
    ],
    "widgets_values_named": {
     "show_info": false,
-    "mod_1": "ss456/split_face",
+    "mod_1": "ss340/char_face5",
     "strength_1": 1,
     "copies_1": 1,
-    "mod_2": "ss456/out_athleisure",
+    "mod_2": "ss340/char_body4",
     "strength_2": 1,
     "copies_2": 1,
     "mod_3": "(none)",
@@ -541,7 +541,7 @@
    },
    "widgets_values": [
     false,
-    "ss456/split_face",
+    "ss340/char_face5",
     1,
     1,
     "(none)",
@@ -604,7 +604,7 @@
    ],
    "widgets_values_named": {
     "show_info": false,
-    "mod_1": "ss456/split_face",
+    "mod_1": "ss340/char_face5",
     "strength_1": 1,
     "copies_1": 1,
     "mod_2": "(none)",
@@ -3429,6 +3429,22 @@
    "mode": 0,
    "inputs": [
     {
+     "name": "select",
+     "type": "INT",
+     "link": null,
+     "widget": {
+      "name": "select"
+     }
+    },
+    {
+     "name": "sel_mode",
+     "type": "BOOLEAN",
+     "link": null,
+     "widget": {
+      "name": "sel_mode"
+     }
+    },
+    {
      "name": "input1",
      "label": "Загруженный референс",
      "type": "IMAGE",
@@ -3445,12 +3461,17 @@
      "label": "Qwen2511 I2I (2 фото)",
      "type": "IMAGE",
      "link": 831
+    },
+    {
+     "name": "input4",
+     "type": "IMAGE",
+     "link": null
     }
    ],
    "outputs": [
     {
      "name": "selected_value",
-     "type": "*",
+     "type": "IMAGE",
      "links": [
       832,
       839,
@@ -3778,10 +3799,10 @@
    },
    "title": "3DA · Локация",
    "widgets_values": [
-    "cold_20261111_vizcaya_b"
+    "auto_cold_20261111_d"
    ],
    "widgets_values_named": {
-    "location_id": "cold_20261111_vizcaya_b"
+    "location_id": "auto_cold_20261111_d"
    }
   },
   {
@@ -3931,8 +3952,8 @@
    },
    "title": "3DA · Подготовка персонажа",
    "widgets_values": [
-    "stand",
-    "floor",
+    "auto",
+    "auto",
     "",
     "",
     "",
@@ -3952,8 +3973,8 @@
     ""
    ],
    "widgets_values_named": {
-    "pose_class": "stand",
-    "target_object": "floor",
+    "pose_class": "auto",
+    "target_object": "auto",
     "support_parts": "",
     "secondary_contacts": "",
     "instance_hint": "",
@@ -4249,8 +4270,8 @@
    },
    "title": "3DA · Итог: повторная проверка сцены",
    "widgets_values": [
-    "stand",
-    "floor",
+    "auto",
+    "auto",
     "",
     "",
     "",
@@ -4270,8 +4291,8 @@
     ""
    ],
    "widgets_values_named": {
-    "pose_class": "stand",
-    "target_object": "floor",
+    "pose_class": "auto",
+    "target_object": "auto",
     "support_parts": "",
     "secondary_contacts": "",
     "instance_hint": "",
@@ -4514,8 +4535,24 @@
    "mode": 0,
    "inputs": [
     {
+     "name": "select",
+     "type": "INT",
+     "link": 910,
+     "widget": {
+      "name": "select"
+     }
+    },
+    {
+     "name": "sel_mode",
+     "type": "BOOLEAN",
+     "link": null,
+     "widget": {
+      "name": "sel_mode"
+     }
+    },
+    {
      "name": "input1",
-     "type": "*",
+     "type": "IMAGE",
      "link": 908
     },
     {
@@ -4524,18 +4561,15 @@
      "link": 909
     },
     {
-     "name": "select",
-     "type": "INT",
-     "link": 910,
-     "widget": {
-      "name": "select"
-     }
+     "name": "input3",
+     "type": "IMAGE",
+     "link": null
     }
    ],
    "outputs": [
     {
      "name": "selected_value",
-     "type": "*",
+     "type": "IMAGE",
      "links": [
       911
      ]
@@ -5346,7 +5380,7 @@
    194,
    0,
    197,
-   0,
+   2,
    "IMAGE"
   ],
   [
@@ -5354,7 +5388,7 @@
    216,
    0,
    197,
-   1,
+   3,
    "IMAGE"
   ],
   [
@@ -5362,7 +5396,7 @@
    216,
    1,
    197,
-   2,
+   4,
    "IMAGE"
   ],
   [
@@ -5618,15 +5652,15 @@
    183,
    3,
    246,
-   0,
-   "*"
+   2,
+   "IMAGE"
   ],
   [
    909,
    245,
    0,
    246,
-   1,
+   3,
    "IMAGE"
   ],
   [
@@ -5634,7 +5668,7 @@
    219,
    0,
    246,
-   2,
+   0,
    "INT"
   ],
   [
@@ -9812,6 +9846,22 @@
       "mode": 0,
       "inputs": [
        {
+        "name": "select",
+        "type": "INT",
+        "link": 894,
+        "widget": {
+         "name": "select"
+        }
+       },
+       {
+        "name": "sel_mode",
+        "type": "BOOLEAN",
+        "link": null,
+        "widget": {
+         "name": "sel_mode"
+        }
+       },
+       {
         "name": "input1",
         "type": "IMAGE",
         "link": 892
@@ -9822,18 +9872,15 @@
         "link": 893
        },
        {
-        "name": "select",
-        "type": "INT",
-        "link": 894,
-        "widget": {
-         "name": "select"
-        }
+        "name": "input3",
+        "type": "IMAGE",
+        "link": null
        }
       ],
       "outputs": [
        {
         "name": "selected_value",
-        "type": "*",
+        "type": "IMAGE",
         "links": [
          895,
          896
@@ -9880,8 +9927,24 @@
       "mode": 0,
       "inputs": [
        {
+        "name": "select",
+        "type": "INT",
+        "link": 899,
+        "widget": {
+         "name": "select"
+        }
+       },
+       {
+        "name": "sel_mode",
+        "type": "BOOLEAN",
+        "link": null,
+        "widget": {
+         "name": "sel_mode"
+        }
+       },
+       {
         "name": "input1",
-        "type": "*",
+        "type": "IMAGE",
         "link": 897
        },
        {
@@ -9890,18 +9953,15 @@
         "link": 898
        },
        {
-        "name": "select",
-        "type": "INT",
-        "link": 899,
-        "widget": {
-         "name": "select"
-        }
+        "name": "input3",
+        "type": "IMAGE",
+        "link": null
        }
       ],
       "outputs": [
        {
         "name": "selected_value",
-        "type": "*",
+        "type": "IMAGE",
         "links": [
          900
         ]
@@ -10803,7 +10863,7 @@
       "origin_id": 15,
       "origin_slot": 0,
       "target_id": 242,
-      "target_slot": 0,
+      "target_slot": 2,
       "type": "IMAGE"
      },
      {
@@ -10811,7 +10871,7 @@
       "origin_id": 239,
       "origin_slot": 0,
       "target_id": 242,
-      "target_slot": 1,
+      "target_slot": 3,
       "type": "IMAGE"
      },
      {
@@ -10819,7 +10879,7 @@
       "origin_id": -10,
       "origin_slot": 20,
       "target_id": 242,
-      "target_slot": 2,
+      "target_slot": 0,
       "type": "INT"
      },
      {
@@ -10843,15 +10903,15 @@
       "origin_id": 53,
       "origin_slot": 0,
       "target_id": 243,
-      "target_slot": 0,
-      "type": "*"
+      "target_slot": 2,
+      "type": "IMAGE"
      },
      {
       "id": 898,
       "origin_id": 43,
       "origin_slot": 0,
       "target_id": 243,
-      "target_slot": 1,
+      "target_slot": 3,
       "type": "IMAGE"
      },
      {
@@ -10859,7 +10919,7 @@
       "origin_id": -10,
       "origin_slot": 20,
       "target_id": 243,
-      "target_slot": 2,
+      "target_slot": 0,
       "type": "INT"
      },
      {

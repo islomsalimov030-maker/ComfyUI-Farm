@@ -165,3 +165,10 @@ def test_writer_surface_metadata_and_seed_inside_disconnected_surface(tmp_path):
     assert obj["center_m"] == pytest.approx([1., 1., .405])
     assert p.region(obj).in_mask([obj["seed_world"]]).all()
     assert obj["soft"] is False
+
+
+def test_room_without_horizontal_samples_keeps_diagnostic_profile(tmp_path):
+    with patch.object(auto, 'discover_surfaces', side_effect=ValueError('auto_surfaces: no horizontal height_proxy samples')), patch.object(tr, 'walls', return_value=[]):
+        path = auto.write_auto_profile('wall_only', plate(), tmp_path / 'wall_only', config=CFG)
+    data = json.loads(path.read_text())
+    assert data['objects'] == [] and data['auto_surfaces']['floor_status'] == 'no_surfaces'

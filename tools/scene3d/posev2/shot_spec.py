@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-POSE_CLASSES = ("stand", "kneel", "sit_edge", "sit_tucked", "sit_floor", "crouch", "recline", "lie", "all_fours")
+POSE_CLASSES = ("stand", "kneel", "sit_edge", "sit_tucked", "sit_floor", "crouch", "recline", "lie", "all_fours", "auto")
 SOURCES = ("table", "vlm")
 # часть тела из таблицы → регион меша (body.regions)
 PART_REGION = {"back": "torso", "elbow.L": "forearm.L", "elbow.R": "forearm.R", "toes.L": "foot.L",

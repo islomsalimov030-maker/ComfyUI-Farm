@@ -353,12 +353,17 @@ def ref_up(ref, planes, contacts):
 
 
 # ------------------------------------------------------------------------------------------------ fit
-def fit(ref, plate, target, height, forced=None, log=print, seat=False):
+def fit(ref, plate, target, height, forced=None, log=print, seat=False, *, target_world=None, max_nfev=400, check_source_vertical=False):
     V0, kp0 = ref["V"], ref["kp"]
     reg = regions(V0, kp0)
     planes = ref_planes(ref["S"], body=cKDTree(V0)) if (len(ref["S"]) and not forced) else []
     forced_c = ref_contacts(ref, reg, forced) if forced else {}
     up, up_src = ref_up(ref, planes, forced_c)
+    if check_source_vertical:
+        from source_vertical import check
+        up, vertical = check(ref, up)
+        if vertical and vertical['status'] == 'rejected_depth_vertical':
+            up_src = 'camera_image_lines'
     contacts = forced_c if forced else ref_contacts(ref, reg, None, up, planes)
     f = np.array([0, 0, 1.0]) - up[2] * up
     f /= np.linalg.norm(f)
@@ -403,7 +408,9 @@ def fit(ref, plate, target, height, forced=None, log=print, seat=False):
     else:                                                               # без контактов: самые низкие 2 % вершин
         sup_idx = np.argsort(V[:, 2])[: max(20, len(V) // 50)]
         support = ["lowest"]
-    if seat:
+    if target_world is not None:
+        T = np.asarray(target_world, float).copy()
+    elif seat:
         T, v_used = plate.seat_point(*target)
         if v_used != target[1]:
             log(f"[fit] пиксель сиденья {target} не на верх сиденья — поднят до v {v_used:.3f} (z {T[2]:.2f} м)")
@@ -453,7 +460,7 @@ def fit(ref, plate, target, height, forced=None, log=print, seat=False):
         res.append(np.array([(p[0]) / 0.35, p[4] / tilt, p[5] / tilt, np.hypot(p[1], p[2]) / 0.25]))
         return np.concatenate(res)
 
-    sol = least_squares(residuals, np.zeros(6), loss="soft_l1", f_scale=1.0, diff_step=1e-3, max_nfev=400)
+    sol = least_squares(residuals, np.zeros(6), loss="soft_l1", f_scale=1.0, diff_step=1e-3, max_nfev=max_nfev)
     p = sol.x
     X = transform(p, V)
     KP = transform(p, kp)

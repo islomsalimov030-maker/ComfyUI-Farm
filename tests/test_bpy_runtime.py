@@ -205,6 +205,47 @@ def test_sam_image_dtype_matches_server_parameters_only(monkeypatch, server):
         assert converted is image
 
 
+@pytest.mark.parametrize('dtype_name', ['float16', 'bfloat16'])
+def test_sam_dense_input_guard_does_not_change_sparse_precision(monkeypatch, dtype_name):
+    import torch
+    from tools.scene3d.posev2.ref_scene import sam_dtype_guard
+    dtype = getattr(torch, dtype_name)
+    linear = torch.nn.Linear(6, 3).to(dtype=dtype)
+    model = SimpleNamespace(model=SimpleNamespace(prev_to_token_mhr=linear))
+    promoted = torch.cat([torch.ones((2,3),dtype=dtype),torch.ones((2,3),dtype=torch.float32)],dim=1)
+    assert promoted.dtype == torch.float32
+    with pytest.raises(RuntimeError,match='same dtype'):
+        linear(promoted)
+    monkeypatch.setenv('THREEDA_SERVER_MODE','1')
+    with sam_dtype_guard(model):
+        output = linear(promoted)
+        assert not torch.is_autocast_enabled('cpu')
+        sparse = torch.eye(2).to_sparse()
+        features = torch.ones((2,3),dtype=torch.float32)
+        assert torch.sparse.mm(sparse,features).dtype == torch.float32
+    assert output.dtype == dtype and torch.isfinite(output).all()
+    assert linear.weight.dtype == dtype  # weights were not promoted/replaced
+    with pytest.raises(RuntimeError,match='same dtype'):
+        linear(promoted)  # no global autocast leaked
+    monkeypatch.setenv('THREEDA_SERVER_MODE','0')
+    with sam_dtype_guard(model):
+        with pytest.raises(RuntimeError,match='same dtype'):
+            linear(promoted)
+
+
+def test_sam_refinement_guards_are_removed_after_an_error(monkeypatch):
+    import torch
+    from tools.scene3d.posev2.ref_scene import sam_dtype_guard
+    linear=torch.nn.Linear(2,2).half()
+    model=SimpleNamespace(model=SimpleNamespace(prev_to_token_mhr=linear,prompt_to_token=linear))
+    monkeypatch.setenv('THREEDA_SERVER_MODE','1')
+    with pytest.raises(ValueError,match='interrupted'):
+        with sam_dtype_guard(model):
+            assert torch.isfinite(linear(torch.ones((1,2)))).all()
+            raise ValueError('interrupted')
+    assert not linear._forward_pre_hooks
+
+
 @pytest.mark.parametrize('download', [False, True])
 def test_runtime_node_reports_probe_or_explicit_download(monkeypatch, tmp_path, download):
     import importlib.util

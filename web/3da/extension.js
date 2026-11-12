@@ -170,7 +170,36 @@ async function tick() {
 }
 
 app.registerExtension({
-  name: 'NextGenium.3DA.CameraLock',
+  name: 'ThreeDA.CameraLock',
+  beforeConfigureGraph(workflow) {
+    if (!workflow.nodes?.some(node => node.type === '3DASceneExport')) return;
+    // Core can save null here, while its loader expects an array or no field.
+    const normalize = graph => {
+      if (graph.floatingLinks === null) delete graph.floatingLinks;
+      for (const node of graph.nodes ?? []) {
+        if (node.type !== 'ImpactSwitch' || !node.inputs?.length) continue;
+        // Impact Pack's legacy wildcard reconnect passes a numeric target
+        // to the current core. Restore the widget slots before data slots.
+        const previous = node.inputs;
+        const controls = [['select', 'INT'], ['sel_mode', 'BOOLEAN']].map(([name, type]) =>
+          previous.find(port => port.name === name) ?? { name, type, link:null, widget:{ name } });
+        const data = previous.filter(port => /^input\d+$/.test(port.name));
+        node.inputs = [...controls, ...data];
+        for (const link of graph.links ?? []) {
+          const isTuple = Array.isArray(link);
+          const target = isTuple ? link[3] : link.target_id;
+          if (String(target) !== String(node.id)) continue;
+          const slot = isTuple ? link[4] : link.target_slot;
+          const newSlot = node.inputs.indexOf(previous[slot]);
+          if (newSlot < 0) continue;
+          if (isTuple) link[4] = newSlot;
+          else link.target_slot = newSlot;
+        }
+      }
+      for (const subgraph of graph.definitions?.subgraphs ?? []) normalize(subgraph);
+    };
+    normalize(workflow);
+  },
   getNodeMenuItems(node) {
     const record = active.get(node);
     if (!record) return [];

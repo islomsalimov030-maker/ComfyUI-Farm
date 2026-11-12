@@ -13,7 +13,8 @@ def placement_key(ref_path, profile, config, spec, height, seed, body):
         h.update(p.read_bytes())
     root=Path(__file__).resolve().parent
     for name in ['place.py','assembly.py','pose_fit.py','orient.py','refine.py','top_region.py','profiles.py','body.py','auto_surfaces.py',
-                 'manual_pose.py','shot_spec.py','zone.py','support_geometry.py','placement_config.py','source_vertical.py']:
+                 'manual_pose.py','shot_spec.py','zone.py','support_geometry.py','placement_config.py','source_vertical.py',
+                 'reference_place.py']:
         h.update((root/name).read_bytes())
     for obj in profile.data['objects']:
         for key in ('top_grid_npz','pts_npz','backrest_npz','mask_png'):

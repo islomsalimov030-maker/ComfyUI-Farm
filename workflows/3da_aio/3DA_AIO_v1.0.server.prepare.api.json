@@ -326,7 +326,7 @@
     "217",
     0
    ],
-   "location_id": "cold_20261111_vizcaya_b"
+   "location_id": "auto_cold_20261111_d"
   },
   "_meta": {
    "title": "3DA · Локация"
@@ -366,8 +366,8 @@
     "222",
     0
    ],
-   "pose_class": "stand",
-   "target_object": "floor",
+   "pose_class": "auto",
+   "target_object": "auto",
    "support_parts": "",
    "secondary_contacts": "",
    "instance_hint": "",

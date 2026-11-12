@@ -16,6 +16,23 @@ spec.loader.exec_module(nodes)
 
 
 class NodeTests(unittest.TestCase):
+    def test_auto_location_follows_loadimage_content_without_manual_id(self):
+        import hashlib
+        import io
+        from PIL import Image
+        ids=[]
+        def invoke(command, fields, images):
+            ids.append(fields['location_id'])
+            return dict(location='profile.json',plate='plate.png')
+        def load_image(*args):
+            return torch.zeros((1,8,8,3))
+        with patch.object(nodes,'invoke',side_effect=invoke),patch.object(nodes,'load_image',side_effect=load_image):
+            nodes.Location().execute(torch.zeros((1,8,8,3)),'auto')
+            nodes.Location().execute(torch.ones((1,8,8,3)),'auto')
+            nodes.Location().execute(torch.zeros((1,8,8,3)),'auto')
+        assert ids[0] == ids[2] and ids[0] != ids[1]
+        assert all(value.startswith('auto_') for value in ids)
+
     def test_external_content_fingerprint_invalidates_same_filename(self):
         with tempfile.TemporaryDirectory() as td:
             p=Path(td)/'model.glb';p.write_bytes(b'first')
@@ -47,7 +64,8 @@ class NodeTests(unittest.TestCase):
                          '3DANativeGuides', '3DANativeComposite', '3DASceneEdits', '3DASceneExport',
                          '3DACoreWeights', '3DABlenderRuntime'})
         self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 10)
-        self.assertEqual(len(nodes.CLASSES), 9)
+        self.assertEqual(len(nodes.CLASSES), 10)
+        self.assertEqual(nodes.CLASSES[-1], 'auto')
 
     def test_error_does_not_raise_and_returns_status(self):
         image = torch.zeros((1, 16, 16, 3))

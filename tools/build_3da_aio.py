@@ -156,8 +156,8 @@ def pose_sources(b):
     return source,preview
 
 
-def integrate(source, oi):
-    w=copy.deepcopy(source);w['id']=str(uuid.uuid5(uuid.NAMESPACE_URL,VERSION));w.setdefault('extra',{})['3DA AIO']=dict(version=VERSION,source_sha256=SOURCE_SHA256)
+def integrate(source, oi, source_sha256=SOURCE_SHA256):
+    w=copy.deepcopy(source);w['id']=str(uuid.uuid5(uuid.NAMESPACE_URL,VERSION));w.setdefault('extra',{})['3DA AIO']=dict(version=VERSION,source_sha256=source_sha256)
     b=Build(w,oi);g=b.top;original={n['id'] for n in w['nodes']}
     # The added console occupies the left side; preserve the old AIO layout
     # together on the right instead of overlaying its controls.
@@ -224,11 +224,14 @@ def integrate(source, oi):
     after_face=by['f85:shc'];legacy_final=by['маска: итог · ref2v']
     photo_mode=b.mode_switch(pg,'3DA · сохранить исходную маску / передать face-pass на строгую вклейку',
                              (legacy_final,0),(after_face,0),enabled_in,(2700,6500))
-    pg.connect(photo_mode,0,-20,3,type_='IMAGE')
     # Composite only AFTER the entire photo engine / face pass. Geometry gate
     # is a lazy barrier around the whole photo subtree, including its loaders.
     photo_out=next(n for n in w['nodes'] if n.get('title')=='ИТОГ фото · ref2v')
     old_link=g.link(photo_out['inputs'][0]['link']);photo_slot=old_link['origin_slot']
+    if old_link['origin_id']!=inst['id']:raise ValueError('ИТОГ фото must be fed by the photo engine subgraph')
+    # The engine output feeding ИТОГ фото is found by link, not by position:
+    # user edits of the AIO reorder subgraph outputs.
+    pg.connect(photo_mode,0,-20,photo_slot,type_='IMAGE')
     barrier=b.add(g,'LazySwitchKJ','3DA · Geometry gate → native фото',{'switch':False},(1900,4100))
     for s,slot,target in [(guides,7,'switch'),(plate,0,'on_false'),(inst,photo_slot,'on_true')]:b.connect(g,s,slot,barrier,target)
     composite=b.add(g,'3DANativeComposite','3DA · Финал после face pass',{},(2300,4100))
@@ -252,7 +255,7 @@ def integrate(source, oi):
 README = '''3DA AIO · два этапа
 1. Сначала откройте prepare.ui.json: заполните фотоплиту и pose_source. 1=загруженный референс; 2=Z-Image T2I; 3=Qwen2511: два независимых LoadImage, персонаж+комната, позу задаёт текст. Неактивные ветки отрезаются ImpactSwitch select_on_prompt ДО валидации: пустые чужие LoadImage не нужны.
 2. Очередь «Подготовить сцену гизмо» строит настоящие меши. Extension загружает GLB в общий viewport, камеру комнаты и manifest. Тело — геометрия SAM, не плоская картинка. Только комната остаётся фотоплитой. Предметы по желанию: выберите prop_id и соедините Prop→Подготовка.props до подготовки.
-3. В viewport выберите «Персонаж» или «Предмет», рядом — «Перемещение / Вращение / Масштаб». Любая ручка масштаба персонажа равномерно меняет его размер; предмет допускает масштаб по осям. Backend повторно проверяет размер/контакты/кадр, не принимает отрицательный scale, растяжение тела или shear. Камера фиксирована, Fit заблокирован. Локация восстанавливается из подготовленной плиты. Это корень тела, не редактор суставов.
+3. В viewport выберите «Персонаж» или «Предмет», рядом — «Перемещение / Вращение / Масштаб». Любая ручка масштаба персонажа равномерно меняет его размер; предмет масштабируется тоже только равномерно. Backend повторно проверяет размер/контакты/кадр, не принимает отрицательный scale, растяжение тела/предмета или shear. Камера фиксирована, Fit заблокирован. Локация восстанавливается из подготовленной плиты. Это корень тела, не редактор суставов.
 4. Сохраните UI после подготовки. Для правок/финала включите итоговую проверку и фото, отключите SceneExport (он заново готовит исходную сцену). При изменении позы, роста, комнаты или состава предметов подготовьте сцену заново.
 5. Итог повторно проверяет меш, контакты, кадр и предметы. Непринятая сцена блокирует всю native H3-ветку. На том же сервере нет Remote/self-submit. AIO RefMods применяются к новому conditioning; существующий face pass идёт до последнего восстановления комнаты/предметов. Видео и face-pass готового видео сохранены.
 6. Для preview используйте preview.api.json, для фото photo.api.json. API требует подставить входы/manifest подготовленной сцены. Пустой manifest — ожидаемая ошибка, не готовый финал. Требуется установленная серверная геометрия; наличие нод её не доказывает.
@@ -282,7 +285,7 @@ def refmod_builder(oi, count=1):
     for node,slot,title,pos in [(save,1,'RefMod · Путь результата',(1450,950)),(inspect,0,'RefMod · Метаданные',(1450,1150))]:
         view=b.add(g,'PreviewAny',title,{},pos);b.connect(g,node,slot,view,'source')
     view=b.add(g,'PreviewImage','RefMod · Превью',{},(1450,1400),(400,350));b.connect(g,inspect,1,view,'images')
-    note=b.add(g,'MarkdownNote','README',{},(0,-550),(1500,500));note['widgets_values']=['1–8 РАЗНЫХ фотографий одной концепции. Фото 1 подключено; дополнительные LoadImage необязательны: загрузите нужные и соедините с автоматически растущими refs_image. Неподключённые пустые фото не выполняются. Не смешивайте разных людей в identity.\nИмя my_concept → AIO MiniMaxH3RefModsLoader mod_1=farm/my_concept после Refresh. Save заменяет одноимённый файл: задавайте новое имя для версии.\nFull Reference + merge=false сохраняет отдельные refs (рекомендуется для лица). Compressed Reference + merge=false сжимает каждый ref отдельно; merge=true строит общий grid (теряет детали, refinement=0..2000). Это RefMod, не обучение LoRA.\nPreset manual оставляет ручки доступными. identity_encode принудительно меняет их на Full Reference/1024/0 steps/merge off: 8 фото потребуют большего token budget. По умолчанию resolution512, max_tokens16384, budget_policy=error: нет скрытого усечения фото. При memory error уменьшите разрешение или количество фото; не увеличивайте copies.\nСначала Inspect Save, затем загрузите полученный файл в действующий AIO Loader и проверьте Apply→conditioning→генерацию. Сохранение/превью сами по себе не доказывают качество личности.'];note.pop('widgets_values_named',None)
+    note=b.add(g,'MarkdownNote','ИНСТРУКЦИЯ — читать первым',{},(0,-800),(1500,720));note['widgets_values']=['КАК СДЕЛАТЬ МОД ПЕРСОНАЖА (RefMod) — по шагам\n\n1. ФОТО. 1–8 РАЗНЫХ фото ОДНОГО человека (лучше 4–8): лицо хорошо видно, разные ракурсы и свет, одет, других людей в кадре нет. Удобно делать два мода: «лицо» (крупные портреты) и «персонаж в наряде» (в полный рост, одна одежда). Разных людей в один мод не смешивать.\n\n2. ЗАГРУЗКА. Перетащи фото с ПК прямо в узлы «Фото 1…8» — они загрузятся на сервер. «Фото 1» уже подключено. Каждое следующее фото соедини (выход IMAGE) с узлом «RefMod · 1–8 фото → reference adapter»: новые входы refs_image появляются сами. Пустые неподключённые «Фото» не мешают — не трогай их.\n\n3. НАСТРОЙКА узла «reference adapter»:\n   • name — новое уникальное имя, напр. samantha_face_v1 (такое же имя ПЕРЕЗАПИШЕТ старый мод — для каждой версии новое имя);\n   • concept_type = identity, mode = Full Reference, merge = false (каждое фото сохраняется отдельно — лучше для лица);\n   • ref_resolution 512, max_tokens 16384 — не менять. Ошибка памяти → уменьшить ref_resolution или число фото.\n\n4. ЗАПУСК. Queue. Мод сохранится в models/refmods/farm/<имя>. Справа: «Путь результата», «Метаданные» (проверь число фото) и «Превью».\n\n5. В AIO. Открой свой AIO, нажми R (обновить списки). «ФОТО · моды» (узел 16): mod_1 = farm/<имя лица>, mod_2 = farm/<имя наряда>. Мод лица поставь и в «мод лица для прохода лица» (узел 33). Сделай пробные фото: сохранение мода ещё не доказывает узнаваемость.\n\nЭто не обучение LoRA: мод — закодированные референсы, создаётся за один прогон. После загрузки фото ПК больше не нужен — мод хранится на сервере.'];note.pop('widgets_values_named',None)
     w['groups']=[dict(id=i+1,title=t,bounding=box,color=c,font_size=24,flags={}) for i,(t,box,c) in enumerate([
         ('1 · Вход',[-40,-40,1600,850],'#3f789e'),('2 · ПУЛЬТ',[400,900,520,760],'#9c7442'),('3 · Движок',[-40,900,420,360],'#4d556b'),('4 · Результат',[960,900,920,950],'#427b61')])]
     return w
@@ -295,10 +298,16 @@ def save(w,path):
 
 
 def main():
-    p=argparse.ArgumentParser(__doc__);p.add_argument('--source',type=Path,required=True);p.add_argument('--object-info',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
-    if hashlib.sha256(a.source.read_bytes()).hexdigest()!=SOURCE_SHA256:raise ValueError('Not the supplied AIO')
+    global VERSION
+    p=argparse.ArgumentParser(__doc__);p.add_argument('--source',type=Path,required=True);p.add_argument('--object-info',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--modified-source',action='store_true',help='the user edited the AIO: accept any source, record its SHA256')
+    p.add_argument('--version-name',default=VERSION,help='output file prefix, e.g. 3DA_AIO_v2.0m');a=p.parse_args()
+    sha=hashlib.sha256(a.source.read_bytes()).hexdigest()
+    if sha!=SOURCE_SHA256 and not a.modified_source:raise ValueError('Not the supplied AIO; pass --modified-source for an edited AIO')
+    VERSION=a.version_name
     oi=json.loads(a.object_info.read_text(encoding='utf-8'));oi.update(pack_schema());oi['MarkdownNote']=dict(input={},output=[],output_name=[])
-    w=integrate(json.loads(a.source.read_text(encoding='utf-8-sig')),oi)
+    w=integrate(json.loads(a.source.read_text(encoding='utf-8-sig')),oi,sha)
+    photo_id=next(s['id'] for s in w['definitions']['subgraphs'] if any(n.get('title')=='gen · sampler pass 1' for n in s['nodes']))
     # Named stage files avoid re-exporting/resetting a scene during an edit.
     photo_ui=copy.deepcopy(w)
     for n in photo_ui['nodes']:
@@ -311,7 +320,7 @@ def main():
     save(prepare,a.out/(VERSION+'.prepare.ui.json'))
     preview_ui=copy.deepcopy(photo_ui)
     for n in preview_ui['nodes']:
-        if n['type']=='SaveImage' or n['type']=='43521446-c686-4e05-84c5-16aa0a0e24a9':n['mode']=2
+        if n['type']=='SaveImage' or n['type']==photo_id:n['mode']=2
         if n.get('title') in ('3DA · Проверить новый рендер до H3','3DA · Контакты / кадр / статус'):n['mode']=0
     save(preview_ui,a.out/(VERSION+'.preview.ui.json'))
     # Export API templates independently of stage muting. Frontend roundtrip
@@ -323,6 +332,8 @@ def main():
     stages={'photo':['ИТОГ фото · ref2v'],'video':['ИТОГ видео FullHD · ref2v'],'face':['ИТОГ face pass готового видео'],
             'preview':['3DA · Проверить новый рендер до H3','3DA · Контакты / кадр / статус'],'prepare':['3DA · Подготовить сцену гизмо']}
     for name,titles in stages.items():
+        if name in ('video','face') and not all(any(n.get('_meta',{}).get('title')==t for n in api.values()) for t in titles):
+            print('skip',name,'API: its output is muted in the source AIO');continue
         graph=wfkit.prune(api,titles);(a.out/(VERSION+'.'+name+'.api.json')).write_text(json.dumps(graph,ensure_ascii=False,indent=2),encoding='utf-8')
     for select in (1,2,3):
         graph=wfkit.prune(api,['3DA · Просмотр выбранного pose-reference'])

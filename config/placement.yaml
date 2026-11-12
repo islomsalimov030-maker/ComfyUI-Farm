@@ -102,6 +102,11 @@ auto_surfaces:
   height_bin_m: 0.02
   min_area_m2: 0.15
 
+reference_registration:
+  max_nfev: 80
+  candidate_count: 5
+  pose_error_m: 0.001
+
 top_region:
   cell: 0.02
   dominant_bin_m: 0.02

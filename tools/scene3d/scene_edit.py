@@ -28,6 +28,15 @@ def body_matrix(value):
     return m
 
 
+def prop_matrix(value):
+    """Props keep their proportions: positive uniform scale + rotation + translation."""
+    m = validate_matrix(value)
+    scale = float(np.cbrt(np.linalg.det(m[:3,:3])))
+    if scale <= 1e-8 or not np.allclose((m[:3,:3] / scale).T @ (m[:3,:3] / scale), np.eye(3), atol=1e-4):
+        raise ValueError('3DA: масштаб предмета должен быть равномерным; растяжение по одной оси запрещено')
+    return m
+
+
 def body_delta(text, placement_key):
     data = json.loads(text)
     if data.get('placement_key') != placement_key:
@@ -63,7 +72,7 @@ def edits(manifest, models):
             delta = body_matrix(matrix @ np.linalg.inv(np.asarray(entity['matrix_world'])))
             body = json.dumps(dict(placement_key=manifest['placement_key'], matrix=delta.tolist()))
         elif entity['kind'] == 'prop':
-            props.append({**entity['prop'], 'absolute_matrix_world': matrix.tolist()})
+            props.append({**entity['prop'], 'absolute_matrix_world': prop_matrix(matrix).tolist()})
         else:
             raise ValueError('3DA: неизвестный объект сцены')
     if body is None:

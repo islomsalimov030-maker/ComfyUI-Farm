@@ -143,7 +143,14 @@ def write_auto_profile(loc_id, plate, directory, *, config=None):
     directory = Path(directory)
     if directory.exists() and any(directory.iterdir()):
         raise FileExistsError(f"auto_surfaces requires a new/empty profile directory: {directory}")
-    regions, report = discover_surfaces(plate, config=config)
+    try:
+        regions, report = discover_surfaces(plate, config=config)
+    except ValueError as exc:
+        if str(exc) != 'auto_surfaces: no horizontal height_proxy samples':
+            raise
+        regions, report = [], dict(method='height_proxy_connected_bins', surface_count=0,
+                                  surf_count=0, floor_status='no_surfaces', floor_id=None,
+                                  reason='no observed horizontal support; diagnostic editor remains available')
     walls = tr.walls(plate)  # existing vertical-plane RANSAC, unchanged
     directory.mkdir(parents=True, exist_ok=True)
     objects = []

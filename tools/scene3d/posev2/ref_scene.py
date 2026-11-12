@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 MOGE_FILE = "moge_2_vitl_normal_fp16.safetensors"
@@ -25,6 +26,30 @@ def sam_input_tensor(model, tensor):
     if os.environ.get('THREEDA_SERVER_MODE') == '1':
         return tensor.to(dtype=next(model.model.parameters()).dtype)
     return tensor
+
+
+@contextmanager
+def sam_dtype_guard(model):
+    """Match only dense refinement inputs; MHR sparse math keeps its own dtype."""
+    handles = []
+    if os.environ.get('THREEDA_SERVER_MODE') == '1':
+        import torch
+        def cast_input(module, args):
+            if args and isinstance(args[0], torch.Tensor) and args[0].is_floating_point():
+                dtype = module.weight.dtype
+                if dtype in (torch.float16, torch.bfloat16, torch.float32) and args[0].dtype != dtype:
+                    return (args[0].to(dtype=dtype), *args[1:])
+        for name in ('prev_to_token_mhr', 'prev_to_token_mhr_hand', 'prompt_to_token'):
+            module = getattr(model.model, name, None)
+            if module is not None and hasattr(module, 'weight'):
+                handles.append(module.register_forward_pre_hook(cast_input))
+        if not handles:
+            raise RuntimeError('SAM refinement input modules are unavailable')
+    try:
+        yield
+    finally:
+        for handle in handles:
+            handle.remove()
 
 
 def main():
@@ -120,7 +145,7 @@ def main():
         pts, nrm, msk, fov_y = geo[p]
         H, W = im.shape[:2]
         sam_started = time.monotonic()
-        with torch.inference_mode():
+        with torch.inference_mode(), sam_dtype_guard(sam):
             data = loop.run_until_complete(run(n.SAM3DBody_Predict, sam3d_body_model=sam, image=sam_input_tensor(sam, t),
                                                run_hand_refinement=True, fov=fov_y, batch_size=8))[0]
         sam_s = time.monotonic() - sam_started

@@ -9,6 +9,7 @@ import re
 STATIC = ("filmed from one fixed position; the camera holds a completely static, locked-off shot throughout, "
           "with no camera movement, no zoom and no pan.")
 POSE = {
+    "auto": "She preserves the exact body pose shown in <Video 1>, including every limb and the torso orientation.",
     "kneel": "She kneels upright on top of the {obj}: both knees and shins rest on its surface, her thighs and torso "
              "are vertical.",
     "lie": "She lies on top of the {obj}; her whole body, legs and feet included, rests on its surface and nothing "

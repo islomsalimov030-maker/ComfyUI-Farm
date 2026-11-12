@@ -55,10 +55,10 @@
   "class_type": "MiniMaxH3RefModsLoader",
   "inputs": {
    "show_info": false,
-   "mod_1": "ss456/split_face",
+   "mod_1": "ss340/char_face5",
    "strength_1": 1,
    "copies_1": 1,
-   "mod_2": "ss456/out_athleisure",
+   "mod_2": "ss340/char_body4",
    "strength_2": 1,
    "copies_2": 1,
    "mod_3": "(none)",
@@ -1193,16 +1193,16 @@
  "183:242": {
   "class_type": "ImpactSwitch",
   "inputs": {
+   "select": [
+    "219",
+    0
+   ],
    "input1": [
     "183:15",
     0
    ],
    "input2": [
     "183:239",
-    0
-   ],
-   "select": [
-    "219",
     0
    ],
    "sel_mode": true
@@ -1214,16 +1214,16 @@
  "183:243": {
   "class_type": "ImpactSwitch",
   "inputs": {
+   "select": [
+    "219",
+    0
+   ],
    "input1": [
     "183:53",
     0
    ],
    "input2": [
     "183:43",
-    0
-   ],
-   "select": [
-    "219",
     0
    ],
    "sel_mode": true
@@ -1262,7 +1262,7 @@
   "class_type": "MiniMaxH3RefModsLoader",
   "inputs": {
    "show_info": false,
-   "mod_1": "ss456/split_face",
+   "mod_1": "ss340/char_face5",
    "strength_1": 1,
    "copies_1": 1,
    "mod_2": "(none)",
@@ -1766,7 +1766,7 @@
     "217",
     0
    ],
-   "location_id": "cold_20261111_vizcaya_b"
+   "location_id": "auto_cold_20261111_d"
   },
   "_meta": {
    "title": "3DA · Локация"
@@ -1828,8 +1828,8 @@
     "226",
     1
    ],
-   "pose_class": "stand",
-   "target_object": "floor",
+   "pose_class": "auto",
+   "target_object": "auto",
    "support_parts": "",
    "secondary_contacts": "",
    "instance_hint": "",
@@ -1910,16 +1910,16 @@
  "246": {
   "class_type": "ImpactSwitch",
   "inputs": {
+   "select": [
+    "219",
+    0
+   ],
    "input1": [
     "183:243",
     0
    ],
    "input2": [
     "245",
-    0
-   ],
-   "select": [
-    "219",
     0
    ],
    "sel_mode": true

@@ -119,13 +119,13 @@ def test_selected_entity_does_not_move_other_entity():
 def test_body_scale_and_rotation_match_viewport_without_changing_prop():
     from posev2.manual_pose import transform as body_transform
     # A rotated, scaled body root around its original pelvis, independently
-    # of a prop with its own nonuniform scale/rotation.
+    # of a prop with its own uniform scale/rotation (props keep proportions).
     initial=np.eye(4);initial[:3,3]=[.2,1.5,.6]
     manifest=dict(placement_key='same',entities=[dict(id='body',kind='body',matrix_world=initial.tolist()),
         dict(id='prop_0',kind='prop',prop={'prop_id':'fixture'})])
     body=transform('body',x=.3,y=.6,z=-1.5);body['scale']=dict(x=1.2,y=1.2,z=1.2)
     body['quaternion']=dict(x=0,y=np.sin(.2),z=0,w=np.cos(.2))
-    prop=transform('prop_0',x=.7);prop['scale']=dict(x=.8,y=1.1,z=1.3)
+    prop=transform('prop_0',x=.7);prop['scale']=dict(x=1.1,y=1.1,z=1.1)
     prop['quaternion']=dict(x=np.sin(.1),y=0,z=0,w=np.cos(.1))
     delta,props=scene_edit.edits(manifest,[body,prop]);matrix=np.asarray(json.loads(delta)['matrix'])
     x=np.array([[.2,1.5,.6],[1.2,1.5,.6],[.2,2.5,.6]])
@@ -139,6 +139,8 @@ def test_body_scale_and_rotation_match_viewport_without_changing_prop():
         with pytest.raises(ValueError):scene_edit.body_matrix(bad)
     shear=np.eye(4);shear[0,1]=.2
     with pytest.raises(ValueError,match='равномерным'):scene_edit.body_matrix(shear)
+    stretched=dict(prop,scale=dict(x=.8,y=1.1,z=1.3))
+    with pytest.raises(ValueError,match='предмета должен быть равномерным'):scene_edit.edits(manifest,[body,stretched])
 
 
 def test_body_rigid_transform_preserves_pose_and_dimensions():
