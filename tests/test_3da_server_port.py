@@ -20,6 +20,29 @@ from tools.fix_workflow_encoding import repair, fix
 from tools.scene3d.server_config import load, data_path, location_assets
 
 
+def test_switch_port_migration_preserves_every_api_binding():
+    from tools.build_3da_aio_server import normalize_switch_types
+    graph = json.loads((ROOT/'workflows/3da_aio/3DA_AIO_v1.0.prepare.ui.json').read_text(encoding='utf-8'))
+    before = wfkit.to_api(graph)
+    normalize_switch_types(graph)
+    assert not wfkit.check_ui(graph)
+    assert wfkit.to_api(graph) == before
+    normalized = copy.deepcopy(graph)
+    normalize_switch_types(graph)
+    assert graph == normalized
+
+
+def test_server_photo_graph_uses_stacy_refmods_not_template_character():
+    """Regression: final_018 sent the template's Samantha RefMods (ss456) with Stacy's reference."""
+    from tools.build_3da_aio_server import STACY_REFMODS
+    api = json.loads((ROOT/'workflows/3da_aio/3DA_AIO_v1.0.server.photo.api.json').read_text(encoding='utf-8'))
+    loaders = [n for n in api.values() if n['class_type'] == 'MiniMaxH3RefModsLoader']
+    assert loaders
+    mods = {v for n in loaders for k, v in n['inputs'].items() if k.startswith('mod_')}
+    assert not any(m.startswith('ss456/') for m in mods)
+    assert STACY_REFMODS['face'] in mods and STACY_REFMODS['body'] in mods
+
+
 def test_new_room_asset_resolution_is_bound_and_tracks_plate(tmp_path):
     root = tmp_path / 'data'
     directory = root / 'locations' / 'fresh'
@@ -226,3 +249,52 @@ def test_userdata_0346_handlers_idempotent_and_update(tmp_path):
 def test_uploader_rejects_invalid_path(path):
     with pytest.raises(ValueError):
         relative(path)
+
+
+def test_combined_aio_one_workflow_two_muter_groups():
+    """3DA_AIO_v2.0m.server.ui.json: prepare and final in one workflow, switched by the user's rgthree muter."""
+    from tools.build_3da_aio_server import (group_members, set_stage, PREPARE_GROUP, FINAL_GROUP,
+                                            PREPARE_TITLES, FINAL_TITLES)
+    ui = json.loads((ROOT/'workflows/3da_aio/3DA_AIO_v2.0m.server.ui.json').read_text(encoding='utf-8'))
+    assert not wfkit.check_ui(ui)
+    muters = [n for n in ui['nodes'] if n['type'] == 'Fast Groups Muter (rgthree)']
+    assert muters and all(n['mode'] == 0 for n in muters)
+    from tools.build_3da_aio_server import STAGE_MUTER
+    stage = [n for n in muters if n.get('title') == STAGE_MUTER]
+    assert len(stage) == 1 and stage[0]['properties']['toggleRestriction'] == 'default'
+    assert all(re.search(stage[0]['properties']['matchTitle'], t) for t in (PREPARE_GROUP, FINAL_GROUP))
+    # the user's muter keeps its own filter (13.11: extra rows ended under the user's note)
+    assert not any(re.search(n['properties']['matchTitle'], t, re.I) for n in muters if n is not stage[0]
+                   for t in (PREPARE_GROUP, FINAL_GROUP))
+    prepare = {n.get('title') for n in group_members(ui, PREPARE_GROUP)}
+    final = {n.get('title') for n in group_members(ui, FINAL_GROUP)}
+    assert prepare == set(PREPARE_TITLES)
+    assert set(FINAL_TITLES) <= final and 'ИТОГ фото · ref2v' in final and not prepare & final
+    for stage in ('prepare', 'final'):
+        titles = {n['_meta']['title'] for n in wfkit.to_api(set_stage(copy.deepcopy(ui), stage)).values()}
+        assert ('3DA · Подготовить сцену гизмо' in titles) == (stage == 'prepare')
+        assert ('ИТОГ фото · ref2v' in titles) == (stage == 'final')
+        assert not any(t.startswith('ИТОГ видео') or t.startswith('ИТОГ face pass') for t in titles)
+
+
+def test_shipped_aio_carries_no_scene_and_shows_prepare_status():
+    """13.11: the final takes GLB/manifest from the 3D window filled by «1 · Подготовка сцены»; the shipped
+    workflow never carries a concrete scene. Group 1 shows the automatic placement status before edits."""
+    from tools.build_3da_aio_server import (assert_no_scene, group_members, PREPARE_GROUP, PREP_STATUS, VIEWPORT, EDITS)
+    ui = json.loads((ROOT/'workflows/3da_aio/3DA_AIO_v2.0m.server.ui.json').read_text(encoding='utf-8'))
+    assert_no_scene(ui)
+    assert ui['extra']['3DA AIO']['stage'] == 'prepare'
+    assert PREP_STATUS in {n.get('title') for n in group_members(ui, PREPARE_GROUP)}
+    for stage in ('preview', 'photo'):
+        api = json.loads((ROOT/f'workflows/3da_aio/3DA_AIO_v2.0m.server.{stage}.api.json').read_text(encoding='utf-8'))
+        by = {v['_meta']['title']: v for v in api.values()}
+        assert by[EDITS]['inputs']['manifest'] == '' and by[VIEWPORT]['inputs']['model_file'] in ('', 'none')
+    prepare = json.loads((ROOT/'workflows/3da_aio/3DA_AIO_v2.0m.server.prepare.api.json').read_text(encoding='utf-8'))
+    status = next(v for v in prepare.values() if v['_meta']['title'] == PREP_STATUS)
+    src = prepare[str(status['inputs']['source'][0])]
+    assert src['_meta']['title'] == '3DA · Подготовка персонажа' and status['inputs']['source'][1] == 5
+    import pytest
+    with pytest.raises(ValueError):
+        bad = copy.deepcopy(ui)
+        next(n for n in bad['nodes'] if n.get('title') == EDITS)['widgets_values'] = ['/x/manifest.json']
+        assert_no_scene(bad)

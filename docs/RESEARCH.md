@@ -658,3 +658,11 @@ CPU, ultralytics 8.4 + `face_yolov8m.pt` / `hand_yolov8s.pt` против mediap
 
 - Новые исходные фотографии: [Vizcaya DSC08344 / Daderot](https://commons.wikimedia.org/wiki/File:Living_Room_-_Vizcaya_Museum_and_Gardens_-_Miami,_Florida_-_DSC08344.jpg) — CC0-1.0; [Warrior II / lululemon athletica](https://commons.wikimedia.org/wiki/File:Virabhadrasana_II_-_Warrior_II_Pose.jpg) — CC-BY-2.0, требуется атрибуция. Оригиналы сохранены приватно; URL/SHA256/размеры в отчёте `docs/experiments/3DA_COLD_INPUT_E2E_2026-11-11.md`.
 - Реальный cold prompt `05564880-c7bf-4890-a316-0faeb4759578` на 0.1.4: location создан сервером, затем auto floor ambiguity до SAM. Fixed zero-based height bins разделили наблюдаемые фрагменты пола. Подготовлено объединение только наблюдаемых coplanar cells в прежнем диапазоне 2 см, без заполнения дыр; server runtime эффект ещё не проверен. Registry 0.1.5 занят; кандидат 0.1.6 подготовлен локально, без новых моделей/зависимостей/установок/reboot. Stick/его две embedded текстуры не изменялись, лицензия unknown, визуальная приёмка впереди.
+
+- 2026-11-12 · 3D-A props: привязку текстур по номеру объекта (Object.N→textureN) проверять по UV. Доля вершин, у которых UV попадает в чёрный фон атласа, при неверной привязке 17–21 %, при верной 0 %. Источник: stick_stick_d4a11633, `.tmp_3da_port/cold_e2e/final_018c/tex`.
+
+## 13.11 · 3D-A: frontend и плиты
+- rgthree Fast Groups Muter, `toggleRestriction` «max one»/«always one»: на comfy.next-genium.com строки muter обёрнуты frontend в `LegacyWidget`, `doModeChange` проверяет `instanceof FastGroupsToggleRowWidget` → ограничение молча не работает (проверено вызовом на сервере 13.11; источник: /extensions/rgthree-comfy/fast_groups_muter.js).
+- Load3D (Viewport3d): фон рисуется отдельной backgroundScene/backgroundCamera до основной сцены, renderer.autoClear=false → depth-only меш (colorWrite=false) в основной сцене скрывает модели, не закрывая фото. Основа окклюдера пола 3DA 0.1.10.
+- Плита yoga-mats (MoGe-2-vitl-normal, Apache-2.0): метрика проверена шириной коврика 0,67 м; близкие плиты (камера 1,35 м, fov_y ≈ 26°) не вмещают сидящего человека 1,62 м целиком.
+
