@@ -19,7 +19,6 @@ import json
 import os
 
 import numpy as np
-import torch
 from PIL import Image
 
 MODEL = "Ruicheng/moge-2-vitl-normal"
@@ -28,6 +27,7 @@ MODEL = "Ruicheng/moge-2-vitl-normal"
 def core_inference(comfy, image):
     """Use installed core weights/classes; no pip, external repo or download."""
     import asyncio
+    import torch
     import sys
     sys.path.insert(0, comfy)
     sys.argv = [sys.argv[0], '--lowvram', '--cache-none']
@@ -64,6 +64,8 @@ def fit_floor(points, normals, valid, h, rng):
     cand = points[valid & rows & up_like]
     if len(cand) < 500:
         cand = points[valid & rows]
+    if len(cand) < 3:
+        return None
     best, best_n = None, -1
     for _ in range(400):
         s = cand[rng.choice(len(cand), 3, replace=False)]
@@ -79,6 +81,8 @@ def fit_floor(points, normals, valid, h, rng):
         inl = np.abs(cand @ n + d) < 0.02
         if inl.sum() > best_n:
             best, best_n = (n, d, inl), inl.sum()
+    if best is None:
+        return None  # no floor-like plane in the lower frame (close-up, top-down, no floor)
     n, d, inl = best
     # refine by least squares on the inliers
     p = cand[inl]
@@ -89,6 +93,173 @@ def fit_floor(points, normals, valid, h, rng):
         n = -n
     d = -n @ c
     return n, d, int(best_n), len(cand)
+
+
+# --- 0.2.0: any floor, several levels or no floor in the frame -------------------------------------
+LEVEL_TOL = 0.05       # m, one horizontal level
+HORIZONTAL_COS = np.cos(np.radians(15))
+SIGMA = 0.08          # rad, angular width of a surface orientation in the vote
+
+
+def point_normals(points, valid, step=None):
+    """Normals from the metric point map itself (OpenCV camera), turned towards the camera.
+
+    Differences over `step` pixels (~W/400) average out per-pixel depth noise without crossing objects.
+    """
+    k = step or max(1, points.shape[1] // 400)
+    dx = np.zeros_like(points)
+    dy = np.zeros_like(points)
+    dx[:, :-k] = points[:, k:] - points[:, :-k]
+    dy[:-k] = points[k:] - points[:-k]
+    ok = valid.copy()
+    ok[:, :-k] &= valid[:, k:]
+    ok[:-k] &= valid[k:]
+    ok[:, -k:] = False
+    ok[-k:] = False
+    z = np.maximum(points[..., 2], 1e-3)
+    ok &= (np.linalg.norm(dx, axis=-1) < 0.05 * k * z) & (np.linalg.norm(dy, axis=-1) < 0.05 * k * z)  # no depth jumps
+    n = np.cross(dx, dy)
+    length = np.linalg.norm(n, axis=-1)
+    ok &= length > 1e-12
+    n = n / np.maximum(length, 1e-12)[..., None]
+    n[np.einsum("...i,...i->...", n, points) > 0] *= -1
+    # 5x5 mean over valid neighbours: smooth per-pixel noise of the predicted depth
+    from scipy.ndimage import uniform_filter
+    w = uniform_filter(ok.astype(np.float64), 5)
+    n = np.stack([uniform_filter(np.where(ok, n[..., i], 0.0), 5) for i in range(3)], -1) / np.maximum(w, 1e-9)[..., None]
+    length = np.linalg.norm(n, axis=-1)
+    ok &= length > 0.5
+    return n / np.maximum(length, 1e-12)[..., None], ok
+
+
+def _up(pitch_deg, roll_deg):
+    """World up in OpenCV camera coords for a camera pitched down by pitch and rolled by roll."""
+    t, r = np.radians(pitch_deg), np.radians(roll_deg)
+    x, y, z = 0.0 * t, -np.cos(t), -np.sin(t)
+    return np.stack([x * np.cos(r) - y * np.sin(r), x * np.sin(r) + y * np.cos(r), z], -1)
+
+
+def gravity_up(normals, rng, samples=20000):
+    """Up direction from the scene itself (horizontal + vertical surfaces), not from a floor.
+
+    Manhattan vote over the camera pitch (-30..89 deg) and roll (+-25 deg); a weak prior for small roll and
+    a slightly downward pitch breaks the frontal-wall vs top-down-floor tie.
+    """
+    if len(normals) > samples:
+        normals = normals[rng.choice(len(normals), samples, replace=False)]
+
+    def score(P, R):
+        U = _up(P.ravel(), R.ravel())
+        D = np.abs(normals @ U.T)
+        # ~5 deg width for vertical (D ~ 0, one angle) and horizontal (D ~ 1, two angles: x sqrt2) surfaces
+        s = np.exp(-(1 - D) / (2 * SIGMA ** 2)).mean(0) + np.exp(-D ** 2 / (2 * SIGMA ** 2)).mean(0)
+        # Weak prior, only to break the one-plane tie (frontal wall vs floor from above): any downward pitch is
+        # common (slightly preferring the smaller one), looking up is rare; an upright camera (roll small).
+        p = P.ravel()
+        pitch_prior = np.where(p < 0, np.exp(-(p / 15) ** 2 / 2), 1 - 0.1 * p / 90)
+        return s + 0.2 * pitch_prior + 0.2 * np.exp(-(R.ravel() / 8) ** 2 / 2)
+
+    P, R = np.meshgrid(np.arange(-30, 90, 1.0), np.arange(-24, 25, 2.0))
+    k = int(np.argmax(score(P, R)))
+    p0, r0 = P.ravel()[k], R.ravel()[k]
+    P, R = np.meshgrid(np.arange(p0 - 2, p0 + 2.01, 0.25), np.arange(r0 - 2, r0 + 2.01, 0.25))
+    k = int(np.argmax(score(P, R)))
+    up = _up(P.ravel()[k], R.ravel()[k])
+    # One plane fills the frame: a floor from above and a wall in front give the same normals. Looking up is
+    # rare, so a plane tilted towards image-up is a floor (top-down), otherwise a wall (up = image-up on it).
+    m = normals.mean(0)
+    m /= np.linalg.norm(m)
+    if np.mean(normals @ m > np.cos(np.radians(15))) >= 0.8:
+        if m[1] < -np.sin(np.radians(3)):
+            up = m
+        elif abs(up @ m) > 0.9:
+            y_up = np.array([0, -1.0, 0])
+            up = y_up - (y_up @ m) * m
+            up /= np.linalg.norm(up)
+    return up, float(np.degrees(np.arcsin(np.clip(-up[2], -1, 1)))), float(np.degrees(np.arctan2(up[0], -up[1])))
+
+
+def cluster_levels(h, bin_m=0.01, min_frac=0.001):
+    """Horizontal levels from heights: 1 cm histogram, levels split at (almost) empty bins."""
+    h = np.asarray(h, float)
+    if not len(h):
+        return []
+    k = np.floor((h - h.min()) / bin_m).astype(int)
+    counts = np.bincount(k)
+    full = counts > max(1, min_frac * len(h))
+    levels, start = [], None
+    for i, f in enumerate(np.append(full, False)):
+        if f and start is None:
+            start = i
+        elif not f and start is not None:
+            sel = (k >= start) & (k < i)
+            levels.append({"h": float(h[sel].mean()), "n": int(sel.sum())})
+            start = None
+    return levels
+
+
+def horizontal_levels(points, normals, ok, up):
+    """Visible horizontal levels: heights (m, relative to the camera, along up) and pixel counts."""
+    horiz = ok & (normals @ up > HORIZONTAL_COS)
+    return cluster_levels(points[horiz] @ up), int(horiz.sum())
+
+
+def scene_frame(points, valid, rng, prior_height=1.5):
+    """Floor plane if a floor is visible; otherwise an up direction from the scene and no floor.
+
+    Returns (n, d, report): n·p + d = height above the floor (or above the assumed floor) for p in camera coords.
+    """
+    normals, ok = point_normals(points, valid)
+    if ok.sum() < 100:
+        raise SystemExit("plate: too few valid points for the scene geometry")
+    up, pitch, roll = gravity_up(normals[ok], rng)
+    levels, n_horiz = horizontal_levels(points, normals, ok, up)
+    n_valid = int(valid.sum())
+    floor = next((lv for lv in levels if lv["n"] >= 0.02 * n_valid and lv["n"] >= 0.1 * max(n_horiz, 1)), None)
+    report = {"up_source": "scene_normals", "pitch_deg": pitch, "roll_deg": roll}
+    if floor is not None:
+        h = points @ up
+        sel = ok & (normals @ up > HORIZONTAL_COS) & (np.abs(h - floor["h"]) <= LEVEL_TOL)
+        p = points[sel]
+        c = p.mean(0)
+        n = np.linalg.svd(p - c, full_matrices=False)[2][-1]
+        n = n if n @ up > 0 else -n
+        d = -n @ c
+        report.update(visible=True, source="lowest_level", inliers=int(sel.sum()), candidates=n_horiz)
+    else:
+        n = up
+        lowest = float(np.min(points[valid] @ up))
+        d = max(prior_height, -lowest + 0.02)
+        report.update(visible=False, source="prior_height", inliers=0, candidates=n_horiz)
+    report["levels"] = [{"z": round(float(lv["h"] + d), 3), "frac": round(lv["n"] / max(n_horiz, 1), 3)}
+                        for lv in levels if lv["n"] >= 0.02 * max(n_horiz, 1)]
+    return n, float(d), report
+
+
+def world_rotation(n):
+    """World axes (rows) in camera coords: Z = up n, Y = camera forward on the floor, X right."""
+    z_cv = np.array([0, 0, 1.0])
+    f = z_cv - (z_cv @ n) * n
+    if np.linalg.norm(f) < 0.2:  # looking (almost) straight down: forward = image up, laid on the floor
+        y_up = np.array([0, -1.0, 0])
+        f = y_up - (y_up @ n) * n
+    f /= np.linalg.norm(f)
+    return np.stack([np.cross(f, n), f, n])
+
+
+def choose_floor(points, normals_pred, valid, H, rng):
+    """Old lower-frame RANSAC when it agrees with the scene; otherwise the scene frame (0.2.0)."""
+    n2, d2, report = scene_frame(points, valid, rng)
+    old = fit_floor(points, normals_pred, valid, H, rng)
+    if old is not None:
+        n, d, n_in, n_cand = old
+        same_up = float(n @ n2) > np.cos(np.radians(8))
+        same_floor = report["visible"] and abs(float(d) - d2) <= LEVEL_TOL
+        if same_up and same_floor:
+            report.update(source="ransac_lower", up_source="floor", inliers=n_in, candidates=n_cand)
+            return n, float(d), report
+        report["rejected_lower_ransac"] = {"height_m": round(float(d), 3), "same_up": same_up}
+    return n2, d2, report
 
 
 def main():
@@ -107,6 +278,7 @@ def main():
     if a.comfy:
         o = core_inference(a.comfy, img)
     else:
+        import torch
         from moge.model.v2 import MoGeModel
         dev = "cuda" if torch.cuda.is_available() else "cpu"
         model = MoGeModel.from_pretrained(MODEL).to(dev).eval()
@@ -120,13 +292,8 @@ def main():
     nrm = o["normal"].float().cpu().numpy() if "normal" in o else None
 
     rng = np.random.default_rng(0)
-    n, d, n_in, n_cand = fit_floor(pts, nrm, valid, H, rng)
-    # world axes in camera coords
-    z_cv = np.array([0, 0, 1.0])
-    f = z_cv - (z_cv @ n) * n
-    f /= np.linalg.norm(f)
-    r = np.cross(f, n)
-    R = np.stack([r, f, n])                            # cv -> world rotation (rows)
+    n, d, floor_report = choose_floor(pts, nrm, valid, H, rng)
+    R = world_rotation(n)                              # cv -> world rotation (rows)
     cam_h = float(d)                                   # n.p + d = height above floor; camera at p=0
     if cam_h < 0:
         raise SystemExit(f"floor fit failed: camera below the floor ({cam_h:.2f} m)")
@@ -178,7 +345,7 @@ def main():
         "lens_mm": float(fx * 36.0), "sensor_width_mm": 36.0,
         "fov_x_deg": float(np.degrees(2 * np.arctan(0.5 / fx))),
         "cam_height_m": cam_h, "R_world_from_cv": R.tolist(),
-        "floor": {"inliers": n_in, "candidates": n_cand},
+        "floor": floor_report,
         "inv_norm": {"lo": float(lo), "hi": float(hi)},  # depth_loc = (1/z - lo) / (hi - lo), z in metres
         "depth_m": {"p1": float(np.percentile(dep[valid], 1)), "p99": float(np.percentile(dep[valid], 99))},
         "mesh": {"verts": int(keep.sum()), "faces": len(faces), "stride": s},
@@ -186,7 +353,7 @@ def main():
     with open(os.path.join(a.out, "plate.json"), "w") as fh:
         json.dump(info, fh, indent=1)
     print(f"[plate] cam height {cam_h:.2f} m, fov_x {info['fov_x_deg']:.1f} deg, lens {info['lens_mm']:.1f} mm, "
-          f"depth {info['depth_m']['p1']:.2f}-{info['depth_m']['p99']:.2f} m, floor inliers {n_in}/{n_cand}, "
+          f"depth {info['depth_m']['p1']:.2f}-{info['depth_m']['p99']:.2f} m, floor {floor_report['source']} {floor_report['inliers']}/{floor_report['candidates']}, "
           f"mesh {info['mesh']['verts']} v / {len(faces)} f")
 
 

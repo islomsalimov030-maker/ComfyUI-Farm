@@ -120,5 +120,14 @@ def export(setup, cfg):
     background_path = Path(cfg['comfy'])/'input'/background_name
     if not background_path.exists():
         copy2(Path(setup['plate_dir'])/'plate_rgb.png', background_path)
+    # The room geometry the renderer occludes with: the 3D window uses it as a
+    # depth-only occluder and checks placement against its surfaces (0.2.0).
+    room_source = Path(setup['plate_dir'])/'plate_mesh.obj'
+    room_name = 'room_' + hashlib.sha256(room_source.read_bytes()).hexdigest()[:16] + '.obj'
+    room_path = Path(cfg['comfy'])/'input'/'3d/3da_scene'/room_name
+    if not room_path.exists():
+        copy2(room_source, room_path)
+    raster = [1344, 768]
     return dict(model_file=model_file, manifest=str(manifest_path), entities=manifest['entities'],
-                camera=camera_config(plate,[1344,768]), background=background_name)
+                camera=camera_config(plate,raster), raster=raster, background=background_name,
+                room_mesh='3d/3da_scene/'+room_name)

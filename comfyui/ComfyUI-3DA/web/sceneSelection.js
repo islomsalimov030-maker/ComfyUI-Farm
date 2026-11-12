@@ -1,4 +1,5 @@
 // Named-object selection on the existing core gizmo, not another 3D editor.
+import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry } from './roomGeometry.js';
 export function sceneSelection(view, node, initialTransforms = null) {
   const setup = node.properties['3DA Scene'];
   if (!setup?.entities?.length) return null;
@@ -45,8 +46,8 @@ export function sceneSelection(view, node, initialTransforms = null) {
   Object.assign(modes.style, { color:'white', background:'#263744', padding:'5px' });
   for (const [id,label] of [['translate','Перемещение'],['rotate','Вращение'],['scale','Масштаб']])
     modes.add(new Option(label,id));
-  // Live diagnostics: the renderer occludes the body by the room floor, the
-  // viewport draws meshes over a flat photo. Show both honestly here.
+  // Live diagnostics against the room geometry of the location (any floor,
+  // several levels or no floor): the same mesh the renderer occludes with.
   const status = document.createElement('span');
   status.className = 'threeda-scene-status';
   Object.assign(status.style, { color:'white', padding:'5px 8px', borderRadius:'4px',
@@ -57,7 +58,13 @@ export function sceneSelection(view, node, initialTransforms = null) {
   for (const event of ['pointerdown','pointerup','click','dblclick','keydown'])
     toolbar.addEventListener(event, e => e.stopPropagation());
   picker.addEventListener('change', () => select(picker.value));
-  const occluder = floorOccluder(view, entities);
+  let room = null, occluder = null, roomError = null, disposed = false;
+  loadRoom(setup).then(loaded => {
+    if (disposed || !loaded) return;
+    room = loaded;
+    occluder = roomOccluder(view, entities, loaded);
+    refresh();
+  }).catch(e => { roomError = e; console.error('3DA room:', e); refresh(); });
   const gizmo = view.getGizmoManager();
   const controls = gizmo.transformControls;
   let lastMode;
@@ -83,19 +90,14 @@ export function sceneSelection(view, node, initialTransforms = null) {
     requestAnimationFrame(() => { pending = false; status.textContent = ''; diagnose(); });
   };
   function diagnose() {
-    const lines = [];
-    for (const e of entities) {
-      const low = lowestY(e.object);
-      if (Number.isFinite(low) && low < -FLOOR_TOLERANCE_M)
-        lines.push(`${e.kind === 'body' ? 'Персонаж' : e.label}: ниже пола на ${Math.round(-low * 100)} см`);
-      if (e.kind === 'body') {
-        const s = e.object.getWorldScale(e.object.scale.clone()).x;
-        if (Math.abs(s - 1) > SCALE_TOLERANCE)
-          lines.push(`Персонаж: масштаб ×${s.toFixed(2)} — рост изменится так же`);
-      }
-    }
-    status.textContent = lines.length ? lines.join('\n') : 'Пол и рост: ок';
-    status.style.background = lines.length ? '#b71c1c' : '#2e7d32';
+    let lines;
+    if (room) lines = roomDiagnose(room.analysis, room.camera, entities);
+    else if (roomError) lines = [{ level:'warn', text:'Геометрия комнаты не загрузилась — проверки недоступны' }];
+    else if (!setup.room_mesh) lines = [{ level:'warn', text:'Сцена без геометрии комнаты (старый экспорт) — выполните группу 1 заново' }];
+    else lines = [{ level:'info', text:'Загружаю геометрию комнаты…' }];
+    status.textContent = lines.map(l => l.text).join('\n');
+    const worst = ['error','warn','info','ok'].find(level => lines.some(l => l.level === level));
+    status.style.background = { error:'#b71c1c', warn:'#e65100', info:'#37474f', ok:'#2e7d32' }[worst];
   }
   controls?.addEventListener('mouseDown', beginScale);
   controls?.addEventListener('objectChange', uniformScale);
@@ -141,35 +143,39 @@ export function sceneSelection(view, node, initialTransforms = null) {
       controls?.removeEventListener('mouseUp', endScale);
       controls?.removeEventListener('objectChange', refresh);
       controls?.removeEventListener('mouseUp', refresh);
+      disposed = true;
       occluder?.dispose();
       toolbar.remove(); } };
 }
 
-// Soft supports (mats, beds) may be pressed in up to placement.yaml pen_soft_m.
-const FLOOR_TOLERANCE_M = 0.06;
-const SCALE_TOLERANCE = 0.02;
-
-// Lowest world-space vertex height of an entity (floor plane is y = 0: the
-// room camera stands at cam_height above the fitted floor).
-function lowestY(object) {
-  let low = Infinity;
-  object.updateMatrixWorld(true);
-  object.traverse(mesh => {
-    const position = mesh.isMesh && mesh.geometry?.attributes?.position;
-    if (!position) return;
-    const m = mesh.matrixWorld.elements, a = position.array, n = position.itemSize;
-    for (let i = 0; i < a.length; i += n) {
-      const y = m[1] * a[i] + m[5] * a[i + 1] + m[9] * a[i + 2] + m[13];
-      if (y < low) low = y;
-    }
-  });
-  return low;
+// One parsed room per mesh file: clones of the viewport share it.
+const rooms = new Map();
+function loadRoom(setup) {
+  if (!setup.room_mesh) return Promise.resolve(null);
+  const raster = setup.raster ?? [1344, 768];
+  const key = JSON.stringify([setup.room_mesh, setup.camera, raster]);
+  if (!rooms.has(key)) {
+    const slash = setup.room_mesh.lastIndexOf('/');
+    const url = new URL('api/view', document.baseURI);
+    url.searchParams.set('filename', setup.room_mesh.slice(slash + 1));
+    url.searchParams.set('subfolder', setup.room_mesh.slice(0, Math.max(slash, 0)));
+    url.searchParams.set('type', 'input');
+    rooms.set(key, fetch(url).then(r => {
+      if (!r.ok) throw new Error('3DA: меш комнаты недоступен (HTTP ' + r.status + ')');
+      return r.text();
+    }).then(text => {
+      const mesh = parseObj(text), camera = cameraModel(setup.camera, raster);
+      return { mesh, camera, analysis: buildRoom(mesh, camera) };
+    }));
+    rooms.get(key).catch(() => rooms.delete(key));
+  }
+  return rooms.get(key);
 }
 
-// Depth-only floor: hides whatever is below the floor, like the renderer that
-// occludes by the room plate. Drawn into depth only, so the photo stays visible.
-// Classes come from an already loaded mesh: no second three.js copy.
-function floorOccluder(view, entities) {
+// Depth-only room: hides whatever is behind the room surfaces, like the renderer,
+// while the photo stays visible. Classes come from an already loaded mesh: no
+// second three.js copy.
+function roomOccluder(view, entities, room) {
   const scene = view.getSceneManager?.()?.scene;
   let sample;
   for (const e of entities) e.object.traverse(o => { if (!sample && o.isMesh) sample = o; });
@@ -177,20 +183,20 @@ function floorOccluder(view, entities) {
   const Geometry = sample.geometry.constructor;
   const Attribute = sample.geometry.attributes.position.constructor;
   const Material = Array.isArray(sample.material) ? sample.material[0].constructor : sample.material.constructor;
+  const shape = occluderGeometry(room.mesh, room.camera);
   const geometry = new Geometry();
-  // 60 x 60 m around the camera foot, slightly below 0 so resting contacts stay visible.
-  const y = -0.01, r = 30;
-  geometry.setAttribute('position', new Attribute(new Float32Array([-r,y,-r*2, r,y,-r*2, r,y,r, -r,y,r]), 3));
-  geometry.setIndex([0, 2, 1, 0, 3, 2]);
+  geometry.setAttribute('position', new Attribute(shape.positions, 3));
+  geometry.setIndex(new Attribute(shape.indices, 1));
   const material = new Material();
   material.colorWrite = false;
   material.depthWrite = true;
   material.side = 2; // DoubleSide
   const mesh = new sample.constructor(geometry, material);
-  mesh.name = '3DA_floor_occluder';
+  mesh.name = '3DA_room_occluder';
   mesh.renderOrder = -1;
+  mesh.frustumCulled = false;
   mesh.raycast = () => {};
   scene.add(mesh);
   view.forceRender?.();
-  return { mesh, dispose() { scene.remove(mesh); geometry.dispose(); material.dispose(); } };
+  return { mesh, dispose() { scene.remove(mesh); geometry.dispose(); material.dispose(); view.forceRender?.(); } };
 }
