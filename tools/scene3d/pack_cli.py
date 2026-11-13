@@ -57,11 +57,35 @@ def plain(value):
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
+NONFINITE = 1e9  # 0.3.15: «нет опоры/не найдено» (inf) в JSON — большое конечное число того же знака, NaN → null
+
+
+def finite(value):
+    """0.3.15: inf/NaN из проверок геометрии (нет опоры → зазор inf) не должны ронять подготовку сцены:
+    до 0.3.15 save_json падал «Out of range float values are not JSON compliant: inf», сцена не экспортировалась,
+    а 3D-окно оставалось со старой позой и комнатой."""
+    if isinstance(value, dict):
+        return {k: finite(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [finite(v) for v in value]
+    try:
+        import numpy as np
+        if isinstance(value, np.ndarray):
+            return finite(value.tolist())
+        if isinstance(value, np.generic):
+            value = value.item()
+    except ImportError:
+        pass
+    if isinstance(value, float) and not math.isfinite(value):
+        return None if math.isnan(value) else math.copysign(NONFINITE, value)
+    return value
+
+
 def save_json(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False, default=plain), encoding="utf-8")
+    tmp.write_text(json.dumps(finite(data), ensure_ascii=False, indent=2, allow_nan=False, default=plain), encoding="utf-8")
     tmp.replace(path)
 
 

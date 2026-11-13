@@ -365,3 +365,18 @@ def test_h3_shadow_mode_uses_playblast_without_render_shadows(tmp_path):
              patch.object(nodes, 'load_mask', return_value=torch.zeros((1, 16, 16))):
             out = place('loc.json', settings=dict(render_shadows=render))
         assert float(out[0].max()) == expect and float(out[9]['playblast'].max()) == expect
+
+
+def test_save_json_survives_inf_from_geometry_checks(tmp_path):
+    # 0.3.15: «нет опоры» (зазор inf) ронял подготовку → 3D-окно оставалось со старой сценой.
+    import pack_cli
+    import numpy as np
+    pack_cli.save_json(tmp_path / 'fit.json', {'gap': float('inf'), 'neg': -np.inf, 'nan': float('nan'),
+                                               'arr': np.array([1., np.inf]), 'ok': np.float32(.5)})
+    data = json.loads((tmp_path / 'fit.json').read_text(encoding='utf-8'))
+    assert data == {'gap': 1e9, 'neg': -1e9, 'nan': None, 'arr': [1., 1e9], 'ok': .5}
+
+
+def test_reasons_cm_handles_not_found():
+    import reasons_ru
+    assert reasons_ru.cm(float('inf')) == '?' and reasons_ru.cm(1e9) == '?' and reasons_ru.cm(.05) == 5

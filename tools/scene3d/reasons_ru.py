@@ -4,6 +4,7 @@
 блокирующие флаги предметов (prop_validation.BLOCKING_PROP_FLAGS). Кадр — предупреждение
 (13.11 «КАДР ЛЮБОЙ»), здесь отказом не считается, кроме «в кадре нет ни одной части тела».
 """
+import math
 
 STATUS_RU = {
     'contact_fail': 'тело не касается опоры',
@@ -29,7 +30,11 @@ CHECK_RU = {
 
 
 def cm(value_m):
-    return max(0, round(float(value_m) * 100))
+    # 0.3.15: «не найдено» (inf или 1e9 из JSON) — «?», а не OverflowError / 100000000000 см.
+    value = float(value_m)
+    if not math.isfinite(value) or abs(value) >= 1e3:
+        return '?'
+    return max(0, round(value * 100))
 
 
 def surface_ru(name):
