@@ -1067,9 +1067,11 @@ class NativeGuides:
         return {'required': {},
                 'optional': {'body_guides': ('3DA_BODY_GUIDES', {'lazy': True}),
                              'frame_prompt': ('STRING', {'default': '', 'multiline': True, 'forceInput': True,
-                                 'tooltip': 'Промпт кадра пользователя (одежда, детали). Image N / <Picture N> — его ref_image; '
-                                            'в H3 они идут после плиты и эталона (<Picture 3…>)'}),
-                             'user_refs': ('INT', {'default': 3, 'min': 0, 'max': 3}),
+                                 'tooltip': 'Промпт кадра пользователя (одежда, детали) с метками AIO: <Picture 2> комната, '
+                                            '<Picture 3> поза, <Picture 4…> доп. фото. В H3 3DA: комната → <Picture 1>, '
+                                            'поза → <Video 1> (3D-рендер), Фото 4… → <Picture 3…>'}),
+                             'user_refs': ('INT', {'default': 3, 'min': 0, 'max': 3,
+                                 'tooltip': 'Сколько доп. фото (Фото 4…) подключено к H3 3DA после плиты и эталона'}),
                              'mode': ('INT', {'default': 2, 'min': 1, 'max': 2,
                                               'tooltip': '1 = обычное фото AIO (3DA не считается), 2 = постановка 3DA'})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'IMAGE', 'MASK', 'STRING', 'INT', 'INT', 'BOOLEAN', 'INT', 'STRING')

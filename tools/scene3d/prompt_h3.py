@@ -137,12 +137,24 @@ def _sections(text):
     return out
 
 
+def user_label(n):
+    """0.3.19: метка пользователя AIO V3 → метка в H3 ветки 3DA.
+    AIO: <Picture 1> исходный кадр, <Picture 2> комната, <Picture 3> поза, <Picture 4…> доп. фото.
+    3DA: <Picture 1> плита (= комната), <Picture 2> эталон личности, <Picture 3…> доп. фото (Фото 4…);
+    фото позы в H3 3DA не идёт (поза — из 3D-рендера <Video 1>, иначе H3 тянет из фото позы черты чужого лица)."""
+    n = int(n)
+    if n <= 2:
+        return '<Picture 1>'
+    if n == 3:
+        return '<Video 1>'
+    return f'<Picture {n - 1}>'
+
+
 def merge_frame_prompt(scene_prompt, frame_prompt, user_refs=3):
     """0.2.0 «в»: промпт кадра пользователя (узел 2) поверх промпта сцены 3DA.
 
-    Нумерация картинок в режиме 2: <Picture 1> — плита, <Picture 2> — эталон личности 3DA,
-    <Picture 3…> — ref_image_1..3 пользователя. Как в исходном AIO, «Image N» → «<Picture N>»;
-    у пользователя его ref_image_k — это <Picture k+1>, поэтому номера ≥ 2 сдвигаются на 1.
+    Метки пользователя переводятся по user_label (0.3.19; до 0.3.19 был сдвиг +1 для N≥2 — неверный для AIO V3).
+    user_refs — сколько доп. фото (Фото 4…) подключено к H3 3DA после плиты и эталона.
     Промпт без секций — описание кадра (одежда, выражение, детали): вставляется в detailed_description
     после [Shot 1]. Промпт с секциями — строки субъектов, сохранения, описание и звук добавляются по секциям.
     Камера, свет, цвет, поза и место остаются из промпта сцены."""
@@ -150,10 +162,11 @@ def merge_frame_prompt(scene_prompt, frame_prompt, user_refs=3):
     if not frame:
         return scene_prompt
     frame = IMAGE_N.sub(lambda m: f'<Picture {m.group(1)}>', frame)
-    frame = PICTURE_N.sub(lambda m: f'<Picture {int(m.group(1)) + 1 if int(m.group(1)) >= 2 else 1}>', frame)
+    frame = PICTURE_N.sub(lambda m: user_label(m.group(1)), frame)
     top = max([int(n) for n in PICTURE_N.findall(frame)] + [0])
     if top > 2 + user_refs:
-        raise ValueError(f'3DA: промпт кадра ссылается на <Picture {top - 1}> пользователя, подключено {user_refs}')
+        raise ValueError(f'3DA: промпт кадра ссылается на <Picture {top + 1}> пользователя (Фото {top + 1}), '
+                         f'подключено доп. фото: {user_refs}')
     scene = _sections(scene_prompt)
     if scene is None:
         raise ValueError('3DA: промпт сцены без секций H3')

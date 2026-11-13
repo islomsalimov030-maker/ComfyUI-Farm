@@ -54,20 +54,23 @@ def test_scene_prompt_has_no_hardcoded_clothing():
     assert prompt_h3.lint(text, True) == []
 
 
-def test_frame_prompt_merges_into_description_with_shifted_pictures():
+def test_frame_prompt_maps_aio_v3_labels():
+    # 0.3.19: AIO V3 — <Picture 2> комната → плита <Picture 1>, <Picture 3> поза → <Video 1>, Фото 4 → <Picture 3>.
     base = scene_prompt()
     assert prompt_h3.merge_frame_prompt(base, '  ') == base
-    merged = prompt_h3.merge_frame_prompt(base, 'She wears a long red wool coat as in image 2.')
+    merged = prompt_h3.merge_frame_prompt(base, 'She wears a long red wool coat as in <Picture 4>, the room of image 2, pose of <Picture 3>.')
     desc = merged.split('detailed_description:')[1]
-    assert 'red wool coat as in <Picture 3>' in desc and desc.index('static') < desc.index('red wool coat')
+    assert 'red wool coat as in <Picture 3>' in desc and 'room of <Picture 1>' in desc and 'pose of <Video 1>' in desc
+    assert desc.index('static') < desc.index('red wool coat')
     assert '<Picture 3> is a reference image' in merged and '<Picture 3>: attribute_transfer' in merged
+    assert '<Picture 4>' not in merged and '<Picture 5>' not in merged
     assert prompt_h3.lint(merged, True, {'<Picture 1>', '<Picture 2>', '<Picture 3>', '<Video 1>'}) == []
-    with pytest.raises(ValueError, match='подключено 1'):
-        prompt_h3.merge_frame_prompt(base, 'outfit from image 3', user_refs=1)
+    with pytest.raises(ValueError, match='Фото 5'):
+        prompt_h3.merge_frame_prompt(base, 'outfit from <Picture 5>', user_refs=1)
 
 
 def test_structured_frame_prompt_merges_by_section():
-    user = ('subject_definitions:\n<Subject 2> is the knitted scarf in <Picture 2>.\nsummary:\n[reference generation] '
+    user = ('subject_definitions:\n<Subject 2> is the knitted scarf in <Picture 4>.\nsummary:\n[reference generation] '
             'A calm evening.\nretention_analysis:\n<Subject 2>: attribute_transfer - scarf.\ndetailed_description:\n'
             '[Shot 1] She wears <Subject 2>.\noverall_soundscape:\nSoft rain outside.\nnon_diegetic_music:\nN/A')
     merged = prompt_h3.merge_frame_prompt(scene_prompt(), user)
