@@ -340,9 +340,9 @@ def test_control_node_and_serialize_never_throws(tmp_path):
         assert c.execute(True, 'Стейси', 'удалённый') == (2, nodes.NO_PROP, 'stacy', d)
         # 0.3.9: тени и крутилки — в одном выходе settings; предмет всегда рисует H3 (поля prop_render нет).
         s = c.execute(True, 'Стейси', 'stick', 'Генерация', 'Тени от рендера', 3., .5, .4)[3]
-        assert s == dict(render_shadows=True, strength_margin=3., shadow_strength=.5, render_shadow_opacity=.4)
+        assert s == dict(render_shadows=True, strength_margin=3., shadow_strength=.5, render_shadow_opacity=.4, clean_shadows=False)
         assert nodes.scene_settings({'strength_margin': 99, 'shadow_strength': 'x'})['strength_margin'] == 8.
-        assert set(nodes.Control.INPUT_TYPES()['optional']) == {'shadows', 'body_margin', 'shadow_strength', 'shadow_opacity'}
+        assert set(nodes.Control.INPUT_TYPES()['optional']) == {'shadows', 'body_margin', 'shadow_strength', 'shadow_opacity', 'clean_shadows'}
         assert 'prop_by_h3' not in nodes.PlacePose.INPUT_TYPES()['optional']
         assert nodes.Control.VALIDATE_INPUTS(prop='удалённый') is True
     js = (ROOT / 'comfyui/ComfyUI-3DA/web/extension.js').read_text(encoding='utf-8')

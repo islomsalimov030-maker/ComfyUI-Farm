@@ -150,6 +150,20 @@ def test_render_shadow_skips_body_core(tmp_path):
     assert float(shadow[0,15,15])==0 and float(shadow[0,2,2])==1
 
 
+def test_clean_shadows_takes_only_darkening_from_h3():
+    # 0.4.0 тест: в зоне тени — текстура фото × размытое затемнение H3; шум H3 не проходит; у тела — пиксели H3.
+    torch.manual_seed(0)
+    original=torch.rand((1,96,96,3))*.2+.6
+    image=original.clone()*.5+torch.rand_like(original)*.1      # H3: тень + шум
+    zone=torch.zeros((1,96,96));zone[:,40:90,40:90]=1
+    band=torch.zeros((1,96,96));band[:,0:20,0:20]=1
+    out=nodes.clean_shadows(image.clone(),image,original,dict(zone=zone,band=band))
+    inner=out[0,55:75,55:75];base=original[0,55:75,55:75]
+    ratio=(inner/base).std()
+    assert ratio<.05 and float(inner.mean())<float(base.mean())*.75     # одно плавное затемнение, без шума
+    assert torch.equal(out[0,0:10,0:10],image[0,0:10,0:10])
+
+
 def transform(entity,x=0,y=0,z=0):
     return dict(entity_id=entity,position=dict(x=x,y=y,z=z),quaternion=dict(x=0,y=0,z=0,w=1),scale=dict(x=1,y=1,z=1))
 

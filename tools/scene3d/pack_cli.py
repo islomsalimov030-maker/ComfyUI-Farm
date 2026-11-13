@@ -548,6 +548,12 @@ def shadow_zone(directory, strength_files, band, strength=.7, opacity=.6):
         return None
     Image.fromarray(np.rint(shadow.clip(0, 1) * 255).astype("uint8")).save(directory / "room_shadow.png")
     extra = proxy.strength_map(zone, float(strength), band)
+    # 0.4.0 (тест «чистые тени»): зона тени и полоса тела/предмета без неё — для переноса только затемнения H3.
+    Image.fromarray(np.rint(np.clip(extra / max(float(strength), 1e-6), 0, 1) * 255).astype("uint8")).save(directory / "shadow_zone.png")
+    first = Path(strength_files[-1]) if strength_files else None
+    if first is not None and first.is_file():
+        with Image.open(first) as image:
+            image.convert("L").save(directory / "band.png")
     for path in dict.fromkeys(Path(f) for f in strength_files):
         with Image.open(path) as image:
             current = np.asarray(image.convert("L"), dtype=np.float32) / 255
@@ -853,6 +859,9 @@ def do_place(request, config):
                        setting("shadow_strength", .7), setting("render_shadow_opacity", .6))
     if zone:
         body_guides['room_shadow'] = zone
+        if (directory / 'shadow_zone.png').is_file() and (directory / 'band.png').is_file():
+            body_guides['shadow_zone'] = str(directory / 'shadow_zone.png')
+            body_guides['band'] = str(directory / 'band.png')
     # Keep geometry diagnostics visible even in a saved preview, without painting
     # them into init/playblast (which are H3 references).
     from PIL import Image, ImageDraw, ImageFont

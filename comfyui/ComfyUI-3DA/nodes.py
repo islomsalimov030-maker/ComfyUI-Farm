@@ -534,6 +534,9 @@ class PlacePose:
                 guides['prop_mode'] = 'h3' if joint else 'composite'
                 # 0.3.7: одно правило теней для тела и предмета.
                 guides['shadow_mode'] = 'render' if options['render_shadows'] else 'h3'
+                # 0.4.0 тест: «чистые тени» — от H3 берётся только затемнение в зоне тени, пол — с фото комнаты.
+                if options['clean_shadows'] and bundle.get('shadow_zone') and bundle.get('band'):
+                    guides['clean_shadows'] = dict(zone=load_mask(bundle['shadow_zone']), band=load_mask(bundle['band']))
                 if options['render_shadows']:
                     room_shadow = render_shadow(bundle, guides['strength'])
                     if room_shadow is not None:
@@ -557,7 +560,8 @@ class PlacePose:
             return fallback_outputs(short_reason(exc), error_text(exc))
 
 
-SETTINGS_DEFAULT = dict(render_shadows=False, strength_margin=2.0, shadow_strength=.7, render_shadow_opacity=.6)
+SETTINGS_DEFAULT = dict(render_shadows=False, strength_margin=2.0, shadow_strength=.7, render_shadow_opacity=.6,
+                        clean_shadows=False)
 
 
 def scene_settings(value):
@@ -565,6 +569,7 @@ def scene_settings(value):
     out = dict(SETTINGS_DEFAULT)
     if isinstance(value, dict):
         out['render_shadows'] = bool(value.get('render_shadows', False))
+        out['clean_shadows'] = bool(value.get('clean_shadows', False))
         for key, low, high in (('strength_margin', .25, 8.), ('shadow_strength', 0., 1.), ('render_shadow_opacity', 0., 1.)):
             try:
                 number = float(value.get(key, out[key]))
@@ -573,6 +578,29 @@ def scene_settings(value):
             if math.isfinite(number):
                 out[key] = min(max(number, low), high)
     return out
+
+
+def clean_shadows(final, image, original, masks, strength_margin_px=16):
+    """0.4.0 тест «чистые тени»: в зоне тени (вне полосы тела/предмета) кадр = фото комнаты × размытое отношение
+    яркостей H3/фото (только затемнение). Форма и мягкость тени от H3, текстура пола — родная, без шума."""
+    from scipy.ndimage import gaussian_filter, binary_dilation
+    import torch.nn.functional as F
+    size = tuple(final.shape[1:3])
+    def fit(m):
+        m = m.to(torch.float32)
+        return m if tuple(m.shape[1:3]) == size else F.interpolate(m[:, None], size=size, mode='bilinear', align_corners=False)[:, 0]
+    zone, band = fit(masks['zone'])[0].cpu().numpy(), fit(masks['band'])[0].cpu().numpy()
+    near = binary_dilation(band > 0, iterations=4)
+    weight = gaussian_filter(((zone > 0) & ~near).astype(np.float32), sigma=6)
+    if weight.max() <= 0:
+        return final
+    lum = lambda t: (t[0].detach().cpu().numpy() @ np.array([.299, .587, .114], np.float32))
+    sigma = max(3., strength_margin_px / 3)
+    ratio = gaussian_filter(lum(image) + .02, sigma) / gaussian_filter(lum(original) + .02, sigma)
+    ratio = np.clip(ratio, .15, 1.)
+    shaded = original[0].detach().cpu().numpy() * ratio[..., None]
+    out = final[0].detach().cpu().numpy() * (1 - weight[..., None]) + shaded * weight[..., None]
+    return torch.from_numpy(out.astype(np.float32))[None].to(final.device)
 
 
 def render_shadow(bundle, strength):
@@ -1096,6 +1124,8 @@ class NativeComposite:
         # the material at the original PNG resolution. Overlay exactly once.
         premul=rgb(prop_rgb*g['prop_alpha'][...,None])
         final=final*(1-prop_alpha[...,None])+premul
+        if g.get('clean_shadows'):
+            final=clean_shadows(final,rgb(image),original,g['clean_shadows'])
         full_support=(body_alpha>0)|guard|(prop_alpha>0)
         if shadow_ok:
             full_support|=room_shadow>0
@@ -1122,6 +1152,8 @@ class NativeComposite:
         full = support > 0
         final = torch.where(full[..., None], final, original)
         # 0.3.8: тень (H3 или подсказка из рендера в init) уже нарисована H3 внутри зоны теней — второй раз не кладём.
+        if g.get('clean_shadows'):
+            final = clean_shadows(final, image, original, g['clean_shadows'])
         parameters = yaml.safe_load((Path(config()['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))
         metrics = outside_metrics(final, original, full.cpu().numpy()[0], parameters)
         metrics.update(prop_mode='h3', working_raster_hw=list(image.shape[1:3]), final_raster_hw=list(image.shape[1:3]),
@@ -1300,7 +1332,11 @@ class Control:
             'shadow_strength': ('FLOAT', {'default': .7, 'min': 0., 'max': 1., 'step': .05,
                 'tooltip': 'Насколько H3 может менять зону ожидаемых теней. 0 — тени не рисует, 1 — перерисовывает пол там полностью.'}),
             'shadow_opacity': ('FLOAT', {'default': .6, 'min': 0., 'max': 1., 'step': .05,
-                'tooltip': 'Плотность тени из рендера — только для «Тени от рендера». Меньше — светлее.'})}}
+                'tooltip': 'Плотность тени из рендера — только для «Тени от рендера». Меньше — светлее.'}),
+            'clean_shadows': ('BOOLEAN', {'default': False, 'label_on': 'чистые тени (тест) ВКЛ',
+                                          'label_off': 'чистые тени (тест) ВЫКЛ',
+                'tooltip': 'Тест: в зоне тени от H3 берётся только затемнение, пол — с исходного фото (без шума). '
+                           'Около тела и предмета — как раньше.'})}}
     # prop — тип-список предметов: подключается прямо к полю prop_id узла «3DA Prop» (как модель пульта к загрузчику).
     RETURN_TYPES = ('INT', prop_choices(), 'STRING', '3DA_SETTINGS')
     RETURN_NAMES = ('mode', 'prop', 'character', 'settings')
@@ -1313,12 +1349,13 @@ class Control:
         return True
 
     def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1], shadows=None,
-                body_margin=2.0, shadow_strength=.7, shadow_opacity=.6, **legacy):
+                body_margin=2.0, shadow_strength=.7, shadow_opacity=.6, clean_shadows=False, **legacy):
         # step переключает группы в браузере (заглушает «Подготовку сцены» или «Генерацию»); серверу он не нужен.
         on = bool(control_3d)
         chosen = prop if on and prop in prop_choices() else NO_PROP
         settings = scene_settings(dict(render_shadows=shadows == SHADOWS[1], strength_margin=body_margin,
-                                       shadow_strength=shadow_strength, render_shadow_opacity=shadow_opacity))
+                                       shadow_strength=shadow_strength, render_shadow_opacity=shadow_opacity,
+                                       clean_shadows=clean_shadows))
         return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'), settings)
 
 
