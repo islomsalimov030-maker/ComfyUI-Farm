@@ -522,6 +522,39 @@ def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_
     Image.fromarray(np.rint(overlay).astype(np.uint8)).save(directory / "debug.png")
 
 
+def shadow_zone(directory, strength_files, band, strength=.7, opacity=.6):
+    """0.3.8: зона теней в области H3. Тени тела и предметов из рендера (Cycles) — мягче (размытие ~ полосы) и
+    светлее (opacity) → room_shadow.png (подсказка для режима «тени от рендера»). Там, где тень ожидается,
+    H3 получает силу strength с тем же мягким краем, что у тела, — тень не обрезается краем полосы."""
+    import numpy as np
+    from PIL import Image
+    from scipy.ndimage import gaussian_filter
+    import pose_proxy_v26 as proxy
+    directory = Path(directory)
+    with Image.open(directory / "silhouette.png") as image:
+        sil = np.asarray(image.convert("L")) > 127
+    size = (sil.shape[1], sil.shape[0])
+    layers = []
+    for name in ("shadow.png", "prop_shadow.png"):
+        if (directory / name).is_file():
+            with Image.open(directory / name) as image:
+                layers.append(np.asarray(image.convert("L").resize(size, Image.Resampling.BILINEAR), dtype=np.float32) / 255)
+    if not layers:
+        return None
+    shadow = gaussian_filter(np.max(layers, axis=0), sigma=max(1., band / 2)) * float(opacity)
+    shadow[sil] = 0
+    zone = shadow > .03
+    if not zone.any():
+        return None
+    Image.fromarray(np.rint(shadow.clip(0, 1) * 255).astype("uint8")).save(directory / "room_shadow.png")
+    extra = proxy.strength_map(zone, float(strength), band)
+    for path in dict.fromkeys(Path(f) for f in strength_files):
+        with Image.open(path) as image:
+            current = np.asarray(image.convert("L"), dtype=np.float32) / 255
+        Image.fromarray(np.rint(np.maximum(current, extra) * 255).astype("uint8")).save(path)
+    return str(directory / "room_shadow.png")
+
+
 def compose_props(directory, overlay_dir, size=(1344, 768)):
     import numpy as np
     from PIL import Image
@@ -806,6 +839,13 @@ def do_place(request, config):
         from prop_validation import include_props
         include_props(fit)
         save_json(job / "fit/fit.json", fit)
+    # 0.3.8: зона ожидаемых теней (тело + предметы) входит в область H3 с мягким краем.
+    zone = shadow_zone(directory, [body_guides['strength'], directory / 'strength.png'] +
+                       ([body_guides['h3_props']['strength']] if body_guides.get('h3_props') else []),
+                       max(int(config["cell_px"]), int(round(config["cell_px"] * margin))),
+                       float(config.get("shadow_strength", .7)), float(config.get("render_shadow_opacity", .6)))
+    if zone:
+        body_guides['room_shadow'] = zone
     # Keep geometry diagnostics visible even in a saved preview, without painting
     # them into init/playblast (which are H3 references).
     from PIL import Image, ImageDraw, ImageFont

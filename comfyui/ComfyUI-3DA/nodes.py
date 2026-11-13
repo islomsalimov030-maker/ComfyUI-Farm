@@ -562,7 +562,8 @@ class PlacePose:
 def render_shadow(bundle, strength):
     """0.3.7: тень тела и предметов на комнате из рендера (max), вне ядра тела (силуэт + 1 клетка)."""
     import torch.nn.functional as F
-    layers = [load_mask(bundle[k]) for k in ('body_shadow', 'prop_shadow') if bundle.get(k) and Path(bundle[k]).is_file()]
+    keys = ('room_shadow',) if bundle.get('room_shadow') else ('body_shadow', 'prop_shadow')  # 0.3.8: мягкая тень
+    layers = [load_mask(bundle[k]) for k in keys if bundle.get(k) and Path(bundle[k]).is_file()]
     if not layers:
         return None
     size = tuple(strength.shape[1:3])
@@ -1062,9 +1063,8 @@ class NativeComposite:
         final=restore(final,original,guard.float())
         prop_alpha=mask(g['prop_alpha'])
         # 0.3.7: тени по одному правилу: «от рендера» — тень тела и предмета (Cycles) на комнате; «от H3» — без вклейки тени.
-        shadow=g.get('room_shadow') if g.get('shadow_mode')=='render' else None
-        if shadow is None and g.get('shadow_mode') is None:
-            shadow=g.get('prop_shadow')  # до 0.3.7: тень предмета вне тела
+        # 0.3.8: при любом shadow_mode тень рисует H3 в зоне теней (в «от рендера» — по подсказке в init); до 0.3.7 — вклейка.
+        shadow=g.get('prop_shadow') if g.get('shadow_mode') is None else None
         shadow_ok=isinstance(shadow,torch.Tensor) and tuple(shadow.shape)==tuple(g['plate'].shape[:3]) and bool(torch.isfinite(shadow).all())
         if shadow_ok:
             room_shadow=mask(shadow.clamp(0,1))
@@ -1105,11 +1105,7 @@ class NativeComposite:
         final = restore(original, image, support)
         full = support > 0
         final = torch.where(full[..., None], final, original)
-        shadow = g.get('room_shadow') if g.get('shadow_mode') == 'render' else None
-        if isinstance(shadow, torch.Tensor) and tuple(shadow.shape) == tuple(final.shape[:3]):
-            # 0.3.7: «тени от рендера» — тень тела и предмета из Cycles поверх кадра H3 (вне ядра тела).
-            final = final * (1 - shadow.clamp(0, 1).to(final.device)[..., None])
-            full = full | (shadow.to(full.device) > 0)
+        # 0.3.8: тень (H3 или подсказка из рендера в init) уже нарисована H3 внутри зоны теней — второй раз не кладём.
         parameters = yaml.safe_load((Path(config()['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))
         metrics = outside_metrics(final, original, full.cpu().numpy()[0], parameters)
         metrics.update(prop_mode='h3', working_raster_hw=list(image.shape[1:3]), final_raster_hw=list(image.shape[1:3]),

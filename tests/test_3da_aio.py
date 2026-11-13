@@ -135,10 +135,11 @@ def test_shadow_rule_is_one_for_body_and_prop():
         g['shadow_mode']='h3'
         final=nodes.NativeComposite().execute(image,g,g['plate'],torch.zeros_like(g['strength']))[0]
         assert torch.all(final==.5)
+        # 0.3.8: «от рендера» — тень уже в init (подсказка), H3 рисует её в зоне; после H3 второй раз не кладём.
         g['shadow_mode']='render';g['prop_mode']='h3'
         shadow=torch.zeros_like(g['strength']);shadow[:,70:80,70:80]=.5;g['room_shadow']=shadow
         final=nodes.NativeComposite().execute(image,g,g['plate'],torch.zeros_like(g['strength']))[0]
-        assert torch.allclose(final[:,75,75],torch.tensor(.25)) and torch.all(final[:,0:10,0:10]==.5)
+        assert torch.all(final==.5)
 
 
 def test_render_shadow_skips_body_core(tmp_path):
