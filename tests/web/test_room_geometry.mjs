@@ -1,7 +1,7 @@
 // node test_room_geometry.mjs — room occlusion/diagnostics of web/3da/roomGeometry.js on synthetic rooms.
 import assert from 'node:assert/strict';
 const mod = process.argv[2] ?? '../../web/3da/roomGeometry.js';
-const { parseObj, cameraModel, buildRoom, diagnose, inspect, occluderGeometry, bringToBody, centerOnAxis } = await import(new URL(mod, import.meta.url));
+const { parseObj, cameraModel, buildRoom, diagnose, inspect, occluderGeometry, bringToBody, centerOnAxis, padStep } = await import(new URL(mod, import.meta.url));
 
 // Plate-world (Blender, Z up) quads -> OBJ text, like plate_mesh.obj.
 function obj(quads, n = 24) {
@@ -145,4 +145,19 @@ console.log('ok');
   assert.deepEqual(near.map(v => Math.round(v * 1000) / 1000), [0, 0, -1.5]);
   assert.equal(centerOnAxis([], cam), null);
   console.log('centerOnAxis ok');
+}
+
+{
+  // 0.3.18: пульт — экранные оси камеры; перемещение как пиксели на глубине объекта, масштаб равномерный.
+  const cam = { position: { x: 0, y: 1, z: 0 }, target: { x: 0, y: 1, z: -1 }, fov: 60 };
+  const r = padStep(cam, [0, 1, -2], 'translate', 'x', 10, 0, 500).move;
+  assert.ok(r[0] > 0 && Math.abs(r[1]) < 1e-9 && Math.abs(r[2]) < 1e-9);
+  const up = padStep(cam, [0, 1, -2], 'translate', 'y', 0, -10, 500).move;
+  assert.ok(up[1] > 0 && Math.abs(up[0]) < 1e-9);
+  const far = padStep(cam, [0, 1, -2], 'translate', 'z', 0, -10, 500).move;
+  assert.ok(far[2] < 0);                                     // тянем синий вверх — дальше от камеры
+  const rot = padStep(cam, [0, 1, -2], 'rotate', 'y', 10, 0, 500);
+  assert.ok(Math.abs(rot.axis[1] - 1) < 1e-9 && rot.angle > 0);
+  assert.ok(padStep(cam, [0, 1, -2], 'scale', 'x', 0, -10, 500).scale > 1);
+  console.log('padStep ok');
 }

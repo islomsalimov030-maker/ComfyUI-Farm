@@ -215,6 +215,28 @@ export function centerOnAxis(points, camera, minDepth = 1.0) {
   return [0, 1, 2].map(k => C[k] + u[k] * depth - mean[k]);
 }
 
+// 0.3.18: пульт в углу 3D-окна (вместо помощника осей) — двигает/вращает/масштабирует выбранный объект,
+// когда его стрелки гизмо ушли за кадр. Оси — экранные: красный = вправо, зелёный = вверх, синий = вглубь.
+// dx, dy — сдвиг мыши в пикселях окна (dy вниз), heightPx — высота окна. Перемещение — как пиксели на глубине объекта.
+export function padStep(camera, point, mode, handle, dx, dy, heightPx) {
+  const cam = cameraModel(camera);
+  if (mode === 'scale') return { scale: Math.exp(-(dy - dx) * 0.006) };
+  if (mode === 'rotate') {
+    const step = 0.01;
+    if (handle === 'x') return { axis: cam.r, angle: dy * step };
+    if (handle === 'y') return { axis: cam.u, angle: dx * step };
+    if (handle === 'z') return { axis: cam.f, angle: -dx * step };
+    return { axis: cam.u, angle: dx * step };
+  }
+  const depth = Math.max(0.5, dot(sub(point, cam.C), cam.f));
+  const mpp = 1.5 * 2 * depth * Math.tan(camera.fov * Math.PI / 360) / Math.max(1, heightPx);
+  const along = (axis, amount) => axis.map(v => v * amount * mpp);
+  if (handle === 'x') return { move: along(cam.r, dx) };
+  if (handle === 'y') return { move: along(cam.u, -dy) };
+  if (handle === 'z') return { move: along(cam.f, -dy) };
+  return { move: along(cam.r, dx).map((v, i) => v + along(cam.u, -dy)[i]) };
+}
+
 const NEAR_CELLS = 3;
 // Nearest visible room point around pixel cell (i, j) and the signed depth of p along its normal.
 export function nearestSurface(room, cam, p, i, j) {

@@ -1,5 +1,5 @@
 // Named-object selection on the existing core gizmo, not another 3D editor.
-import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody, centerOnAxis } from './roomGeometry.js';
+import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody, centerOnAxis, padStep } from './roomGeometry.js';
 export function sceneSelection(view, node, initialTransforms = null) {
   const setup = node.properties['3DA Scene'];
   if (!setup?.entities?.length) return null;
@@ -153,6 +153,8 @@ export function sceneSelection(view, node, initialTransforms = null) {
     syncMode();
     view.forceRender();
   }
+  const pad = remotePad(view, setup, () => selected, () => gizmo.getMode(), () => {
+    root.updateMatrixWorld(true); view.forceRender(); refresh(); });
   const savedSelection = node.properties['3DA Selected Entity'];
   select(entities.some(e => e.id === savedSelection) ? savedSelection : entities[0].id);
   setMode(initialMode);
@@ -166,7 +168,79 @@ export function sceneSelection(view, node, initialTransforms = null) {
       controls?.removeEventListener('mouseUp', refresh);
       disposed = true;
       occluder?.dispose();
+      pad.dispose();
       toolbar.remove(); } };
+}
+
+// 0.3.18: пульт вместо помощника осей (нижний левый угол): тяните цветные кружки — выбранный объект
+// двигается/вращается/масштабируется по режиму гизмо, даже если его стрелки ушли за кадр.
+function remotePad(view, setup, getSelected, getMode, changed) {
+  const helper = view.viewHelperManager;
+  try { helper?.visibleViewHelper?.(false); } catch (e) { /* старое ядро — пульт просто накрывает угол */ }
+  if (helper?.viewHelperContainer) helper.viewHelperContainer.style.display = 'none';
+  const NS = 'http://www.w3.org/2000/svg';
+  const pad = document.createElement('div');
+  pad.className = 'threeda-remote-pad';
+  pad.title = 'Пульт: тяните кружки — красный вправо/влево, зелёный вверх/вниз, синий ближе/дальше. ' +
+    'Работает по режиму (перемещение, вращение, масштаб) с выбранным объектом, даже если его стрелки за кадром.';
+  Object.assign(pad.style, { position:'absolute', left:'0', bottom:'0', width:'128px', height:'128px', zIndex:'15',
+    background:'rgba(20,24,28,0.92)', borderTopRightRadius:'6px', touchAction:'none', cursor:'grab' });
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 128 128'); svg.setAttribute('width', '128'); svg.setAttribute('height', '128');
+  const line = (x2, y2, color) => { const l = document.createElementNS(NS, 'line');
+    Object.entries({ x1: 64, y1: 64, x2, y2, stroke: color, 'stroke-width': 4 }).forEach(([k, v]) => l.setAttribute(k, v));
+    svg.appendChild(l); };
+  const dot = (cx, cy, color, handle) => { const c = document.createElementNS(NS, 'circle');
+    Object.entries({ cx, cy, r: 11, fill: color, stroke: '#111', 'stroke-width': 2 }).forEach(([k, v]) => c.setAttribute(k, v));
+    c.dataset.handle = handle; c.style.cursor = 'pointer'; svg.appendChild(c); };
+  line(110, 64, '#ff4d5e'); line(64, 18, '#7ee05b');
+  dot(110, 64, '#ff4d5e', 'x'); dot(64, 18, '#7ee05b', 'y'); dot(64, 64, '#3f8cff', 'z');
+  const label = document.createElementNS(NS, 'text');
+  Object.entries({ x: 6, y: 120, fill: '#cfd8dc', 'font-size': 11, 'font-family': 'sans-serif' })
+    .forEach(([k, v]) => label.setAttribute(k, v));
+  svg.appendChild(label);
+  pad.appendChild(svg);
+  view.domElement.parentElement?.appendChild(pad);
+  const names = { translate: 'перемещение', rotate: 'вращение', scale: 'масштаб' };
+  const showMode = () => { label.textContent = 'пульт · ' + (names[getMode()] ?? ''); };
+  showMode();
+  const timer = setInterval(showMode, 500);
+  let drag = null;
+  const stop = e => e.stopPropagation();
+  for (const ev of ['pointerdown','pointermove','pointerup','click','dblclick','wheel','contextmenu']) pad.addEventListener(ev, stop);
+  pad.addEventListener('pointerdown', e => {
+    const selected = getSelected();
+    if (!selected) return;
+    drag = { handle: e.target?.dataset?.handle ?? 'free', x: e.clientX, y: e.clientY };
+    pad.setPointerCapture(e.pointerId);
+    pad.style.cursor = 'grabbing';
+  });
+  pad.addEventListener('pointermove', e => {
+    const selected = getSelected();
+    if (!drag || !selected) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (!dx && !dy) return;
+    const o = selected.object;
+    const p = o.getWorldPosition(o.position.clone());
+    const step = padStep(setup.camera, [p.x, p.y, p.z], getMode(), drag.handle, dx, dy,
+                         view.domElement.clientHeight || 512);
+    if (step.move) o.position.set(o.position.x + step.move[0], o.position.y + step.move[1], o.position.z + step.move[2]);
+    if (step.axis && step.angle) {
+      const axis = o.position.clone().set(step.axis[0], step.axis[1], step.axis[2]).normalize();
+      o.quaternion.premultiply(o.quaternion.clone().setFromAxisAngle(axis, step.angle));
+    }
+    if (step.scale && Number.isFinite(step.scale)) o.scale.multiplyScalar(step.scale);   // равномерно
+    changed();
+  });
+  const end = e => { drag = null; pad.style.cursor = 'grab'; try { pad.releasePointerCapture(e.pointerId); } catch (_) {} };
+  pad.addEventListener('pointerup', end);
+  pad.addEventListener('pointercancel', end);
+  return { dispose() {
+    clearInterval(timer); pad.remove();
+    if (helper?.viewHelperContainer) helper.viewHelperContainer.style.display = '';
+    try { helper?.visibleViewHelper?.(true); } catch (e) { /* ignore */ }
+  } };
 }
 
 // One parsed room per mesh file: clones of the viewport share it.

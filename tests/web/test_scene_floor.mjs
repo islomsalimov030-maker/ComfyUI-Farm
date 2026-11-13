@@ -32,7 +32,7 @@ let fetched;
 globalThis.fetch=async url=>{fetched=String(url);return {ok:true,status:200,text:async()=>ROOM};};
 const scene={children:[],add(m){this.children.push(m);},remove(m){this.children=this.children.filter(x=>x!==m);}};
 const made=[];
-globalThis.document={baseURI:'http://comfy.local/',createElement:()=>{const e={style:{},append(){},appendChild(){},add(){},addEventListener(){},setAttribute(){},options:[{},{},{}],remove(){}};made.push(e);return e;}};
+globalThis.document={baseURI:'http://comfy.local/',createElement:()=>{const e={style:{},append(){},appendChild(){},add(){},addEventListener(){},setAttribute(){},options:[{},{},{}],remove(){}};made.push(e);return e;},createElementNS:()=>({style:{},dataset:{},setAttribute(){},appendChild(){}})};
 globalThis.Option=function(t,v){this.text=t;this.value=v;};
 globalThis.requestAnimationFrame=f=>f();
 const listeners={};
