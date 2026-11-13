@@ -169,7 +169,7 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     native_steps=b.add(g,'INTConstant','3DA · H3 base steps (без turbo)',{'value':25},(1250,750))
     loc=b.add(g,'3DALocation','3DA · Локация',{'location_id':'mainroom1'},(850,1000))
     b.connect(g,plate,0,loc,'plate')
-    prop=b.add(g,'3DAProp','3DA · Предметы для подготовки',{'prop_id':'','anchor':'world','size_m':.30},(0,2700),(400,450))
+    prop=b.add(g,'3DAProp','3DA · Предметы для подготовки',{'prop_id':'(нет предмета)','anchor':'world','size_m':.30},(0,2700),(400,450))
     # No prop is implicitly loaded. Connect this optional chain after selecting
     # a registered prop; the preparation node defaults to an empty prop list.
     prep=b.add(g,'3DAPlacePose','3DA · Подготовка персонажа',{'pose_class':'stand','target_object':'floor','block_on_fail':False,'seed':101},(850,2750),(470,650))
@@ -181,6 +181,15 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     place=b.add(g,'3DAPlacePose','3DA · Итог: повторная проверка сцены',{'pose_class':'stand','target_object':'floor','block_on_fail':True,'seed':101},(1350,3500),(470,650))
     for s,slot,target in [(loc,0,'location'),(pose,0,'pose_ref'),(edit,0,'body_transform'),(edit,1,'props')]:b.connect(g,s,slot,place,target)
     guides=b.add(g,'3DANativeGuides','3DA · Допуск сцены до загрузки H3',{},(1850,3500));b.connect(g,place,9,guides,'body_guides')
+    # 0.2.0 «б»: рендер до H3 и H3 в МП из пульта (как исходный движок AIO), вместо 1344×768.
+    panel=next((n for n in w['nodes'] if n['type']=='NGFarmPanelPhoto'),None)
+    if panel is not None:
+        mp_slot=next(i for i,o in enumerate(panel['outputs']) if o['name']=='megapixels')
+        b.connect(g,panel,mp_slot,place,'megapixels')  # группа 1 (prep) — быстрый 1344×768 для 3D-окна
+    # 0.2.0 «в»: одежда — не 3DA. Промпт кадра пользователя (узел «ФОТО · промпт кадра (H3)»)
+    # идёт в H3 поверх промпта сцены; его ref_image_1..3 — <Picture 3…5> после плиты и эталона.
+    frame_prompt=next((n for n in w['nodes'] if n.get('title')=='ФОТО · промпт кадра (H3)'),None)
+    if frame_prompt is not None:b.connect(g,frame_prompt,0,guides,'frame_prompt')
     # Add a native H3 branch to the EXISTING photo engine. Its RefMod input,
     # face pass, colour matching and original switches remain connected.
     photo=next(s for s in w['definitions']['subgraphs'] if any(n.get('title')=='gen · sampler pass 1' for n in s['nodes']))
@@ -214,7 +223,16 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     apply=b.add(pg,'MiniMaxH3RefModApply','3DA H3 · действующие AIO RefMods',
                 copy.deepcopy(by['w7 · RefMod → условие'].get('widgets_values_named',{})),(1900,5200))
     b.connect(pg,built['r2v'],0,apply,'conditioning')
-    mods_idx=next(i for i,n in enumerate(photo['inputs']) if n['name']=='mods');b.connect(pg,-10,mods_idx,apply,'mods');b.connect(pg,apply,0,built['D1_guider'],'conditioning')
+    # Моды генерации исходного движка (лицо + персонаж в наряде, узел 16), как у w7 — не мод прохода лица.
+    w7=by['w7 · RefMod → условие'];w7_mods=next(p['link'] for p in w7['inputs'] if p['name']=='mods')
+    mods_idx=next(d['origin_slot'] for d in map(wfkit._norm,photo['links']) if d['id']==w7_mods and d['origin_id']==-10)
+    b.connect(pg,-10,mods_idx,apply,'mods');b.connect(pg,apply,0,built['D1_guider'],'conditioning')
+    # Референсы пользователя (ref_image_1..3 исходного r2v) — в 3DA r2v после плиты (0) и эталона (1).
+    w7_r2v=by['w7 · location sheet → условие']
+    for k in (1,2,3):
+        link=next((p['link'] for p in w7_r2v['inputs'] if p['name']=='ref_images.ref_image_'+str(k)),None)
+        d=next((d for d in map(wfkit._norm,photo['links']) if d['id']==link),None) if link is not None else None
+        if d is not None and d['origin_id']==-10:b.connect(pg,-10,d['origin_slot'],built['r2v'],'ref_images.ref_image_'+str(k+1))
     raw=by['gen · выбор кадра'];consumers=[]
     for l in list(photo['links']):
         d=wfkit._norm(l)

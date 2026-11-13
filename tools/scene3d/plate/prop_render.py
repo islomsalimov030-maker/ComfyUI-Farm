@@ -319,6 +319,13 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
             aabb={name:any(aabb_overlap(g['bbox_world'],_bounds([o])) for o in objects)
                   for name,objects in [('room',room_objects),('body',body_objects)]}
             flags = {"prop_hits_room": intersections['room']>0, "prop_hits_body": intersections['body']>0}
+            # 0.2.0 «е»: world points (= posev2 world, OBJ imported Y-forward/Z-up) for the server
+            # penetration/support checks in pack_cli (prop_checks.py).
+            points = np.array([tuple(o.matrix_world @ v.co) for o in g["meshes"] for v in o.data.vertices], dtype=np.float32)
+            if len(points) > 6000:
+                points = points[np.linspace(0, len(points) - 1, 6000).astype(int)]
+            points_path = out / f"prop_{g['index']:03}_points.npy"
+            np.save(points_path, points)
             coords = [world_to_camera_view(scene, scene.camera, o.matrix_world @ Vector(c))
                       for o in g["meshes"] for c in o.bound_box]
             fraction = projected_bbox_fraction(coords)
@@ -331,7 +338,8 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
                                      "silhouette": str(mask), "bbox_world": g["bbox_world"],
                                      **diagnostics, "bbox_source_m": g["source_bbox_m"],
                                      "bbox_final_m": g["final_bbox_m"],
-                                     "frame_inside_fraction": fraction, "flags": flags})
+                                     "frame_inside_fraction": fraction, "flags": flags,
+                                     "points_world": str(points_path)})
     finally:
         (scene.render.engine, scene.render.film_transparent, scene.render.filepath,
          scene.render.image_settings.file_format, scene.render.image_settings.color_mode,
@@ -351,11 +359,14 @@ def main():
     ap = argparse.ArgumentParser()
     for key in ("plate", "body", "joints", "props", "library", "out"):
         ap.add_argument("--" + key, required=True, type=Path)
+    ap.add_argument("--raster", default="")
     ns = ap.parse_args(sys.argv[sys.argv.index("--") + 1:])
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     scene = bpy.context.scene
     info = json.loads((ns.plate / "plate.json").read_text(encoding="utf-8"))
+    if ns.raster:
+        info["size"] = [int(v) for v in ns.raster.lower().split("x")]
     renderer.setup_plate_camera(scene, info)
     plate_file = next((ns.plate / n for n in ("plate_mesh.obj", "plate.obj", "mesh.obj") if (ns.plate / n).exists()), None)
     if plate_file is None:

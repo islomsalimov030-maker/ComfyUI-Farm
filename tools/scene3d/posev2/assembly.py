@@ -174,7 +174,9 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
         max(c["hull_in_mask_min"] - hull_fraction, 0.0) if hull_fraction is not None else
         (0.0 if ev["footprint"]["ok"] else float("inf")), "area_fraction")
     add("cells", ev["cells_ok"], float(not ev["cells_ok"]), "cells")
-    add("frame", ev["frame"]["ok"], float(not ev["frame"]["ok"]), "frame")
+    # Кадр — предупреждение (13.11): отказ только если в кадре нет ни одной части тела.
+    visible = ev["frame"].get("visible", ev["frame"]["ok"])
+    add("frame", visible, float(not visible), "frame")
     add("refine_limits", limits_ok, float(not limits_ok), "limit")
     fail = next((x for x in checks if not x["ok"]), None)
     flags = list(ev.get("support_contact", {}).get("flags", []))
@@ -198,10 +200,14 @@ def validate(K, ev, spec, plate, side_ref, window, limits_ok, *, X=None, treg=No
         status = "wrong_surface"
     elif not ev["support_ok"]:
         status = "contact_fail"
-    elif not ev["frame"]["ok"]:
+    elif not visible:
         status = "out_of_frame"
     else:
         status = "partial" if fail is not None else "ok"
+    warnings = []
+    if not ev["frame"]["ok"]:
+        flags.append("out_of_frame")
+        warnings.append("body_partly_out_of_frame")
     flags = sorted(set(flags))
-    return {"ok": fail is None, "first_failure": fail, "checks": checks, "status": status,
+    return {"ok": fail is None, "warnings": warnings, "first_failure": fail, "checks": checks, "status": status,
             "flags": flags, "penetration": pen}

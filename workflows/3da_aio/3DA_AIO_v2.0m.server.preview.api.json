@@ -1,4 +1,25 @@
 {
+ "178": {
+  "class_type": "NGFarmPanelPhoto",
+  "inputs": {
+   "use_Singularity": false,
+   "use_ref2v": true,
+   "use_10Eros": false,
+   "use_PinkCherry": false,
+   "seed": 22638786943635,
+   "face_seed": 953552952704593,
+   "shift": 12,
+   "megapixels": 2,
+   "pass2_total": 40,
+   "pass2_steps": 8,
+   "face_denoise": 0.15,
+   "model_override": "",
+   "steps_override": 0
+  },
+  "_meta": {
+   "title": "ПУЛЬТ ФОТО — все ручки блока"
+  }
+ },
  "241": {
   "class_type": "LoadImage",
   "inputs": {
@@ -388,6 +409,10 @@
    "props": [
     "273",
     1
+   ],
+   "megapixels": [
+    "178",
+    7
    ],
    "pose_class": "auto",
    "target_object": "auto",

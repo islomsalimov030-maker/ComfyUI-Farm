@@ -44,15 +44,25 @@ def body_delta(text, placement_key):
     return body_matrix(data['matrix']).tolist()
 
 
+FIRST_GROUP_1 = '3DA: Сначала выполните группу 1 (подготовка сцены)'
+
+
 def read_manifest(value, cfg):
     root = (Path(cfg['farm_root']) / 'cache/editor').resolve()
-    path = Path(value).resolve(strict=True)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(FIRST_GROUP_1 + ': manifest пуст')
+    try:
+        path = Path(value.strip()).resolve(strict=True)
+    except OSError:
+        raise ValueError(FIRST_GROUP_1 + ': manifest сцены не найден') from None
     if not path.is_relative_to(root) or path.name != 'manifest.json':
         raise ValueError('3DA: выберите manifest подготовленной сцены')
     return json.loads(path.read_text(encoding='utf-8'))
 
 
 def check_file(asset, manifest):
+    if asset is None or not hasattr(asset, 'get_data'):
+        raise ValueError(FIRST_GROUP_1 + ': в 3D-окне нет сцены (model_file пуст)')
     with asset.get_data() as stream:
         digest = hashlib.sha256(stream.read()).hexdigest()
     if digest != manifest['sha256']:

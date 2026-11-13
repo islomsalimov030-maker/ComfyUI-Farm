@@ -1,5 +1,13 @@
-"""Final scene validity includes props, independently of body placement."""
+"""Final scene validity includes props, independently of body placement.
+
+13.11 «КАДР ЛЮБОЙ»: предмет или тело частично (или предмет целиком) вне кадра — предупреждение,
+не отказ. Блокируют H3 только геометрия (пересечения, проникновение, нет опоры) и тело без единой
+видимой точки (статус сцены out_of_frame).
+"""
 import copy
+
+FRAME_FLAGS = ('prop_out_of_frame', 'out_of_frame')
+BLOCKING_PROP_FLAGS = ('prop_hits_body', 'prop_hits_room', 'prop_penetration', 'prop_floating')
 
 
 def blocking_reasons(report):
@@ -8,10 +16,21 @@ def blocking_reasons(report):
         reasons.append('scene status='+str(report.get('status')))
     for index,prop in enumerate(report.get('props',[])):
         flags=prop.get('flags',{})
-        for name in ('prop_out_of_frame','out_of_frame','prop_hits_body','prop_hits_room'):
+        for name in BLOCKING_PROP_FLAGS:
             if flags.get(name):
                 reasons.append(f'prop[{index}] {name}')
     return reasons
+
+
+def frame_warnings(report):
+    out=[]
+    body_flags=report.get('body_flags',report.get('flags',[]))
+    if 'body_out_of_frame' in body_flags or 'out_of_frame' in body_flags:
+        out.append('body_partly_out_of_frame')
+    for index,prop in enumerate(report.get('props',[])):
+        if any(prop.get('flags',{}).get(name) for name in FRAME_FLAGS):
+            out.append(f'prop[{index}] out_of_frame')
+    return out
 
 
 def include_props(report):
@@ -20,21 +39,23 @@ def include_props(report):
     checks=[]
     for index,prop in enumerate(props):
         flags=prop.get('flags',{})
-        checks.append(dict(check=f'prop[{index}]:frame',ok=not(flags.get('out_of_frame') or flags.get('prop_out_of_frame')),
-            unit='frame',excess=float(bool(flags.get('out_of_frame') or flags.get('prop_out_of_frame')))))
-        for name in ('prop_hits_body','prop_hits_room'):
-            checks.append(dict(check=f'prop[{index}]:{name}',ok=not flags.get(name,False),unit='intersection',excess=float(bool(flags.get(name)))))
-    if not checks:
+        for name in BLOCKING_PROP_FLAGS:
+            if name in flags:
+                checks.append(dict(check=f'prop[{index}]:{name}',ok=not flags.get(name,False),
+                                   unit='intersection',excess=float(bool(flags.get(name)))))
+    if not props:
         return report
+    report.setdefault('body_flags',list(report.get('flags',[])))
     report['flags']=sorted(set(report.get('flags',[])+[name for prop in props for name,active in prop.get('flags',{}).items() if active]))
     report['body_status']=report['status']
     body=copy.deepcopy(report.get('validation',{}))
     report['body_validation']=body
     failure=next((c for c in checks if not c['ok']),None)
     if failure and report['status'] in ('ok','partial'):
-        report['status']='out_of_frame' if failure['unit']=='frame' else 'contact_fail'
+        report['status']='contact_fail'
     report['validation']={**body,'body_ok':body.get('ok',False),'status':report['status'],'flags':report['flags'],
         'ok':body.get('ok',False) and failure is None,'checks':body.get('checks',[])+checks,
-        'first_failure':body.get('first_failure') or failure}
-    report['h3_eligibility']=dict(ok=not blocking_reasons(report),reasons=blocking_reasons(report))
+        'first_failure':body.get('first_failure') or failure,'warnings':frame_warnings(report)}
+    report['h3_eligibility']=dict(ok=not blocking_reasons(report),reasons=blocking_reasons(report),
+                                  warnings=frame_warnings(report))
     return report

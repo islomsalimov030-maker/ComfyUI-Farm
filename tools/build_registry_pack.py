@@ -9,12 +9,13 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = '''comfyui/ComfyUI-3DA/__init__.py comfyui/ComfyUI-3DA/nodes.py
-comfyui/ComfyUI-3DA/web/cameraLock.js comfyui/ComfyUI-3DA/web/extension.js
+comfyui/ComfyUI-3DA/web/cameraLock.js comfyui/ComfyUI-3DA/web/extension.js comfyui/ComfyUI-3DA/web/roomGeometry.js
 comfyui/ComfyUI-3DA/web/sceneSelection.js config/placement.yaml
 workflows/3DA_h3_server_api.json workflows/3DA_scene_server_v1.json
 farm/__init__.py farm/comfy_client.py farm/config.py farm/contracts.py
 farm/prompts/config.py farm/prompts/config.yaml farm/prompts/lint.py scripts/push_data.py
-tools/scene3d/bpy_runtime.py tools/scene3d/posev2/reference_place.py'''.split()
+tools/scene3d/bpy_runtime.py tools/scene3d/posev2/reference_place.py
+tools/scene3d/raster.py tools/scene3d/reasons_ru.py tools/scene3d/prop_checks.py'''.split()
 
 
 def git(out, *args):

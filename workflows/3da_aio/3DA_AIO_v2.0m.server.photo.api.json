@@ -1010,6 +1010,10 @@
     "275",
     6
    ],
+   "ref_images.ref_image_2": [
+    "236",
+    0
+   ],
    "length": 5,
    "ref_image_size": "match"
   },
@@ -1175,7 +1179,7 @@
     0
    ],
    "mods": [
-    "33",
+    "16",
     0
    ],
    "override": false,
@@ -1854,6 +1858,10 @@
     "273",
     1
    ],
+   "megapixels": [
+    "178",
+    7
+   ],
    "pose_class": "auto",
    "target_object": "auto",
    "support_parts": "",
@@ -1883,7 +1891,12 @@
    "body_guides": [
     "274",
     9
-   ]
+   ],
+   "frame_prompt": [
+    "2",
+    0
+   ],
+   "user_refs": 3
   },
   "_meta": {
    "title": "3DA · Допуск сцены до загрузки H3"

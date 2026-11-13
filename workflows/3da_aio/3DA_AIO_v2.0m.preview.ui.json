@@ -2,7 +2,7 @@
   "id": "8bf7dd61-7529-51a4-a5a1-bc50bfdde458",
   "revision": 0,
   "last_node_id": 298,
-  "last_link_id": 1029,
+  "last_link_id": 1034,
   "nodes": [
     {
       "id": 1,
@@ -74,7 +74,8 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            909
+            909,
+            966
           ]
         }
       ],
@@ -686,7 +687,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 1026
+          "link": 1031
         },
         {
           "name": "filename_prefix",
@@ -1841,7 +1842,8 @@
           "name": "megapixels",
           "type": "FLOAT",
           "links": [
-            908
+            908,
+            965
           ]
         },
         {
@@ -3353,52 +3355,52 @@
         {
           "name": "3da_enabled",
           "type": "INT",
-          "link": 965
+          "link": 967
         },
         {
           "name": "3da_native_steps",
           "type": "INT",
-          "link": 966
+          "link": 968
         },
         {
           "name": "3da_plate",
           "type": "IMAGE",
-          "link": 967
+          "link": 969
         },
         {
           "name": "3da_playblast",
           "type": "IMAGE",
-          "link": 968
+          "link": 970
         },
         {
           "name": "3da_init",
           "type": "IMAGE",
-          "link": 969
+          "link": 971
         },
         {
           "name": "3da_strength",
           "type": "MASK",
-          "link": 970
+          "link": 972
         },
         {
           "name": "3da_prompt",
           "type": "STRING",
-          "link": 971
+          "link": 973
         },
         {
           "name": "3da_width",
           "type": "INT",
-          "link": 972
+          "link": 974
         },
         {
           "name": "3da_height",
           "type": "INT",
-          "link": 973
+          "link": 975
         },
         {
           "name": "3da_identity",
           "type": "IMAGE",
-          "link": 974
+          "link": 976
         }
       ],
       "outputs": [
@@ -3406,8 +3408,8 @@
           "name": "*",
           "type": "*",
           "links": [
-            1018,
-            1023
+            1023,
+            1028
           ]
         },
         {
@@ -3855,7 +3857,7 @@
           "type": "IMAGE",
           "links": [
             952,
-            1017
+            1022
           ]
         },
         {
@@ -3897,7 +3899,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            974
+            976
           ]
         },
         {
@@ -3939,8 +3941,8 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            965,
-            1025
+            967,
+            1030
           ]
         }
       ],
@@ -3976,7 +3978,7 @@
           "name": "value",
           "type": "INT",
           "links": [
-            966
+            968
           ]
         }
       ],
@@ -4079,7 +4081,7 @@
       },
       "title": "3DA · Предметы для подготовки",
       "widgets_values": [
-        "",
+        "(нет предмета)",
         "world",
         0.0,
         0.0,
@@ -4092,7 +4094,7 @@
         0.35
       ],
       "widgets_values_named": {
-        "prop_id": "",
+        "prop_id": "(нет предмета)",
         "anchor": "world",
         "x": 0.0,
         "y": 0.0,
@@ -4209,7 +4211,8 @@
         0.0,
         0.0,
         0.0,
-        ""
+        "",
+        0.0
       ],
       "widgets_values_named": {
         "pose_class": "stand",
@@ -4230,7 +4233,8 @@
         "body_dyaw": 0.0,
         "body_dpitch": 0.0,
         "body_droll": 0.0,
-        "pose_text": ""
+        "pose_text": "",
+        "megapixels": 0.0
       }
     },
     {
@@ -4438,6 +4442,14 @@
           "name": "props",
           "type": "STRING",
           "link": 963
+        },
+        {
+          "name": "megapixels",
+          "type": "FLOAT",
+          "link": 965,
+          "widget": {
+            "name": "megapixels"
+          }
         }
       ],
       "outputs": [
@@ -4445,7 +4457,7 @@
           "name": "playblast",
           "type": "IMAGE",
           "links": [
-            1027
+            1032
           ]
         },
         {
@@ -4472,7 +4484,7 @@
           "name": "status",
           "type": "STRING",
           "links": [
-            1028
+            1033
           ]
         },
         {
@@ -4484,14 +4496,14 @@
           "name": "prop_repair",
           "type": "IMAGE",
           "links": [
-            1021
+            1026
           ]
         },
         {
           "name": "prop_repair_mask",
           "type": "MASK",
           "links": [
-            1022
+            1027
           ]
         },
         {
@@ -4499,7 +4511,7 @@
           "type": "3DA_BODY_GUIDES",
           "links": [
             964,
-            1020
+            1025
           ]
         }
       ],
@@ -4527,7 +4539,8 @@
         0.0,
         0.0,
         0.0,
-        ""
+        "",
+        0.0
       ],
       "widgets_values_named": {
         "pose_class": "stand",
@@ -4548,7 +4561,8 @@
         "body_dyaw": 0.0,
         "body_dpitch": 0.0,
         "body_droll": 0.0,
-        "pose_text": ""
+        "pose_text": "",
+        "megapixels": 0.0
       }
     },
     {
@@ -4570,6 +4584,11 @@
           "name": "body_guides",
           "type": "3DA_BODY_GUIDES",
           "link": 964
+        },
+        {
+          "name": "frame_prompt",
+          "type": "STRING",
+          "link": 966
         }
       ],
       "outputs": [
@@ -4577,56 +4596,56 @@
           "name": "plate",
           "type": "IMAGE",
           "links": [
-            967
+            969
           ]
         },
         {
           "name": "playblast",
           "type": "IMAGE",
           "links": [
-            968
+            970
           ]
         },
         {
           "name": "init",
           "type": "IMAGE",
           "links": [
-            969
+            971
           ]
         },
         {
           "name": "strength",
           "type": "MASK",
           "links": [
-            970
+            972
           ]
         },
         {
           "name": "prompt",
           "type": "STRING",
           "links": [
-            971
+            973
           ]
         },
         {
           "name": "width",
           "type": "INT",
           "links": [
-            972
+            974
           ]
         },
         {
           "name": "height",
           "type": "INT",
           "links": [
-            973
+            975
           ]
         },
         {
           "name": "accepted",
           "type": "BOOLEAN",
           "links": [
-            1016
+            1021
           ]
         }
       ],
@@ -4635,8 +4654,12 @@
         "3DA AIO": "3DA_AIO_v2.0m"
       },
       "title": "3DA · Допуск сцены до загрузки H3",
-      "widgets_values": [],
-      "widgets_values_named": {}
+      "widgets_values": [
+        3
+      ],
+      "widgets_values_named": {
+        "user_refs": 3
+      }
     },
     {
       "id": 291,
@@ -4656,17 +4679,17 @@
         {
           "name": "on_false",
           "type": "*",
-          "link": 1017
+          "link": 1022
         },
         {
           "name": "on_true",
           "type": "*",
-          "link": 1018
+          "link": 1023
         },
         {
           "name": "switch",
           "type": "BOOLEAN",
-          "link": 1016,
+          "link": 1021,
           "widget": {
             "name": "switch"
           }
@@ -4677,7 +4700,7 @@
           "name": "*",
           "type": "*",
           "links": [
-            1019
+            1024
           ]
         }
       ],
@@ -4711,22 +4734,22 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 1019
+          "link": 1024
         },
         {
           "name": "body_guides",
           "type": "3DA_BODY_GUIDES",
-          "link": 1020
+          "link": 1025
         },
         {
           "name": "prop_repair",
           "type": "IMAGE",
-          "link": 1021
+          "link": 1026
         },
         {
           "name": "prop_repair_mask",
           "type": "MASK",
-          "link": 1022
+          "link": 1027
         }
       ],
       "outputs": [
@@ -4734,7 +4757,7 @@
           "name": "final",
           "type": "IMAGE",
           "links": [
-            1024
+            1029
           ]
         },
         {
@@ -4746,7 +4769,7 @@
           "name": "metrics",
           "type": "STRING",
           "links": [
-            1029
+            1034
           ]
         }
       ],
@@ -4776,17 +4799,17 @@
         {
           "name": "input1",
           "type": "*",
-          "link": 1023
+          "link": 1028
         },
         {
           "name": "input2",
           "type": "IMAGE",
-          "link": 1024
+          "link": 1029
         },
         {
           "name": "select",
           "type": "INT",
-          "link": 1025,
+          "link": 1030,
           "widget": {
             "name": "select"
           }
@@ -4797,7 +4820,7 @@
           "name": "selected_value",
           "type": "*",
           "links": [
-            1026
+            1031
           ]
         },
         {
@@ -4843,7 +4866,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 1027
+          "link": 1032
         }
       ],
       "outputs": [
@@ -4879,7 +4902,7 @@
         {
           "name": "source",
           "type": "*",
-          "link": 1028
+          "link": 1033
         }
       ],
       "outputs": [
@@ -4915,7 +4938,7 @@
         {
           "name": "source",
           "type": "*",
-          "link": 1029
+          "link": 1034
         }
       ],
       "outputs": [
@@ -5771,6 +5794,22 @@
     ],
     [
       965,
+      178,
+      7,
+      274,
+      4,
+      "FLOAT"
+    ],
+    [
+      966,
+      2,
+      0,
+      275,
+      1,
+      "STRING"
+    ],
+    [
+      967,
       266,
       0,
       239,
@@ -5778,7 +5817,7 @@
       "INT"
     ],
     [
-      966,
+      968,
       267,
       0,
       239,
@@ -5786,7 +5825,7 @@
       "INT"
     ],
     [
-      967,
+      969,
       275,
       0,
       239,
@@ -5794,7 +5833,7 @@
       "IMAGE"
     ],
     [
-      968,
+      970,
       275,
       1,
       239,
@@ -5802,7 +5841,7 @@
       "IMAGE"
     ],
     [
-      969,
+      971,
       275,
       2,
       239,
@@ -5810,7 +5849,7 @@
       "IMAGE"
     ],
     [
-      970,
+      972,
       275,
       3,
       239,
@@ -5818,7 +5857,7 @@
       "MASK"
     ],
     [
-      971,
+      973,
       275,
       4,
       239,
@@ -5826,7 +5865,7 @@
       "STRING"
     ],
     [
-      972,
+      974,
       275,
       5,
       239,
@@ -5834,7 +5873,7 @@
       "INT"
     ],
     [
-      973,
+      975,
       275,
       6,
       239,
@@ -5842,7 +5881,7 @@
       "INT"
     ],
     [
-      974,
+      976,
       265,
       0,
       239,
@@ -5850,7 +5889,7 @@
       "IMAGE"
     ],
     [
-      1016,
+      1021,
       275,
       7,
       291,
@@ -5858,7 +5897,7 @@
       "BOOLEAN"
     ],
     [
-      1017,
+      1022,
       264,
       0,
       291,
@@ -5866,7 +5905,7 @@
       "IMAGE"
     ],
     [
-      1018,
+      1023,
       239,
       0,
       291,
@@ -5874,7 +5913,7 @@
       "*"
     ],
     [
-      1019,
+      1024,
       291,
       0,
       292,
@@ -5882,7 +5921,7 @@
       "*"
     ],
     [
-      1020,
+      1025,
       274,
       9,
       292,
@@ -5890,7 +5929,7 @@
       "3DA_BODY_GUIDES"
     ],
     [
-      1021,
+      1026,
       274,
       7,
       292,
@@ -5898,7 +5937,7 @@
       "IMAGE"
     ],
     [
-      1022,
+      1027,
       274,
       8,
       292,
@@ -5906,7 +5945,7 @@
       "MASK"
     ],
     [
-      1023,
+      1028,
       239,
       0,
       293,
@@ -5914,7 +5953,7 @@
       "*"
     ],
     [
-      1024,
+      1029,
       292,
       0,
       293,
@@ -5922,7 +5961,7 @@
       "IMAGE"
     ],
     [
-      1025,
+      1030,
       266,
       0,
       293,
@@ -5930,7 +5969,7 @@
       "INT"
     ],
     [
-      1026,
+      1031,
       293,
       0,
       44,
@@ -5938,7 +5977,7 @@
       "*"
     ],
     [
-      1027,
+      1032,
       274,
       0,
       294,
@@ -5946,7 +5985,7 @@
       "IMAGE"
     ],
     [
-      1028,
+      1033,
       274,
       5,
       295,
@@ -5954,7 +5993,7 @@
       "STRING"
     ],
     [
-      1029,
+      1034,
       292,
       2,
       296,
@@ -6084,7 +6123,7 @@
         "state": {
           "lastGroupId": 5,
           "lastNodeId": 298,
-          "lastLinkId": 1029,
+          "lastLinkId": 1034,
           "lastRerouteId": 0
         },
         "revision": 0,
@@ -13275,7 +13314,7 @@
         "state": {
           "lastGroupId": 5,
           "lastNodeId": 298,
-          "lastLinkId": 1029,
+          "lastLinkId": 1034,
           "lastRerouteId": 0
         },
         "revision": 0,
@@ -17113,7 +17152,7 @@
         "state": {
           "lastGroupId": 5,
           "lastNodeId": 298,
-          "lastLinkId": 1029,
+          "lastLinkId": 1034,
           "lastRerouteId": 0
         },
         "revision": 0,
@@ -17528,7 +17567,7 @@
         "state": {
           "lastGroupId": 5,
           "lastNodeId": 298,
-          "lastLinkId": 1029,
+          "lastLinkId": 1034,
           "lastRerouteId": 0
         },
         "revision": 0,
@@ -17663,8 +17702,7 @@
             "name": "mods",
             "type": "H3_REF_MODS",
             "linkIds": [
-              864,
-              1005
+              864
             ],
             "localized_name": "mods",
             "pos": [
@@ -17744,7 +17782,8 @@
             "name": "mods_1",
             "type": "H3_REF_MODS",
             "linkIds": [
-              861
+              861,
+              1007
             ],
             "localized_name": "mods_1",
             "pos": [
@@ -17796,7 +17835,8 @@
             "name": "ref_images.ref_image_1",
             "type": "IMAGE",
             "linkIds": [
-              888
+              888,
+              1009
             ],
             "localized_name": "ref_image_1",
             "shape": 7,
@@ -17810,7 +17850,8 @@
             "name": "ref_images.ref_image_2",
             "type": "IMAGE",
             "linkIds": [
-              889
+              889,
+              1010
             ],
             "localized_name": "ref_image_2",
             "shape": 7,
@@ -17824,7 +17865,8 @@
             "name": "ref_images.ref_image_3",
             "type": "IMAGE",
             "linkIds": [
-              890
+              890,
+              1011
             ],
             "localized_name": "ref_image_3",
             "shape": 7,
@@ -17861,12 +17903,12 @@
             ]
           },
           {
-            "id": "68956c3c-a630-4f4a-a533-3191a0ae5d20",
+            "id": "0370e237-da02-4fec-bc50-bd3fe0c2dbf5",
             "name": "3da_enabled",
             "type": "INT",
             "linkIds": [
-              1009,
-              1014
+              1014,
+              1019
             ],
             "localized_name": "3da_enabled",
             "label": "3da_enabled",
@@ -17876,11 +17918,11 @@
             ]
           },
           {
-            "id": "7038c191-b04b-415c-9c41-65f58ffe0bec",
+            "id": "7f4f3f4f-bd0f-4eac-abde-8063b81ea443",
             "name": "3da_native_steps",
             "type": "INT",
             "linkIds": [
-              1003
+              1005
             ],
             "localized_name": "3da_native_steps",
             "label": "3da_native_steps",
@@ -17890,11 +17932,11 @@
             ]
           },
           {
-            "id": "855196bb-3fb6-47c0-a7e2-22d166e157ee",
+            "id": "c2b81e81-7619-43b8-ab81-947ea2ab41ac",
             "name": "3da_plate",
             "type": "IMAGE",
             "linkIds": [
-              981
+              983
             ],
             "localized_name": "3da_plate",
             "label": "3da_plate",
@@ -17904,11 +17946,11 @@
             ]
           },
           {
-            "id": "7a3fb02d-ce32-4fb9-b787-82e013c418bf",
+            "id": "40322f11-2882-4a43-9561-5e6de34fd041",
             "name": "3da_playblast",
             "type": "IMAGE",
             "linkIds": [
-              1000
+              1002
             ],
             "localized_name": "3da_playblast",
             "label": "3da_playblast",
@@ -17918,11 +17960,11 @@
             ]
           },
           {
-            "id": "7df6296f-c82d-4bfc-92fc-72a243845536",
+            "id": "81005f1d-4867-46cf-a060-38fd5f44be55",
             "name": "3da_init",
             "type": "IMAGE",
             "linkIds": [
-              986
+              988
             ],
             "localized_name": "3da_init",
             "label": "3da_init",
@@ -17932,11 +17974,11 @@
             ]
           },
           {
-            "id": "eb97a811-ac5f-4c4f-8b19-787ec20050a1",
+            "id": "0384b67c-5104-4fc8-bf1a-3cf981c2d5c7",
             "name": "3da_strength",
             "type": "MASK",
             "linkIds": [
-              988
+              990
             ],
             "localized_name": "3da_strength",
             "label": "3da_strength",
@@ -17946,11 +17988,11 @@
             ]
           },
           {
-            "id": "b77728a2-32b4-4e64-937e-b80d9142ce64",
+            "id": "a0954c18-b195-4d1d-9dee-1d8f8d9dff33",
             "name": "3da_prompt",
             "type": "STRING",
             "linkIds": [
-              980
+              982
             ],
             "localized_name": "3da_prompt",
             "label": "3da_prompt",
@@ -17960,11 +18002,11 @@
             ]
           },
           {
-            "id": "1db573f3-877d-4315-bca2-2fc4e9a8fc84",
+            "id": "4d9acba1-ec77-432e-851a-f40295063fcd",
             "name": "3da_width",
             "type": "INT",
             "linkIds": [
-              1001
+              1003
             ],
             "localized_name": "3da_width",
             "label": "3da_width",
@@ -17974,11 +18016,11 @@
             ]
           },
           {
-            "id": "c2a13c45-84b0-4dfb-a71e-900826d11263",
+            "id": "4d6c488a-a713-4341-8f39-aa034eeb10ed",
             "name": "3da_height",
             "type": "INT",
             "linkIds": [
-              1002
+              1004
             ],
             "localized_name": "3da_height",
             "label": "3da_height",
@@ -17988,11 +18030,11 @@
             ]
           },
           {
-            "id": "edf260b3-45c4-45c5-a82f-df837bbd2abd",
+            "id": "862a1fb8-63bd-4632-a86b-f59f5bcfca2f",
             "name": "3da_identity",
             "type": "IMAGE",
             "linkIds": [
-              982
+              984
             ],
             "localized_name": "3da_identity",
             "label": "3da_identity",
@@ -18008,7 +18050,7 @@
             "name": "*",
             "type": "*",
             "linkIds": [
-              1015
+              1020
             ],
             "localized_name": "*",
             "pos": [
@@ -18266,7 +18308,7 @@
                 "links": [
                   853,
                   855,
-                  1013
+                  1018
                 ]
               }
             ],
@@ -18654,7 +18696,7 @@
                 "name": "*",
                 "type": "*",
                 "links": [
-                  1012
+                  1017
                 ]
               }
             ],
@@ -18926,7 +18968,7 @@
                 "localized_name": "image",
                 "name": "image",
                 "type": "IMAGE",
-                "link": 1010
+                "link": 1015
               },
               {
                 "localized_name": "mask",
@@ -19248,7 +19290,7 @@
                 "localized_name": "image",
                 "name": "image",
                 "type": "IMAGE",
-                "link": 1011
+                "link": 1016
               }
             ],
             "outputs": [
@@ -19553,7 +19595,7 @@
                 "name": "selected_image",
                 "type": "IMAGE",
                 "links": [
-                  1007
+                  1012
                 ]
               },
               {
@@ -20388,7 +20430,7 @@
                 "type": "CLIP",
                 "links": [
                   884,
-                  977
+                  979
                 ]
               }
             ],
@@ -20437,9 +20479,9 @@
                 "links": [
                   819,
                   885,
-                  978,
-                  985,
-                  997
+                  980,
+                  987,
+                  999
                 ]
               }
             ],
@@ -20559,7 +20601,7 @@
                 "type": "VAE",
                 "links": [
                   886,
-                  979
+                  981
                 ]
               }
             ],
@@ -20851,7 +20893,7 @@
                 "name": "MODEL",
                 "type": "MODEL",
                 "links": [
-                  975
+                  977
                 ]
               }
             ],
@@ -20895,7 +20937,7 @@
               {
                 "name": "model",
                 "type": "MODEL",
-                "link": 975
+                "link": 977
               }
             ],
             "outputs": [
@@ -20903,7 +20945,7 @@
                 "name": "MODEL",
                 "type": "MODEL",
                 "links": [
-                  976
+                  978
                 ]
               }
             ],
@@ -20939,7 +20981,7 @@
               {
                 "name": "model",
                 "type": "MODEL",
-                "link": 976
+                "link": 978
               }
             ],
             "outputs": [
@@ -20947,8 +20989,8 @@
                 "name": "MODEL",
                 "type": "MODEL",
                 "links": [
-                  987,
-                  989
+                  989,
+                  991
                 ]
               }
             ],
@@ -20982,22 +21024,22 @@
               {
                 "name": "clip",
                 "type": "CLIP",
-                "link": 977
+                "link": 979
               },
               {
                 "name": "vae",
                 "type": "VAE",
-                "link": 978
+                "link": 980
               },
               {
                 "name": "audio_vae",
                 "type": "VAE",
-                "link": 979
+                "link": 981
               },
               {
                 "name": "prompt",
                 "type": "STRING",
-                "link": 980,
+                "link": 982,
                 "widget": {
                   "name": "prompt"
                 }
@@ -21005,22 +21047,22 @@
               {
                 "name": "ref_images.ref_image_0",
                 "type": "IMAGE",
-                "link": 981
+                "link": 983
               },
               {
                 "name": "ref_images.ref_image_1",
                 "type": "IMAGE",
-                "link": 982
+                "link": 984
               },
               {
                 "name": "ref_videos.ref_video_0",
                 "type": "IMAGE",
-                "link": 983
+                "link": 985
               },
               {
                 "name": "width",
                 "type": "INT",
-                "link": 1001,
+                "link": 1003,
                 "widget": {
                   "name": "width"
                 }
@@ -21028,10 +21070,25 @@
               {
                 "name": "height",
                 "type": "INT",
-                "link": 1002,
+                "link": 1004,
                 "widget": {
                   "name": "height"
                 }
+              },
+              {
+                "name": "ref_images.ref_image_2",
+                "type": "IMAGE",
+                "link": 1009
+              },
+              {
+                "name": "ref_images.ref_image_3",
+                "type": "IMAGE",
+                "link": 1010
+              },
+              {
+                "name": "ref_images.ref_image_4",
+                "type": "IMAGE",
+                "link": 1011
               }
             ],
             "outputs": [
@@ -21039,14 +21096,14 @@
                 "name": "positive",
                 "type": "CONDITIONING",
                 "links": [
-                  1004
+                  1006
                 ]
               },
               {
                 "name": "LATENT",
                 "type": "LATENT",
                 "links": [
-                  984
+                  986
                 ]
               }
             ],
@@ -21088,32 +21145,32 @@
               {
                 "name": "h3_latent",
                 "type": "LATENT",
-                "link": 984
+                "link": 986
               },
               {
                 "name": "vae",
                 "type": "VAE",
-                "link": 985
+                "link": 987
               },
               {
                 "name": "image",
                 "type": "IMAGE",
-                "link": 986
+                "link": 988
               },
               {
                 "name": "model",
                 "type": "MODEL",
-                "link": 987
+                "link": 989
               },
               {
                 "name": "mask",
                 "type": "MASK",
-                "link": 988
+                "link": 990
               },
               {
                 "name": "steps",
                 "type": "INT",
-                "link": 1003,
+                "link": 1005,
                 "widget": {
                   "name": "steps"
                 }
@@ -21124,14 +21181,14 @@
                 "name": "h3_latent",
                 "type": "LATENT",
                 "links": [
-                  995
+                  997
                 ]
               },
               {
                 "name": "sigmas",
                 "type": "SIGMAS",
                 "links": [
-                  994
+                  996
                 ]
               },
               {
@@ -21178,7 +21235,7 @@
                 "name": "NOISE",
                 "type": "NOISE",
                 "links": [
-                  991
+                  993
                 ]
               }
             ],
@@ -21214,12 +21271,12 @@
               {
                 "name": "model",
                 "type": "MODEL",
-                "link": 989
+                "link": 991
               },
               {
                 "name": "conditioning",
                 "type": "CONDITIONING",
-                "link": 1006
+                "link": 1008
               }
             ],
             "outputs": [
@@ -21227,7 +21284,7 @@
                 "name": "GUIDER",
                 "type": "GUIDER",
                 "links": [
-                  992
+                  994
                 ]
               }
             ],
@@ -21259,7 +21316,7 @@
                 "name": "SAMPLER",
                 "type": "SAMPLER",
                 "links": [
-                  993
+                  995
                 ]
               }
             ],
@@ -21293,27 +21350,27 @@
               {
                 "name": "noise",
                 "type": "NOISE",
-                "link": 991
+                "link": 993
               },
               {
                 "name": "guider",
                 "type": "GUIDER",
-                "link": 992
+                "link": 994
               },
               {
                 "name": "sampler",
                 "type": "SAMPLER",
-                "link": 993
+                "link": 995
               },
               {
                 "name": "sigmas",
                 "type": "SIGMAS",
-                "link": 994
+                "link": 996
               },
               {
                 "name": "latent_image",
                 "type": "LATENT",
-                "link": 995
+                "link": 997
               }
             ],
             "outputs": [
@@ -21321,7 +21378,7 @@
                 "name": "output",
                 "type": "LATENT",
                 "links": [
-                  996
+                  998
                 ]
               },
               {
@@ -21356,12 +21413,12 @@
               {
                 "name": "samples",
                 "type": "LATENT",
-                "link": 996
+                "link": 998
               },
               {
                 "name": "vae",
                 "type": "VAE",
-                "link": 997
+                "link": 999
               }
             ],
             "outputs": [
@@ -21369,7 +21426,7 @@
                 "name": "frames",
                 "type": "IMAGE",
                 "links": [
-                  998
+                  1000
                 ]
               },
               {
@@ -21386,7 +21443,7 @@
                 "name": "recommended_index",
                 "type": "INT",
                 "links": [
-                  999
+                  1001
                 ]
               }
             ],
@@ -21416,12 +21473,12 @@
               {
                 "name": "frames",
                 "type": "IMAGE",
-                "link": 998
+                "link": 1000
               },
               {
                 "name": "recommended_index",
                 "type": "INT",
-                "link": 999
+                "link": 1001
               }
             ],
             "outputs": [
@@ -21429,7 +21486,7 @@
                 "name": "selected_image",
                 "type": "IMAGE",
                 "links": [
-                  1008
+                  1013
                 ]
               },
               {
@@ -21497,7 +21554,7 @@
               {
                 "name": "image",
                 "type": "IMAGE",
-                "link": 1000
+                "link": 1002
               }
             ],
             "outputs": [
@@ -21505,7 +21562,7 @@
                 "name": "IMAGE",
                 "type": "IMAGE",
                 "links": [
-                  983
+                  985
                 ]
               }
             ],
@@ -21539,12 +21596,12 @@
               {
                 "name": "conditioning",
                 "type": "COMFY_MATCHTYPE_V3",
-                "link": 1004
+                "link": 1006
               },
               {
                 "name": "mods",
                 "type": "H3_REF_MODS",
-                "link": 1005
+                "link": 1007
               }
             ],
             "outputs": [
@@ -21552,7 +21609,7 @@
                 "name": "conditioning",
                 "type": "COMFY_MATCHTYPE_V3",
                 "links": [
-                  1006
+                  1008
                 ]
               },
               {
@@ -21613,17 +21670,17 @@
               {
                 "name": "input1",
                 "type": "IMAGE",
-                "link": 1007
+                "link": 1012
               },
               {
                 "name": "input2",
                 "type": "IMAGE",
-                "link": 1008
+                "link": 1013
               },
               {
                 "name": "select",
                 "type": "INT",
-                "link": 1009,
+                "link": 1014,
                 "widget": {
                   "name": "select"
                 }
@@ -21634,8 +21691,8 @@
                 "name": "selected_value",
                 "type": "*",
                 "links": [
-                  1010,
-                  1011
+                  1015,
+                  1016
                 ]
               },
               {
@@ -21681,17 +21738,17 @@
               {
                 "name": "input1",
                 "type": "*",
-                "link": 1012
+                "link": 1017
               },
               {
                 "name": "input2",
                 "type": "IMAGE",
-                "link": 1013
+                "link": 1018
               },
               {
                 "name": "select",
                 "type": "INT",
-                "link": 1014,
+                "link": 1019,
                 "widget": {
                   "name": "select"
                 }
@@ -21702,7 +21759,7 @@
                 "name": "selected_value",
                 "type": "*",
                 "links": [
-                  1015
+                  1020
                 ]
               },
               {
@@ -22374,7 +22431,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 975,
+            "id": 977,
             "origin_id": 276,
             "origin_slot": 0,
             "target_id": 277,
@@ -22382,7 +22439,7 @@
             "type": "MODEL"
           },
           {
-            "id": 976,
+            "id": 978,
             "origin_id": 277,
             "origin_slot": 0,
             "target_id": 278,
@@ -22390,7 +22447,7 @@
             "type": "MODEL"
           },
           {
-            "id": 977,
+            "id": 979,
             "origin_id": 197,
             "origin_slot": 0,
             "target_id": 279,
@@ -22398,7 +22455,7 @@
             "type": "CLIP"
           },
           {
-            "id": 978,
+            "id": 980,
             "origin_id": 198,
             "origin_slot": 0,
             "target_id": 279,
@@ -22406,7 +22463,7 @@
             "type": "VAE"
           },
           {
-            "id": 979,
+            "id": 981,
             "origin_id": 208,
             "origin_slot": 0,
             "target_id": 279,
@@ -22414,7 +22471,7 @@
             "type": "VAE"
           },
           {
-            "id": 980,
+            "id": 982,
             "origin_id": -10,
             "origin_slot": 29,
             "target_id": 279,
@@ -22422,7 +22479,7 @@
             "type": "STRING"
           },
           {
-            "id": 981,
+            "id": 983,
             "origin_id": -10,
             "origin_slot": 25,
             "target_id": 279,
@@ -22430,7 +22487,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 982,
+            "id": 984,
             "origin_id": -10,
             "origin_slot": 32,
             "target_id": 279,
@@ -22438,7 +22495,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 983,
+            "id": 985,
             "origin_id": 287,
             "origin_slot": 0,
             "target_id": 279,
@@ -22446,7 +22503,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 984,
+            "id": 986,
             "origin_id": 279,
             "origin_slot": 1,
             "target_id": 280,
@@ -22454,7 +22511,7 @@
             "type": "LATENT"
           },
           {
-            "id": 985,
+            "id": 987,
             "origin_id": 198,
             "origin_slot": 0,
             "target_id": 280,
@@ -22462,7 +22519,7 @@
             "type": "VAE"
           },
           {
-            "id": 986,
+            "id": 988,
             "origin_id": -10,
             "origin_slot": 27,
             "target_id": 280,
@@ -22470,7 +22527,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 987,
+            "id": 989,
             "origin_id": 278,
             "origin_slot": 0,
             "target_id": 280,
@@ -22478,7 +22535,7 @@
             "type": "MODEL"
           },
           {
-            "id": 988,
+            "id": 990,
             "origin_id": -10,
             "origin_slot": 28,
             "target_id": 280,
@@ -22486,7 +22543,7 @@
             "type": "MASK"
           },
           {
-            "id": 989,
+            "id": 991,
             "origin_id": 278,
             "origin_slot": 0,
             "target_id": 282,
@@ -22494,7 +22551,7 @@
             "type": "MODEL"
           },
           {
-            "id": 991,
+            "id": 993,
             "origin_id": 281,
             "origin_slot": 0,
             "target_id": 284,
@@ -22502,7 +22559,7 @@
             "type": "NOISE"
           },
           {
-            "id": 992,
+            "id": 994,
             "origin_id": 282,
             "origin_slot": 0,
             "target_id": 284,
@@ -22510,7 +22567,7 @@
             "type": "GUIDER"
           },
           {
-            "id": 993,
+            "id": 995,
             "origin_id": 283,
             "origin_slot": 0,
             "target_id": 284,
@@ -22518,7 +22575,7 @@
             "type": "SAMPLER"
           },
           {
-            "id": 994,
+            "id": 996,
             "origin_id": 280,
             "origin_slot": 1,
             "target_id": 284,
@@ -22526,7 +22583,7 @@
             "type": "SIGMAS"
           },
           {
-            "id": 995,
+            "id": 997,
             "origin_id": 280,
             "origin_slot": 0,
             "target_id": 284,
@@ -22534,7 +22591,7 @@
             "type": "LATENT"
           },
           {
-            "id": 996,
+            "id": 998,
             "origin_id": 284,
             "origin_slot": 0,
             "target_id": 285,
@@ -22542,7 +22599,7 @@
             "type": "LATENT"
           },
           {
-            "id": 997,
+            "id": 999,
             "origin_id": 198,
             "origin_slot": 0,
             "target_id": 285,
@@ -22550,7 +22607,7 @@
             "type": "VAE"
           },
           {
-            "id": 998,
+            "id": 1000,
             "origin_id": 285,
             "origin_slot": 0,
             "target_id": 286,
@@ -22558,7 +22615,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 999,
+            "id": 1001,
             "origin_id": 285,
             "origin_slot": 3,
             "target_id": 286,
@@ -22566,7 +22623,7 @@
             "type": "INT"
           },
           {
-            "id": 1000,
+            "id": 1002,
             "origin_id": -10,
             "origin_slot": 26,
             "target_id": 287,
@@ -22574,7 +22631,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 1001,
+            "id": 1003,
             "origin_id": -10,
             "origin_slot": 30,
             "target_id": 279,
@@ -22582,7 +22639,7 @@
             "type": "INT"
           },
           {
-            "id": 1002,
+            "id": 1004,
             "origin_id": -10,
             "origin_slot": 31,
             "target_id": 279,
@@ -22590,7 +22647,7 @@
             "type": "INT"
           },
           {
-            "id": 1003,
+            "id": 1005,
             "origin_id": -10,
             "origin_slot": 24,
             "target_id": 280,
@@ -22598,7 +22655,7 @@
             "type": "INT"
           },
           {
-            "id": 1004,
+            "id": 1006,
             "origin_id": 279,
             "origin_slot": 0,
             "target_id": 288,
@@ -22606,15 +22663,15 @@
             "type": "CONDITIONING"
           },
           {
-            "id": 1005,
+            "id": 1007,
             "origin_id": -10,
-            "origin_slot": 8,
+            "origin_slot": 14,
             "target_id": 288,
             "target_slot": 1,
             "type": "H3_REF_MODS"
           },
           {
-            "id": 1006,
+            "id": 1008,
             "origin_id": 288,
             "origin_slot": 0,
             "target_id": 282,
@@ -22622,7 +22679,31 @@
             "type": "COMFY_MATCHTYPE_V3"
           },
           {
-            "id": 1007,
+            "id": 1009,
+            "origin_id": -10,
+            "origin_slot": 18,
+            "target_id": 279,
+            "target_slot": 9,
+            "type": "IMAGE"
+          },
+          {
+            "id": 1010,
+            "origin_id": -10,
+            "origin_slot": 19,
+            "target_id": 279,
+            "target_slot": 10,
+            "type": "IMAGE"
+          },
+          {
+            "id": 1011,
+            "origin_id": -10,
+            "origin_slot": 20,
+            "target_id": 279,
+            "target_slot": 11,
+            "type": "IMAGE"
+          },
+          {
+            "id": 1012,
             "origin_id": 207,
             "origin_slot": 0,
             "target_id": 289,
@@ -22630,7 +22711,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 1008,
+            "id": 1013,
             "origin_id": 286,
             "origin_slot": 0,
             "target_id": 289,
@@ -22638,7 +22719,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 1009,
+            "id": 1014,
             "origin_id": -10,
             "origin_slot": 23,
             "target_id": 289,
@@ -22646,7 +22727,7 @@
             "type": "INT"
           },
           {
-            "id": 1010,
+            "id": 1015,
             "origin_id": 289,
             "origin_slot": 0,
             "target_id": 217,
@@ -22654,7 +22735,7 @@
             "type": "*"
           },
           {
-            "id": 1011,
+            "id": 1016,
             "origin_id": 289,
             "origin_slot": 0,
             "target_id": 215,
@@ -22662,7 +22743,7 @@
             "type": "*"
           },
           {
-            "id": 1012,
+            "id": 1017,
             "origin_id": 235,
             "origin_slot": 0,
             "target_id": 290,
@@ -22670,7 +22751,7 @@
             "type": "*"
           },
           {
-            "id": 1013,
+            "id": 1018,
             "origin_id": 232,
             "origin_slot": 0,
             "target_id": 290,
@@ -22678,7 +22759,7 @@
             "type": "IMAGE"
           },
           {
-            "id": 1014,
+            "id": 1019,
             "origin_id": -10,
             "origin_slot": 23,
             "target_id": 290,
@@ -22686,7 +22767,7 @@
             "type": "INT"
           },
           {
-            "id": 1015,
+            "id": 1020,
             "origin_id": 290,
             "origin_slot": 0,
             "target_id": -20,
@@ -22705,7 +22786,7 @@
         "version": 1,
         "state": {
           "lastNodeId": 298,
-          "lastLinkId": 1029
+          "lastLinkId": 1034
         },
         "inputNode": {
           "id": -10,
@@ -22727,7 +22808,7 @@
         },
         "inputs": [
           {
-            "id": "3a649fb3-12eb-4c01-abe8-9307010ad6a4",
+            "id": "6f3055a4-5952-4c77-8738-37dcda8fa376",
             "name": "3DA · Qwen Picture 1: персонаж и внешность / 0",
             "type": "IMAGE",
             "linkIds": [
@@ -22736,7 +22817,7 @@
             ]
           },
           {
-            "id": "f10ba348-2581-4d80-bfa7-9d552f78bb8c",
+            "id": "f3f5ecd2-ef68-43e5-af52-f99471b7ed31",
             "name": "3DA · Qwen Picture 2: локация и композиция / 0",
             "type": "IMAGE",
             "linkIds": [
@@ -22747,7 +22828,7 @@
         ],
         "outputs": [
           {
-            "id": "aaabeb7c-2706-4579-82d3-d5758a607b77",
+            "id": "9dc9b471-5cd0-4c5f-a741-764a6b8c27dd",
             "name": "Z-Image · pose-reference IMAGE / 0",
             "type": "IMAGE",
             "linkIds": [
@@ -22755,7 +22836,7 @@
             ]
           },
           {
-            "id": "dfce1e7f-0fb4-486c-b4de-0cc22d55255e",
+            "id": "92797229-d479-4096-8a7c-17de713dfe79",
             "name": "Qwen2511 · pose-reference IMAGE / 0",
             "type": "IMAGE",
             "linkIds": [

@@ -21,16 +21,21 @@ def report(flags):
     return dict(status='ok',validation=dict(ok=True,checks=[],first_failure=None),props=[dict(flags=flags)])
 
 
-def test_five_metre_out_of_frame_prop_cannot_inherit_body_ok():
+def test_out_of_frame_prop_is_a_warning_not_a_rejection():
+    # 13.11 «КАДР ЛЮБОЙ»: предмет вне кадра — предупреждение, H3 не блокируется.
     r=include_props(report(dict(out_of_frame=True,prop_out_of_frame=True)))
-    assert r['status']=='out_of_frame' and r['body_status']=='ok'
-    assert r['body_validation']['ok'] and not r['validation']['ok']
-    assert not r['h3_eligibility']['ok'] and blocking_reasons(r)
-    assert r['validation']['first_failure']['check']=='prop[0]:frame'
+    assert r['status']=='ok' and r['body_status']=='ok'
+    assert r['validation']['ok'] and r['h3_eligibility']['ok'] and not blocking_reasons(r)
+    assert r['validation']['warnings']==['prop[0] out_of_frame']
     assert 'prop_out_of_frame' in r['validation']['flags']
 
 
-@pytest.mark.parametrize('flag',['prop_hits_body','prop_hits_room'])
+def test_scene_without_visible_body_is_still_rejected():
+    r=include_props(dict(status='out_of_frame',validation=dict(ok=False,checks=[],first_failure=None),props=[dict(flags={})]))
+    assert blocking_reasons(r)==['scene status=out_of_frame'] and not r['h3_eligibility']['ok']
+
+
+@pytest.mark.parametrize('flag',['prop_hits_body','prop_hits_room','prop_penetration','prop_floating'])
 def test_collision_blocks_final_without_weakening_body_checks(flag):
     r=include_props(report({flag:True}));assert r['status']=='contact_fail'
     assert r['body_validation']['ok'] and not r['h3_eligibility']['ok']
@@ -66,9 +71,9 @@ def test_fit_or_orbit_camera_cannot_silently_drive_plate_gizmo(change):
 
 def test_rejected_scene_is_visible_execution_error_before_transport_even_with_prompt():
     image=torch.zeros(1,64,64,3);mask=torch.zeros(1,64,64)
-    guides=dict(prompt='body',render_prompt='render',validation=dict(ok=False,reasons=['prop_out_of_frame']))
+    guides=dict(prompt='body',render_prompt='render',validation=dict(ok=False,reasons=['prop[0] prop_hits_room']))
     with patch.object(nodes,'config',return_value={'repo':str(ROOT)}),patch.object(nodes,'remote_run') as remote:
-        with pytest.raises(nodes.GeometryRejected,match='prop_out_of_frame'):
+        with pytest.raises(nodes.GeometryRejected,match='prop_hits_room|пересекает'):
             nodes.H3Remote().execute(image,image,image,image,mask,'render',101,
                 body_guides=guides,prop_handling='rendered_separately')
         remote.assert_not_called()

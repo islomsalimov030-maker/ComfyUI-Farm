@@ -10,7 +10,8 @@
        не влезает → поворот yaw (lie, шаг 15° до ±90°) → следующая ячейка (≤ 5) → partial + footprint_fail.
   п.6  стена из secondary_contacts → зона на полу 0.15–0.45·H от плоскости, yaw руками к стене; нет стены → partial.
   п.7  проникновение = p95 проникших вершин; мягкое ≤ 6 см, жёсткое ≤ 3 см.
-  п.8  кадр: тело в кадре плиты с полем 2 %; иначе сдвиг к центру кадра (≤ 5), иначе out_of_frame.
+  п.8  кадр: тело в кадре плиты с полем 2 %; иначе сдвиг к центру кадра (≤ 5); тело частично вне кадра —
+       только предупреждение (флаг out_of_frame, 13.11 «КАДР ЛЮБОЙ»); статус out_of_frame — в кадре нет ни одной вершины.
   п.10 статус ok | partial | wrong_surface | contact_fail | out_of_frame | no_target + флаги.
 Телесные пороги — только через body_dims (H, L_thigh, L_torso); пороги локации — метры.
 """
@@ -631,7 +632,9 @@ def framing(X, plate):
     W, Hh = plate.Wp, plate.Hp
     pu, pv = FRAME_PAD * W, FRAME_PAD * Hh
     ok = bool((z > 0).all() and u.min() >= pu and u.max() <= W - pu and v.min() >= pv and v.max() <= Hh - pv)
-    return {"ok": ok, "bbox_px": [round(float(u.min())), round(float(v.min())), round(float(u.max())),
+    # 13.11 «КАДР ЛЮБОЙ»: частично вне кадра — предупреждение; отказ только без единой видимой точки тела.
+    visible = bool(((z > 0) & (u >= 0) & (u < W) & (v >= 0) & (v < Hh)).any())
+    return {"ok": ok, "visible": visible, "bbox_px": [round(float(u.min())), round(float(v.min())), round(float(u.max())),
                                   round(float(v.max()))], "frame_px": [W, Hh]}
 
 
@@ -727,7 +730,7 @@ def status_of(ev, spec, limits_ok=True, no_secondary=False):
         return "wrong_surface"
     if not ev["support_ok"]:
         return "contact_fail"
-    if not ev["frame"]["ok"]:
+    if not ev["frame"].get("visible", ev["frame"]["ok"]):
         return "out_of_frame"
     other_ok = ev["penetration"]["ok"] and ev["footprint"]["ok"] and ev["cells_ok"] and limits_ok
     gap = max(ev.get("support_part_gaps_m", {}).values(), default=0.0)
@@ -1251,7 +1254,8 @@ def place(ref, plate, spec, seed, height, *, profile=None, body_src="proxy", dim
                     final = rec2
                     break
     if final is None:
-        final = min(attempts, key=lambda a: (a["side_flip"], STATUS_RANK[a["status"]], a["ev"]["footprint"].get("n_out", 0),
+        final = min(attempts, key=lambda a: (a["side_flip"], STATUS_RANK[a["status"]], not a["ev"]["frame"]["ok"],
+                                            a["ev"]["footprint"].get("n_out", 0),
                                             abs(a["ev"]["support_gap_cm"]) + a["ev"]["penetration"]["p95_cm"]))
     ev = final["ev"]
     trace('03b_selected_rigid',final['fit']['X'],final['fit']['KP'])

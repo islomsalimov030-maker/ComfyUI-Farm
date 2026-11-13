@@ -63,19 +63,19 @@ def evaluate(X, KP, groups, plate, profile, spec, report):
     checks = [dict(check='observed_support', ok=obj is not None, excess=0 if obj else 1, unit='surface'),
               dict(check='support_contact', ok=gap <= cfg['contact_tol'], excess=max(0., gap-cfg['contact_tol']), unit='m'),
               dict(check='footprint', ok=fraction >= cfg['hull_in_mask_min'], excess=max(0., cfg['hull_in_mask_min']-fraction), unit='area_fraction'),
-              dict(check='frame', ok=frame['ok'], excess=int(not frame['ok']), unit='frame'),
+              dict(check='frame', ok=frame.get('visible', frame['ok']), excess=int(not frame.get('visible', frame['ok'])), unit='frame'),
               dict(check='reference_pose', ok=report.get('reference_pose_error_m', 0.) <= section('reference_registration')['pose_error_m'],
                    excess=report.get('reference_pose_error_m', 0.), unit='m')]
     checks.extend(dict(check='penetration_surface:'+name, ok=value['ok'], excess=max(0., value['p95_m']-value['threshold_m']), unit='m')
                   for name, value in pen['surfaces'].items())
     failed = [c for c in checks if not c['ok']]
-    status = 'ok' if not failed else 'out_of_frame' if not frame['ok'] else 'contact_fail'
+    status = 'ok' if not failed else 'out_of_frame' if not frame.get('visible', frame['ok']) else 'contact_fail'
     report.update(status=status, validation=dict(ok=not failed, status=status, first_failure=failed[0] if failed else None, checks=checks),
                   shot_spec=spec.to_dict(), body_dims=profiles.body_dims_from_kp(KP), frame=frame,
                   penetration=pen, footprint=dict(ok=fraction >= cfg['hull_in_mask_min'], support_hull=footprint),
                   target_info=dict(id=obj['id'], name='observed support surface') if obj else {},
                   support_object=obj['id'] if obj else 'unresolved', support_gap_cm=gap*100,
-                  flags=[c['check'] for c in failed], max_penetration_cm=pen['max_cm'],
+                  flags=[c['check'] for c in failed]+([] if frame['ok'] else ['out_of_frame']), max_penetration_cm=pen['max_cm'],
                   support_parts_on=[g[0] for g in groups if g[3] == 'support'],
                   zone_diagnostics=dict(target_object='auto', observed_support=obj['id'] if obj else None),
                   placement_mode='reference_rigid', pose_class_inferred=False, no_floor_required=True)

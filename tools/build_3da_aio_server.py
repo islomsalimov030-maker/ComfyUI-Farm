@@ -119,7 +119,7 @@ def build(source, oi, *, location_id, plate, pose, identity, refmods=STACY_REFMO
     set_widget(by_title['3DA · Локация'], 'location_id', location_id)
     set_refmods(by_title, refmods)
     prop = by_title['3DA · Предметы для подготовки']
-    set_widget(prop, 'prop_id', 'stick_stick_d4a11633')
+    set_widget(prop, 'prop_id', '(нет предмета)')  # 0.2.0: по умолчанию только персонаж
     prep = by_title['3DA · Подготовка персонажа']
     # The existing numeric world anchor means pelvis-relative offsets. Start
     # the asset separately, to the side; the acceptance edits are made in UI.
@@ -189,7 +189,7 @@ NOTE = """3D-A: ОДИН WORKFLOW, ДВЕ ГРУППЫ
 • Включать «ФОТО · движок» на шаге 1 отдельно от «2 · Финал».
 
 ГДЕ ВЫБИРАТЬ
-• Предмет: «3DA · Предметы для подготовки» → prop_id (до шага 1) — единственный переключатель предмета. pelvis_ass_low_4afbd9b9 = pelvis, head_close_a648e192 = голова, stick_stick_d4a11633 = stick; список берётся с сервера (3da_data/props), новый предмет появляется после заливки без перезапуска. Размер — size_m (30 см) или равномерный масштаб в 3D-окне; положение — в 3D-окне.
+• Предмет: «3DA · Предметы для подготовки» → prop_id (до шага 1) — единственный переключатель предмета. «(нет предмета)» = только персонаж. pelvis_ass_low_4afbd9b9 = pelvis, head_close_a648e192 = голова, stick_stick_d4a11633 = stick; список берётся с сервера (3da_data/props), новый предмет появляется после заливки без перезапуска. Размер — size_m (30 см) или равномерный масштаб в 3D-окне; положение — в 3D-окне.
 • Персонаж: эталон — LoadImage «3DA · Персонаж: эталон внешности SFW»; тело (рост, телосложение) — body_json одинаково в «3DA · Подготовка персонажа» и «3DA · Итог: повторная проверка сцены»; моды — твои узлы 16 и 33.
 • «3DA · Режим фото»: 2 = 3D-постановка, 1 = твой AIO без 3D.
 
@@ -351,6 +351,9 @@ def main():
                    '(default: final if --editor-state, else prepare)')
     a = p.parse_args()
     oi = json.loads(a.object_info.read_text(encoding='utf-8'))
+    # The pack's own schema wins over a possibly older server /object_info (new inputs of a pack release).
+    from build_3da_aio import pack_schema
+    oi.update(pack_schema())
     editor = json.loads(a.editor_state.read_text(encoding='utf-8')) if a.editor_state else None
     a.out.mkdir(parents=True, exist_ok=True)
     source = json.loads((a.source_dir / (a.source_prefix + '.ui.json')).read_text(encoding='utf-8'))

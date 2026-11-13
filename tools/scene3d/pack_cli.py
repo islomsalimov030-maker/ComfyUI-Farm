@@ -219,6 +219,20 @@ def require_profile_geometry(profile):
             required_file(profile.dir / obj["pts_npz"], f"{obj['id']} wall points")
 
 
+def keep_photo(request, geometry_dir):
+    """0.2.0 «б»: фото комнаты в полном разрешении для рендера до H3 в МП из пульта.
+    Пишется один раз; геометрия и кэш локации не меняются."""
+    photo = request.get("plate")
+    target = Path(geometry_dir) / "plate_photo.png"
+    if photo and Path(photo).is_file() and not target.exists():
+        from PIL import Image
+        try:
+            with Image.open(photo) as image:
+                image.convert("RGB").save(target)
+        except OSError:
+            pass  # read-only preset location: render falls back to plate_rgb.png
+
+
 def do_location(request, config):
     started = time.monotonic()
     timings = {'moge_s': 0., 'auto_profile_s': 0.}
@@ -259,6 +273,7 @@ def do_location(request, config):
             auto_surfaces.render_objects_preview(plate, profile_path, preview)
             timings['auto_profile_s'] = round(time.monotonic() - stage, 3)
             timings['total_s'] = round(time.monotonic() - started, 3)
+            keep_photo(request, geometry_dir)
             return {"status": "ok", "location": str(profile_path.resolve()),
                     "plate": str((geometry_dir / "plate_rgb.png").resolve()),
                     "objects": data["objects"], "objects_preview": str(preview.resolve()), 'timings': timings}
@@ -295,6 +310,7 @@ def do_location(request, config):
     preview = preview_dir / "objects_preview.png"
     auto_surfaces.render_objects_preview(pf.Plate(geometry_dir), profile_path, preview)
     timings['total_s'] = round(time.monotonic() - started, 3)
+    keep_photo(request, geometry_dir)
     return {"status": "ok", "location": str(profile_path.resolve()),
             "plate": str((geometry_dir / "plate_rgb.png").resolve()), "objects_preview": str(preview.resolve()),
             'timings': timings,
@@ -397,11 +413,11 @@ def prompt_direct(profile, config, fit):
     return text
 
 
-def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_px):
+def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_px, size=(1344, 768)):
     import numpy as np
     from PIL import Image
     import pose_proxy_v26 as proxy
-    size = (1344, 768)  # Gate09c cell=16 is defined in this raster, not geometry resolution.
+    # size — растр H3 (0.2.0 «б», МП из пульта); cell_px=16 = клетка латента H3 в любом растре.
     with Image.open(plate_path) as image:
         plate = np.asarray(image.convert("RGB").resize(size, Image.Resampling.LANCZOS))
     with Image.open(directory / "playblast.png") as image:
@@ -432,11 +448,10 @@ def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_
     Image.fromarray(np.rint(overlay).astype(np.uint8)).save(directory / "debug.png")
 
 
-def compose_props(directory, overlay_dir):
+def compose_props(directory, overlay_dir, size=(1344, 768)):
     import numpy as np
     from PIL import Image
     import prop_render
-    size = (1344, 768)
     desc = read_json(overlay_dir / "props_render.json")
     # Props retain their source appearance in both guides. A grey prop video
     # otherwise contradicts material refs at every guided frame. Body proxy
@@ -622,13 +637,18 @@ def do_place(request, config):
     env.setdefault("SCENE3D_BLENDER_SITE", str(Path(config["farm_root"]) / "runtime/blender_pkgs"))
     if config.get("blender_pkgs"):
         env["FARM_BPY_PKGS"] = config["blender_pkgs"]
+    import raster
+    size = raster.raster_for(request.get("megapixels", 0))
+    timings["raster"] = list(size)
     run_stage(threeda_blender.command(config, HERE / "plate/render_plate_scene.py", ["--plate", plate_dir, "--spec", job / "render_spec.json",
                "--mannequin", mannequin, "--out", job / "render", "--label-pass", "--photo-emission", "2.5",
-               "--samples", "48"]), "Blender render", env=env)
+               "--samples", "48", "--raster", f"{size[0]}x{size[1]}"]), "Blender render", env=env)
     timings["render_s"] = round(time.monotonic() - stage, 3)
     directory = job / "render/pose"
     stage = time.monotonic()
-    prepare_images(directory, plate_dir / "plate_rgb.png", mode, body_path, strength, config["cell_px"])
+    # Фото комнаты в полном разрешении (с 0.2.0 сохраняется при подготовке локации); старые локации — plate_rgb.
+    source_plate = plate_dir / "plate_photo.png" if (plate_dir / "plate_photo.png").is_file() else plate_dir / "plate_rgb.png"
+    prepare_images(directory, source_plate, mode, body_path, strength, config["cell_px"], size)
     if props_value:
         from shutil import copy2
         body_dir=directory/'body_guides'
@@ -656,11 +676,21 @@ def do_place(request, config):
         overlay_dir = job / "props_render"
         run_stage(threeda_blender.command(config, HERE / "plate/prop_render.py", ["--plate", plate_dir,
                    "--body", job / "fit/body.obj", "--joints", job / "fit/label_joints.npz",
-                   "--props", props_path, "--library", library, "--out", overlay_dir]), "Blender props", env=env)
-        compose_props(directory, overlay_dir)
+                   "--props", props_path, "--library", library, "--out", overlay_dir,
+                   "--raster", f"{size[0]}x{size[1]}"]), "Blender props", env=env)
+        compose_props(directory, overlay_dir, size)
         prop_report = read_json(overlay_dir / "props_render.json")
+        # 0.2.0 «е»: проникновение и опора предметов — те же правила, что у 3D-окна.
+        import prop_checks
+        for item in prop_report["props"]:
+            points_path = item.get("points_world")
+            if points_path and Path(points_path).is_file():
+                prop_flags, prop_info = prop_checks.check(plate, np.load(points_path), X,
+                    item.get("surface_intersection_pairs", {}).get("room", 0), depth_fn=pf.penetration)
+                item["flags"].update(prop_flags)
+                item["checks"] = prop_info
         from PIL import Image
-        layer=Image.open(prop_report['textured_rgba']).convert('RGBA').resize((1344,768),Image.Resampling.LANCZOS)
+        layer=Image.open(prop_report['textured_rgba']).convert('RGBA').resize(size,Image.Resampling.LANCZOS)
         layer.convert('RGB').save(directory/'prop_layer_rgb.png')
         layer.getchannel('A').save(directory/'prop_layer_alpha.png')
         body_guides.update(prop_rgb=str(directory/'prop_layer_rgb.png'),prop_alpha=str(directory/'prop_layer_alpha.png'))
@@ -691,8 +721,15 @@ def do_place(request, config):
     canvas.save(directory / 'debug.png')
     timings["maps_s"] = round(time.monotonic() - stage, 3)
     timings["total_s"] = round(time.monotonic() - t0, 3)
-    from prop_validation import blocking_reasons
-    body_guides['validation']=dict(ok=not blocking_reasons(fit),reasons=blocking_reasons(fit))
+    from prop_validation import blocking_reasons, frame_warnings
+    from reasons_ru import explain
+    codes=blocking_reasons(fit)
+    # Русские причины для GeometryRejected/статуса; коды — для тестов и логов. Кадр — предупреждение.
+    reasons=(explain(fit) or codes) if codes else []
+    fit['reasons_ru']=reasons
+    fit['warnings']=frame_warnings(fit)
+    save_json(job/'fit/fit.json',fit)
+    body_guides['validation']=dict(ok=not codes,reasons=reasons,codes=codes,warnings=fit['warnings'])
     save_json(job/'body_guides.json',body_guides)
     return dict(status=fit["status"], **{key: str((directory / filename).resolve()) for key, filename in
                 {"playblast": "playblast.png", "init": "init.png", "strength": "strength.png",

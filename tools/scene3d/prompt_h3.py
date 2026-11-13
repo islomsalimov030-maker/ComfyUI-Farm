@@ -2,7 +2,10 @@
 
 Pure text functions extracted from the research scripts (quality_round.clay_prompt,
 table_round.prompt, pose_h3_v25.prompt_b, pose_h3_v26.prompt_d) so that the pack
-does not import the experiment chain. Output must stay byte-identical to them.
+does not import the experiment chain.
+
+0.2.0 «в» (решение 13.11): одежда — не задача 3DA. Зашитая одежда (футболка/джинсы/кроссовки)
+убрана; одежду задают промпт кадра пользователя, его референсы и моды (merge_frame_prompt).
 """
 import re
 
@@ -49,8 +52,8 @@ def light_sentence(light):
 
 
 def clay_prompt(spec, scene, shadow=False):
-    outfit = ('She wears an opaque grey athletic T-shirt and opaque full-length navy trousers.' if not shadow else
-              'She wears an opaque grey athletic T-shirt, opaque full-length navy trousers and white sneakers. ' +
+    # No clothing here (13.11): the frame prompt, references and mods define it.
+    outfit = ('' if not shadow else
               (light_sentence(scene.get('light') or spec.get('light')) or
                'She is lit by the same light as the room in <Picture 1> and casts a soft natural shadow '
                'on the floor and furniture beneath her.'))
@@ -69,7 +72,7 @@ def clay_prompt(spec, scene, shadow=False):
         '<Picture 2>: attribute_transfer - transfer facial identity to <Subject 1>.',
         'detailed_description:',
         f'A photorealistic live-action still. [Shot 1] {STATIC} The room is {spec["room"]}. '
-        f'<Subject 1> is {scene["action"]}. {outfit} '
+        f'<Subject 1> is {scene["action"]}. ' + (outfit + ' ' if outfit else '') +
         f'Preserve the exact pose and placement from <Video 1>. Scale anchor: {scene["anchor"]}. '
         'No clay materials, no mannequin, no skeleton overlay. One continuous shot with no cuts and no close-up inserts; '
         '<Picture 2> is only a reference for her face and never appears on screen.',
@@ -81,15 +84,10 @@ def clay_prompt(spec, scene, shadow=False):
 
 def table_prompt(spec, scene):
     text = clay_prompt(spec, scene, shadow=True)
-    old = 'She wears an opaque grey athletic T-shirt, opaque full-length navy trousers and white sneakers.'
-    new = ('She wears an opaque white short-sleeved cotton T-shirt, light-blue straight-leg jeans '
-           'and white lace-up sneakers. The clothing is fully opaque and covers her torso and legs.')
-    if old not in text:
-        raise ValueError('outfit sentence missing')
-    text = text.replace(old, new).replace('One single photorealistic photograph.',
+    text = text.replace('One single photorealistic photograph.',
         'One single photorealistic static image. <Picture 2> is only an identity reference sheet, not a layout.')
     text = text.replace('Scale anchor:', 'True-to-life scale: she is never enlarged to fill the frame. Scale anchor:')
-    text = text.replace('retention_analysis:\n', 'retention_analysis:\n<Subject 1>: attribute_transfer - facial identity; wear the specified white T-shirt and light-blue jeans.\n')
+    text = text.replace('retention_analysis:\n', 'retention_analysis:\n<Subject 1>: attribute_transfer - facial identity.\n')
     sections = ['subject_definitions:', 'summary:', 'retention_analysis:', 'detailed_description:',
                 'overall_soundscape:', 'non_diegetic_music:']
     if [text.index(s) for s in sections] != sorted(text.index(s) for s in sections):
@@ -117,6 +115,76 @@ def prompt_d(text_a, fit):
     text = re.sub(r"(?m)^<Video 1>:.*$", "<Video 1>: attribute_transfer - transfer only body pose and placement to <Subject 1>.", text)
     start = text.index("detailed_description:") + len("detailed_description:")
     return text[:start] + "\n" + TRANSFER + text[start:]
+
+
+SECTIONS = ('subject_definitions:', 'summary:', 'retention_analysis:', 'detailed_description:',
+            'overall_soundscape:', 'non_diegetic_music:')
+IMAGE_N = re.compile(r'\bimage\s*([1-9])\b', re.I)
+PICTURE_N = re.compile(r'<Picture (\d+)>')
+
+
+def _sections(text):
+    """{section: body} of a six-section H3 prompt; None when the text has no sections."""
+    marks = [(text.find('\n' + s) + 1 if not text.startswith(s) else 0, s) for s in SECTIONS]
+    marks = [(i, s) for i, s in marks if i >= 0 and text[i:i + len(s)] == s]
+    if not marks:
+        return None
+    marks.sort()
+    out = {'': text[:marks[0][0]].strip()}
+    for k, (i, s) in enumerate(marks):
+        end = marks[k + 1][0] if k + 1 < len(marks) else len(text)
+        out[s] = text[i + len(s):end].strip()
+    return out
+
+
+def merge_frame_prompt(scene_prompt, frame_prompt, user_refs=3):
+    """0.2.0 «в»: промпт кадра пользователя (узел 2) поверх промпта сцены 3DA.
+
+    Нумерация картинок в режиме 2: <Picture 1> — плита, <Picture 2> — эталон личности 3DA,
+    <Picture 3…> — ref_image_1..3 пользователя. Как в исходном AIO, «Image N» → «<Picture N>»;
+    у пользователя его ref_image_k — это <Picture k+1>, поэтому номера ≥ 2 сдвигаются на 1.
+    Промпт без секций — описание кадра (одежда, выражение, детали): вставляется в detailed_description
+    после [Shot 1]. Промпт с секциями — строки субъектов, сохранения, описание и звук добавляются по секциям.
+    Камера, свет, цвет, поза и место остаются из промпта сцены."""
+    frame = (frame_prompt or '').strip()
+    if not frame:
+        return scene_prompt
+    frame = IMAGE_N.sub(lambda m: f'<Picture {m.group(1)}>', frame)
+    frame = PICTURE_N.sub(lambda m: f'<Picture {int(m.group(1)) + 1 if int(m.group(1)) >= 2 else 1}>', frame)
+    top = max([int(n) for n in PICTURE_N.findall(frame)] + [0])
+    if top > 2 + user_refs:
+        raise ValueError(f'3DA: промпт кадра ссылается на <Picture {top - 1}> пользователя, подключено {user_refs}')
+    scene = _sections(scene_prompt)
+    if scene is None:
+        raise ValueError('3DA: промпт сцены без секций H3')
+    user = _sections(frame)
+    if user is None:
+        user = {'detailed_description:': frame}
+    def add_lines(section, extra):
+        if extra:
+            scene[section] = (scene.get(section, '') + '\n' + extra).strip()
+    add_lines('subject_definitions:', user.get('subject_definitions:', ''))
+    add_lines('retention_analysis:', user.get('retention_analysis:', ''))
+    for k in sorted({int(n) for n in PICTURE_N.findall(frame)} - {1, 2}):
+        label = f'<Picture {k}>'
+        if not re.search(rf'(?m)^{re.escape(label)}', scene['subject_definitions:']):
+            add_lines('subject_definitions:', f'{label} is a reference image supplied with the frame prompt; '
+                      'it never appears as a separate image in the shot.')
+        if not re.search(rf'(?m)^{re.escape(label)}', scene['retention_analysis:']):
+            add_lines('retention_analysis:', f'{label}: attribute_transfer - transfer only what the description takes from it.')
+    if user.get('summary:'):
+        scene['summary:'] = scene['summary:'] + ' ' + re.sub(r'^\[[^\]]*\]\s*', '', user['summary:'])
+    desc = user.get('detailed_description:', '') or user.get('', '')
+    desc = re.sub(r'\[Shot 1\]\s*', '', desc).strip()
+    if desc:
+        body = scene['detailed_description:']
+        m = re.search(r'\[Shot 1\] (.*?\.)(\s)', body, re.S)
+        cut = m.end(1) if m else len(body)
+        scene['detailed_description:'] = body[:cut] + ' ' + desc + body[cut:]
+    if user.get('overall_soundscape:'):
+        scene['overall_soundscape:'] = user['overall_soundscape:']
+    head = scene.pop('', '')
+    return ((head + '\n') if head else '') + '\n'.join(s + '\n' + scene[s] for s in SECTIONS if s in scene)
 
 
 def lint(text, video, connected=None):

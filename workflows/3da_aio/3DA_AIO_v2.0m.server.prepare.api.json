@@ -336,7 +336,7 @@
  "269": {
   "class_type": "3DAProp",
   "inputs": {
-   "prop_id": "stick_stick_d4a11633",
+   "prop_id": "(нет предмета)",
    "anchor": "world",
    "x": 0.65,
    "y": 0.0,
@@ -384,7 +384,8 @@
    "body_dyaw": 0.0,
    "body_dpitch": 0.0,
    "body_droll": 0.0,
-   "pose_text": ""
+   "pose_text": "",
+   "megapixels": 0.0
   },
   "_meta": {
    "title": "3DA · Подготовка персонажа"

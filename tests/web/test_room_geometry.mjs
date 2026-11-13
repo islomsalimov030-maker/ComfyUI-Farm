@@ -113,4 +113,14 @@ const text = lines => lines.map(l => l.text).join(' | ');
     }
   }
 }
+// 7. 0.2.0: a foot right behind a thin object lying on the floor (plush cuffs, red room 13.11) is not
+//    "inside" it: depth along the normal of the NEAREST visible surface point, like the server.
+{
+  const cuffTop = [[-0.3, 2.2, 0.03], [0.6, 0, 0], [0, 0.04, 0]], cuffFront = [[-0.3, 2.2, 0], [0.6, 0, 0], [0, 0, 0.03]];
+  const room = buildRoom(parseObj(obj([FLOOR, WALL, cuffTop, cuffFront])), cam);
+  const r = inspect(room, cam, [[0, 0.01, -2.27], [0.05, 0.01, -2.27], [-0.05, 0.01, -2.27]]);   // 1 cm above the floor
+  assert.ok(r.pen < 0.03, 'foot behind a thin object: ' + r.pen);
+  const sunk = inspect(room, cam, [[0, -0.08, -3], [0.05, -0.08, -3]]);                              // 8 cm into the floor
+  assert.ok(sunk.pen > 0.07, 'real penetration still found: ' + sunk.pen);
+}
 console.log('ok');

@@ -69,6 +69,7 @@ def args():
     ap.add_argument("--samples", type=int, default=64, help="Cycles samples of the playblast pass")
     ap.add_argument("--no-playblast", action="store_true")
     ap.add_argument("--label-pass", action="store_true", help="v2.6: anatomical labels; colours from body.json; requires final joints")
+    ap.add_argument("--raster", default="", help="0.2.0: render WxH (same framing; intrinsics are normalised)")
     ap.add_argument("--photo-emission", type=float, default=None,
                     help="override light.photo_emission (0 = the 05.11 playblast, 1.5 = photo-lit clay)")
     return ap.parse_args(argv)
@@ -834,6 +835,8 @@ def main():
     a = args()
     with open(os.path.join(a.plate, "plate.json"), encoding="utf-8") as f:
         info = json.load(f)
+    if a.raster:
+        info["size"] = [int(v) for v in a.raster.lower().split("x")]
     with open(a.spec, encoding="utf-8") as f:
         spec = json.load(f)
     for scene in spec["scenes"]:
