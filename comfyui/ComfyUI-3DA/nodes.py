@@ -526,6 +526,13 @@ class PlacePose:
             # 0.3.6: «предмет рисует H3» — карты тела+предмета (без тени Cycles) и промпт с предметом.
             joint = bundle.get('h3_props') if bundle else None
             maps = {**bundle, **{k: joint[k] for k in ('playblast', 'init', 'strength')}} if joint else bundle
+            # 0.3.14: «Тени от H3» — референс H3 без падающих теней рендера (их H3 рисует сам).
+            playblast_ns = (joint.get('playblast_ns') if joint else (bundle or {}).get('playblast_ns')) if maps else None
+            if playblast_ns and not options['render_shadows'] and Path(playblast_ns).is_file():
+                maps = {**maps, 'playblast': playblast_ns}
+                result = {**result, 'playblast': playblast_ns}
+                if joint:
+                    joint = {**joint, 'playblast': playblast_ns}
             guides=({key:load_mask(maps[key]) if key=='strength' else load_image(maps[key])
                      for key in ('plate','playblast','init','strength')} if bundle else {})
             if bundle:

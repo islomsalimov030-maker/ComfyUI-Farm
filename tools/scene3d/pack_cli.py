@@ -508,6 +508,9 @@ def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_
             labels = proxy.decode_labels(np.asarray(image.convert("RGB").resize(size, Image.Resampling.NEAREST)), sil)
         figure = proxy.proxy_image(playblast, plate, sil, labels, colors)
         Image.fromarray(figure).save(directory / "proxy.png")
+    # 0.3.14: playblast без падающих теней Cycles (фигура поверх чистого фото) — для режима «Тени от H3»:
+    # иначе H3 копировал тени рендера из видео-референса в обоих режимах.
+    Image.fromarray(np.where(sil[..., None], playblast, plate)).save(directory / "playblast_ns.png")
     # Exact plate outside the figure, matching ImageCompositeMasked in step 9.
     Image.fromarray(np.where(sil[..., None], figure, plate)).save(directory / "init.png")
     # 0.3.7: запас вокруг тела (волосы, тени H3) — клетка × margin; margin растёт с растром, чтобы в 2 Мп
@@ -604,6 +607,10 @@ def compose_props(directory, overlay_dir, size=(1344, 768), band=16):
         joint = base if target == "playblast.png" else clean.convert("RGBA")
         Image.alpha_composite(joint, overlay).convert("RGB").save(directory / ("h3_" + target))
         Image.alpha_composite(base, overlay).convert("RGB").save(directory / target)
+    if (directory / "playblast_ns.png").is_file():
+        overlay = Image.open(desc["textured_rgba"]).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
+        Image.alpha_composite(Image.open(directory / "playblast_ns.png").convert("RGBA"), overlay).convert("RGB").save(
+            directory / "h3_playblast_ns.png")
     body = np.asarray(Image.open(directory / "strength.png").convert("L"), dtype=float) / 255
     props = [(Image.open(p["silhouette"]).convert("L").resize(size, Image.Resampling.NEAREST),
               p["prop_strength"]) for p in desc["props"]]
@@ -813,6 +820,8 @@ def do_place(request, config):
         body_dir=directory
     body_guides={key:str(body_dir/(key+'.png')) for key in ('playblast','init','strength')}
     body_guides['plate']=str(directory/'plate.png')
+    if (directory/'playblast_ns.png').is_file():
+        body_guides['playblast_ns']=str(directory/'playblast_ns.png')
     # 0.3.7: тень тела из рендера (Cycles, свет комнаты) — для режима «тени от рендера».
     if (directory/'shadow.png').is_file():
         body_guides['body_shadow']=str(directory/'shadow.png')
@@ -860,6 +869,8 @@ def do_place(request, config):
         # промпт с предметом; вклейка и тень Cycles в этом режиме не применяются.
         body_guides['h3_props']=dict(playblast=str(directory/'h3_playblast.png'),init=str(directory/'h3_init.png'),
                                      strength=str(directory/'strength.png'),prompt=h3_prompt)
+        if (directory/'h3_playblast_ns.png').is_file():
+            body_guides['h3_props']['playblast_ns']=str(directory/'h3_playblast_ns.png')
         if (directory/'prop_shadow.png').is_file():
             body_guides['prop_shadow']=str(directory/'prop_shadow.png')
         fit["props"] = prop_report["props"]

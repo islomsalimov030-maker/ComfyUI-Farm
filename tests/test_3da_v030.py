@@ -348,3 +348,20 @@ def test_control_node_and_serialize_never_throws(tmp_path):
     js = (ROOT / 'comfyui/ComfyUI-3DA/web/extension.js').read_text(encoding='utf-8')
     assert 'объекты сцены ещё не загружены' not in js and "comfyClass !== '3DAControl'" in js
     assert js == (ROOT / 'web/3da/extension.js').read_text(encoding='utf-8')
+
+
+def test_h3_shadow_mode_uses_playblast_without_render_shadows(tmp_path):
+    # 0.3.14: «Тени от H3» — референс без падающих теней Cycles; «Тени от рендера» — с ними.
+    ns = tmp_path / 'h3_playblast_ns.png'
+    ns.write_bytes(b'x')
+    joint = dict(playblast='with_shadow', init='i', strength='m', prompt='p', playblast_ns=str(ns))
+    payload = dict(status='ok', h3_prompt='p', playblast='p', init='i', strength='m', silhouette='s', debug='d', report={},
+                   body_guides=dict(plate='a', playblast='b', init='c', strength='d', prompt='body', render_prompt='r',
+                                    h3_props=joint, validation=dict(ok=True, reasons=[], warnings=[])))
+    loaded = lambda path: torch.full((1, 16, 16, 3), 1. if str(path) == str(ns) else 0.)
+    for render, expect in ((False, 1.), (True, 0.)):
+        with patch.object(nodes, 'invoke', return_value=payload), \
+             patch.object(nodes, 'load_image', side_effect=loaded), \
+             patch.object(nodes, 'load_mask', return_value=torch.zeros((1, 16, 16))):
+            out = place('loc.json', settings=dict(render_shadows=render))
+        assert float(out[0].max()) == expect and float(out[9]['playblast'].max()) == expect
