@@ -755,6 +755,10 @@ def do_place(request, config):
                 offset = basis @ np.asarray([prop.get(k, 0.) for k in "xyz"], dtype=float)
                 prop.update(dict(zip("xyz", offset.tolist())))
             render_props_value.append(prop)
+        # 0.3.4: stick по смещению вне кадра не пропадает из 3D-окна и рендера — придвигаем к персонажу.
+        from prop_validation import keep_props_in_frame
+        render_props_value, frame_notes = keep_props_in_frame(render_props_value, KP, plate.project, (plate.Wp, plate.Hp))
+        fit["prop_frame_notes"] = frame_notes
         props_path = job / "props.json"
         save_json(props_path, render_props_value)
         overlay_dir = job / "props_render"
@@ -814,7 +818,7 @@ def do_place(request, config):
     # Русские причины для GeometryRejected/статуса; коды — для тестов и логов. Кадр — предупреждение.
     reasons=(explain(fit) or codes) if codes else []
     fit['reasons_ru']=reasons
-    fit['warnings']=frame_warnings(fit)
+    fit['warnings']=frame_warnings(fit)+list(fit.get('prop_frame_notes') or [])
     save_json(job/'fit/fit.json',fit)
     body_guides['validation']=dict(ok=not codes,reasons=reasons,codes=codes,warnings=fit['warnings'])
     save_json(job/'body_guides.json',body_guides)

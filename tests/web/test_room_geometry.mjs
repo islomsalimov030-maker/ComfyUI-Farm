@@ -51,6 +51,8 @@ const text = lines => lines.map(l => l.text).join(' | ');
   const near = text(diagnose(room, cam, ents(box(0, -1.6, 0, 1.6))));
   assert.match(near, /частично вне кадра/); assert.doesNotMatch(near, /нет опоры|внутри/);
   assert.match(text(diagnose(room, cam, ents(box(0, 6, 0, 1.6)))), /в кадре нет ни одной части тела/);
+  const stick = { id: 'prop_0', kind: 'prop', label: 'Предмет 1 · stick', object: box(9, -3, 0, 0.1, 0.1) };
+  assert.match(text(diagnose(room, cam, [...ents(box(0, -3, 0, 1.6)), stick])), /Предмет 1 · stick: вне кадра/, 'prop out of frame is reported');
   assert.match(text(diagnose(room, cam, ents(box(0, -3, 0.045, 1.6)))), /^Геометрия и рост: ок$/, '4.5 cm gap is a contact');
   const occ = occluderGeometry(mesh, cam);
   assert.equal(occ.indices, mesh.indices); assert.notEqual(occ.positions[0], mesh.positions[0]);

@@ -105,13 +105,15 @@ def test_spatial_ssim_is_measured_and_can_fail_despite_zero_changed_pixels():
         assert metrics['outside_passed'] is False and 'warning' in metrics
 
 
-def test_original_room_pixels_preserved_at_original_png_resolution():
-    g=guides();g['original_plate']=torch.rand((1,160,192,3));image=torch.ones_like(g['plate'])
+def test_final_is_in_h3_raster_not_1mp_plate_rgb():
+    # 0.3.4: МП пульта = МП итога. Старый original_plate (plate_rgb 1344×768) больше не задаёт размер.
+    g=guides(256);g['original_plate']=torch.rand((1,96,168,3));g['plate']=torch.rand_like(g['plate'])
+    image=torch.ones_like(g['plate'])
     with patch.object(nodes,'config',return_value={'repo':str(ROOT)}):
         final,support,metrics=nodes.NativeComposite().execute(image,g,g['plate'],torch.zeros_like(g['strength']))
-    assert final.shape==g['original_plate'].shape
-    assert torch.equal(final[~support.bool()],g['original_plate'][~support.bool()])
-    assert json.loads(metrics)['final_raster_hw']==[160,192]
+    assert final.shape==image.shape
+    assert torch.equal(final[~support.bool()],g['plate'][~support.bool()])
+    assert json.loads(metrics)['final_raster_hw']==[256,256]
 
 
 def transform(entity,x=0,y=0,z=0):

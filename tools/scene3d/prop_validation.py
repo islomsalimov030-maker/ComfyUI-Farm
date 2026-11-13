@@ -59,3 +59,34 @@ def include_props(report):
     report['h3_eligibility']=dict(ok=not blocking_reasons(report),reasons=blocking_reasons(report),
                                   warnings=frame_warnings(report))
     return report
+
+
+def keep_props_in_frame(props, kp, project, size, margin=.06):
+    """0.3.4: предмет по смещению от якоря (без матрицы 3D-окна), попавший вне кадра, придвигается к якорю
+    по той же линии, пока не войдёт в кадр с полем margin. Якорь сам вне кадра — предмет не трогаем.
+    project(points Nx3) -> (u, v, z) в пикселях; size = (W, H). Возвращает (props, заметки по-русски)."""
+    import numpy as np
+    from prop_render import anchors_from_mhr70
+    anchors = anchors_from_mhr70(kp)
+    width, height = size
+
+    def inside(point):
+        u, v, z = project(np.asarray([point], dtype=float))
+        return bool(z[0] > 0 and margin <= u[0] / width <= 1 - margin and margin <= v[0] / height <= 1 - margin)
+
+    out, notes = [], []
+    for index, prop in enumerate(props):
+        prop = dict(prop)
+        if 'absolute_matrix_world' not in prop:
+            anchor = prop.get('anchor', 'world')
+            base = np.asarray(anchors['char_pelvis' if anchor == 'world' else anchor], dtype=float)
+            offset = np.asarray([float(prop.get(axis, 0.)) for axis in 'xyz'], dtype=float)
+            if offset.any() and inside(base) and not inside(base + offset):
+                low, high = 0., 1.
+                for _ in range(24):
+                    mid = (low + high) / 2
+                    low, high = (mid, high) if inside(base + offset * mid) else (low, mid)
+                prop.update(zip('xyz', (offset * low).tolist()))
+                notes.append(f'предмет {index + 1} был вне кадра — придвинут к персонажу')
+        out.append(prop)
+    return out, notes

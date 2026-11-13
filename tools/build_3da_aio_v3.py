@@ -218,6 +218,7 @@ def transform(w, oi):
     b.connect(top, control, 0, gate, 'mode')
     prop = by[srv.PROP]
     b.connect(top, control, 1, prop, 'prop_id')
+    report['prop_anchor'] = prop_in_hand(prop)
     grp = next((g for g in w['groups'] if g['title'].startswith('ФОТО · входы')), None)
     if grp is not None:
         x, y, gw, gh = grp['bounding']
@@ -275,6 +276,24 @@ def transform(w, oi):
     if errors:
         raise ValueError(errors)
     return w, report
+
+
+PROP_WIDGETS = ['prop_id', 'anchor', 'x', 'y', 'z', 'yaw', 'pitch', 'roll', 'scale', 'size_m', 'prop_strength']
+
+
+def prop_in_hand(prop):
+    """0.3.4: предмет по умолчанию в правой руке без смещения. Старое «world» + x=0.65 ставило stick
+    на 65 см вбок от таза — за краем кадра, и в 3D-окне его не было видно."""
+    named = prop.setdefault('widgets_values_named', {})
+    values = list(prop.get('widgets_values') or [])
+    if len(values) >= len(PROP_WIDGETS):
+        named.update({k: v for k, v in zip(PROP_WIDGETS, values) if k not in named})
+    if named.get('anchor', 'world') == 'world':
+        named.update(anchor='char_hand_r', x=0., y=0., z=0.)
+        if len(values) >= len(PROP_WIDGETS):
+            values[1:5] = ['char_hand_r', 0., 0., 0.]
+            prop['widgets_values'] = values
+    return named.get('anchor')
 
 
 ONLY_3DA = {'3DALocation', '3DAPlacePose', '3DAProp', '3DASceneEdits', '3DASceneExport'}

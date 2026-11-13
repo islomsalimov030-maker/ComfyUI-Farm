@@ -281,6 +281,9 @@ export function diagnose(room, cam, entities) {
     const held = e.kind === 'prop' && body && touches(V.filter((_, i) => i % 4 === 0), body.V.filter((_, i) => i % 2 === 0));
     if (r.gap !== null && r.gap > LIMITS.gap && !held)
       lines.push({ level: 'error', text: `${name}: нет опоры — висит на ${cm(r.gap)} см над поверхностью` });
+    // 0.3.4: предмет вне кадра раньше просто «пропадал» из 3D-окна без объяснения.
+    if (e.kind === 'prop' && r.frame === 0)
+      lines.push({ level: 'warn', text: `${name}: вне кадра — выберите его в списке «Объект» и подвиньте в кадр` });
     if (e.kind === 'body') {
       if (r.frame === 0) lines.push({ level: 'error', text: 'Персонаж: в кадре нет ни одной части тела' });
       else if (r.frame < 1) lines.push({ level: 'info', text: 'Персонаж частично вне кадра — это допустимо' });

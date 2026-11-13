@@ -523,8 +523,7 @@ class PlacePose:
                 guides.update(prompt=bundle.get('prompt') or bundle.get('render_prompt') or h3_prompt,
                               render_prompt=bundle.get('render_prompt') or h3_prompt)
                 guides['scene_setup']=result.get('scene_setup')
-                if guides['scene_setup']:
-                    guides['original_plate']=load_image(Path(guides['scene_setup']['plate_dir'])/'plate_rgb.png')
+                # 0.3.4: финал собирается в растре H3 (МП пульта); чистая комната — plate (то же фото в этом растре).
                 guides['validation']=dict(bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+str(result['status'])]}))
                 guides['validation']['warnings']=list(guides['validation'].get('warnings') or [])+prop_notes
                 guides['prop_rgb']=load_image(bundle.get('prop_rgb',result['init']))
@@ -1001,7 +1000,9 @@ class NativeComposite:
         sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
         from prop_composite import alpha, restore, outside_metrics, harmonize
         import torch.nn.functional as F
-        original = g.get('original_plate', g['plate']).to(image.device)
+        # 0.3.4: итог в растре H3 (МП из пульта), а не в 1344×768 plate_rgb: чистая комната — plate,
+        # то же фото комнаты, уже пересчитанное в этот растр (LANCZOS из полного фото).
+        original = g['plate'].to(image.device)
         if original.ndim!=4 or original.shape[0]!=1 or original.shape[-1]!=3 or not torch.isfinite(original).all():
             raise ValueError('3DA: expected one original room PNG')
         # Validate the paired legacy repair data, even though native body-only
@@ -1045,7 +1046,7 @@ class NativeComposite:
         parameters=yaml.safe_load((Path(config()['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))
         metrics=outside_metrics(final,original,full_support.cpu().numpy()[0],parameters)
         metrics.update(guard_pixels=int(guard.sum()),working_raster_hw=list(image.shape[1:3]),
-                       final_raster_hw=list(original.shape[1:3]),source_png_provided='original_plate' in g,
+                       final_raster_hw=list(original.shape[1:3]),source_png_provided=False,
                        appearance_validation='requires visual review')
         if not metrics['outside_passed']:
             metrics['warning']='3DA: вклейка изменила фон сильнее допуска — проверьте кадр глазами'
