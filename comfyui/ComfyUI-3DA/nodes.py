@@ -386,6 +386,8 @@ class PlacePose:
             **{name: ('FLOAT', {'default': 0., 'step': .01 if name in ('body_dx', 'body_dy', 'body_dz') else 1.})
                for name in ('body_dx', 'body_dy', 'body_dz', 'body_dyaw', 'body_dpitch', 'body_droll')},
         }, 'optional': {'pose_text': ('STRING', {'default': '', 'multiline': True}),
+                        'megapixels': ('FLOAT', {'default': 0., 'min': 0., 'max': 4.2, 'step': .05,
+                                                 'tooltip': 'МП рендера до H3 и H3 (из пульта); 0 = 1344×768'}),
                         'props': ('STRING', {'default': '[]', 'forceInput': True}),
                         'body_transform': ('STRING', {'default': '', 'forceInput': True})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE', 'IMAGE', 'MASK', '3DA_BODY_GUIDES')
@@ -396,7 +398,7 @@ class PlacePose:
     def execute(self, location, pose_ref, pose_class, target_object, support_parts, secondary_contacts,
                 instance_hint, height_m, body_json, proxy, strength, seed, block_on_fail=False,
                 body_dx=0., body_dy=0., body_dz=0., body_dyaw=0., body_dpitch=0., body_droll=0.,
-                pose_text='', props='[]', body_transform=''):
+                pose_text='', props='[]', body_transform='', megapixels=0.):
         try:
             if not isinstance(block_on_fail, bool) or not isinstance(pose_text, str):
                 raise ValueError('block_on_fail must be BOOLEAN; pose_text must be STRING')
@@ -404,18 +406,22 @@ class PlacePose:
                               body_dyaw=body_dyaw, body_dpitch=body_dpitch, body_droll=body_droll)
             for name, value in transforms.items():
                 finite_number(value, name)
+            finite_number(megapixels, 'megapixels', minimum=0., maximum=4.2)
             validated_props(props)
             result = invoke('place', dict(location=location, pose_class=pose_class, target_object=target_object,
                             support_parts=support_parts, secondary_contacts=secondary_contacts,
                             instance_hint=instance_hint, height_m=height_m, body_json=body_json,
                             proxy=proxy, strength=strength, seed=seed, block_on_fail=block_on_fail,
-                            pose_text=pose_text, props=props, body_transform=body_transform, **transforms), {'pose_ref': pose_ref})
+                            pose_text=pose_text, props=props, body_transform=body_transform, megapixels=megapixels,
+                            **transforms), {'pose_ref': pose_ref})
             status = result['status']
             # Manual mode retains diagnostics without using status as an H3 gate.
             accepted = isinstance(status, str) and status in ('ok', 'partial')
             h3_prompt = result['h3_prompt'] if not block_on_fail or accepted else ''
             if not isinstance(status, str):
                 status = json.dumps(status, ensure_ascii=False)
+            # Первая строка — статус и понятные причины/предупреждения по-русски; вторая — JSON (как раньше).
+            status += human_status(result.get('report', {}))
             status += '\n' + json.dumps({'report': result.get('report', {}),
                                          'timings': result.get('timings', {})}, ensure_ascii=False)
             bundle=result.get('body_guides')
@@ -626,6 +632,31 @@ class GeometryRejected(ValueError):
     """Visible Comfy execution error; never save a fake final or spend H3."""
 
 
+def warning_ru(code):
+    match = re.fullmatch(r'prop\[(\d+)\] out_of_frame', str(code))
+    if match:
+        return f'предмет {int(match.group(1)) + 1} частично вне кадра'
+    return WARNING_RU.get(code, str(code))
+
+
+def human_status(report):
+    reasons = report.get('reasons_ru') or []
+    warnings = [warning_ru(w) for w in report.get('warnings') or []]
+    parts = []
+    if reasons:
+        parts.append('H3 не отправится: ' + '; '.join(reasons))
+    if warnings:
+        parts.append('Предупреждение: ' + '; '.join(warnings))
+    return (' — ' + ' | '.join(parts)) if parts else ''
+
+
+WARNING_RU = {'body_partly_out_of_frame': 'тело частично вне кадра'}
+
+
+def rejected(reasons):
+    return GeometryRejected('3DA: H3 не отправлен — ' + ('; '.join(map(str, reasons)) or 'геометрия не принята'))
+
+
 class H3Remote:
     @classmethod
     def INPUT_TYPES(cls):
@@ -655,8 +686,7 @@ class H3Remote:
             ignored=[]
             if prop_handling=='rendered_separately':
                 if body_guides and not body_guides.get('validation',{}).get('ok',True):
-                    raise GeometryRejected('3DA: H3 не отправлен. Непринятая геометрия: '+
-                        '; '.join(body_guides['validation'].get('reasons',[])))
+                    raise rejected(body_guides['validation'].get('reasons',[]))
                 if not body_guides or not body_guides.get('prompt','').strip():
                     raise ValueError('Separate prop mode requires accepted body_guides')
                 if prop_repair is None or prop_repair_mask is None:
@@ -719,28 +749,29 @@ def accepted_guides(guides):
     # prompt as a surrogate gate for a native sampler.
     validation = guides.get('validation') if isinstance(guides, dict) else None
     if not isinstance(validation, dict) or validation.get('ok') is not True:
-        reasons = validation.get('reasons', []) if isinstance(validation, dict) else ['missing geometry validation']
-        raise GeometryRejected('3DA: непринятая геометрия: ' + '; '.join(map(str, reasons)))
+        reasons = (validation.get('reasons', []) if isinstance(validation, dict) else
+                   ['Сначала выполните группу 1 (подготовка сцены): нет результата проверки геометрии'])
+        raise rejected(reasons)
     for key in ('plate', 'playblast', 'init'):
         value = guides.get(key)
         if not isinstance(value, torch.Tensor) or value.ndim != 4 or value.shape[0] != 1 or value.shape[-1] != 3 or not torch.isfinite(value).all():
-            raise GeometryRejected('3DA: invalid ' + key)
+            raise GeometryRejected('3DA: повреждена карта сцены ' + key + ' — выполните группу 1 заново')
     shape = guides['plate'].shape
     if any(guides[key].shape != shape for key in ('playblast', 'init')) or min(shape[1:3]) < 64:
-        raise GeometryRejected('3DA: body guides raster mismatch')
+        raise GeometryRejected('3DA: размеры карт сцены не совпадают — выполните группу 1 заново')
     mask = guides.get('strength')
     if not isinstance(mask, torch.Tensor) or tuple(mask.shape) != tuple(shape[:3]) or not torch.isfinite(mask).all() or mask.min() < 0 or mask.max() > 1:
-        raise GeometryRejected('3DA: invalid body strength')
+        raise GeometryRejected('3DA: повреждена маска силы (strength) — выполните группу 1 заново')
     if not isinstance(guides.get('prompt'), str) or not guides['prompt'].strip():
-        raise GeometryRejected('3DA: empty body prompt')
+        raise GeometryRejected('3DA: пустой промпт тела — выполните группу 1 заново')
     original=guides.get('original_plate')
     if original is not None and (not isinstance(original,torch.Tensor) or original.ndim!=4 or original.shape[0]!=1 or original.shape[-1]!=3 or not torch.isfinite(original).all()):
-        raise GeometryRejected('3DA: invalid original room PNG')
+        raise GeometryRejected('3DA: повреждено исходное фото комнаты — выполните группу 1 заново')
     prop_rgb, prop_alpha = guides.get('prop_rgb'), guides.get('prop_alpha')
     if not isinstance(prop_rgb, torch.Tensor) or prop_rgb.shape != shape or not torch.isfinite(prop_rgb).all():
-        raise GeometryRejected('3DA: invalid source prop RGB')
+        raise GeometryRejected('3DA: повреждён слой предмета (RGB) — выполните группу 1 заново')
     if not isinstance(prop_alpha, torch.Tensor) or tuple(prop_alpha.shape) != tuple(shape[:3]) or not torch.isfinite(prop_alpha).all() or prop_alpha.min() < 0 or prop_alpha.max() > 1:
-        raise GeometryRejected('3DA: invalid source prop alpha')
+        raise GeometryRejected('3DA: повреждена маска предмета — выполните группу 1 заново')
     return guides
 
 
@@ -750,18 +781,29 @@ class NativeGuides:
         cfg=config()
         repo=Path(cfg['repo'])
         return content_fingerprint([HERE/'nodes.py',repo/'config/placement.yaml',repo/'tools/scene3d/prop_composite.py',
+                                    repo/'tools/scene3d/prompt_h3.py',
                                     Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'body_guides': ('3DA_BODY_GUIDES',)}}
+        return {'required': {'body_guides': ('3DA_BODY_GUIDES',)},
+                'optional': {'frame_prompt': ('STRING', {'default': '', 'multiline': True, 'forceInput': True,
+                                 'tooltip': 'Промпт кадра пользователя (одежда, детали). Image N / <Picture N> — его ref_image; '
+                                            'в H3 они идут после плиты и эталона (<Picture 3…>)'}),
+                             'user_refs': ('INT', {'default': 3, 'min': 0, 'max': 3})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'IMAGE', 'MASK', 'STRING', 'INT', 'INT', 'BOOLEAN')
     RETURN_NAMES = ('plate', 'playblast', 'init', 'strength', 'prompt', 'width', 'height', 'accepted')
     FUNCTION = 'execute'
     CATEGORY = '3DA/native'
 
-    def execute(self, body_guides):
+    def execute(self, body_guides, frame_prompt='', user_refs=3):
         g = accepted_guides(body_guides)
-        return g['plate'], g['playblast'], g['init'], g['strength'], g['prompt'], g['plate'].shape[2], g['plate'].shape[1], True
+        prompt = g['prompt']
+        if isinstance(frame_prompt, str) and frame_prompt.strip():
+            import sys
+            sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
+            import prompt_h3
+            prompt = prompt_h3.merge_frame_prompt(prompt, frame_prompt, int(user_refs))
+        return g['plate'], g['playblast'], g['init'], g['strength'], prompt, g['plate'].shape[2], g['plate'].shape[1], True
 
 
 class NativeComposite:
@@ -886,7 +928,7 @@ class SceneExport:
         # not an H3 acceptance and does not change its validation result.
         setup = body_guides.get('scene_setup')
         if not setup:
-            raise ValueError('3DA: сначала подготовьте геометрию сцены')
+            raise ValueError('3DA: Сначала выполните группу 1 (подготовка сцены)')
         result = scene_helpers().export(setup, config())
         text = json.dumps(result, ensure_ascii=False)
         return {'ui': {'text': [text]}, 'result': (result['model_file'], result['manifest'])}

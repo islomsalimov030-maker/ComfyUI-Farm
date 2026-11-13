@@ -190,6 +190,24 @@ export function worldVertices(object, limit = LIMITS.sample) {
   return Array.from({ length: limit }, (_, i) => out[Math.floor(i * k)]);
 }
 
+const NEAR_CELLS = 3;
+// Nearest visible room point around pixel cell (i, j) and the signed depth of p along its normal.
+export function nearestSurface(room, cam, p, i, j) {
+  let best = null, bestD = Infinity;
+  for (let jj = Math.max(0, j - NEAR_CELLS); jj <= Math.min(room.gh - 1, j + NEAR_CELLS); jj++)
+    for (let ii = Math.max(0, i - NEAR_CELLS); ii <= Math.min(room.gw - 1, i + NEAR_CELLS); ii++) {
+      const k = jj * room.gw + ii, z = room.depth[k];
+      if (!Number.isFinite(z)) continue;
+      const d = cam.ray((ii + 0.5) * room.step, (jj + 0.5) * room.step), t = z / dot(d, cam.f);
+      const q = [cam.C[0] + d[0] * t, cam.C[1] + d[1] * t, cam.C[2] + d[2] * t];
+      const e = [p[0] - q[0], p[1] - q[1], p[2] - q[2]], dist = dot(e, e);
+      if (dist < bestD) { bestD = dist; best = { k, e }; }
+    }
+  if (!best) return null;
+  const n = [room.normal[3 * best.k], room.normal[3 * best.k + 1], room.normal[3 * best.k + 2]];
+  return { k: best.k, depth: Math.max(0, -dot(best.e, n)) };
+}
+
 // Per-object facts: penetration (p95 of penetrating samples, m) and where, support gap, framing.
 export function inspect(room, cam, V) {
   const pens = [];
@@ -199,15 +217,18 @@ export function inspect(room, cam, V) {
     const [px, py, z] = cam.project(p);
     if (z > 0 && px >= 0 && px < cam.W && py >= 0 && py < cam.H) {
       inFrame++;
-      const k = Math.floor(py / room.step) * room.gw + Math.floor(px / room.step);
+      const i = Math.floor(px / room.step), j = Math.floor(py / room.step), k = j * room.gw + i;
       const behind = z - room.depth[k];
       if (behind > 0) {
-        const d = cam.ray(px, py), n = [room.normal[3 * k], room.normal[3 * k + 1], room.normal[3 * k + 2]];
-        const along = behind / dot(d, cam.f) * Math.abs(dot(d, n));
-        if (along < LIMITS.penDepthMax) {
-          pen = along;
-          where = n[1] > LIMITS.horizontal
-            ? (room.floorY !== null && Math.abs(room.height[k] - room.floorY) <= LIMITS.levelTol ? 'floor' : 'surface')
+        // 0.2.0: как сервер (pose_fit.penetration) — глубина по нормали БЛИЖАЙШЕЙ точки видимой поверхности
+        // (окрестность ±NEAR_CELLS клеток z-буфера), а не клетки под пикселем: точка за тонким предметом
+        // у контакта (стопа за наручниками) больше не считается «внутри» на всю глубину до него.
+        const s = nearestSurface(room, cam, p, i, j);
+        if (s && s.depth < LIMITS.penDepthMax) {
+          pen = s.depth;
+          const n1 = room.normal[3 * s.k + 1];
+          where = n1 > LIMITS.horizontal
+            ? (room.floorY !== null && Math.abs(room.height[s.k] - room.floorY) <= LIMITS.levelTol ? 'floor' : 'surface')
             : 'wall';
         }
       }
