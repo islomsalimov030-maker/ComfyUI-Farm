@@ -190,6 +190,17 @@ export function worldVertices(object, limit = LIMITS.sample) {
   return Array.from({ length: limit }, (_, i) => out[Math.floor(i * k)]);
 }
 
+// 0.3.5: «В кадр» — сдвиг предмета (XYZ) так, чтобы его центр встал перед персонажем, на distance м
+// ближе к камере (не внутри тела, хорошо виден). body/prop — мировые точки, camera — {x,y,z}.
+export function bringToBody(bodyPoints, propPoints, camera, distance = 0.35) {
+  const mean = P => [0, 1, 2].map(k => P.reduce((s, p) => s + p[k], 0) / P.length);
+  if (!bodyPoints.length || !propPoints.length) return null;
+  const b = mean(bodyPoints), c = mean(propPoints);
+  const d = [camera.x - b[0], camera.y - b[1], camera.z - b[2]];
+  const n = Math.hypot(...d) || 1;
+  return [0, 1, 2].map(k => b[k] + d[k] / n * distance - c[k]);
+}
+
 const NEAR_CELLS = 3;
 // Nearest visible room point around pixel cell (i, j) and the signed depth of p along its normal.
 export function nearestSurface(room, cam, p, i, j) {

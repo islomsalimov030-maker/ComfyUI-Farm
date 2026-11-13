@@ -1,5 +1,5 @@
 // Named-object selection on the existing core gizmo, not another 3D editor.
-import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry } from './roomGeometry.js';
+import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody } from './roomGeometry.js';
 export function sceneSelection(view, node, initialTransforms = null) {
   const setup = node.properties['3DA Scene'];
   if (!setup?.entities?.length) return null;
@@ -52,12 +52,29 @@ export function sceneSelection(view, node, initialTransforms = null) {
   status.className = 'threeda-scene-status';
   Object.assign(status.style, { color:'white', padding:'5px 8px', borderRadius:'4px',
     font:'12px sans-serif', background:'#2e7d32', whiteSpace:'pre-line' });
-  toolbar.append(picker,modes,status);
+  // 0.3.5: предмет вне кадра не двигать вслепую — кнопка ставит выбранный предмет перед персонажем.
+  const toFrame = document.createElement('button');
+  toFrame.className = 'threeda-to-frame';
+  toFrame.textContent = 'В кадр';
+  toFrame.title = 'Поставить выбранный предмет перед персонажем (дальше двигайте гизмо)';
+  Object.assign(toFrame.style, { color:'white', background:'#263744', padding:'5px 8px', border:'1px solid #4b6070', cursor:'pointer' });
+  toolbar.append(picker,modes,toFrame,status);
   const parent = view.domElement.parentElement;
   parent?.appendChild(toolbar);
   for (const event of ['pointerdown','pointerup','click','dblclick','keydown'])
     toolbar.addEventListener(event, e => e.stopPropagation());
   picker.addEventListener('change', () => select(picker.value));
+  toFrame.addEventListener('click', () => {
+    const body = entities.find(e => e.kind === 'body');
+    if (!selected || selected.kind !== 'prop' || !body) return;
+    const delta = bringToBody(worldVertices(body.object), worldVertices(selected.object), setup.camera.position);
+    if (!delta) return;
+    selected.object.position.set(selected.object.position.x + delta[0], selected.object.position.y + delta[1],
+                                 selected.object.position.z + delta[2]);
+    root.updateMatrixWorld(true);
+    view.forceRender();
+    refresh();
+  });
   let room = null, occluder = null, roomError = null, disposed = false;
   loadRoom(setup).then(loaded => {
     if (disposed || !loaded) return;
@@ -128,6 +145,8 @@ export function sceneSelection(view, node, initialTransforms = null) {
     view.setGizmoEnabled(true);
     selected = entity;
     picker.value = id;
+    toFrame.disabled = entity.kind !== 'prop';
+    toFrame.style.opacity = toFrame.disabled ? '0.4' : '1';
     node.properties['3DA Selected Entity'] = id;
     syncMode();
     view.forceRender();

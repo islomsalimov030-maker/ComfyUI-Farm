@@ -1,7 +1,7 @@
 // node test_room_geometry.mjs — room occlusion/diagnostics of web/3da/roomGeometry.js on synthetic rooms.
 import assert from 'node:assert/strict';
 const mod = process.argv[2] ?? '../../web/3da/roomGeometry.js';
-const { parseObj, cameraModel, buildRoom, diagnose, inspect, occluderGeometry } = await import(new URL(mod, import.meta.url));
+const { parseObj, cameraModel, buildRoom, diagnose, inspect, occluderGeometry, bringToBody } = await import(new URL(mod, import.meta.url));
 
 // Plate-world (Blender, Z up) quads -> OBJ text, like plate_mesh.obj.
 function obj(quads, n = 24) {
@@ -126,3 +126,12 @@ const text = lines => lines.map(l => l.text).join(' | ');
   assert.ok(sunk.pen > 0.07, 'real penetration still found: ' + sunk.pen);
 }
 console.log('ok');
+
+// 0.3.5: «В кадр» — предмет встаёт перед телом, на 35 см ближе к камере.
+{
+  const d = bringToBody([[0, 0, -3], [0, 2, -3]], [[5, 1, -3], [5.2, 1, -3]], { x: 0, y: 1, z: 0 });
+  const c = [5.1 + d[0], 1 + d[1], -3 + d[2]];
+  assert.ok(Math.abs(c[0]) < 1e-9 && Math.abs(c[1] - 1) < 1e-9 && Math.abs(c[2] + 2.65) < 1e-9, 'prop in front of body');
+  assert.equal(bringToBody([], [[0, 0, 0]], { x: 0, y: 0, z: 0 }), null);
+  console.log('ok');
+}
