@@ -472,7 +472,11 @@ class PlacePose:
                         'megapixels': ('FLOAT', {'default': 0., 'min': 0., 'max': 4.2, 'step': .05,
                                                  'tooltip': 'МП рендера до H3 и H3 (из пульта); 0 = 1344×768'}),
                         'props': ('STRING', {'default': '[]', 'forceInput': True}),
-                        'body_transform': ('STRING', {'default': '', 'forceInput': True})}}
+                        'body_transform': ('STRING', {'default': '', 'forceInput': True}),
+                        'prop_by_h3': ('BOOLEAN', {'default': True, 'label_on': 'предмет рисует H3',
+                                                   'label_off': 'точная вклейка предмета',
+                                                   'tooltip': 'Вкл: тело и предмет в одной сцене, H3 рисует обоих и их тени. '
+                                                              'Выкл: H3 рисует тело, предмет и его тень из рендера вклеиваются.'})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE', 'IMAGE', 'MASK', '3DA_BODY_GUIDES')
     RETURN_NAMES = ('playblast', 'init', 'strength', 'silhouette', 'h3_prompt', 'status', 'debug', 'prop_repair', 'prop_repair_mask', 'body_guides')
     FUNCTION = 'execute'
@@ -481,7 +485,7 @@ class PlacePose:
     def execute(self, location, pose_ref, pose_class, target_object, support_parts, secondary_contacts,
                 instance_hint, height_m, body_json, proxy, strength, seed, block_on_fail=False,
                 body_dx=0., body_dy=0., body_dz=0., body_dyaw=0., body_dpitch=0., body_droll=0.,
-                pose_text='', props='[]', body_transform='', megapixels=0.):
+                pose_text='', props='[]', body_transform='', megapixels=0., prop_by_h3=True):
         try:
             if not isinstance(block_on_fail, bool) or not isinstance(pose_text, str):
                 raise ValueError('block_on_fail must be BOOLEAN; pose_text must be STRING')
@@ -517,11 +521,15 @@ class PlacePose:
             status += '\n' + json.dumps({'report': result.get('report', {}),
                                          'timings': result.get('timings', {})}, ensure_ascii=False)
             bundle=result.get('body_guides')
-            guides=({key:load_mask(bundle[key]) if key=='strength' else load_image(bundle[key])
+            # 0.3.6: «предмет рисует H3» — карты тела+предмета (без тени Cycles) и промпт с предметом.
+            joint = bundle.get('h3_props') if bundle and prop_by_h3 else None
+            maps = {**bundle, **{k: joint[k] for k in ('playblast', 'init', 'strength')}} if joint else bundle
+            guides=({key:load_mask(maps[key]) if key=='strength' else load_image(maps[key])
                      for key in ('plate','playblast','init','strength')} if bundle else {})
             if bundle:
-                guides.update(prompt=bundle.get('prompt') or bundle.get('render_prompt') or h3_prompt,
+                guides.update(prompt=(joint or {}).get('prompt') or bundle.get('prompt') or bundle.get('render_prompt') or h3_prompt,
                               render_prompt=bundle.get('render_prompt') or h3_prompt)
+                guides['prop_mode'] = 'h3' if joint else 'composite'
                 guides['scene_setup']=result.get('scene_setup')
                 # 0.3.4: финал собирается в растре H3 (МП пульта); чистая комната — plate (то же фото в этом растре).
                 guides['validation']=dict(bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+str(result['status'])]}))
@@ -530,6 +538,8 @@ class PlacePose:
                 guides['prop_alpha']=load_mask(bundle['prop_alpha']) if bundle.get('prop_alpha') else torch.zeros_like(guides['strength'])
                 if bundle.get('prop_shadow'):
                     guides['prop_shadow']=load_mask(bundle['prop_shadow'])
+            if joint:
+                result = {**result, 'playblast': joint['playblast'], 'init': joint['init'], 'strength': joint['strength']}
             return (load_image(result['playblast']), load_image(result['init']), load_mask(result['strength']),
                     load_mask(result['silhouette']), h3_prompt, status, load_image(result['debug']),
                     load_image(result['prop_repair']) if result.get('prop_repair') else load_image(result['init']),
@@ -996,6 +1006,8 @@ class NativeComposite:
         g = accepted_guides(body_guides)
         if image.shape != g['plate'].shape or not torch.isfinite(image).all():
             raise ValueError('3DA: final image must match geometry raster')
+        if g.get('prop_mode') == 'h3':
+            return self.compose_h3(image, g)
         import sys
         sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
         from prop_composite import alpha, restore, outside_metrics, harmonize
@@ -1052,6 +1064,25 @@ class NativeComposite:
             metrics['warning']='3DA: вклейка изменила фон сильнее допуска — проверьте кадр глазами'
         return final,full_support.float().cpu(),json.dumps(metrics)
 
+
+
+    def compose_h3(self, image, g):
+        """0.3.6: тело и предмет нарисовал H3 (с тенями) — вне области силы возвращаем чистую комнату, без вклейки."""
+        import sys
+        sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
+        from prop_composite import alpha, restore, outside_metrics
+        original = g['plate'].to(image.device)
+        support = torch.from_numpy(alpha(g['strength'].detach().cpu().numpy()[0]))[None].to(image.device)
+        final = restore(original, image, support)
+        full = support > 0
+        final = torch.where(full[..., None], final, original)
+        parameters = yaml.safe_load((Path(config()['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))
+        metrics = outside_metrics(final, original, full.cpu().numpy()[0], parameters)
+        metrics.update(prop_mode='h3', working_raster_hw=list(image.shape[1:3]), final_raster_hw=list(image.shape[1:3]),
+                       appearance_validation='requires visual review')
+        if not metrics['outside_passed']:
+            metrics['warning'] = '3DA: вклейка изменила фон сильнее допуска — проверьте кадр глазами'
+        return final, full.float().cpu(), json.dumps(metrics)
 
 
 class SceneEdits:
@@ -1196,6 +1227,7 @@ class BlenderRuntime:
 
 CHARACTERS = {'Стейси': 'stacy'}
 STEPS = ('Подготовка сцены', 'Генерация')
+PROP_RENDER = ('H3 рисует предмет', 'Точная вклейка')
 
 
 class Control:
@@ -1210,10 +1242,13 @@ class Control:
             'character': (list(CHARACTERS), {'default': 'Стейси', 'tooltip': 'Персонаж (пока только Стейси).'}),
             'prop': (prop_choices(), {'default': NO_PROP, 'tooltip': 'Предмет в сцене или «(нет предмета)».'}),
             'step': (list(STEPS), {'default': STEPS[1], 'tooltip': 'Подготовка сцены — персонаж в комнате и 3D-окно; '
-                                                                 'Генерация — финальное фото. Без 3D-контроля всегда Генерация.'})}}
+                                                                 'Генерация — финальное фото. Без 3D-контроля всегда Генерация.'}),
+            'prop_render': (list(PROP_RENDER), {'default': PROP_RENDER[0],
+                'tooltip': 'H3 рисует предмет — тело и предмет в одной сцене, тени у обоих от H3. '
+                           'Точная вклейка — форма предмета и его тень из рендера, тело и его тень от H3.'})}}
     # prop — тип-список предметов: подключается прямо к полю prop_id узла «3DA Prop» (как модель пульта к загрузчику).
-    RETURN_TYPES = ('INT', prop_choices(), 'STRING')
-    RETURN_NAMES = ('mode', 'prop', 'character')
+    RETURN_TYPES = ('INT', prop_choices(), 'STRING', 'BOOLEAN')
+    RETURN_NAMES = ('mode', 'prop', 'character', 'prop_by_h3')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
@@ -1222,11 +1257,11 @@ class Control:
         # Предмет, удалённый с сервера, не должен давать красную рамку: он просто не ставится.
         return True
 
-    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1]):
+    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1], prop_render=None):
         # step переключает группы в браузере (заглушает «Подготовку сцены» или «Генерацию»); серверу он не нужен.
         on = bool(control_3d)
         chosen = prop if on and prop in prop_choices() else NO_PROP
-        return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'))
+        return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'), prop_render != PROP_RENDER[1])
 
 
 NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,

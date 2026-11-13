@@ -116,6 +116,17 @@ def test_final_is_in_h3_raster_not_1mp_plate_rgb():
     assert json.loads(metrics)['final_raster_hw']==[256,256]
 
 
+def test_prop_by_h3_keeps_h3_pixels_and_never_pastes_render_or_shadow():
+    # 0.3.6: «предмет рисует H3» — в области силы пиксели H3, вне её чистая комната; без вклейки рендера и тени.
+    g=guides();g['plate'][:]=.125;g['strength'][:]=0;g['strength'][:,40:60,40:60]=1
+    g['prop_rgb'][:,45:50,45:50]=.9;g['prop_alpha'][:,45:50,45:50]=1;g['prop_shadow']=torch.ones_like(g['strength'])
+    g['prop_mode']='h3';image=torch.full_like(g['plate'],.5)
+    with patch.object(nodes,'config',return_value={'repo':str(ROOT)}):
+        final,support,metrics=nodes.NativeComposite().execute(image,g,g['plate'],torch.zeros_like(g['strength']))
+    assert torch.all(final[:,45:50,45:50]==.5) and torch.all(final[:,0:10,0:10]==.125)
+    assert json.loads(metrics)['prop_mode']=='h3'
+
+
 def transform(entity,x=0,y=0,z=0):
     return dict(entity_id=entity,position=dict(x=x,y=y,z=z),quaternion=dict(x=0,y=0,z=0,w=1),scale=dict(x=1,y=1,z=1))
 

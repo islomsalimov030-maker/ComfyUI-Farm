@@ -539,8 +539,11 @@ def compose_props(directory, overlay_dir, size=(1344, 768)):
     # otherwise contradicts material refs at every guided frame. Body proxy
     # remains unchanged; clay is still saved as a diagnostic render.
     for target, source in (("init.png", "textured_rgba"), ("playblast.png", "textured_rgba")):
-        base = shaded(Image.open(directory / target))
+        clean = Image.open(directory / target)
+        base = shaded(clean)
         overlay = Image.open(desc[source]).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
+        # 0.3.6: вариант «предмет рисует H3» — тот же предмет без тени Cycles: тени тела и предмета делает H3.
+        Image.alpha_composite(clean.convert("RGBA"), overlay).convert("RGB").save(directory / ("h3_" + target))
         Image.alpha_composite(base, overlay).convert("RGB").save(directory / target)
     body = np.asarray(Image.open(directory / "strength.png").convert("L"), dtype=float) / 255
     props = [(Image.open(p["silhouette"]).convert("L").resize(size, Image.Resampling.NEAREST),
@@ -783,6 +786,10 @@ def do_place(request, config):
         layer.convert('RGB').save(directory/'prop_layer_rgb.png')
         layer.getchannel('A').save(directory/'prop_layer_alpha.png')
         body_guides.update(prop_rgb=str(directory/'prop_layer_rgb.png'),prop_alpha=str(directory/'prop_layer_alpha.png'))
+        # 0.3.6: карты для режима «предмет рисует H3»: тело + предмет в одной сцене, сила с областью предмета,
+        # промпт с предметом; вклейка и тень Cycles в этом режиме не применяются.
+        body_guides['h3_props']=dict(playblast=str(directory/'h3_playblast.png'),init=str(directory/'h3_init.png'),
+                                     strength=str(directory/'strength.png'),prompt=h3_prompt)
         if (directory/'prop_shadow.png').is_file():
             body_guides['prop_shadow']=str(directory/'prop_shadow.png')
         fit["props"] = prop_report["props"]

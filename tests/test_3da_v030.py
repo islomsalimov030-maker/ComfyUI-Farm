@@ -311,9 +311,10 @@ def test_control_node_and_serialize_never_throws(tmp_path):
         (tmp_path / name / 'prop.json').write_text(json.dumps({'name': name}))
     with patch.object(nodes, 'prop_library', return_value=tmp_path):
         c = nodes.Control()
-        assert c.execute(True, 'Стейси', 'stick') == (2, 'stick', 'stacy')
-        assert c.execute(False, 'Стейси', 'stick') == (1, nodes.NO_PROP, 'stacy')
-        assert c.execute(True, 'Стейси', 'удалённый') == (2, nodes.NO_PROP, 'stacy')
+        assert c.execute(True, 'Стейси', 'stick') == (2, 'stick', 'stacy', True)
+        assert c.execute(False, 'Стейси', 'stick') == (1, nodes.NO_PROP, 'stacy', True)
+        assert c.execute(True, 'Стейси', 'удалённый') == (2, nodes.NO_PROP, 'stacy', True)
+        assert c.execute(True, 'Стейси', 'stick', 'Генерация', 'Точная вклейка')[3] is False
         assert nodes.Control.VALIDATE_INPUTS(prop='удалённый') is True
     js = (ROOT / 'comfyui/ComfyUI-3DA/web/extension.js').read_text(encoding='utf-8')
     assert 'объекты сцены ещё не загружены' not in js and "comfyClass !== '3DAControl'" in js
