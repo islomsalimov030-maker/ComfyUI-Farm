@@ -973,6 +973,20 @@ def scene_helpers():
 FIRST_STEP = 'нет сцены — сначала выполните шаг 1 (подготовка сцены)'
 
 
+def sampling_mask(strength, threshold=.02, edge_px=2.):
+    """0.3.13: маска для DifferentialDiffusion без дробных значений внутри области H3.
+    DD открывает пиксель силы m, только когда нормированный шаг шума опустится ниже m. При shift 12 шум почти
+    весь путь высокий и падает в 1–2 последних шагах: пиксели с силой 0.1–0.7 (хвост полосы, зона тени 0.7)
+    открывались лишь на последнем шаге и получали один грубый шаг с sigma ≈ 0.6 → мозаика, «грязь появляется
+    в конце генерации». Сплошная маска даёт всем пикселям области все шаги; комнату вне человека возвращают
+    чистые тени (фото × затемнение H3), край — мягкая вклейка NativeComposite."""
+    from scipy.ndimage import gaussian_filter
+    m = strength.detach().to(torch.float32).cpu().numpy()
+    core = m > float(threshold) * max(float(m.max()), 1e-6)
+    out = np.stack([np.maximum(gaussian_filter(c.astype(np.float32), sigma=edge_px), c) for c in core])
+    return torch.from_numpy(np.clip(out, 0, 1).astype(np.float32)).to(strength.device)
+
+
 def accepted_guides(guides):
     """0.3.0: проверяет только ЦЕЛОСТЬ карт сцены. Проблемы геометрии (опора, контакт, кадр,
     проникновение, предметы) не блокируют — это предупреждения (scene_warnings), H3 исправит."""
@@ -1088,7 +1102,11 @@ class NativeGuides:
             status = '3DA: сцена готова, H3 запущен'
             if warnings:
                 status += ' — Предупреждение (MiniMax исправит): ' + '; '.join(warnings)
-            return (g['plate'], g['playblast'], g['init'], g['strength'], prompt, g['plate'].shape[2],
+            strength = g['strength']
+            if g.get('clean_shadows'):
+                # 0.3.13: при «чистых тенях» H3 получает сплошную маску (1.0 во всей области, край ~6 px).
+                strength = sampling_mask(strength)
+            return (g['plate'], g['playblast'], g['init'], strength, prompt, g['plate'].shape[2],
                     g['plate'].shape[1], True, 2, status)
         except Exception as exc:
             return self.stub('3DA не сработал: ' + fallback_reason(body_guides, exc) + ' — сделано обычное фото')

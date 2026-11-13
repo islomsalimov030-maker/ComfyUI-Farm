@@ -182,6 +182,14 @@ def test_clean_shadows_reaches_contact_shadow_next_to_body():
     assert info['applied'] and info['person_source']=='render'
 
 
+def test_sampling_mask_is_solid_inside_area():
+    # 0.3.13: при чистых тенях H3 получает 1.0 во всей области (без дробных значений), край узкий.
+    s=torch.zeros((1,100,100));s[:,30:70,30:70]=1;s[:,20:30,30:70]=.3;s[:,10:20,30:70]=.05
+    m=nodes.sampling_mask(s)
+    assert float(m[0,50,50])==1 and float(m[0,25,50])==1 and float(m[0,15,50])==1
+    assert float(m[0,0,50])<.01 and float(m[0,50,5])==0
+
+
 def test_clean_masks_prefers_h3_person_mask():
     g=dict(clean_shadows=dict(person=torch.zeros((1,8,8)),person_source='render',zone=None),prop_alpha=torch.zeros((1,8,8)))
     m=nodes.clean_masks(g,support=torch.ones((1,8,8)),person_mask=torch.ones((1,8,8)))
