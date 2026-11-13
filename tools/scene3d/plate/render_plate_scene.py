@@ -842,7 +842,8 @@ def main():
     for scene in spec["scenes"]:
         if a.only and scene["name"] not in a.only.split(","):
             continue
-        run_scene(a, info, scene, scene.get("light", spec.get("light")))
+        # 0.3.0: plate.json "light" (if a location records it) — the same key light as the prop render
+        run_scene(a, info, scene, scene.get("light", spec.get("light", info.get("light"))))
 
 
 if __name__ == "__main__":

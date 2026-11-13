@@ -55,10 +55,10 @@
   "class_type": "MiniMaxH3RefModsLoader",
   "inputs": {
    "show_info": false,
-   "mod_1": "(none)",
+   "mod_1": "ss340/char_face5",
    "strength_1": 1,
    "copies_1": 1,
-   "mod_2": "(none)",
+   "mod_2": "ss340/char_body4",
    "strength_2": 1,
    "copies_2": 1,
    "mod_3": "(none)",
@@ -103,7 +103,18 @@
    "audio_strength_7": 1,
    "components_8": "All",
    "visual_strength_8": 1,
-   "audio_strength_8": 1
+   "audio_strength_8": 1,
+   "Refresh RefMods": null,
+   "RefMod library": null,
+   "Remove RefMod 1": null,
+   "Remove RefMod 2": null,
+   "Remove RefMod 3": null,
+   "Remove RefMod 4": null,
+   "Remove RefMod 5": null,
+   "Remove RefMod 6": null,
+   "Remove RefMod 7": null,
+   "Remove RefMod 8": null,
+   "+ Add RefMod": null
   },
   "_meta": {
    "title": "ФОТО · моды: 1 — лицо, 2 — персонаж в наряде"
@@ -799,7 +810,7 @@
     0
    ],
    "ref_images.ref_image_1": [
-    "236",
+    "264",
     0
    ],
    "prompt": [
@@ -1010,10 +1021,6 @@
     "275",
     6
    ],
-   "ref_images.ref_image_2": [
-    "236",
-    0
-   ],
    "length": 5,
    "ref_image_size": "match"
   },
@@ -1202,8 +1209,8 @@
   "class_type": "ImpactSwitch",
   "inputs": {
    "select": [
-    "266",
-    0
+    "275",
+    8
    ],
    "input1": [
     "239:207",
@@ -1213,7 +1220,7 @@
     "239:286",
     0
    ],
-   "sel_mode": true
+   "sel_mode": false
   },
   "_meta": {
    "title": "3DA · фото перед существующим face pass"
@@ -1223,8 +1230,8 @@
   "class_type": "ImpactSwitch",
   "inputs": {
    "select": [
-    "266",
-    0
+    "275",
+    8
    ],
    "input1": [
     "239:235",
@@ -1234,7 +1241,7 @@
     "239:232",
     0
    ],
-   "sel_mode": true
+   "sel_mode": false
   },
   "_meta": {
    "title": "3DA · сохранить исходную маску / передать face-pass на строгую вклейку"
@@ -1318,7 +1325,18 @@
    "audio_strength_7": 1,
    "components_8": "All",
    "visual_strength_8": 1,
-   "audio_strength_8": 1
+   "audio_strength_8": 1,
+   "Refresh RefMods": null,
+   "RefMod library": null,
+   "Remove RefMod 1": null,
+   "Remove RefMod 2": null,
+   "Remove RefMod 3": null,
+   "Remove RefMod 4": null,
+   "Remove RefMod 5": null,
+   "Remove RefMod 6": null,
+   "Remove RefMod 7": null,
+   "Remove RefMod 8": null,
+   "+ Add RefMod": null
   },
   "_meta": {
    "title": "ФОТО · мод лица для прохода лица"
@@ -1370,14 +1388,18 @@
  "178": {
   "class_type": "NGFarmPanelPhoto",
   "inputs": {
+   "megapixels": [
+    "301",
+    0
+   ],
    "use_Singularity": false,
    "use_ref2v": true,
    "use_10Eros": false,
    "use_PinkCherry": false,
    "seed": 22638786943635,
    "face_seed": 953552952704593,
+   "control_after_generate#1": "fixed",
    "shift": 12,
-   "megapixels": 2,
    "pass2_total": 40,
    "pass2_steps": 8,
    "face_denoise": 0.15,
@@ -1414,19 +1436,11 @@
    "suppress_default_preview": true,
    "preview_frames": 1,
    "preview_fps": 12,
-   "tiny_vae": "taeh3.safetensors"
+   "tiny_vae": "taeh3.safetensors",
+   "preview": ""
   },
   "_meta": {
    "title": "ПРЕВЬЮ генерации"
-  }
- },
- "236": {
-  "class_type": "LoadImage",
-  "inputs": {
-   "image": "tbrender_Viewport_004 (1).png"
-  },
-  "_meta": {
-   "title": "LoadImage"
   }
  },
  "240": {
@@ -1435,7 +1449,13 @@
    "model": [
     "4",
     0
-   ]
+   ],
+   "divider": {},
+   "PowerLoraLoaderHeaderWidget": {
+    "type": "PowerLoraLoaderHeaderWidget"
+   },
+   "divider#2": {},
+   "➕ Add Lora": ""
   },
   "_meta": {
    "title": "Power Lora Loader (rgthree)"
@@ -1892,6 +1912,10 @@
     "274",
     9
    ],
+   "mode": [
+    "266",
+    0
+   ],
    "frame_prompt": [
     "2",
     0
@@ -1950,8 +1974,8 @@
   "class_type": "ImpactSwitch",
   "inputs": {
    "select": [
-    "266",
-    0
+    "275",
+    8
    ],
    "input1": [
     "239:290",
@@ -1961,10 +1985,19 @@
     "292",
     0
    ],
-   "sel_mode": true
+   "sel_mode": false
   },
   "_meta": {
    "title": "3DA · обычное фото / 3D-постановка"
+  }
+ },
+ "301": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2.0
+  },
+  "_meta": {
+   "title": "5. Качество (МП)"
   }
  }
 }

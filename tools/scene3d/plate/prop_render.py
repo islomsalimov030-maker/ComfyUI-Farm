@@ -251,12 +251,88 @@ def _materials(scene, replacements):
                     slot.material, slot.link = material, link
 
 
-def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_objects=None, room_objects=None):
+def sun_vector(camera_matrix, azimuth_deg, elevation_deg):
+    """Direction TO the key light, as render_plate_scene.render_playblast: azimuth 0 = from the camera,
+    +90 = from the right of the frame, 180 = from behind the subject. CPU helper (no bpy)."""
+    import numpy as np
+    m = np.asarray(camera_matrix, dtype=float)
+    fwd = -m[:3, 2]
+    fwd = np.array([fwd[0], fwd[1], 0.])
+    fwd /= max(np.linalg.norm(fwd), 1e-9)
+    right = np.array([fwd[1], -fwd[0], 0.])
+    az, el = math.radians(azimuth_deg), math.radians(elevation_deg)
+    v = (-fwd * math.cos(az) + right * math.sin(az)) * math.cos(el) + np.array([0., 0., math.sin(el)])
+    return v / np.linalg.norm(v)
+
+
+def room_light(scene, room, photo, light, photo_emission=2.5):
+    """0.3.0 «C»: the prop is lit by the SAME light as the body playblast — sun from the resolved room light
+    (plate.json / spec light, else the brightest area of the photo), world ambient in the light colour and the photo
+    re-emitted from a copy of the room mesh (image-based bounce light). Returns (resolved light, created objects)."""
+    import bpy
+    from mathutils import Matrix, Vector
+    here = Path(__file__).resolve().parent
+    sys.path.insert(0, str(here))
+    import render_plate_scene as renderer
+    L = renderer.resolve_light(light, str(photo))
+    cam = scene.camera
+    to_light = Vector(sun_vector([list(r) for r in cam.matrix_world], L["azimuth_deg"], L["elevation_deg"]).tolist())
+    data = bpy.data.lights.new("prop_sun", "SUN")
+    data.energy, data.color, data.angle = L["strength"], L["color"][:3], math.radians(L["softness_deg"])
+    sun = bpy.data.objects.new("prop_sun", data)
+    scene.collection.objects.link(sun)
+    sun.rotation_euler = to_light.to_track_quat("Z", "Y").to_euler()
+    created = [sun]
+    world = scene.world or bpy.data.worlds.new("prop_world")
+    scene.world = world
+    world.use_nodes = True
+    bg = world.node_tree.nodes.get("Background") or world.node_tree.nodes.new("ShaderNodeBackground")
+    amb = L.get("ambient_color", L["color"])
+    bg.inputs["Color"].default_value = (amb[0], amb[1], amb[2], 1)
+    bg.inputs["Strength"].default_value = L["ambient"] * (0.3 if photo_emission > 0 else 1.0)
+    if photo_emission > 0 and room is not None:
+        em = bpy.data.materials.new("prop_plate_emit")
+        em.use_nodes = True
+        nt = em.node_tree
+        nt.nodes.clear()
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = bpy.data.images.load(str(photo))
+        tex.extension = "EXTEND"
+        emi = nt.nodes.new("ShaderNodeEmission")
+        emi.inputs["Strength"].default_value = photo_emission
+        nt.links.new(nt.nodes.new("ShaderNodeTexCoord").outputs["Window"], tex.inputs["Vector"])
+        nt.links.new(tex.outputs["Color"], emi.inputs["Color"])
+        nt.links.new(emi.outputs["Emission"], nt.nodes.new("ShaderNodeOutputMaterial").inputs["Surface"])
+        emitter = room.copy()
+        emitter.data = room.data.copy()
+        scene.collection.objects.link(emitter)
+        emitter.visible_camera = emitter.visible_shadow = False
+        c = cam.matrix_world.translation
+        emitter.matrix_world = Matrix.Translation(c) @ Matrix.Scale(1.01, 4) @ Matrix.Translation(-c) @ room.matrix_world
+        emitter.data.materials.clear()
+        emitter.data.materials.append(em)
+        created.append(emitter)
+    L["photo_emission"] = photo_emission
+    return L, created
+
+
+def shadow_alpha(rgba, threshold=.06, opacity=.85):
+    """Shadow-catcher alpha -> cast-shadow opacity: drop catcher noise, scale. CPU helper (numpy)."""
+    import numpy as np
+    a = np.asarray(rgba, dtype=np.float32)[..., 3] / 255.
+    return np.where(a < threshold, 0., a) * opacity
+
+
+def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_objects=None, room_objects=None,
+                 light=None, samples=32):
     """Keep props in scene for optional unified depth render; restore original materials.
 
     Overlay RGBA is depth occluded by *all* existing mesh geometry (body and room),
     not a 2D stamp. Per-prop alpha is occluded also by other props. No contact solver.
     EEVEE only, 3+N bounded passes. No promise of <=15s on unbounded high-poly assets.
+    0.3.0: light=(resolved room light, emitter objects) → the textured pass is Cycles in the room light
+    (own shadows of the prop, body shadows on it) and one more pass renders the prop's CAST shadow on the
+    room and the body (both shadow catchers, they cast nothing themselves) -> props_shadow.png.
     """
     import bpy
     from bpy_extras.object_utils import world_to_camera_view
@@ -264,7 +340,8 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
     import numpy as np
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    old_meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render]
+    lit, emitters = (light if light is not None else (None, []))
+    old_meshes = [o for o in scene.objects if o.type == "MESH" and not o.hide_render and o not in emitters]
     body_objects = list(body_objects or [])
     room_objects = list(room_objects or [o for o in old_meshes if o not in body_objects])
     groups = load_props(scene, props, anchors_world, library_dir)
@@ -295,7 +372,45 @@ def render_props(scene, props, anchors_world, library_dir, out_dir, *, body_obje
         scene.render.image_settings.color_depth = "8"
         bpy.context.view_layer.material_override = None
         occluders = {o: holdout for o in old_meshes}
+        if lit is not None:
+            # Cycles in the room light: own (self) shadows; the body/room holdouts still block the sun.
+            renderer = sys.modules.get("render_plate_scene")
+            scene.render.engine = "CYCLES"
+            device = renderer.use_gpu(scene) if renderer else "CPU"
+            scene.cycles.samples = int(samples)
+            scene.cycles.use_denoising = True
+            scene.cycles.denoiser = "OPTIX" if device == "OPTIX" else "OPENIMAGEDENOISE"
+            for o in room_objects:
+                o.visible_shadow = False  # noisy photo relief must not shade the sun (as the body playblast)
         result["textured_rgba"] = render(out / "props_textured_rgba.png", occluders)
+        if lit is not None:
+            # Cast shadow of the props only: room + body are catchers that cast nothing; props are unseen by the camera.
+            catcher = _material("prop_catcher", "ShaderNodeBsdfDiffuse", (.6, .6, .6, 1))
+            state = [(o, o.is_shadow_catcher, o.visible_shadow) for o in old_meshes]
+            seen = [(o, o.visible_camera) for o in prop_meshes]
+            try:
+                for o in old_meshes:
+                    o.is_shadow_catcher, o.visible_shadow = True, False
+                for o in prop_meshes:
+                    o.visible_camera = False
+                shadow_png = render(out / "props_shadow_rgba.png", {o: catcher for o in old_meshes})
+            finally:
+                for o, catch, cast in state:
+                    o.is_shadow_catcher, o.visible_shadow = catch, cast
+                for o, value in seen:
+                    o.visible_camera = value
+            image = bpy.data.images.load(shadow_png, check_existing=False)
+            px = np.empty(len(image.pixels), dtype=np.float32)
+            image.pixels.foreach_get(px)
+            w, h = image.size
+            bpy.data.images.remove(image)
+            rgba = (px.reshape(h, w, 4)[::-1] * 255)
+            from PIL import Image as PILImage
+            PILImage.fromarray(np.rint(shadow_alpha(rgba) * 255).clip(0, 255).astype(np.uint8), "L").save(out / "props_shadow.png")
+            result["shadow"] = str(out / "props_shadow.png")
+            result["light"] = {k: lit[k] for k in ("azimuth_deg", "elevation_deg", "strength", "color", "ambient",
+                                                   "softness_deg", "photo_emission") if k in lit}
+            scene.render.engine = "BLENDER_EEVEE"
         result["clay_rgba"] = render(out / "props_clay_rgba.png", {**occluders, **{o: clay for o in prop_meshes}})
         for g in groups:
             visible = {o: holdout for o in prop_meshes}
@@ -360,6 +475,10 @@ def main():
     for key in ("plate", "body", "joints", "props", "library", "out"):
         ap.add_argument("--" + key, required=True, type=Path)
     ap.add_argument("--raster", default="")
+    ap.add_argument("--spec", type=Path, default=None, help="0.3.0: render_spec.json (scene light), as the body render")
+    ap.add_argument("--photo-emission", type=float, default=2.5)
+    ap.add_argument("--samples", type=int, default=32)
+    ap.add_argument("--neutral-light", action="store_true", help="pre-0.3.0 neutral EEVEE light, no shadows")
     ns = ap.parse_args(sys.argv[sys.argv.index("--") + 1:])
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -378,20 +497,32 @@ def main():
     with np.load(ns.joints, allow_pickle=False) as data:
         anchors = anchors_from_mhr70(data["kp"])
     props = json.loads(ns.props.read_text(encoding="utf-8"))
-    # Neutral illumination; material appearance retained. Existing-scene API inherits real lighting.
-    world = scene.world or bpy.data.worlds.new("prop_world")
-    scene.world = world
-    world.use_nodes = True
-    world.node_tree.nodes.get("Background").inputs["Color"].default_value = (.35, .35, .35, 1)
-    world.node_tree.nodes.get("Background").inputs["Strength"].default_value = .35
-    bpy.ops.object.light_add(type="AREA", location=scene.camera.location)
-    lamp = bpy.context.object
-    lamp.rotation_euler = scene.camera.rotation_euler
-    lamp.data.energy, lamp.data.shape, lamp.data.size = 75, "DISK", 5
-    # Highlight rolloff preserves surface shape even with absent source textures.
-    # Mask passes explicitly use Raw, so this never changes their coverage.
-    scene.view_settings.view_transform = "AgX"
-    result = render_props(scene, props, anchors, ns.library, ns.out, body_objects=body, room_objects=[room])
+    light = None
+    if ns.neutral_light:
+        # Pre-0.3.0 neutral illumination (diagnostics/regression only).
+        world = scene.world or bpy.data.worlds.new("prop_world")
+        scene.world = world
+        world.use_nodes = True
+        world.node_tree.nodes.get("Background").inputs["Color"].default_value = (.35, .35, .35, 1)
+        world.node_tree.nodes.get("Background").inputs["Strength"].default_value = .35
+        bpy.ops.object.light_add(type="AREA", location=scene.camera.location)
+        lamp = bpy.context.object
+        lamp.rotation_euler = scene.camera.rotation_euler
+        lamp.data.energy, lamp.data.shape, lamp.data.size = 75, "DISK", 5
+        # Highlight rolloff preserves surface shape even with absent source textures.
+        scene.view_settings.view_transform = "AgX"
+    else:
+        spec = json.loads(ns.spec.read_text(encoding="utf-8")) if ns.spec else {}
+        scene_spec = (spec.get("scenes") or [{}])[0]
+        photo = ns.plate / "plate_rgb.png"
+        light = room_light(scene, room, photo, scene_spec.get("light", spec.get("light", info.get("light"))),
+                           ns.photo_emission)
+        scene.view_settings.view_transform = "Standard"  # as the body playblast
+    result = render_props(scene, props, anchors, ns.library, ns.out, body_objects=body, room_objects=[room],
+                          light=light, samples=ns.samples)
+    if light is not None:
+        for o in light[1]:
+            bpy.data.objects.remove(o, do_unlink=True)
     # Existing implementation provides unified room/body/prop depth, same plate inverse normalization.
     lo, hi = info["inv_norm"]["lo"], info["inv_norm"]["hi"]
     renderer.render_pass(scene, str(ns.out / "depth_with_props.png"), engine="BLENDER_EEVEE",

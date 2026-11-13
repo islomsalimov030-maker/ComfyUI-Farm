@@ -151,61 +151,48 @@ def build(source, oi, *, location_id, plate, pose, identity, refmods=STACY_REFMO
 
 
 # ---------------------------------------------------------------- one workflow, two stages (rgthree groups)
-PREPARE_GROUP = '1 · Подготовка сцены'
-FINAL_GROUP = '2 · Финал'
+# 0.3.0 (задача 4): финальный вид — шаги крупными подписанными блоками, всё техническое — в «Движок — не трогать».
+PREPARE_GROUP = '▶ Шаг 1: подготовить сцену'
+FINAL_GROUP = '▶ Шаг 2: финал'
+OLD_STAGE_GROUPS = ('1 · Подготовка сцены', '2 · Финал')
 PHOTO_ENGINE_GROUP = 'ФОТО · движок'
 VIEWPORT = '3DA · Сцена: персонаж и предметы'
 EDITS = '3DA · Применить правки сцены'
 PREP_STATUS = '3DA · Статус авто-постановки (до правок)'
-STAGE_MUTER = '3DA · ЭТАП: включи 1 ИЛИ 2 (второй выключи)'
-STAGE_MUTER_POS = (-520, 2700)
-PREPARE_TITLES = ('3DA · Предметы для подготовки', '3DA · Подготовка персонажа', '3DA · Подготовить сцену гизмо',
+STATUS = '3DA · Статус: что получилось'
+RESULT = 'Результат (фото)'
+STAGE_MUTER = '▶ Шаги: включи один, другой выключи'
+OLD_STAGE_MUTER = '3DA · ЭТАП: включи 1 ИЛИ 2 (второй выключи)'
+STAGE_MUTER_POS = (2460, 40)
+PROP = '3DA · Предметы для подготовки'
+PLATE, POSE = '3DA · Фотоплита комнаты', '3DA · Поза: загруженный референс'
+FRAME_PROMPT = 'ФОТО · промпт кадра (H3)'
+PANEL_TYPE = 'NGFarmPanelPhoto'
+QUALITY = '5. Качество (МП)'
+PREPARE_TITLES = ('3DA · Подготовка персонажа', '3DA · Подготовить сцену гизмо',
                   '3DA · Просмотр выбранного pose-reference', PREP_STATUS)
 FINAL_TITLES = (EDITS, '3DA · Итог: повторная проверка сцены', '3DA · Допуск сцены до загрузки H3',
                 '3DA · Проверить новый рендер до H3', '3DA · Контакты / кадр / статус',
                 '3DA · Geometry gate → native фото', '3DA · Финал после face pass',
                 '3DA · обычное фото / 3D-постановка', '3DA · Метрики финальной вклейки')
-OLD_3DA_GROUPS = ('3 · Движок / 3DA', '4 · Результат / 3DA')
-NOTE_TITLE = 'ИНСТРУКЦИЯ 3D-A — читать первым'
+ENGINE_TITLES = ('3DA · Локация', '3DA · Режим фото: 1=исходный AIO / 2=постановка', '3DA · H3 base steps (без turbo)',
+                 '3DA · Персонаж: эталон внешности SFW', '3DA · pose_source: 1=фото / 2=Z-Image / 3=Qwen2511',
+                 '3DA · Qwen Picture 1: персонаж и внешность', '3DA · Qwen Picture 2: локация и композиция',
+                 '3DA · Источники позы (не трогать)')
+OLD_3DA_GROUPS = ('1 · Вход / 3DA', '2 · ПУЛЬТ / 3DA', '3 · Движок / 3DA', '4 · Результат / 3DA',
+                  '3D-окно / 3DA (ПКМ → Выбрать · Персонаж / Предмет)')
+NOTE_TITLE = 'КАК СДЕЛАТЬ ФОТО — читать первым'
 
-NOTE = """3D-A: ОДИН WORKFLOW, ДВЕ ГРУППЫ
-Переключаются в узле «3DA · ЭТАП: включи 1 ИЛИ 2» (слева от «1 · Подготовка сцены»): одну строку включить, другую выключить. Твой «ВКЛ/ВЫКЛ блоков и моделей» эти две группы больше не показывает.
+NOTE = """# Как сделать фото
 
-НОВАЯ СЦЕНА — меняешь только два LoadImage (группа «1 · Вход / 3DA»):
-• «3DA · Фотоплита комнаты» — фото локации;
-• «3DA · Поза: загруженный референс» — фото позы.
-Локация (location_id = auto_…) по новому фото создаётся сама — не трогать.
+## 1. Перетащи фото комнаты в «1. Комната», фото позы — в «2. Поза».
+## 2. «3. Предмет» — выбери предмет или «(нет предмета)». «4. Промпт кадра» — одежда и детали.
+## 3. В «▶ Шаги» включи «Шаг 1», выключи «Шаг 2» → Queue (Запустить).
+## 4. Если нужно — подвинь человека или предмет в 3D-окне (ПКМ → Выбрать) и нажми Ctrl+S.
+## 5. Выключи «Шаг 1», включи «Шаг 2» → Queue. Фото — в блоке «Результат» (справа, под «ФОТО · движок»).
+## 6. Фото будет всегда. Если что-то не так — в «Статус: что получилось» написано, что именно.
 
-ПОРЯДОК
-1. «1 · Подготовка сцены» ВКЛ, «2 · Финал» ВЫКЛ → Queue. «3DA · Статус авто-постановки (до правок)»: ok — можно сразу в финал; out_of_frame / contact_fail — поправить в 3D-окне.
-2. 3D-окно «3DA · Сцена: персонаж и предметы»: ПКМ → Выбрать · Персонаж / Предмет; ручки Перемещение / Вращение / Масштаб (масштаб всегда равномерный). Пол в 3D-окне непрозрачный, как в рендере: что ушло под пол, не видно и не попадёт в кадр. Надпись в панели: зелёная «Пол и рост: ок» или красная «ниже пола на N см» / «масштаб ×S» (масштаб персонажа меняет его рост).
-3. Сохранить workflow (Ctrl+S): правки 3D-окна хранятся в нём.
-4. «1 · Подготовка сцены» ВЫКЛ, «2 · Финал» ВКЛ (вместе с ним включается «ФОТО · движок») → Queue: проверка сцены → preview до H3 → фото в «ИТОГ фото · ref2v».
-Подвинуть ещё → правка в 3D-окне → сохранить → Queue (группа 2). Новые фото, другой предмет или персонаж → снова с шага 1.
-
-НЕЛЬЗЯ
-• Оставлять «1 · Подготовка сцены» включённой при финале: SceneExport заново строит сцену и сбрасывает правки 3D-окна.
-• Двигать камеру 3D-окна: она снята с фото комнаты и заблокирована.
-• Включать «ФОТО · движок» на шаге 1 отдельно от «2 · Финал».
-
-ГДЕ ВЫБИРАТЬ
-• Предмет: «3DA · Предметы для подготовки» → prop_id (до шага 1) — единственный переключатель предмета. «(нет предмета)» = только персонаж. pelvis_ass_low_4afbd9b9 = pelvis, head_close_a648e192 = голова, stick_stick_d4a11633 = stick; список берётся с сервера (3da_data/props), новый предмет появляется после заливки без перезапуска. Размер — size_m (30 см) или равномерный масштаб в 3D-окне; положение — в 3D-окне.
-• Персонаж: эталон — LoadImage «3DA · Персонаж: эталон внешности SFW»; тело (рост, телосложение) — body_json одинаково в «3DA · Подготовка персонажа» и «3DA · Итог: повторная проверка сцены»; моды — твои узлы 16 и 33.
-• «3DA · Режим фото»: 2 = 3D-постановка, 1 = твой AIO без 3D.
-
-Финал берёт сцену, которую группа 1 положила в 3D-окно; в файле сцены нет — сначала всегда группа 1.
-Сцена не прошла проверку → H3 не запускается; причина в «3DA · Контакты / кадр / статус»."""
-
-CHEAT = """Двигается не тот объект → ПКМ по 3D-окну → Выбрать · Персонаж / Предмет.
-Правки 3D-окна пропали после Queue → была включена «1 · Подготовка сцены»: заново подвинуть, сохранить, финал только группой 2.
-Камера сбилась → перезагрузить страницу: 3D-окно восстановит камеру из сохранённого workflow.
-Нужна другая поза → другое фото позы (или pose_source 2/3) и снова группа 1; ручки 3D-окна суставы не сгибают.
-stale-scene / сцена устарела → pose_class, опора, рост, seed в «Подготовка персонажа» и «Итог: повторная проверка» должны совпадать; затем снова группа 1.
-H3 не запустился → «Контакты / кадр / статус»: поправить в 3D-окне, сохранить, Queue.
-out_of_frame при том, что в 3D-окне всё в кадре → тело или предмет ниже пола (красная надпись) или персонаж увеличен; поднять на пол, масштаб 1.
-Слабая узнаваемость → в узел 16: ss340/char_face5 + ss340/char_body4.
-Нужен только pose-reference → workflows/3da_aio/3DA_pose_source.N.api.json."""
-
+Камеру 3D-окна не двигать. Новые фото комнаты или позы — снова с пункта 3."""
 
 def _box(n):
     x, y = n['pos'][:2]
@@ -259,74 +246,167 @@ def assert_no_scene(graph):
         raise ValueError('shipped workflow must not carry a prepared scene (GLB/manifest)')
 
 
+def _place(n, x, y, w=None, h=None):
+    n['pos'] = [x, y]
+    if w is not None:
+        n['size'][0] = w
+    if h is not None:
+        n['size'][1] = h
+    return n
+
+
+def _group(gid, title, box, color, font=36):
+    return dict(id=gid, title=title, bounding=list(box), color=color, font_size=font, flags={})
+
+
+def engine_instance(g):
+    sub = next(s for s in g['definitions']['subgraphs'] if any(n.get('title') == 'gen · sampler pass 1' for n in s['nodes']))
+    return sub, next(n for n in g['nodes'] if n['type'] == sub['id'])
+
+
+def room_photo_for_plain_aio(g, top, plate):
+    """«1. Комната» — единственное фото комнаты: оно же <Picture 1> обычного фото AIO (запасной путь).
+    Прежний LoadImage пользователя на этом входе отключается (узел остаётся). В 3DA-ветку тот же вход
+    второй раз не идёт: у неё плита уже <Picture 1>."""
+    sub, inst = engine_instance(g)
+    k = next((i for i, p in enumerate(inst['inputs']) if p['name'] == 'ref_images.ref_image_1'), None)
+    if k is None:
+        return None
+    old = top.link(inst['inputs'][k]['link']) if inst['inputs'][k].get('link') is not None else None
+    top.connect(plate, 0, inst, 'ref_images.ref_image_1', type_='IMAGE')
+    inner = wfkit.G(sub, g)
+    r2v = next(n for n in sub['nodes'] if n.get('title') == '3DA H3 · r2v')
+    for lid in list(sub['inputs'][k].get('linkIds', [])):
+        link = inner.link(lid)
+        if link and link['target_id'] == r2v['id']:
+            inner.remove_link(lid)
+    return old['origin_id'] if old else None
+
+
 def combine(graph, editor=None, stage=None):
     """prepare + final in ONE workflow: two groups for the user's rgthree Fast Groups Muter.
 
-    «2 · Финал» encloses the user's «ФОТО · движок» group (photo engine + ИТОГ фото), so
-    switching it off also keeps H3 unloaded during preparation. The user's nodes are not moved.
+    «▶ Шаг 2: финал» encloses the user's «ФОТО · движок» group (photo engine + ИТОГ фото), so
+    switching it off also keeps H3 unloaded during preparation. The user's 45 AIO nodes keep their
+    settings and links; only «ФОТО · промпт кадра» moves into the console (block 4).
     """
     g = copy.deepcopy(graph)
+    top = wfkit.G(g, g, top=True)
     by = {n.get('title'): n for n in g['nodes']}
-    missing = [t for t in PREPARE_TITLES + FINAL_TITLES + (VIEWPORT, 'README', 'Симптом → крутилка') if t not in by]
+    for old in (OLD_STAGE_MUTER, 'Симптом → крутилка'):
+        if old in by:
+            top.remove_node(by.pop(old)['id'])
+    missing = [t for t in PREPARE_TITLES + FINAL_TITLES + ENGINE_TITLES + (VIEWPORT, 'README', PROP, PLATE, POSE,
+               STATUS, FRAME_PROMPT) if t not in by]
     if missing:
         raise ValueError(missing)
+    panel = next(n for n in g['nodes'] if n['type'] == PANEL_TYPE)
     engine_nodes = {n['id'] for n in group_members(g, PHOTO_ENGINE_GROUP)}
     ex, ey, ew, eh = next(x for x in g['groups'] if x['title'] == PHOTO_ENGINE_GROUP)['bounding']
-    y = ey + eh + 70
-    for t in FINAL_TITLES:                       # one column under the photo engine
+    # --- duplicates: one room photo for both paths; Stacy by default (mods 16/33, reference image)
+    unused = room_photo_for_plain_aio(g, top, by[PLATE])
+    mods = next((n for n in g['nodes'] if n.get('title') == 'ФОТО · моды: 1 — лицо, 2 — персонаж в наряде'), None)
+    if mods is not None:
+        for name, key in (('mod_1', 'face'), ('mod_2', 'body')):
+            if mods['widgets_values_named'].get(name) == '(none)':
+                set_widget(mods, name, STACY_REFMODS[key])
+    # --- 5. Качество: one visible number drives the panel's megapixels (render before H3 and H3 itself)
+    quality = by.get(QUALITY) or top.add_node('PrimitiveFloat', QUALITY, size=(300, 90), outputs=[('FLOAT', 'FLOAT')],
+                                              widgets={'value': float(panel['widgets_values_named'].get('megapixels', 1.0))})
+    quality['properties']['3DA AIO'] = '0.3.0'
+    top.connect(quality, 0, panel, 'megapixels', type_='FLOAT', widget=True)
+    # --- result block (inside «▶ Шаг 2»): status line + the final picture
+    final_switch = by['3DA · обычное фото / 3D-постановка']
+    result = by.get(RESULT) or top.add_node('PreviewImage', RESULT, size=(417, 430), inputs=[('images', 'IMAGE')])
+    top.connect(final_switch, 0, result, 'images', type_='IMAGE')
+    # --- console (left): instruction, five steps, 3D window, step 1, engine
+    note = by['README']
+    note['title'], note['widgets_values'] = NOTE_TITLE, [NOTE]
+    _place(note, 0, 0, 2380, 600)
+    steps = [(PLATE, '1. Комната (фото)', 440, 420), (POSE, '2. Поза (фото)', 440, 420),
+             (PROP, '3. Предмет (нет / stick / …)', 560, 470), (FRAME_PROMPT, '4. Промпт кадра (одежда, детали)', 680, 420),
+             (QUALITY, '5. Качество (МП)', 340, 90)]
+    groups, x = [], 0
+    colours = ['#3f789e', '#3f789e', '#8a6d3b', '#6b4f8a', '#4f7a4f']
+    for i, (title, label, w, h) in enumerate(steps):
+        node = quality if title == QUALITY else by[title]
+        _place(node, x, 770, w, h)
+        groups.append(_group(1100 + i, label, (x - 20, 690, w + 40, max(h, 90) + 110), colours[i], 32))
+        x += w + 60
+    _place(by[VIEWPORT], 0, 1390, 900, 780)
+    groups.append(_group(1110, '3D-окно — по желанию: подвинуть', (-20, 1310, 940, 880), '#4d556b', 30))
+    px = 980
+    for title, w, h, dy in (('3DA · Подготовка персонажа', 470, 650, 0), ('3DA · Подготовить сцену гизмо', 350, 160, 0),
+                            (PREP_STATUS, 430, 300, 0), ('3DA · Просмотр выбранного pose-reference', 350, 330, 200)):
+        node = by[title]
+        if title == '3DA · Просмотр выбранного pose-reference':
+            _place(node, 980 + 470 + 40, 1390 + dy, w, h)
+            continue
+        _place(node, px, 1390, w, h)
+        px += w + 40
+    groups.append(_group(1111, PREPARE_GROUP, (960, 1310, px - 960 + 20, 880), '#b58b2a'))
+    cx, cy = 0, 2330
+    for title in ENGINE_TITLES:
+        node = by[title]
+        w = min(node['size'][0], 470)
+        h = min(node['size'][1], 420)
+        if cx + w > 2340:
+            cx, cy = 0, cy + 470
+        _place(node, cx, cy, w, h)
+        cx += w + 40
+    groups.append(_group(1112, 'Движок 3DA — не трогать', (-20, 2250, 2400, cy + 470 - 2250 + 20), '#444444', 28))
+    # --- right column under the photo engine: result, then the final engine (all inside «▶ Шаг 2: финал»)
+    y = ey + eh + 90
+    _place(by[STATUS], ex + 8, y, ew - 16, 180)
+    _place(result, ex + 8, y + 220, ew - 16, 430)
+    groups.append(_group(1113, 'Результат', (ex, y - 70, ew, 220 + 430 + 90), '#427b61'))
+    y += 220 + 430 + 150
+    top_engine = y - 70
+    for t in FINAL_TITLES:
         n = by[t]
-        n['size'][0] = min(n['size'][0], ew - 16)
-        n['pos'] = [ex + 8, y]
-        y += n['size'][1] + 70
-    final_box = [ex - 12, ey - 80, ew + 24, y - (ey - 80) - 30]
-    x = 0
-    for t, w in zip(PREPARE_TITLES, (400, 470, 350, 430, 430)):  # one row in the 3DA console
-        n = by[t]
-        n['pos'], n['size'][0] = [x, 2750], w
-        x += w + 40
-    by[VIEWPORT]['pos'] = [0, 3600]
-    g['groups'] = [x for x in g['groups'] if x['title'] not in OLD_3DA_GROUPS + (PREPARE_GROUP, FINAL_GROUP)]
-    for x in g['groups']:
-        if x['title'] == '2 · ПУЛЬТ / 3DA':
-            x['bounding'] = [820, 700, 1050, 1950]
-    g['groups'] += [dict(id=1005, title=PREPARE_GROUP, bounding=[-40, 2680, 2330, 790], color='#b58b2a', font_size=28, flags={}),
-                    dict(id=1006, title=FINAL_GROUP, bounding=final_box, color='#427b61', font_size=28, flags={}),
-                    dict(id=1007, title='3D-окно / 3DA (ПКМ → Выбрать · Персонаж / Предмет)',
-                         bounding=[-40, 3530, 930, 870], color='#4d556b', font_size=24, flags={})]
+        _place(n, ex + 8, y, min(n['size'][0], ew - 16))
+        y += n['size'][1] + 60
+    groups.append(_group(1114, 'Движок финала — не трогать', (ex, top_engine, ew, y - top_engine), '#444444', 24))
+    final_box = [ex - 12, ey - 80, ew + 24, y - (ey - 80) + 20]
+    g['groups'] = [x for x in g['groups'] if x['title'] not in OLD_3DA_GROUPS + OLD_STAGE_GROUPS + (PREPARE_GROUP, FINAL_GROUP)
+                   and not x['title'].startswith(tuple(str(i) + '. ' for i in range(1, 6)))
+                   and x['title'] not in ('Результат', 'Движок 3DA — не трогать', 'Движок финала — не трогать')
+                   and not x['title'].startswith('3D-окно — ')]
+    g['groups'] += groups + [_group(1115, FINAL_GROUP, final_box, '#2f6b4f', 36)]
     got = {t: {n['id'] for n in group_members(g, t)} for t in (PREPARE_GROUP, FINAL_GROUP)}
     want = {PREPARE_GROUP: {by[t]['id'] for t in PREPARE_TITLES},
-            FINAL_GROUP: {by[t]['id'] for t in FINAL_TITLES} | engine_nodes}
+            FINAL_GROUP: {by[t]['id'] for t in FINAL_TITLES + (STATUS,)} | {result['id']} | engine_nodes}
     if got != want:
         raise ValueError({'group membership': {k: sorted(got[k] ^ want[k]) for k in got}})
-    # 13.11: the user's muter sits right above the user's «ПРОМПТ-ГАЙД» note; two more rows ended
-    # under that note and «1 · Подготовка сцены» could not be clicked. The user's muter keeps its
-    # own filter; the two stages get a separate small muter (two clicks: one on, the other off).
+    # 13.11: the user's muter keeps its own filter; the two stages get a separate small muter.
     user_muters = [n for n in g['nodes'] if n['type'] == 'Fast Groups Muter (rgthree)' and n.get('title') != STAGE_MUTER]
     for n in user_muters:
         n['mode'] = 0
         props = n.setdefault('properties', {})
-        props['matchTitle'] = props.get('matchTitle', '').replace('|' + PREPARE_GROUP + '|' + FINAL_GROUP, '')
+        match = props.get('matchTitle', '')
+        for name in OLD_STAGE_GROUPS + (PREPARE_GROUP, FINAL_GROUP):
+            match = match.replace('|' + name, '')
+        props['matchTitle'] = match
     if user_muters and STAGE_MUTER not in by:
-        stage_node = wfkit.G(g, g, top=True).clone_node(user_muters[0], title=STAGE_MUTER, pos=STAGE_MUTER_POS)
-        stage_node['size'] = [430, 110]
+        stage_node = top.clone_node(user_muters[0], title=STAGE_MUTER, pos=STAGE_MUTER_POS)
+        stage_node['size'] = [520, 130]
         stage_node['properties'] = {**{k: v for k, v in user_muters[0].get('properties', {}).items() if k != 'ue_properties'},
-                               'matchTitle': '^(' + PREPARE_GROUP + '|' + FINAL_GROUP + ')$', 'sort': 'alphanumeric',
-                               'customSortAlphabet': '', 'toggleRestriction': 'default', 'showAllGraphs': False}
+                               'matchTitle': '^(' + re.escape(PREPARE_GROUP) + '|' + re.escape(FINAL_GROUP) + ')$',
+                               'sort': 'alphanumeric', 'customSortAlphabet': '', 'toggleRestriction': 'default',
+                               'showAllGraphs': False}
         # rgthree «max one/always one» need `instanceof FastGroupsToggleRowWidget`; the current
         # frontend wraps rows as LegacyWidget, so the restriction is silently ignored (checked 13.11).
         stage_node['color'], stage_node['bgcolor'] = '#2a4d3e', '#335f4c'
         sx, sy = STAGE_MUTER_POS
         for grp in g['groups']:
-            x, y, w, h = grp['bounding']
-            if x < sx + 430 and sx < x + w and y < sy + 110 and sy < y + h:
+            x, y0, w, h = grp['bounding']
+            if x < sx + 520 and sx < x + w and y0 < sy + 130 and sy < y0 + h:
                 raise ValueError('stage muter overlaps group ' + grp['title'])
-    note = by['README']
-    note['title'], note['widgets_values'] = NOTE_TITLE, [NOTE]
-    by['Симптом → крутилка']['widgets_values'] = [CHEAT]
+    g.setdefault('extra', {}).setdefault('3DA AIO', {})['view'] = dict(version='0.3.0', unused_room_loader=unused)
     if editor is not None:
         carry_editor_state(g, editor)
     set_stage(g, stage or ('final' if editor is not None else 'prepare'))
-    g['extra']['ds'] = {'scale': 0.5, 'offset': [80, 60]}
+    g['extra']['ds'] = {'scale': 0.42, 'offset': [60, 40]}
     errors = wfkit.check_ui(g)
     if errors:
         raise ValueError(errors)
@@ -354,6 +434,9 @@ def main():
     # The pack's own schema wins over a possibly older server /object_info (new inputs of a pack release).
     from build_3da_aio import pack_schema
     oi.update(pack_schema())
+    # Core primitive for the visible «5. Качество (МП)» (always on the server; may be absent from a saved object_info).
+    oi.setdefault('PrimitiveFloat', {'input': {'required': {'value': ['FLOAT', {'min': -1e9, 'max': 1e9, 'step': .01}]}},
+                                     'output': ['FLOAT'], 'output_name': ['FLOAT']})
     editor = json.loads(a.editor_state.read_text(encoding='utf-8')) if a.editor_state else None
     a.out.mkdir(parents=True, exist_ok=True)
     source = json.loads((a.source_dir / (a.source_prefix + '.ui.json')).read_text(encoding='utf-8'))

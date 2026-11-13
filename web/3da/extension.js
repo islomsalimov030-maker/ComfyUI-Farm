@@ -219,7 +219,10 @@ app.registerExtension({
     const original = node.onExecuted;
     node.onExecuted = function (message) {
       original?.call(this, message);
-      const setup = JSON.parse(message.text[0]);
+      let setup;
+      try { setup = JSON.parse(message?.text?.[0] ?? '{}'); } catch { return; }
+      // 0.3.0: без сцены узел отдаёт предупреждение — 3D-окно не трогаем.
+      if (!setup?.model_file || !setup?.camera) return;
       const graph = node.graph;
       const viewport = graph._nodes.find(n => n.title === '3DA · Сцена: персонаж и предметы');
       const edits = graph._nodes.find(n => n.title === '3DA · Применить правки сцены');

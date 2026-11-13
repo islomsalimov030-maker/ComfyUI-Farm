@@ -59,6 +59,9 @@ def prop_metadata(root, prop_id):
 
 
 NO_PROP = '(нет предмета)'
+# 0.3.0: старые тестовые предметы не показываются в списке (файлы остаются; prop.json "hidden": true — то же).
+HIDDEN_PROPS = {'binder_notebook', 'ceramic_vase'}
+WARN_KEY = '3da_warning'
 
 
 def prop_choices():
@@ -68,7 +71,9 @@ def prop_choices():
         choices = [NO_PROP]
         for path in sorted(root.glob('*/prop.json')):
             try:
-                prop_metadata(root, path.parent.name)
+                meta = prop_metadata(root, path.parent.name)
+                if path.parent.name in HIDDEN_PROPS or meta.get('hidden') is True:
+                    continue
                 choices.append(path.parent.name)
             except (ValueError, OSError):
                 continue
@@ -84,6 +89,8 @@ def validated_props(text):
     data = json.loads(text)
     if not isinstance(data, list):
         raise ValueError('props must be a JSON list')
+    # 0.3.0: {"3da_warning": "..."} — предупреждение от узла предмета, не предмет.
+    data = [prop for prop in data if not (isinstance(prop, dict) and set(prop) == {WARN_KEY})]
     for prop in data:
         if not isinstance(prop, dict) or set(prop) - {'size_m', 'absolute_matrix_world'} != PROP_FIELDS:
             raise ValueError('Each prop requires prop_id, anchor, x/y/z, yaw/pitch/roll, scale, prop_strength; optional size_m')
@@ -101,6 +108,36 @@ def validated_props(text):
         if 'absolute_matrix_world' in prop:
             gizmo_helpers().validate_matrix(prop['absolute_matrix_world'])
     return data
+
+
+def props_warnings(text):
+    try:
+        data = json.loads(text) if isinstance(text, str) else []
+    except ValueError:
+        return ['список предметов повреждён — предметы пропущены']
+    return [str(p[WARN_KEY]) for p in data if isinstance(p, dict) and set(p) == {WARN_KEY}] if isinstance(data, list) else []
+
+
+def short_reason(error):
+    """Одна понятная строка причины для статуса (без трассировки и секретов)."""
+    lines = [line.strip() for line in error_text(error).splitlines()[1:] if line.strip()]
+    useful = [line for line in lines if not line.startswith(('Traceback', 'File ', '^', '~'))]
+    text = (useful or lines or ['неизвестная ошибка'])[-1]
+    return text[:240]
+
+
+def error_payload(text):
+    """Строка-флаг ошибки 3DA, которую следующие узлы распознают и уводят граф на запасной путь."""
+    try:
+        data = json.loads(text) if isinstance(text, str) and text.strip().startswith('{') else None
+    except ValueError:
+        return None
+    if isinstance(data, dict):
+        if data.get('status') == 'error':
+            return short_reason(data.get('error', 'ошибка локации'))
+        if '3da_error' in data:
+            return str(data['3da_error'])[:240]
+    return None
 
 
 def config_module():
@@ -232,23 +269,32 @@ def invoke(command, fields, images):
 
 
 class Location:
+    # 0.3.0: счётчик ошибок по location_id — после ошибки IS_CHANGED даёт новый ключ,
+    # поэтому ComfyUI не держит ошибку в кэше и следующий запуск готовит локацию заново.
+    failures = {}
+
     @classmethod
     def IS_CHANGED(cls,location_id,**kwargs):
-        cfg=config()
-        root=Path(cfg['farm_root'])/'locations'/location_id
-        assets=Path(cfg.get('location_asset_dirs',{}).get(location_id,root))
-        return content_fingerprint([Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml'))),
-                                    *root.rglob('*'),*assets.glob('*')])
+        try:
+            cfg=config()
+            root=Path(cfg['farm_root'])/'locations'/location_id
+            assets=Path(cfg.get('location_asset_dirs',{}).get(location_id,root))
+            key=content_fingerprint([Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml'))),
+                                     *root.rglob('*'),*assets.glob('*')])
+        except Exception as exc:
+            key='config-error:'+str(exc)[:80]
+        return key+':'+str(cls.failures.get(location_id,0))
 
     @classmethod
     def INPUT_TYPES(cls):
         return {'required': {'plate': ('IMAGE',), 'location_id': ('STRING', {'default': 'auto'})}}
-    RETURN_TYPES = ('STRING', 'IMAGE', 'STRING', 'IMAGE')
-    RETURN_NAMES = ('location', 'plate', 'objects', 'objects_preview')
+    RETURN_TYPES = ('STRING', 'IMAGE', 'STRING', 'IMAGE', 'BOOLEAN')
+    RETURN_NAMES = ('location', 'plate', 'objects', 'objects_preview', 'ok')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
     def execute(self, plate, location_id):
+        widget_id = location_id
         try:
             if location_id == 'auto' or location_id.startswith('auto_'):
                 import hashlib
@@ -266,9 +312,11 @@ class Location:
             output_plate = load_image(result['plate'])
             preview = load_image(result['objects_preview']) if result.get('objects_preview') else output_plate
             return (result['location'], output_plate, objects if isinstance(objects, str) else
-                    json.dumps(objects, ensure_ascii=False), preview)
+                    json.dumps(objects, ensure_ascii=False), preview, True)
         except Exception as exc:
-            return json.dumps({'status': 'error', 'error': error_text(exc)}, ensure_ascii=False), plate, error_text(exc), plate
+            type(self).failures[widget_id] = type(self).failures.get(widget_id, 0) + 1
+            return (json.dumps({'status': 'error', 'error': error_text(exc)}, ensure_ascii=False), plate,
+                    '3DA: комната не подготовлена — ' + short_reason(exc), plate, False)
 
 
 def gizmo_helpers():
@@ -322,9 +370,26 @@ class Prop:
 
     def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30, model_3d_info=None, model_3d=None,
                 camera_info=None,location=None):
+        # 0.3.0: ошибка предмета не останавливает workflow — предмет пропускается с предупреждением.
+        try:
+            return self.build(prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength, props_in, size_m,
+                              model_3d_info, model_3d, camera_info, location)
+        except Exception as exc:
+            try:
+                kept = json.loads(props_in) if isinstance(props_in, str) else []
+                validated_props(json.dumps(kept))
+            except Exception:
+                kept = []
+            kept = kept if isinstance(kept, list) else []
+            kept.append({WARN_KEY: f'предмет {prop_id} пропущен: {short_reason(exc)}'})
+            return (json.dumps(kept, ensure_ascii=False),)
+
+    def build(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength, props_in, size_m,
+              model_3d_info, model_3d, camera_info, location):
         if prop_id == NO_PROP:
             # Персонаж без предмета: пропускаем цепочку дальше как есть (по умолчанию пустой список).
-            return (json.dumps(validated_props(props_in), ensure_ascii=False, allow_nan=False),)
+            kept = validated_props(props_in) + [{WARN_KEY: w} for w in props_warnings(props_in)]
+            return (json.dumps(kept, ensure_ascii=False, allow_nan=False),)
         if model_3d_info is not None and (camera_info is not None or location is not None):
             if camera_info is None or not location:
                 raise ValueError('Гизмо: подключите camera_info и location для проверки камеры')
@@ -335,6 +400,7 @@ class Prop:
             limits=yaml.safe_load((Path(cfg['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))['gizmo_camera']
             helpers=gizmo_helpers()
             helpers.validate_camera(camera_info,helpers.camera_config(plate,[1344,768]),limits)
+        warnings = [{WARN_KEY: w} for w in props_warnings(props_in)]
         props = validated_props(props_in)
         item = dict(prop_id=prop_id, anchor=anchor, x=x, y=y, z=z, yaw=yaw, pitch=pitch,
                     roll=roll, scale=scale, prop_strength=prop_strength, size_m=size_m)
@@ -355,12 +421,20 @@ class Prop:
                 raise ValueError('Prop model escapes library')
             if hashlib.sha256(model_3d.get_data().read()).digest()!=hashlib.sha256(model.read_bytes()).digest():
                 raise ValueError('Гизмо: GLB не совпадает с выбранным prop_id; подготовьте правильный ресурс')
-        return (json.dumps(props, ensure_ascii=False, allow_nan=False),)
+        return (json.dumps(props + warnings, ensure_ascii=False, allow_nan=False),)
 
 
 class PlacePose:
     @classmethod
     def IS_CHANGED(cls,location=None,props='[]',**kwargs):
+        try:
+            return cls.fingerprint(location,props,**kwargs)
+        except Exception as exc:
+            # Флаг ошибки вместо пути (комната не готова и т.п.) — ключ меняется вместе со строкой.
+            return 'unfingerprinted:'+str(location)[:200]+':'+str(props)[:200]+':'+str(kwargs.get('body_transform',''))[:200]
+
+    @classmethod
+    def fingerprint(cls,location=None,props='[]',**kwargs):
         cfg=config()
         repo=Path(cfg['repo'])
         root=repo/'tools/scene3d'
@@ -391,7 +465,7 @@ class PlacePose:
             'body_json': ('STRING', {'default': ''}), 'proxy': (['grey', 'color'],),
             'strength': ('FLOAT', {'default': 1., 'min': 0., 'max': 1., 'step': .05}),
             'seed': ('INT', {'default': 101, 'min': 0, 'max': 0xffffffffffffffff}),
-            'block_on_fail': ('BOOLEAN', {'default': False}),
+            'block_on_fail': ('BOOLEAN', {'default': False, 'tooltip': 'С 0.3.0 не действует: проблемы сцены — только предупреждения, H3 исправит'}),
             **{name: ('FLOAT', {'default': 0., 'step': .01 if name in ('body_dx', 'body_dy', 'body_dz') else 1.})
                for name in ('body_dx', 'body_dy', 'body_dz', 'body_dyaw', 'body_dpitch', 'body_droll')},
         }, 'optional': {'pose_text': ('STRING', {'default': '', 'multiline': True}),
@@ -411,6 +485,12 @@ class PlacePose:
         try:
             if not isinstance(block_on_fail, bool) or not isinstance(pose_text, str):
                 raise ValueError('block_on_fail must be BOOLEAN; pose_text must be STRING')
+            # 0.3.0: ошибка выше по графу (комната, правки 3D-окна) — сразу запасной путь, без CLI.
+            upstream = error_payload(location) or error_payload(body_transform)
+            if upstream is not None:
+                return fallback_outputs(upstream)
+            prop_notes = props_warnings(props)
+            props = json.dumps(validated_props(props), ensure_ascii=False)
             transforms = dict(body_dx=body_dx, body_dy=body_dy, body_dz=body_dz,
                               body_dyaw=body_dyaw, body_dpitch=body_dpitch, body_droll=body_droll)
             for name, value in transforms.items():
@@ -424,34 +504,50 @@ class PlacePose:
                             pose_text=pose_text, props=props, body_transform=body_transform, megapixels=megapixels,
                             **transforms), {'pose_ref': pose_ref})
             status = result['status']
-            # Manual mode retains diagnostics without using status as an H3 gate.
+            # 0.3.0: статус сцены — только диагностика; H3 получает промпт всегда (MiniMax исправит).
             accepted = isinstance(status, str) and status in ('ok', 'partial')
-            h3_prompt = result['h3_prompt'] if not block_on_fail or accepted else ''
+            h3_prompt = result['h3_prompt']
             if not isinstance(status, str):
                 status = json.dumps(status, ensure_ascii=False)
             # Первая строка — статус и понятные причины/предупреждения по-русски; вторая — JSON (как раньше).
-            status += human_status(result.get('report', {}))
+            report = dict(result.get('report', {}))
+            if prop_notes:
+                report['warnings'] = list(report.get('warnings') or []) + prop_notes
+            status += human_status(report)
             status += '\n' + json.dumps({'report': result.get('report', {}),
                                          'timings': result.get('timings', {})}, ensure_ascii=False)
             bundle=result.get('body_guides')
             guides=({key:load_mask(bundle[key]) if key=='strength' else load_image(bundle[key])
                      for key in ('plate','playblast','init','strength')} if bundle else {})
             if bundle:
-                guides.update(prompt=bundle['prompt'] if h3_prompt else '',render_prompt=bundle['render_prompt'])
+                guides.update(prompt=bundle.get('prompt') or bundle.get('render_prompt') or h3_prompt,
+                              render_prompt=bundle.get('render_prompt') or h3_prompt)
                 guides['scene_setup']=result.get('scene_setup')
                 if guides['scene_setup']:
                     guides['original_plate']=load_image(Path(guides['scene_setup']['plate_dir'])/'plate_rgb.png')
-                guides['validation']=bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+result['status']]})
+                guides['validation']=dict(bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+str(result['status'])]}))
+                guides['validation']['warnings']=list(guides['validation'].get('warnings') or [])+prop_notes
                 guides['prop_rgb']=load_image(bundle.get('prop_rgb',result['init']))
                 guides['prop_alpha']=load_mask(bundle['prop_alpha']) if bundle.get('prop_alpha') else torch.zeros_like(guides['strength'])
+                if bundle.get('prop_shadow'):
+                    guides['prop_shadow']=load_mask(bundle['prop_shadow'])
             return (load_image(result['playblast']), load_image(result['init']), load_mask(result['strength']),
                     load_mask(result['silhouette']), h3_prompt, status, load_image(result['debug']),
                     load_image(result['prop_repair']) if result.get('prop_repair') else load_image(result['init']),
                     load_mask(result['prop_repair_mask']) if result.get('prop_repair_mask') else torch.zeros_like(load_mask(result['strength'])),guides)
         except Exception as exc:
-            blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
-            zero = torch.zeros((1, 64, 64), dtype=torch.float32)
-            return blank, blank.clone(), zero, zero.clone(), '', error_text(exc), blank.clone(), blank.clone(), zero.clone(),{}
+            return fallback_outputs(short_reason(exc), error_text(exc))
+
+
+def fallback_outputs(reason, detail=''):
+    """Заглушки PlacePose + флаг fatal: NativeGuides переведёт граф на обычное фото AIO."""
+    blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
+    zero = torch.zeros((1, 64, 64), dtype=torch.float32)
+    status = 'status=fallback — 3DA не сработал: ' + reason + ' — будет сделано обычное фото'
+    if detail:
+        status += '\n' + detail
+    return (blank, blank.clone(), zero, zero.clone(), '', status, blank.clone(), blank.clone(), zero.clone(),
+            {'fatal': reason})
 
 
 def remote_client(cfg):
@@ -638,7 +734,7 @@ def remote_run(cfg, images, strength, prompt, seed):
 
 
 class GeometryRejected(ValueError):
-    """Visible Comfy execution error; never save a fake final or spend H3."""
+    """Повреждённые/отсутствующие карты сцены. С 0.3.0 не выходит из узлов: ловится и даёт запасной путь."""
 
 
 def warning_ru(code):
@@ -653,7 +749,7 @@ def human_status(report):
     warnings = [warning_ru(w) for w in report.get('warnings') or []]
     parts = []
     if reasons:
-        parts.append('H3 не отправится: ' + '; '.join(reasons))
+        parts.append('MiniMax исправит: ' + '; '.join(reasons))
     if warnings:
         parts.append('Предупреждение: ' + '; '.join(warnings))
     return (' — ' + ' | '.join(parts)) if parts else ''
@@ -694,8 +790,6 @@ class H3Remote:
                 raise ValueError('Unknown prop_handling')
             ignored=[]
             if prop_handling=='rendered_separately':
-                if body_guides and not body_guides.get('validation',{}).get('ok',True):
-                    raise rejected(body_guides['validation'].get('reasons',[]))
                 if not body_guides or not body_guides.get('prompt','').strip():
                     raise ValueError('Separate prop mode requires accepted body_guides')
                 if prop_repair is None or prop_repair_mask is None:
@@ -738,8 +832,6 @@ class H3Remote:
                         final_composite_support_pixels=int(final_support.sum()),background_guard_pixels=int(guard.sum()))
                 info=json.dumps(detail,ensure_ascii=False)
             return final,raw,info
-        except GeometryRejected:
-            raise
         except Exception as exc:
             # Deliberately recognisable placeholders, never masquerade as a final plate.
             blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
@@ -753,14 +845,17 @@ def scene_helpers():
     return scene_edit
 
 
+FIRST_STEP = 'нет сцены — сначала выполните шаг 1 (подготовка сцены)'
+
+
 def accepted_guides(guides):
-    # Fail closed, including old error placeholders ({}). Never use an empty
-    # prompt as a surrogate gate for a native sampler.
+    """0.3.0: проверяет только ЦЕЛОСТЬ карт сцены. Проблемы геометрии (опора, контакт, кадр,
+    проникновение, предметы) не блокируют — это предупреждения (scene_warnings), H3 исправит."""
+    if isinstance(guides, dict) and guides.get('fatal'):
+        raise GeometryRejected('3DA: ' + str(guides['fatal']))
     validation = guides.get('validation') if isinstance(guides, dict) else None
-    if not isinstance(validation, dict) or validation.get('ok') is not True:
-        reasons = (validation.get('reasons', []) if isinstance(validation, dict) else
-                   ['Сначала выполните группу 1 (подготовка сцены): нет результата проверки геометрии'])
-        raise rejected(reasons)
+    if not isinstance(validation, dict):
+        raise GeometryRejected('3DA: Сначала выполните группу 1 (шаг 1, подготовка сцены): нет сцены')
     for key in ('plate', 'playblast', 'init'):
         value = guides.get(key)
         if not isinstance(value, torch.Tensor) or value.ndim != 4 or value.shape[0] != 1 or value.shape[-1] != 3 or not torch.isfinite(value).all():
@@ -772,7 +867,10 @@ def accepted_guides(guides):
     if not isinstance(mask, torch.Tensor) or tuple(mask.shape) != tuple(shape[:3]) or not torch.isfinite(mask).all() or mask.min() < 0 or mask.max() > 1:
         raise GeometryRejected('3DA: повреждена маска силы (strength) — выполните группу 1 заново')
     if not isinstance(guides.get('prompt'), str) or not guides['prompt'].strip():
-        raise GeometryRejected('3DA: пустой промпт тела — выполните группу 1 заново')
+        fallback = guides.get('render_prompt')
+        if not isinstance(fallback, str) or not fallback.strip():
+            raise GeometryRejected('3DA: пустой промпт тела — выполните группу 1 заново')
+        guides['prompt'] = fallback
     original=guides.get('original_plate')
     if original is not None and (not isinstance(original,torch.Tensor) or original.ndim!=4 or original.shape[0]!=1 or original.shape[-1]!=3 or not torch.isfinite(original).all()):
         raise GeometryRejected('3DA: повреждено исходное фото комнаты — выполните группу 1 заново')
@@ -784,35 +882,89 @@ def accepted_guides(guides):
     return guides
 
 
+def scene_warnings(guides):
+    """Понятные предупреждения сцены по-русски (без блокировки)."""
+    validation = guides.get('validation') if isinstance(guides, dict) else None
+    if not isinstance(validation, dict):
+        return []
+    items = [str(r) for r in validation.get('reasons') or []]
+    items += [warning_ru(w) for w in validation.get('warnings') or []]
+    return list(dict.fromkeys(i for i in items if i))
+
+
+def fallback_reason(guides, exc):
+    if isinstance(guides, dict) and guides.get('fatal'):
+        return str(guides['fatal'])
+    if not guides:
+        return FIRST_STEP
+    text = str(exc)
+    text = text[5:] if text.startswith('3DA: ') else text
+    return text.splitlines()[0][:240] if text else 'неизвестная ошибка'
+
+
 class NativeGuides:
+    """Допуск сцены. 0.3.0: никогда не останавливает workflow.
+    mode (выход) = 2 → H3 по сцене 3DA; 1 → запасной путь, обычное фото AIO. status — понятная строка."""
     @classmethod
     def IS_CHANGED(cls,**kwargs):
-        cfg=config()
-        repo=Path(cfg['repo'])
-        return content_fingerprint([HERE/'nodes.py',repo/'config/placement.yaml',repo/'tools/scene3d/prop_composite.py',
-                                    repo/'tools/scene3d/prompt_h3.py',
-                                    Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])
+        try:
+            cfg=config()
+            repo=Path(cfg['repo'])
+            return content_fingerprint([HERE/'nodes.py',repo/'config/placement.yaml',repo/'tools/scene3d/prop_composite.py',
+                                        repo/'tools/scene3d/prompt_h3.py',
+                                        Path(os.environ.get('THREEDA_CONFIG',str(HERE/'config.yaml')))])
+        except Exception as exc:
+            return 'config-error:'+str(exc)[:80]
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'body_guides': ('3DA_BODY_GUIDES',)},
+        return {'required': {'body_guides': ('3DA_BODY_GUIDES', {'lazy': True})},
                 'optional': {'frame_prompt': ('STRING', {'default': '', 'multiline': True, 'forceInput': True,
                                  'tooltip': 'Промпт кадра пользователя (одежда, детали). Image N / <Picture N> — его ref_image; '
                                             'в H3 они идут после плиты и эталона (<Picture 3…>)'}),
-                             'user_refs': ('INT', {'default': 3, 'min': 0, 'max': 3})}}
-    RETURN_TYPES = ('IMAGE', 'IMAGE', 'IMAGE', 'MASK', 'STRING', 'INT', 'INT', 'BOOLEAN')
-    RETURN_NAMES = ('plate', 'playblast', 'init', 'strength', 'prompt', 'width', 'height', 'accepted')
+                             'user_refs': ('INT', {'default': 3, 'min': 0, 'max': 3}),
+                             'mode': ('INT', {'default': 2, 'min': 1, 'max': 2,
+                                              'tooltip': '1 = обычное фото AIO (3DA не считается), 2 = постановка 3DA'})}}
+    RETURN_TYPES = ('IMAGE', 'IMAGE', 'IMAGE', 'MASK', 'STRING', 'INT', 'INT', 'BOOLEAN', 'INT', 'STRING')
+    RETURN_NAMES = ('plate', 'playblast', 'init', 'strength', 'prompt', 'width', 'height', 'accepted', 'mode', 'status')
     FUNCTION = 'execute'
     CATEGORY = '3DA/native'
 
-    def execute(self, body_guides, frame_prompt='', user_refs=3):
-        g = accepted_guides(body_guides)
-        prompt = g['prompt']
-        if isinstance(frame_prompt, str) and frame_prompt.strip():
-            import sys
-            sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
-            import prompt_h3
-            prompt = prompt_h3.merge_frame_prompt(prompt, frame_prompt, int(user_refs))
-        return g['plate'], g['playblast'], g['init'], g['strength'], prompt, g['plate'].shape[2], g['plate'].shape[1], True
+    @staticmethod
+    def wanted_mode(mode):
+        try:
+            return 1 if int(mode) == 1 else 2
+        except (TypeError, ValueError):
+            return 2
+
+    def check_lazy_status(self, body_guides=None, mode=2, **kwargs):
+        # Режим 1: сцена 3DA не нужна — вся цепочка 3DA (локация, 3D-окно, рендер) не выполняется.
+        return [] if self.wanted_mode(mode) == 1 or body_guides is not None else ['body_guides']
+
+    @staticmethod
+    def stub(status):
+        blank = torch.zeros((1, 64, 64, 3), dtype=torch.float32)
+        return (blank, blank.clone(), blank.clone(), torch.zeros((1, 64, 64), dtype=torch.float32), '', 64, 64,
+                False, 1, status)
+
+    def execute(self, body_guides=None, frame_prompt='', user_refs=3, mode=2):
+        if self.wanted_mode(mode) == 1:
+            return self.stub('Режим 1: обычное фото AIO (3DA выключен)')
+        try:
+            g = accepted_guides(body_guides)
+            prompt = g['prompt']
+            if isinstance(frame_prompt, str) and frame_prompt.strip():
+                import sys
+                sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
+                import prompt_h3
+                prompt = prompt_h3.merge_frame_prompt(prompt, frame_prompt, int(user_refs))
+            warnings = scene_warnings(g)
+            status = '3DA: сцена готова, H3 запущен'
+            if warnings:
+                status += ' — Предупреждение (MiniMax исправит): ' + '; '.join(warnings)
+            return (g['plate'], g['playblast'], g['init'], g['strength'], prompt, g['plate'].shape[2],
+                    g['plate'].shape[1], True, 2, status)
+        except Exception as exc:
+            return self.stub('3DA не сработал: ' + fallback_reason(body_guides, exc) + ' — сделано обычное фото')
 
 
 class NativeComposite:
@@ -829,12 +981,21 @@ class NativeComposite:
     CATEGORY = '3DA/native'
 
     def execute(self, image, body_guides, prop_repair, prop_repair_mask):
+        # 0.3.0: вклейка никогда не роняет финал — при любой проблеме отдаём кадр H3 как есть.
+        try:
+            return self.compose(image, body_guides, prop_repair, prop_repair_mask)
+        except Exception as exc:
+            mask = torch.zeros(tuple(image.shape[:3]), dtype=torch.float32) if isinstance(image, torch.Tensor) and image.ndim == 4 else torch.zeros((1, 64, 64))
+            return image, mask, json.dumps({'warning': '3DA: вклейка пропущена, кадр H3 без вклейки — ' + short_reason(exc)},
+                                           ensure_ascii=False)
+
+    def compose(self, image, body_guides, prop_repair, prop_repair_mask):
         g = accepted_guides(body_guides)
         if image.shape != g['plate'].shape or not torch.isfinite(image).all():
             raise ValueError('3DA: final image must match geometry raster')
         import sys
         sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
-        from prop_composite import alpha, restore, outside_metrics
+        from prop_composite import alpha, restore, outside_metrics, harmonize
         import torch.nn.functional as F
         original = g.get('original_plate', g['plate']).to(image.device)
         if original.ndim!=4 or original.shape[0]!=1 or original.shape[-1]!=3 or not torch.isfinite(original).all():
@@ -858,11 +1019,24 @@ class NativeComposite:
         final=restore(original,rgb(image),body_alpha)
         final=restore(final,original,guard.float())
         prop_alpha=mask(g['prop_alpha'])
+        shadow=g.get('prop_shadow')
+        shadow_ok=isinstance(shadow,torch.Tensor) and tuple(shadow.shape)==tuple(g['plate'].shape[:3]) and bool(torch.isfinite(shadow).all())
+        if shadow_ok:
+            # 0.3.0 «C»: падающая тень предмета на комнату (вне тела) — как в рендере до H3.
+            room_shadow=mask(shadow.clamp(0,1))*(~(body_alpha>0)).float()
+            final=final*(1-room_shadow[...,None])
+        prop_rgb=g['prop_rgb']
+        if float(g['prop_alpha'].max())>0:
+            # 0.3.0 «C»: от рендера — только мелкая фактура предмета, цвет/свет — от H3 (форма не перерисовывается).
+            prop_rgb=torch.from_numpy(harmonize(g['prop_rgb'][0].detach().cpu().numpy(),image[0].detach().cpu().numpy(),
+                                                g['prop_alpha'][0].detach().cpu().numpy()))[None].to(image.device)
         # Interpolate premultiplied RGB so transparent black never bleeds into
         # the material at the original PNG resolution. Overlay exactly once.
-        premul=rgb(g['prop_rgb']*g['prop_alpha'][...,None])
+        premul=rgb(prop_rgb*g['prop_alpha'][...,None])
         final=final*(1-prop_alpha[...,None])+premul
         full_support=(body_alpha>0)|guard|(prop_alpha>0)
+        if shadow_ok:
+            full_support|=room_shadow>0
         final=torch.where(full_support[...,None],final,original)
         parameters=yaml.safe_load((Path(config()['repo'])/'config/placement.yaml').read_text(encoding='utf-8'))
         metrics=outside_metrics(final,original,full_support.cpu().numpy()[0],parameters)
@@ -870,7 +1044,7 @@ class NativeComposite:
                        final_raster_hw=list(original.shape[1:3]),source_png_provided='original_plate' in g,
                        appearance_validation='requires visual review')
         if not metrics['outside_passed']:
-            raise ValueError('3DA: outside composite contract failed: '+json.dumps(metrics))
+            metrics['warning']='3DA: вклейка изменила фон сильнее допуска — проверьте кадр глазами'
         return final,full_support.float().cpu(),json.dumps(metrics)
 
 
@@ -901,6 +1075,15 @@ class SceneEdits:
     CATEGORY = '3DA'
 
     def execute(self, model_3d, model_3d_info, camera_info, location, manifest):
+        # 0.3.0: нет сцены/правок — не ошибка узла, а флаг: итоговая проверка уйдёт на обычное фото.
+        try:
+            return self.apply(model_3d, model_3d_info, camera_info, location, manifest)
+        except Exception as exc:
+            upstream = error_payload(location)
+            reason = ('комната не подготовлена — ' + upstream) if upstream else short_reason(exc)
+            return json.dumps({'3da_error': reason}, ensure_ascii=False), '[]'
+
+    def apply(self, model_3d, model_3d_info, camera_info, location, manifest):
         helpers = scene_helpers()
         cfg = config()
         data = helpers.read_manifest(manifest, cfg)
@@ -935,10 +1118,17 @@ class SceneExport:
     def execute(self, body_guides):
         # A diagnostic scene can be edited to fix failed geometry. Export is
         # not an H3 acceptance and does not change its validation result.
-        setup = body_guides.get('scene_setup')
-        if not setup:
-            raise ValueError('3DA: Сначала выполните группу 1 (подготовка сцены)')
-        result = scene_helpers().export(setup, config())
+        # 0.3.0: без сцены — предупреждение в тексте узла, не ошибка.
+        try:
+            setup = body_guides.get('scene_setup') if isinstance(body_guides, dict) else None
+            if not setup:
+                reason = body_guides.get('fatal') if isinstance(body_guides, dict) and body_guides.get('fatal') else None
+                raise ValueError(reason or 'подготовка персонажа не дала сцены')
+            result = scene_helpers().export(setup, config())
+        except Exception as exc:
+            text = json.dumps({'status': 'warning', 'warning': '3DA: 3D-сцена не подготовлена — ' + short_reason(exc)},
+                              ensure_ascii=False)
+            return {'ui': {'text': [text]}, 'result': ('', '')}
         text = json.dumps(result, ensure_ascii=False)
         return {'ui': {'text': [text]}, 'result': (result['model_file'], result['manifest'])}
 

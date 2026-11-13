@@ -73,8 +73,10 @@ class Build:
 
     def image(self,title,pos):return self.add(self.top,'LoadImage',title,{'image':'','upload':'image'},pos,(350,300))
 
-    def mode_switch(self,g,title,false,true,control,pos):
-        n=self.add(g,'ImpactSwitch',title,{'select':2,'sel_mode':True},pos)
+    def mode_switch(self,g,title,false,true,control,pos,on_prompt=True):
+        # 0.3.0: on_prompt=False — select_on_execution (ленивый выбор во время выполнения): режим
+        # приходит из «Допуска сцены» и может стать 1 (запасной путь) уже после запуска.
+        n=self.add(g,'ImpactSwitch',title,{'select':2,'sel_mode':on_prompt},pos)
         for index,src in enumerate((false,true),1):self.connect(g,*src,n,'input'+str(index))
         self.connect(g,*control,n,'select')
         return n
@@ -181,6 +183,8 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     place=b.add(g,'3DAPlacePose','3DA · Итог: повторная проверка сцены',{'pose_class':'stand','target_object':'floor','block_on_fail':True,'seed':101},(1350,3500),(470,650))
     for s,slot,target in [(loc,0,'location'),(pose,0,'pose_ref'),(edit,0,'body_transform'),(edit,1,'props')]:b.connect(g,s,slot,place,target)
     guides=b.add(g,'3DANativeGuides','3DA · Допуск сцены до загрузки H3',{},(1850,3500));b.connect(g,place,9,guides,'body_guides')
+    # 0.3.0: режим пользователя → допуск; дальше везде действует ЕГО выход mode (1 = запасной путь).
+    b.connect(g,enabled,0,guides,'mode')
     # 0.2.0 «б»: рендер до H3 и H3 в МП из пульта (как исходный движок AIO), вместо 1344×768.
     panel=next((n for n in w['nodes'] if n['type']=='NGFarmPanelPhoto'),None)
     if panel is not None:
@@ -196,7 +200,7 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     pg=wfkit.G(photo,w);inst=next(n for n in w['nodes'] if n['type']==photo['id']);by={n.get('title'):n for n in photo['nodes']}
     def inward(src,slot,label):
         typ=src['outputs'][slot]['type'];idx=pg.add_sub_input('3da_'+label,typ);inst['inputs'].append(dict(name='3da_'+label,type=typ,link=None));g.connect(src,slot,inst,'3da_'+label,type_=typ);return (-10,idx)
-    enabled_in=inward(enabled,0,'enabled')
+    enabled_in=inward(guides,8,'enabled')
     steps_in=inward(native_steps,0,'native_steps')
     external={key:inward(guides,slot,key) for key,slot in [('plate',0),('playblast',1),('init',2),('strength',3),('prompt',4),('width',5),('height',6)]}
     external['identity']=inward(identity,0,'identity')
@@ -237,11 +241,11 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     for l in list(photo['links']):
         d=wfkit._norm(l)
         if d['origin_id']==raw['id'] and d['origin_slot']==0:consumers.append((pg.node(d['target_id']),d['target_slot']))
-    chosen=b.mode_switch(pg,'3DA · фото перед существующим face pass',(raw,0),(built['D1_select'],0),enabled_in,(2200,6500))
+    chosen=b.mode_switch(pg,'3DA · фото перед существующим face pass',(raw,0),(built['D1_select'],0),enabled_in,(2200,6500),on_prompt=False)
     for n,slot in consumers:b.connect(pg,chosen,0,n,n['inputs'][slot]['name'])
     after_face=by['f85:shc'];legacy_final=by['маска: итог · ref2v']
     photo_mode=b.mode_switch(pg,'3DA · сохранить исходную маску / передать face-pass на строгую вклейку',
-                             (legacy_final,0),(after_face,0),enabled_in,(2700,6500))
+                             (legacy_final,0),(after_face,0),enabled_in,(2700,6500),on_prompt=False)
     # Composite only AFTER the entire photo engine / face pass. Geometry gate
     # is a lazy barrier around the whole photo subtree, including its loaders.
     photo_out=next(n for n in w['nodes'] if n.get('title')=='ИТОГ фото · ref2v')
@@ -254,7 +258,8 @@ def integrate(source, oi, source_sha256=SOURCE_SHA256):
     for s,slot,target in [(guides,7,'switch'),(plate,0,'on_false'),(inst,photo_slot,'on_true')]:b.connect(g,s,slot,barrier,target)
     composite=b.add(g,'3DANativeComposite','3DA · Финал после face pass',{},(2300,4100))
     for s,slot,target in [(barrier,0,'image'),(place,9,'body_guides'),(place,7,'prop_repair'),(place,8,'prop_repair_mask')]:b.connect(g,s,slot,composite,target)
-    final=b.mode_switch(g,'3DA · обычное фото / 3D-постановка',(inst,photo_slot),(composite,0),(enabled,0),(2700,4100));b.connect(g,final,0,photo_out,'images')
+    final=b.mode_switch(g,'3DA · обычное фото / 3D-постановка',(inst,photo_slot),(composite,0),(guides,8),(2700,4100),on_prompt=False);b.connect(g,final,0,photo_out,'images')
+    verdict=b.add(g,'PreviewAny','3DA · Статус: что получилось',{},(2700,3500),(430,200));b.connect(g,guides,9,verdict,'source')
     preview=b.add(g,'PreviewImage','3DA · Проверить новый рендер до H3',{},(1850,2750),(430,360));b.connect(g,place,0,preview,'images')
     status=b.add(g,'PreviewAny','3DA · Контакты / кадр / статус',{},(2300,2750),(430,360));b.connect(g,place,5,status,'source')
     metric=b.add(g,'PreviewAny','3DA · Метрики финальной вклейки',{},(2700,4400));b.connect(g,composite,2,metric,'source')

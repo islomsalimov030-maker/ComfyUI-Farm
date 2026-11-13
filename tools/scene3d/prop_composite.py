@@ -82,3 +82,25 @@ def restore_isolated(final, prop_rgb, prop_alpha, repair, repair_mask, body_stre
     final=restore(final,prop_rgb,prop_alpha)
     final_support=body_support|guard|(prop_alpha.detach().cpu().numpy()[0]>0)
     return final,final_support,guard
+
+
+def harmonize(prop_rgb, h3_rgb, prop_alpha, sigma=6., tau=.12):
+    """0.3.0 «C»: after H3 only the FINE texture of the rigid prop is restored; colour and light come from H3.
+
+    Inside the prop alpha: low frequencies (masked blur, so the room behind never leaks in) are taken from H3,
+    high frequencies from the rendered prop. Where H3 moved/distorted the prop (its low-frequency colour differs
+    from the lit render by more than tau) the rendered prop is kept — the 3D shape is never redrawn.
+    Arrays HxWx3 / HxW in [0,1]; returns HxWx3."""
+    p = np.asarray(prop_rgb, dtype=np.float32)
+    h = np.asarray(h3_rgb, dtype=np.float32)
+    a = np.clip(np.asarray(prop_alpha, dtype=np.float32), 0, 1)
+    inside = (a > .5).astype(np.float32)
+    weight = gaussian_filter(inside, sigma) + 1e-6
+
+    def low(x):
+        return np.stack([gaussian_filter(x[..., c] * inside, sigma) for c in range(3)], -1) / weight[..., None]
+    lp, lh = low(p), low(h)
+    detail = p - lp
+    agree = (np.abs(lh - lp).max(axis=-1) < tau)[..., None]
+    out = np.where(agree, lh + detail, p)
+    return np.clip(np.where(inside[..., None] > 0, out, p), 0, 1)

@@ -69,14 +69,14 @@ def test_fit_or_orbit_camera_cannot_silently_drive_plate_gizmo(change):
     with pytest.raises(ValueError,match='Камера гизмо'):validate_camera(actual,expected,LIMITS)
 
 
-def test_rejected_scene_is_visible_execution_error_before_transport_even_with_prompt():
+def test_scene_problems_are_warnings_and_never_raise():
+    # 0.3.0: проблема сцены — не ошибка; узел не бросает исключение (MiniMax исправит).
     image=torch.zeros(1,64,64,3);mask=torch.zeros(1,64,64)
     guides=dict(prompt='body',render_prompt='render',validation=dict(ok=False,reasons=['prop[0] prop_hits_room']))
     with patch.object(nodes,'config',return_value={'repo':str(ROOT)}),patch.object(nodes,'remote_run') as remote:
-        with pytest.raises(nodes.GeometryRejected,match='prop_hits_room|пересекает'):
-            nodes.H3Remote().execute(image,image,image,image,mask,'render',101,
-                body_guides=guides,prop_handling='rendered_separately')
-        remote.assert_not_called()
+        final,raw,info=nodes.H3Remote().execute(image,image,image,image,mask,'render',101,
+            body_guides=guides,prop_handling='rendered_separately')
+    assert isinstance(info,str) and final.shape==(1,64,64,3)
 
 
 def test_numeric_mode_ignores_unused_viewport_camera(tmp_path):

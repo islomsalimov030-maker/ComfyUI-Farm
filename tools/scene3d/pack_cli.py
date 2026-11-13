@@ -45,11 +45,23 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
 
+def plain(value):
+    """0.3.1: numpy scalars/arrays (np.bool is named «bool» in numpy 2) are written as plain JSON values.
+    A new pose put a numpy bool into the scene report and the whole preparation fell back (13.11)."""
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    if hasattr(value, "item"):
+        return value.item()
+    if isinstance(value, Path):
+        return str(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 def save_json(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False, default=plain), encoding="utf-8")
     tmp.replace(path)
 
 
@@ -233,12 +245,68 @@ def keep_photo(request, geometry_dir):
             pass  # read-only preset location: render falls back to plate_rgb.png
 
 
+PLATE_KEYS = ("R_world_from_cv", "cam_height_m", "inv_norm", "fov_x_deg", "size")
+LOCATION_FILES = ("plate.json", "plate_mesh.obj", "plate_rgb.png", "depth_loc.png")
+
+
+def location_cache_problem(directory, loc_id):
+    """0.3.0: why a cached location cannot be used (None = usable). Broken/partial JSON is never trusted."""
+    directory = Path(directory)
+    for name in LOCATION_FILES:
+        path = directory / name
+        if not path.is_file() or path.stat().st_size == 0:
+            return name + " missing or empty"
+    try:
+        plate = read_json(directory / "plate.json")
+        if not isinstance(plate, dict) or any(key not in plate for key in PLATE_KEYS):
+            return "plate.json incomplete"
+    except (OSError, ValueError) as exc:
+        return "plate.json unreadable: " + str(exc)[:120]
+    profile = directory / "profile.json"
+    if profile.exists():
+        try:
+            data = read_json(profile)
+            if not isinstance(data, dict) or data.get("loc_id") != loc_id or not isinstance(data.get("objects"), list):
+                return "profile.json incomplete"
+        except (OSError, ValueError) as exc:
+            return "profile.json unreadable: " + str(exc)[:120]
+    return None
+
+
+def quarantine(directory):
+    """Move a broken AUTO location aside (never delete) so it is prepared again from the photo."""
+    directory = Path(directory)
+    if directory.exists():
+        target = directory.with_name(directory.name + ".broken-" + time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6])
+        directory.rename(target)
+        return str(target)
+    return None
+
+
+def copy_atomic(source, target):
+    import shutil
+    tmp = Path(target).with_name(Path(target).name + "." + uuid.uuid4().hex + ".tmp")
+    shutil.copy2(source, tmp)
+    tmp.replace(target)
+
+
 def do_location(request, config):
     started = time.monotonic()
     timings = {'moge_s': 0., 'auto_profile_s': 0.}
     loc_id = location_id(request.get("location_id"))
     directory = Path(config["farm_root"]) / "locations" / loc_id
     profile_path = directory / "profile.json"
+    # 0.3.0: an AUTO location (made from the user's photo) with a broken or partial cache is
+    # prepared again instead of failing; preset locations keep their read-only data.
+    if loc_id.startswith("auto") and directory.exists() and loc_id not in config.get("location_asset_dirs", {}):
+        problem = location_cache_problem(directory, loc_id)
+        if problem is None and not profile_path.is_file() and "seeds" not in hints_for(config, loc_id):
+            # Geometry is fine but the auto profile never finished: drop only its partial files.
+            if any(directory.glob("*_top.npz")) or any(directory.glob("*_pts.npz")):
+                problem = "auto profile incomplete"
+        if problem is not None:
+            timings['broken_cache'] = problem
+            timings['quarantined'] = quarantine(directory)
     timings['profile_cache_hit'] = profile_path.is_file()
     if profile_path.is_file():
         geometry_dir = assets_for(config, loc_id, directory)
@@ -264,10 +332,13 @@ def do_location(request, config):
             plate = pf.Plate(directory)
             with tempfile.TemporaryDirectory(prefix="3da_auto_") as td:
                 generated = auto_surfaces.write_auto_profile(loc_id, plate, Path(td))
-                for asset in Path(td).iterdir():
+                assets = sorted(Path(td).iterdir(), key=lambda a: a.name == "profile.json")
+                for asset in assets:
                     if (directory / asset.name).exists():
                         raise ValueError("auto profile refuses overwrite: " + asset.name)
-                    __import__("shutil").copy2(asset, directory / asset.name)
+                # profile.json last and atomically: its presence marks a finished location.
+                for asset in assets:
+                    copy_atomic(asset, directory / asset.name)
             data = read_json(profile_path)
             preview = directory / "objects_preview.png"
             auto_surfaces.render_objects_preview(plate, profile_path, preview)
@@ -453,11 +524,22 @@ def compose_props(directory, overlay_dir, size=(1344, 768)):
     from PIL import Image
     import prop_render
     desc = read_json(overlay_dir / "props_render.json")
+    shadow = None
+    if desc.get("shadow") and Path(desc["shadow"]).is_file():
+        # 0.3.0 «C»: cast shadow of the props (room light) darkens room/body under them in every guide.
+        shadow = np.asarray(Image.open(desc["shadow"]).convert("L").resize(size, Image.Resampling.BILINEAR),
+                            dtype=np.float32)[..., None] / 255.
+
+    def shaded(image):
+        if shadow is None:
+            return image.convert("RGBA")
+        rgb = np.asarray(image.convert("RGB"), dtype=np.float32) * (1. - shadow)
+        return Image.fromarray(np.rint(rgb).clip(0, 255).astype("uint8")).convert("RGBA")
     # Props retain their source appearance in both guides. A grey prop video
     # otherwise contradicts material refs at every guided frame. Body proxy
     # remains unchanged; clay is still saved as a diagnostic render.
     for target, source in (("init.png", "textured_rgba"), ("playblast.png", "textured_rgba")):
-        base = Image.open(directory / target).convert("RGBA")
+        base = shaded(Image.open(directory / target))
         overlay = Image.open(desc[source]).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
         Image.alpha_composite(base, overlay).convert("RGB").save(directory / target)
     body = np.asarray(Image.open(directory / "strength.png").convert("L"), dtype=float) / 255
@@ -471,9 +553,11 @@ def compose_props(directory, overlay_dir, size=(1344, 768)):
     body_sil=np.asarray(Image.open(directory/'silhouette.png').convert('L'))>127
     prop_sil=np.logical_or.reduce([np.asarray(mask)>127 for mask,_ in props])
     repair = repair_mask(body,quantized,body_sil,prop_sil)
-    source = Image.open(directory/'plate.png').convert('RGBA')
+    source = shaded(Image.open(directory/'plate.png'))
     layer = Image.open(desc['textured_rgba']).convert('RGBA').resize(size,Image.Resampling.LANCZOS)
     Image.alpha_composite(source,layer).convert('RGB').save(directory/'prop_repair.png')
+    if shadow is not None:
+        Image.fromarray(np.rint(shadow[..., 0] * 255).astype("uint8")).save(directory / "prop_shadow.png")
     Image.fromarray(repair.astype('uint8')*255).save(directory/'prop_repair_mask.png')
     plate = np.asarray(Image.open(directory / "plate.png"), dtype=float)
     debug = plate * (1 - .45 * strength[..., None]) + np.array([255,70,30]) * (.45 * strength[..., None])
@@ -677,7 +761,8 @@ def do_place(request, config):
         run_stage(threeda_blender.command(config, HERE / "plate/prop_render.py", ["--plate", plate_dir,
                    "--body", job / "fit/body.obj", "--joints", job / "fit/label_joints.npz",
                    "--props", props_path, "--library", library, "--out", overlay_dir,
-                   "--raster", f"{size[0]}x{size[1]}"]), "Blender props", env=env)
+                   "--raster", f"{size[0]}x{size[1]}", "--spec", job / "render_spec.json",
+                   "--photo-emission", "2.5", "--samples", "32"]), "Blender props", env=env)
         compose_props(directory, overlay_dir, size)
         prop_report = read_json(overlay_dir / "props_render.json")
         # 0.2.0 «е»: проникновение и опора предметов — те же правила, что у 3D-окна.
@@ -694,6 +779,8 @@ def do_place(request, config):
         layer.convert('RGB').save(directory/'prop_layer_rgb.png')
         layer.getchannel('A').save(directory/'prop_layer_alpha.png')
         body_guides.update(prop_rgb=str(directory/'prop_layer_rgb.png'),prop_alpha=str(directory/'prop_layer_alpha.png'))
+        if (directory/'prop_shadow.png').is_file():
+            body_guides['prop_shadow']=str(directory/'prop_shadow.png')
         fit["props"] = prop_report["props"]
         fit["flags"] = sorted(set(fit.get("flags", []) + [flag for prop in prop_report["props"]
                                     for flag, active in prop["flags"].items() if active]))

@@ -2,14 +2,18 @@
  "178": {
   "class_type": "NGFarmPanelPhoto",
   "inputs": {
+   "megapixels": [
+    "301",
+    0
+   ],
    "use_Singularity": false,
    "use_ref2v": true,
    "use_10Eros": false,
    "use_PinkCherry": false,
    "seed": 22638786943635,
    "face_seed": 953552952704593,
+   "control_after_generate#1": "fixed",
    "shift": 12,
-   "megapixels": 2,
    "pass2_total": 40,
    "pass2_steps": 8,
    "face_denoise": 0.15,
@@ -437,7 +441,7 @@
    "title": "3DA · Итог: повторная проверка сцены"
   }
  },
- "294": {
+ "295": {
   "class_type": "PreviewImage",
   "inputs": {
    "images": [
@@ -449,7 +453,7 @@
    "title": "3DA · Проверить новый рендер до H3"
   }
  },
- "295": {
+ "296": {
   "class_type": "PreviewAny",
   "inputs": {
    "source": [
@@ -459,6 +463,15 @@
   },
   "_meta": {
    "title": "3DA · Контакты / кадр / статус"
+  }
+ },
+ "301": {
+  "class_type": "PrimitiveFloat",
+  "inputs": {
+   "value": 2.0
+  },
+  "_meta": {
+   "title": "5. Качество (МП)"
   }
  }
 }

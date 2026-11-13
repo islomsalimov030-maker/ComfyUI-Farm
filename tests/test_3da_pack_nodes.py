@@ -56,8 +56,12 @@ class NodeTests(unittest.TestCase):
                 m=np.array(json.loads(result[0])[0]['absolute_matrix_world'])
                 np.testing.assert_allclose(m[:3,3],[1,-3,2])
                 np.testing.assert_allclose(m[:3,:3],np.diag([1.1,1.3,.8]))
+                # 0.3.0: чужой GLB — не красная рамка, а предмет пропущен с предупреждением.
+                warned=json.loads(nodes.Prop().execute(**values,model_3d=Asset(b'other'))[0])
+                self.assertEqual(len(warned),1)
+                self.assertIn('GLB',warned[0][nodes.WARN_KEY])
                 with self.assertRaisesRegex(ValueError,'GLB'):
-                    nodes.Prop().execute(**values,model_3d=Asset(b'other'))
+                    nodes.Prop().build(**{**values,'prop_strength':.35,'props_in':'[]','camera_info':None,'location':None},model_3d=Asset(b'other'))
 
     def test_registered_io(self):
         self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote',
@@ -70,16 +74,24 @@ class NodeTests(unittest.TestCase):
     def test_error_does_not_raise_and_returns_status(self):
         image = torch.zeros((1, 16, 16, 3))
         with patch.object(nodes, 'invoke', side_effect=RuntimeError('boom')):
-            loc, plate, objects, preview = nodes.Location().execute(image, 'x')
+            loc, plate, objects, preview, ok = nodes.Location().execute(image, 'x')
             self.assertIs(preview, image)
+            self.assertIs(ok, False)
             self.assertEqual(json.loads(loc)['status'], 'error')
             self.assertIs(plate, image)
+            # 0.3.0: ошибка комнаты — без вызова CLI, флаг fatal и понятная строка.
             result = nodes.PlacePose().execute(loc, image, 'stand', 'floor', '', '', '', 1.62, '', 'grey', 1., 101)
             self.assertEqual(len(result), 10)
-            self.assertIn('status=error', result[5])
+            self.assertIn('3DA не сработал', result[5])
+            self.assertIn('boom', result[9]['fatal'])
             self.assertEqual(result[2].shape, (1, 64, 64))
+            result = nodes.PlacePose().execute(str(PATH), image, 'stand', 'floor', '', '', '', 1.62, '', 'grey', 1., 101)
+            self.assertIn('status=fallback', result[5])
+            self.assertIn('status=error', result[5])
+            self.assertEqual(result[9], {'fatal': 'boom'})
 
-    def test_place_block_on_fail_only_accepted_statuses_forward_prompt(self):
+    def test_place_never_blocks_prompt_on_scene_status(self):
+        # 0.3.0: block_on_fail не действует — промпт H3 есть при любом статусе сцены.
         image = torch.ones((1, 16, 16, 3))
         mask = torch.ones((1, 16, 16))
         statuses = ('ok', 'partial', 'contact_fail', 'wrong_surface', 'no_target',
@@ -93,23 +105,16 @@ class NodeTests(unittest.TestCase):
                      patch.object(nodes, 'load_mask', return_value=mask):
                     result = nodes.PlacePose().execute('{}', image, 'stand', 'floor', '', '', '',
                                                        1.62, '', 'grey', 1., 101, block_on_fail=True)
-                accepted = isinstance(status, str) and status in ('ok', 'partial')
-                self.assertEqual(result[4], 'SFW geometry prompt' if accepted else '')
+                self.assertEqual(result[4], 'SFW geometry prompt')
                 self.assertIs(result[0], image)
                 self.assertIs(result[1], image)
                 self.assertIs(result[2], mask)
                 self.assertIs(result[6], image)
                 self.assertIn('kept', result[5])
-                if not accepted:
-                    with patch.object(nodes, 'config', return_value={'repo': str(PATH.parents[2]),
-                                      'h3_remote': {}}), patch.object(nodes, 'remote_client') as client:
-                        remote = nodes.H3Remote().execute(image, image, image, image, mask, result[4], 101)
-                    self.assertIn('Empty H3 prompt', remote[2])
-                    client.assert_not_called()
 
     def test_location_preview_slot_and_fallback(self):
         plate, preview = torch.zeros((1, 4, 4, 3)), torch.ones((1, 4, 4, 3))
-        self.assertEqual(nodes.Location.RETURN_NAMES, ('location', 'plate', 'objects', 'objects_preview'))
+        self.assertEqual(nodes.Location.RETURN_NAMES, ('location', 'plate', 'objects', 'objects_preview', 'ok'))
         for present in (True, False):
             payload = dict(location='{}', plate='plate', objects=[{'id': 'surf_1'}])
             if present:
@@ -173,12 +178,16 @@ class NodeTests(unittest.TestCase):
                 for bad in ({'prop_id': '../head'}, {'prop_id': 'missing'}, {'anchor': 'bone'},
                             {'scale': 0.}, {'x': float('nan')}, {'roll': float('inf')},
                             {'prop_strength': -1.}, {'props_in': '{}'}, {'props_in': '[{}]'}):
-                    with self.subTest(bad=bad), self.assertRaises((ValueError, OSError)):
-                        nodes.Prop().execute(**{**args, **bad})
+                    with self.subTest(bad=bad):
+                        # 0.3.0: плохой предмет пропускается с предупреждением, узел не падает.
+                        out = json.loads(nodes.Prop().execute(**{**args, **bad})[0])
+                        self.assertTrue(out and set(out[-1]) == {nodes.WARN_KEY})
+                        self.assertEqual(nodes.validated_props(json.dumps(out)), [])
+                        self.assertTrue(nodes.props_warnings(json.dumps(out)))
                 (root / 'head' / 'prop.json').write_text('{"name": 1}')
                 self.assertEqual(nodes.prop_choices(), [nodes.NO_PROP])
-                with self.assertRaises(ValueError):
-                    nodes.Prop().execute(**args)
+                out = json.loads(nodes.Prop().execute(**args)[0])
+                self.assertEqual(nodes.validated_props(json.dumps(out)), [])
         self.assertEqual(nodes.Prop.INPUT_TYPES()['required']['prop_strength'][1]['default'], .35)
 
     def test_timeout_does_not_raise_in_node(self):

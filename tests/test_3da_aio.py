@@ -25,12 +25,27 @@ def guides(size=128):
                 prompt='accepted body prompt',prop_rgb=rgb.clone(),prop_alpha=torch.zeros_like(mask))
 
 
-def test_native_gate_fails_closed():
-    for data in ({}, {'validation':{'ok':False,'reasons':['prop out_of_frame']}}, {'validation':{'ok':True}}):
-        with pytest.raises(nodes.GeometryRejected):nodes.NativeGuides().execute(data)
+def test_native_gate_never_raises_and_falls_back():
+    # 0.3.0: битые/пустые карты — запасной путь (mode=1, обычное фото), без исключения.
+    for data in ({}, None, {'fatal':'комната не подготовлена'}, {'validation':{'ok':True}}):
+        out=nodes.NativeGuides().execute(data)
+        assert out[7] is False and out[8]==1 and out[9].startswith('3DA не сработал')
+    assert 'шаг 1' in nodes.NativeGuides().execute({})[9]
+    assert 'комната не подготовлена' in nodes.NativeGuides().execute({'fatal':'комната не подготовлена'})[9]
     g=guides();g['strength'][0,0,0]=float('nan')
-    with pytest.raises(nodes.GeometryRejected):nodes.NativeGuides().execute(g)
-    assert nodes.NativeGuides().execute(guides())[-1] is True
+    assert nodes.NativeGuides().execute(g)[8]==1
+    ok=nodes.NativeGuides().execute(guides())
+    assert ok[7] is True and ok[8]==2 and ok[9]=='3DA: сцена готова, H3 запущен'
+    # Проблема геометрии — только предупреждение, H3 запускается.
+    g=guides();g['validation']={'ok':False,'reasons':['Персонаж: опора выходит за край поверхности (не хватает 35 % площади)'],
+                                'warnings':['body_partly_out_of_frame']}
+    out=nodes.NativeGuides().execute(g)
+    assert out[7] is True and out[8]==2
+    assert 'Предупреждение (MiniMax исправит): Персонаж: опора' in out[9] and 'тело частично вне кадра' in out[9]
+    # Режим 1 пользователя: сцена не запрашивается (ленивый вход) и не нужна.
+    assert nodes.NativeGuides().check_lazy_status(body_guides=None,mode=1)==[]
+    assert nodes.NativeGuides().check_lazy_status(body_guides=None,mode=2)==['body_guides']
+    assert nodes.NativeGuides().execute(None,mode=1)[9].startswith('Режим 1')
 
 
 def test_rejected_geometry_with_mesh_can_open_editor_but_cannot_run_h3():
@@ -46,8 +61,7 @@ def test_rejected_geometry_with_mesh_can_open_editor_but_cannot_run_h3():
         result = nodes.SceneExport().execute(g)
     assert result['result'] == ('scene.glb', 'scene.json')
     assert calls == [g['scene_setup']]
-    with pytest.raises(nodes.GeometryRejected):
-        nodes.NativeGuides().execute(g)
+    assert nodes.NativeGuides().execute(g)[8]==2  # 0.3.0: не блокирует
 
 
 def test_scene_edits_new_room_camera_and_fingerprint(tmp_path):
@@ -87,8 +101,8 @@ def test_spatial_ssim_is_measured_and_can_fail_despite_zero_changed_pixels():
     g=guides();g['plate'][:]=.125;g['prop_rgb'][:,10:15,10:15]=.75;g['prop_alpha'][:,10:15,10:15]=1
     repair_mask=torch.zeros_like(g['strength']);repair_mask[:,6:20,6:20]=1
     with patch.object(nodes,'config',return_value={'repo':str(ROOT)}):
-        with pytest.raises(ValueError,match='outside composite contract failed'):
-            nodes.NativeComposite().execute(torch.ones_like(g['plate']),g,g['plate'],repair_mask)
+        metrics=json.loads(nodes.NativeComposite().execute(torch.ones_like(g['plate']),g,g['plate'],repair_mask)[2])
+        assert metrics['outside_passed'] is False and 'warning' in metrics
 
 
 def test_original_room_pixels_preserved_at_original_png_resolution():
