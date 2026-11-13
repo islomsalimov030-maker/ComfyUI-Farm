@@ -771,7 +771,11 @@ def do_place(request, config):
     stage = time.monotonic()
     # Фото комнаты в полном разрешении (с 0.2.0 сохраняется при подготовке локации); старые локации — plate_rgb.
     source_plate = plate_dir / "plate_photo.png" if (plate_dir / "plate_photo.png").is_file() else plate_dir / "plate_rgb.png"
-    margin = float(config.get("strength_margin", 2.0)) * size[0] / 1344
+    # 0.3.9: настройки из «3D-контроля» (запрос) важнее config.yaml.
+    def setting(name, default):
+        value = request.get(name, config.get(name, default))
+        return float(default if value is None else value)
+    margin = setting("strength_margin", 2.0) * size[0] / 1344
     timings["strength_margin"] = round(margin, 3)
     prepare_images(directory, source_plate, mode, body_path, strength, config["cell_px"], size, margin)
     if props_value:
@@ -843,7 +847,7 @@ def do_place(request, config):
     zone = shadow_zone(directory, [body_guides['strength'], directory / 'strength.png'] +
                        ([body_guides['h3_props']['strength']] if body_guides.get('h3_props') else []),
                        max(int(config["cell_px"]), int(round(config["cell_px"] * margin))),
-                       float(config.get("shadow_strength", .7)), float(config.get("render_shadow_opacity", .6)))
+                       setting("shadow_strength", .7), setting("render_shadow_opacity", .6))
     if zone:
         body_guides['room_shadow'] = zone
     # Keep geometry diagnostics visible even in a saved preview, without painting

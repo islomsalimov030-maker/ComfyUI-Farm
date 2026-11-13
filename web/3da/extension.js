@@ -334,7 +334,7 @@ app.registerExtension({
     const sync = () => {
       const off = !widgetValue(node, 'control_3d', true);
       for (const w of node.widgets ?? []) {
-        if (!['character', 'prop', 'step', 'prop_render', 'shadows'].includes(w.name)) continue;
+        if (!['character', 'prop', 'step', 'shadows', 'body_margin', 'shadow_strength', 'shadow_opacity'].includes(w.name)) continue;
         w.disabled = off;
         w.options = { ...(w.options ?? {}), disabled: off };
       }
