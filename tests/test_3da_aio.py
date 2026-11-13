@@ -127,6 +127,28 @@ def test_prop_by_h3_keeps_h3_pixels_and_never_pastes_render_or_shadow():
     assert json.loads(metrics)['prop_mode']=='h3'
 
 
+def test_shadow_rule_is_one_for_body_and_prop():
+    # 0.3.7: «тени от H3» — тень рендера не вклеивается; «от рендера» — тень (тело+предмет) на комнате вне ядра тела.
+    g=guides();g['plate'][:]=.5;g['strength'][:]=0;g['strength'][:,40:60,40:60]=1;g['prop_shadow']=torch.ones_like(g['strength'])
+    image=torch.full_like(g['plate'],.5)
+    with patch.object(nodes,'config',return_value={'repo':str(ROOT)}):
+        g['shadow_mode']='h3'
+        final=nodes.NativeComposite().execute(image,g,g['plate'],torch.zeros_like(g['strength']))[0]
+        assert torch.all(final==.5)
+        g['shadow_mode']='render';g['prop_mode']='h3'
+        shadow=torch.zeros_like(g['strength']);shadow[:,70:80,70:80]=.5;g['room_shadow']=shadow
+        final=nodes.NativeComposite().execute(image,g,g['plate'],torch.zeros_like(g['strength']))[0]
+        assert torch.allclose(final[:,75,75],torch.tensor(.25)) and torch.all(final[:,0:10,0:10]==.5)
+
+
+def test_render_shadow_skips_body_core(tmp_path):
+    from PIL import Image
+    Image.fromarray(np.full((32,32),255,np.uint8)).save(tmp_path/'s.png')
+    strength=torch.zeros((1,32,32));strength[:,10:20,10:20]=1
+    shadow=nodes.render_shadow({'body_shadow':str(tmp_path/'s.png')},strength)
+    assert float(shadow[0,15,15])==0 and float(shadow[0,2,2])==1
+
+
 def transform(entity,x=0,y=0,z=0):
     return dict(entity_id=entity,position=dict(x=x,y=y,z=z),quaternion=dict(x=0,y=0,z=0,w=1),scale=dict(x=1,y=1,z=1))
 

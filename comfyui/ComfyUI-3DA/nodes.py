@@ -476,7 +476,11 @@ class PlacePose:
                         'prop_by_h3': ('BOOLEAN', {'default': True, 'label_on': 'предмет рисует H3',
                                                    'label_off': 'точная вклейка предмета',
                                                    'tooltip': 'Вкл: тело и предмет в одной сцене, H3 рисует обоих и их тени. '
-                                                              'Выкл: H3 рисует тело, предмет и его тень из рендера вклеиваются.'})}}
+                                                              'Выкл: H3 рисует тело, предмет из рендера вклеивается.'}),
+                        'render_shadows': ('BOOLEAN', {'default': False, 'label_on': 'тени от рендера',
+                                                       'label_off': 'тени от H3',
+                                                       'tooltip': 'Тени персонажа и предмета на комнате: из рендера Cycles '
+                                                                  '(свет комнаты) или их рисует H3. Одно правило для обоих.'})}}
     RETURN_TYPES = ('IMAGE', 'IMAGE', 'MASK', 'MASK', 'STRING', 'STRING', 'IMAGE', 'IMAGE', 'MASK', '3DA_BODY_GUIDES')
     RETURN_NAMES = ('playblast', 'init', 'strength', 'silhouette', 'h3_prompt', 'status', 'debug', 'prop_repair', 'prop_repair_mask', 'body_guides')
     FUNCTION = 'execute'
@@ -485,7 +489,7 @@ class PlacePose:
     def execute(self, location, pose_ref, pose_class, target_object, support_parts, secondary_contacts,
                 instance_hint, height_m, body_json, proxy, strength, seed, block_on_fail=False,
                 body_dx=0., body_dy=0., body_dz=0., body_dyaw=0., body_dpitch=0., body_droll=0.,
-                pose_text='', props='[]', body_transform='', megapixels=0., prop_by_h3=True):
+                pose_text='', props='[]', body_transform='', megapixels=0., prop_by_h3=True, render_shadows=False):
         try:
             if not isinstance(block_on_fail, bool) or not isinstance(pose_text, str):
                 raise ValueError('block_on_fail must be BOOLEAN; pose_text must be STRING')
@@ -530,6 +534,13 @@ class PlacePose:
                 guides.update(prompt=(joint or {}).get('prompt') or bundle.get('prompt') or bundle.get('render_prompt') or h3_prompt,
                               render_prompt=bundle.get('render_prompt') or h3_prompt)
                 guides['prop_mode'] = 'h3' if joint else 'composite'
+                # 0.3.7: одно правило теней для тела и предмета.
+                guides['shadow_mode'] = 'render' if render_shadows else 'h3'
+                if render_shadows:
+                    room_shadow = render_shadow(bundle, guides['strength'])
+                    if room_shadow is not None:
+                        guides['room_shadow'] = room_shadow
+                        guides['init'] = guides['init'] * (1 - room_shadow[..., None])
                 guides['scene_setup']=result.get('scene_setup')
                 # 0.3.4: финал собирается в растре H3 (МП пульта); чистая комната — plate (то же фото в этом растре).
                 guides['validation']=dict(bundle.get('validation',{'ok':accepted,'reasons':[] if accepted else ['scene status='+str(result['status'])]}))
@@ -546,6 +557,20 @@ class PlacePose:
                     load_mask(result['prop_repair_mask']) if result.get('prop_repair_mask') else torch.zeros_like(load_mask(result['strength'])),guides)
         except Exception as exc:
             return fallback_outputs(short_reason(exc), error_text(exc))
+
+
+def render_shadow(bundle, strength):
+    """0.3.7: тень тела и предметов на комнате из рендера (max), вне ядра тела (силуэт + 1 клетка)."""
+    import torch.nn.functional as F
+    layers = [load_mask(bundle[k]) for k in ('body_shadow', 'prop_shadow') if bundle.get(k) and Path(bundle[k]).is_file()]
+    if not layers:
+        return None
+    size = tuple(strength.shape[1:3])
+    fit = lambda m: m if tuple(m.shape[1:3]) == size else F.interpolate(m[:, None], size=size, mode='bilinear',
+                                                                        align_corners=False)[:, 0]
+    shadow = torch.stack([fit(m).clamp(0, 1) for m in layers]).amax(0)
+    core = strength >= strength.max() * .98 if float(strength.max()) > 0 else torch.zeros_like(strength, dtype=torch.bool)
+    return shadow * (~core).float()
 
 
 def fallback_outputs(reason, detail=''):
@@ -1036,11 +1061,15 @@ class NativeComposite:
         final=restore(original,rgb(image),body_alpha)
         final=restore(final,original,guard.float())
         prop_alpha=mask(g['prop_alpha'])
-        shadow=g.get('prop_shadow')
+        # 0.3.7: тени по одному правилу: «от рендера» — тень тела и предмета (Cycles) на комнате; «от H3» — без вклейки тени.
+        shadow=g.get('room_shadow') if g.get('shadow_mode')=='render' else None
+        if shadow is None and g.get('shadow_mode') is None:
+            shadow=g.get('prop_shadow')  # до 0.3.7: тень предмета вне тела
         shadow_ok=isinstance(shadow,torch.Tensor) and tuple(shadow.shape)==tuple(g['plate'].shape[:3]) and bool(torch.isfinite(shadow).all())
         if shadow_ok:
-            # 0.3.0 «C»: падающая тень предмета на комнату (вне тела) — как в рендере до H3.
-            room_shadow=mask(shadow.clamp(0,1))*(~(body_alpha>0)).float()
+            room_shadow=mask(shadow.clamp(0,1))
+            if g.get('shadow_mode') is None:
+                room_shadow=room_shadow*(~(body_alpha>0)).float()
             final=final*(1-room_shadow[...,None])
         prop_rgb=g['prop_rgb']
         if float(g['prop_alpha'].max())>0:
@@ -1076,6 +1105,11 @@ class NativeComposite:
         final = restore(original, image, support)
         full = support > 0
         final = torch.where(full[..., None], final, original)
+        shadow = g.get('room_shadow') if g.get('shadow_mode') == 'render' else None
+        if isinstance(shadow, torch.Tensor) and tuple(shadow.shape) == tuple(final.shape[:3]):
+            # 0.3.7: «тени от рендера» — тень тела и предмета из Cycles поверх кадра H3 (вне ядра тела).
+            final = final * (1 - shadow.clamp(0, 1).to(final.device)[..., None])
+            full = full | (shadow.to(full.device) > 0)
         parameters = yaml.safe_load((Path(config()['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))
         metrics = outside_metrics(final, original, full.cpu().numpy()[0], parameters)
         metrics.update(prop_mode='h3', working_raster_hw=list(image.shape[1:3]), final_raster_hw=list(image.shape[1:3]),
@@ -1228,6 +1262,7 @@ class BlenderRuntime:
 CHARACTERS = {'Стейси': 'stacy'}
 STEPS = ('Подготовка сцены', 'Генерация')
 PROP_RENDER = ('H3 рисует предмет', 'Точная вклейка')
+SHADOWS = ('Тени от H3', 'Тени от рендера')
 
 
 class Control:
@@ -1242,13 +1277,17 @@ class Control:
             'character': (list(CHARACTERS), {'default': 'Стейси', 'tooltip': 'Персонаж (пока только Стейси).'}),
             'prop': (prop_choices(), {'default': NO_PROP, 'tooltip': 'Предмет в сцене или «(нет предмета)».'}),
             'step': (list(STEPS), {'default': STEPS[1], 'tooltip': 'Подготовка сцены — персонаж в комнате и 3D-окно; '
-                                                                 'Генерация — финальное фото. Без 3D-контроля всегда Генерация.'}),
+                                                                 'Генерация — финальное фото. Без 3D-контроля всегда Генерация.'})},
+            # 0.3.7: необязательные — вкладка со старым описанием узла не даёт «Required input missing».
+            'optional': {
             'prop_render': (list(PROP_RENDER), {'default': PROP_RENDER[0],
                 'tooltip': 'H3 рисует предмет — тело и предмет в одной сцене, тени у обоих от H3. '
-                           'Точная вклейка — форма предмета и его тень из рендера, тело и его тень от H3.'})}}
+                           'Точная вклейка — форма предмета из рендера, тело от H3.'}),
+            'shadows': (list(SHADOWS), {'default': SHADOWS[0],
+                'tooltip': 'Тени персонажа и предмета на комнате: рисует H3 или берутся из рендера (свет комнаты, Cycles).'})}}
     # prop — тип-список предметов: подключается прямо к полю prop_id узла «3DA Prop» (как модель пульта к загрузчику).
-    RETURN_TYPES = ('INT', prop_choices(), 'STRING', 'BOOLEAN')
-    RETURN_NAMES = ('mode', 'prop', 'character', 'prop_by_h3')
+    RETURN_TYPES = ('INT', prop_choices(), 'STRING', 'BOOLEAN', 'BOOLEAN')
+    RETURN_NAMES = ('mode', 'prop', 'character', 'prop_by_h3', 'render_shadows')
     FUNCTION = 'execute'
     CATEGORY = '3DA'
 
@@ -1257,11 +1296,12 @@ class Control:
         # Предмет, удалённый с сервера, не должен давать красную рамку: он просто не ставится.
         return True
 
-    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1], prop_render=None):
+    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1], prop_render=None, shadows=None):
         # step переключает группы в браузере (заглушает «Подготовку сцены» или «Генерацию»); серверу он не нужен.
         on = bool(control_3d)
         chosen = prop if on and prop in prop_choices() else NO_PROP
-        return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'), prop_render != PROP_RENDER[1])
+        return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'), prop_render != PROP_RENDER[1],
+                shadows == SHADOWS[1])
 
 
 NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,

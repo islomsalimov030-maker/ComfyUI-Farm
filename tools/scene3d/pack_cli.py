@@ -484,7 +484,7 @@ def prompt_direct(profile, config, fit):
     return text
 
 
-def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_px, size=(1344, 768)):
+def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_px, size=(1344, 768), margin=1.):
     import numpy as np
     from PIL import Image
     import pose_proxy_v26 as proxy
@@ -510,7 +510,10 @@ def prepare_images(directory, plate_path, proxy_mode, body_json, strength, cell_
         Image.fromarray(figure).save(directory / "proxy.png")
     # Exact plate outside the figure, matching ImageCompositeMasked in step 9.
     Image.fromarray(np.where(sil[..., None], figure, plate)).save(directory / "init.png")
-    sm = proxy.strength_map(sil, strength, cell_px) if strength else np.zeros(sil.shape)
+    # 0.3.7: запас вокруг тела (волосы, тени H3) — клетка × margin; margin растёт с растром, чтобы в 2 Мп
+    # полоса не становилась относительно тоньше, чем в 1 Мп. margin=1 — прежние 1+2 клетки.
+    band = max(int(cell_px), int(round(cell_px * float(margin))))
+    sm = proxy.strength_map(sil, strength, band) if strength else np.zeros(sil.shape)
     Image.fromarray(np.rint(sm * 255).astype(np.uint8)).save(directory / "strength.png")
     overlay = plate.astype(float) * (1 - .45 * sm[..., None])
     overlay += np.array([255, 70, 30]) * (.45 * sm[..., None])
@@ -735,7 +738,9 @@ def do_place(request, config):
     stage = time.monotonic()
     # Фото комнаты в полном разрешении (с 0.2.0 сохраняется при подготовке локации); старые локации — plate_rgb.
     source_plate = plate_dir / "plate_photo.png" if (plate_dir / "plate_photo.png").is_file() else plate_dir / "plate_rgb.png"
-    prepare_images(directory, source_plate, mode, body_path, strength, config["cell_px"], size)
+    margin = float(config.get("strength_margin", 2.0)) * size[0] / 1344
+    timings["strength_margin"] = round(margin, 3)
+    prepare_images(directory, source_plate, mode, body_path, strength, config["cell_px"], size, margin)
     if props_value:
         from shutil import copy2
         body_dir=directory/'body_guides'
@@ -746,6 +751,9 @@ def do_place(request, config):
         body_dir=directory
     body_guides={key:str(body_dir/(key+'.png')) for key in ('playblast','init','strength')}
     body_guides['plate']=str(directory/'plate.png')
+    # 0.3.7: тень тела из рендера (Cycles, свет комнаты) — для режима «тени от рендера».
+    if (directory/'shadow.png').is_file():
+        body_guides['body_shadow']=str(directory/'shadow.png')
     body_guides.update(prompt=body_h3_prompt,render_prompt=h3_prompt)
     render_props_value = []
     if props_value:
