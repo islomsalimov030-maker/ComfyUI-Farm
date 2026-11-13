@@ -33,12 +33,14 @@ REMOVE = ('3DA · Фотоплита комнаты', '3DA · Поза: загр
           '3DA · H3 base steps (без turbo)', '1. Комната (фото)', '2. Поза (фото)')
 POSE_SWITCH = '3DA · pose_source: 1=фото / 2=Z-Image / 3=Qwen2511'
 POSE_SOURCES = '3DA · Источники позы (не трогать)'
+PREP, GEN = '▶ Подготовка сцены', '▶ Генерация'
+STEP_GROUPS = {'▶ Шаг 1: подготовить сцену': PREP, '▶ Шаг 2: финал': GEN}
 NOTE = """# Как сделать фото
 
 ## 1. Первый LoadImage — фото комнаты, второй — фото позы (остальные — по желанию).
-## 2. «3DA · 3D-контроль» под пультом: ВКЛ — поза и предмет из 3D; ВЫКЛ — обычное фото, позу рисует MiniMax.
-## 3. С 3D-контролем: в «▶ Шаги» включи «Шаг 1», выключи «Шаг 2» → Run. Если надо — подвинь в 3D-окне.
-## 4. Выключи «Шаг 1», включи «Шаг 2» → Run. Без 3D-контроля — сразу «Шаг 2».
+## 2. «3DA · 3D-контроль» под пультом. ВЫКЛ — обычное фото, позу рисует MiniMax: просто Run.
+## 3. ВКЛ: выбери предмет, шаг «Подготовка сцены» → Run. Если надо — подвинь человека/предмет в 3D-окне.
+## 4. Шаг «Генерация» → Run.
 ## 5. Фото будет всегда; если 3D не сработал — причина в «Статус: что получилось»."""
 
 
@@ -160,10 +162,14 @@ def transform(w, oi):
         rewire(top, w, pose_old, pose)
     report['room'], report['pose'] = room['id'], pose['id']
 
-    # 2. no Z-Image / Qwen pose sources
+    # 2. no Z-Image / Qwen pose sources (the instance may have no title — find it by its definition name)
     for title in (POSE_SWITCH, POSE_SOURCES):
         if title in by:
             top.remove_node(by[title]['id'])
+    names = {s['id']: s.get('name') for s in w['definitions']['subgraphs']}
+    for n in list(w['nodes']):
+        if names.get(n['type']) == POSE_SOURCES:
+            top.remove_node(n['id'])
     used = {n['type'] for n in w['nodes']} | {n['type'] for s in w['definitions']['subgraphs'] for n in s['nodes']}
     w['definitions']['subgraphs'] = [s for s in w['definitions']['subgraphs'] if s['id'] in used]
 
@@ -182,7 +188,7 @@ def transform(w, oi):
     # 4. «3D-контроль» under the photo panel
     panel = next(n for n in w['nodes'] if n['type'] == srv.PANEL_TYPE)
     control = by.get(CONTROL) or b.add(top, '3DAControl', CONTROL, {'control_3d': True, 'character': 'Стейси',
-                                                                     'prop': '(нет предмета)'},
+                                                                     'prop': '(нет предмета)', 'step': 'Генерация'},
                                        (panel['pos'][0], panel['pos'][1] + panel['size'][1] + 40), (panel['size'][0], 130))
     control['color'], control['bgcolor'] = '#2a4d3e', '#335f4c'
     # Right under the panel: the user's nodes below it in the same column move down to make room.
@@ -238,6 +244,13 @@ def transform(w, oi):
         if n is not None:
             top.remove_node(n['id'])
     w['groups'] = [g for g in w['groups'] if g['title'] not in REMOVE]
+    # Steps live in «3D-контроль» now: no separate group switch; the groups get plain names.
+    for g in w['groups']:
+        g['title'] = STEP_GROUPS.get(g['title'], g['title'])
+    muter = by_title(w).get(srv.STAGE_MUTER)
+    if muter is not None:
+        top.remove_node(muter['id'])
+    apply_modes(w, on=True, prep=False)
     note = by.get(srv.NOTE_TITLE)
     if note is not None:
         note['widgets_values'] = [NOTE]
@@ -248,10 +261,54 @@ def transform(w, oi):
     return w, report
 
 
-def stage_api(w, stage, titles):
-    """API of one stage. The frontend mutes a subgraph's inner nodes together with the subgraph node
-    (V3.0 was saved with both steps off → the engine's inner nodes have mode 2); unmute them with it."""
-    w = srv.set_stage(copy.deepcopy(w), stage)
+ONLY_3DA = {'3DALocation', '3DAPlacePose', '3DAProp', '3DASceneEdits', '3DASceneExport'}
+
+
+def only3da(n):
+    title = n.get('title') or ''
+    return (n['type'] in ONLY_3DA or (n['type'] == 'Load3DAdvanced' and '3DA Scene' in n.get('properties', {}))
+            or (n['type'] in ('PreviewImage', 'PreviewAny') and title.startswith('3DA ·') and title != srv.STATUS))
+
+
+def apply_modes(w, on=True, prep=False):
+    """The same modes the pack's frontend sets from «3D-контроль» (web/extension.js, applyControl)."""
+    prep = on and prep
+    subs = {s['id']: s for s in w['definitions']['subgraphs']}
+
+    def set_mode(n, mode):
+        if n.get('mode') == 4:
+            return
+        n['mode'] = mode
+        for inner in subs.get(n['type'], {}).get('nodes', []):
+            if inner.get('mode') in (0, 2, None):
+                set_mode(inner, mode)
+    members = {t: {n['id'] for n in srv.group_members(w, t)} for t in (PREP, GEN)}
+    control = by_title(w).get(CONTROL)
+    for n in w['nodes']:
+        if control is not None and n is control:
+            continue
+        if n['id'] in members[PREP]:
+            set_mode(n, 0 if prep else 2)
+        elif n['id'] in members[GEN]:
+            set_mode(n, 2 if prep else 0)
+    muted = members[GEN] if prep else members[PREP]
+    for n in w['nodes']:
+        if only3da(n):
+            if not on:
+                set_mode(n, 2)
+            elif n['id'] not in muted:
+                set_mode(n, 0)
+    if control is not None:
+        named = control.setdefault('widgets_values_named', {})
+        named.update(control_3d=on, step='Подготовка сцены' if prep else 'Генерация')
+        keys = ['control_3d', 'character', 'prop', 'step']
+        control['widgets_values'] = [named.get(k) for k in keys]
+    return w
+
+
+def stage_api(w, stage, titles, on=True):
+    """API of one state of «3D-контроль»: stage 'prepare' / 'final', on = 3D control on/off."""
+    w = apply_modes(copy.deepcopy(w), on=on, prep=stage == 'prepare')
     subs = {s['id']: s for s in w['definitions']['subgraphs']}
 
     def wake(graph):
@@ -275,8 +332,10 @@ def main():
     oi.update(pack_schema())
     w, report = transform(json.loads(a.source.read_text(encoding='utf-8')), oi)
     a.out.write_text(json.dumps(w, ensure_ascii=False, indent=1), encoding='utf-8')
-    for stage, titles in (('prepare', ['3DA · Подготовить сцену гизмо', srv.PREP_STATUS]), ('final', ['ИТОГ фото · ref2v'])):
-        api = srv.clean(stage_api(w, stage, titles), oi)
+    for stage, titles, on in (('prepare', ['3DA · Подготовить сцену гизмо', srv.PREP_STATUS], True),
+                              ('final', ['ИТОГ фото · ref2v'], True), ('final', ['ИТОГ фото · ref2v'], False)):
+        api = srv.clean(stage_api(w, stage, titles, on), oi)
+        stage = stage + ('' if on else ' (3D выкл)')
         errors = wfkit.check_api(api)
         inv = srv.inventory(api, oi)
         if errors or inv['missing_classes'] or inv['schema_errors']:

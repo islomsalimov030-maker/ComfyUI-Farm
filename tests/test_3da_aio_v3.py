@@ -36,7 +36,7 @@ def test_v3_transform_wiring():
     for gone in v3.REMOVE[:6] + (v3.POSE_SWITCH, v3.POSE_SOURCES):
         assert gone not in titles
     assert v3.CONTROL in titles
-    api = wfkit.to_api(srv.set_stage(copy.deepcopy(w), 'final'))
+    api = wfkit.to_api(v3.apply_modes(copy.deepcopy(w), on=True, prep=False))
     t = {k: n['_meta']['title'] for k, n in api.items()}
     node = lambda title: next(n for n in api.values() if n['_meta']['title'] == title)
     assert t[node('3DA H3 · shift')['inputs']['model'][0]] == 'ПРЕВЬЮ генерации'
@@ -46,9 +46,28 @@ def test_v3_transform_wiring():
     assert t[node('w7 · RefMod → условие + мод предмета')['inputs']['mods'][0]] == v3.PROP_MOD
     assert node('3DA · Локация')['inputs']['plate'][0] == '236'
     assert '3DA H3 · unet' not in t.values()
-    prep = wfkit.to_api(srv.set_stage(copy.deepcopy(w), 'prepare'))
+    prep = wfkit.to_api(v3.apply_modes(copy.deepcopy(w), on=True, prep=True))
     pp = next(n for n in prep.values() if n['_meta']['title'] == '3DA · Подготовка персонажа')
     assert pp['inputs']['pose_ref'][0] == '237'
     control = next(k for k, n in prep.items() if n['_meta']['title'] == v3.CONTROL)
     prop = next(n for n in prep.values() if n['_meta']['title'] == srv.PROP)
     assert prop['inputs']['prop_id'] == [control, 1]
+
+
+def test_v3_control_modes_and_steps():
+    oi = json.loads((ROOT / 'tools/scene3d/aio_v23_object_info.json').read_text(encoding='utf-8'))
+    oi.update(v3.pack_schema())
+    w, _ = v3.transform(standin(), oi)
+    titles = [g['title'] for g in w['groups']]
+    assert v3.PREP in titles and v3.GEN in titles and '▶ Шаг 1: подготовить сцену' not in titles
+    assert srv.STAGE_MUTER not in {n.get('title') for n in w['nodes']}
+    off = v3.stage_api(w, 'final', ['ИТОГ фото · ref2v'], on=False)
+    classes = {n['class_type'] for n in off.values()}
+    assert not classes & {'3DALocation', '3DAPlacePose', '3DASceneEdits', 'Load3DAdvanced'}
+    gate = next(n for n in off.values() if n['class_type'] == '3DANativeGuides')
+    assert 'body_guides' not in gate['inputs']
+    prep = v3.stage_api(w, 'prepare', ['3DA · Подготовить сцену гизмо'], on=True)
+    assert 'SaveImage' not in {n['class_type'] for n in prep.values()}
+    js = (ROOT / 'comfyui/ComfyUI-3DA/web/extension.js').read_text(encoding='utf-8')
+    for marker in ("'▶ Подготовка сцены'", "'▶ Генерация'", 'applyControl', 'app.graphToPrompt'):
+        assert marker in js

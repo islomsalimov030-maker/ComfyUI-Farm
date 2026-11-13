@@ -256,25 +256,100 @@ app.registerExtension({
   }
 });
 
-// 0.3.2: «3DA · 3D-контроль» — при выключенном 3D-контроле поля персонажа и предмета тусклые и неактивные.
+// 0.3.3: «3DA · 3D-контроль» — один пульт для 3D:
+//  • 3D-контроль ВЫКЛ → персонаж/предмет/шаг тусклые, все узлы 3DA заглушены (не считаются и не мешают),
+//    генерация — обычное фото AIO;
+//  • шаг «Подготовка сцены» / «Генерация» включает одну из двух групп и заглушает другую
+//    (вместо отдельного переключателя групп). Режимы ставятся при переключении и ещё раз перед каждым Run.
+const STEP_PREP = ['▶ Подготовка сцены', '▶ Шаг 1'];
+const STEP_GEN = ['▶ Генерация', '▶ Шаг 2'];
+const ONLY_3DA = new Set(['3DALocation', '3DAPlacePose', '3DAProp', '3DASceneEdits', '3DASceneExport']);
+const KEEP_TITLES = new Set(['3DA · Статус: что получилось']);
+
+function controlNode(graph) {
+  return (graph?._nodes ?? graph?.nodes ?? []).find(n => n.comfyClass === '3DAControl' || n.type === '3DAControl');
+}
+function widgetValue(node, name, fallback) {
+  const w = node.widgets?.find(x => x.name === name);
+  return w ? w.value : fallback;
+}
+function setMode(node, mode) {
+  if (!node || node.mode === mode || node.mode === 4) return;
+  if (typeof node.changeMode === 'function') node.changeMode(mode); else node.mode = mode;
+  const inner = node.subgraph?.nodes ?? node.subgraph?._nodes;
+  for (const child of inner ?? []) if (child.mode === 0 || child.mode === 2) setMode(child, mode);
+}
+function groupNodes(graph, prefixes) {
+  const out = new Set();
+  for (const g of graph?._groups ?? graph?.groups ?? []) {
+    if (!prefixes.some(p => String(g.title ?? '').startsWith(p))) continue;
+    try { g.recomputeInsideNodes?.(); } catch {}
+    for (const n of g._children ?? g.nodes ?? []) if (n && n.mode !== undefined && n.comfyClass !== '3DAControl') out.add(n);
+  }
+  return out;
+}
+function only3da(node) {
+  if (ONLY_3DA.has(node.comfyClass)) return true;
+  if (node.comfyClass === 'Load3DAdvanced' && node.properties?.['3DA Scene'] !== undefined) return true;
+  const title = String(node.title ?? '');
+  return /^(PreviewImage|PreviewAny)$/.test(node.comfyClass ?? '') && title.startsWith('3DA ·') && !KEEP_TITLES.has(title);
+}
+function applyControl(graph) {
+  const control = controlNode(graph);
+  if (!control) return;
+  const on = !!widgetValue(control, 'control_3d', true);
+  const step = widgetValue(control, 'step', 'Генерация');
+  const prep = on && String(step).startsWith('Подготов');
+  const prepNodes = groupNodes(graph, STEP_PREP);
+  const genNodes = groupNodes(graph, STEP_GEN);
+  for (const n of prepNodes) setMode(n, prep ? 0 : 2);
+  for (const n of genNodes) setMode(n, prep ? 2 : 0);
+  const muted = prep ? genNodes : prepNodes;
+  for (const n of graph._nodes ?? []) {
+    if (!only3da(n)) continue;
+    if (!on) setMode(n, 2);                       // 3D-контроль выкл: вся цепочка 3DA заглушена
+    else if (!muted.has(n)) setMode(n, 0);        // 3D вкл: узлы 3DA вне заглушённой группы активны
+  }
+  graph.setDirtyCanvas?.(true, true);
+}
+
 app.registerExtension({
   name: 'ThreeDA.Control',
+  setup() {
+    const original = app.graphToPrompt;
+    if (original && !original.__threeDA) {
+      const wrapped = async function (...args) {
+        try { applyControl(app.graph); } catch (e) { console.error('3DA control:', e); }
+        return original.apply(this, args);
+      };
+      wrapped.__threeDA = true;
+      app.graphToPrompt = wrapped;
+    }
+  },
+  afterConfigureGraph() {
+    setTimeout(() => { try { applyControl(app.graph); } catch (e) { console.error('3DA control:', e); } }, 0);
+  },
   nodeCreated(node) {
     if (node.comfyClass !== '3DAControl') return;
     const sync = () => {
-      const toggle = node.widgets?.find(w => w.name === 'control_3d');
-      const off = toggle ? !toggle.value : false;
+      const off = !widgetValue(node, 'control_3d', true);
       for (const w of node.widgets ?? []) {
-        if (w.name !== 'character' && w.name !== 'prop') continue;
+        if (!['character', 'prop', 'step'].includes(w.name)) continue;
         w.disabled = off;
         w.options = { ...(w.options ?? {}), disabled: off };
       }
       node.setDirtyCanvas?.(true, true);
     };
-    const toggle = node.widgets?.find(w => w.name === 'control_3d');
-    if (toggle) {
-      const cb = toggle.callback;
-      toggle.callback = function (...args) { const r = cb?.apply(this, args); sync(); return r; };
+    for (const name of ['control_3d', 'step']) {
+      const w = node.widgets?.find(x => x.name === name);
+      if (!w) continue;
+      const cb = w.callback;
+      w.callback = function (...args) {
+        const r = cb?.apply(this, args);
+        sync();
+        try { applyControl(node.graph ?? app.graph); } catch (e) { console.error('3DA control:', e); }
+        return r;
+      };
     }
     const oc = node.onConfigure;
     node.onConfigure = function (...args) { const r = oc?.apply(this, args); sync(); return r; };

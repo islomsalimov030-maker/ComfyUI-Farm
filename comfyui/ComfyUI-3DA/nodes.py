@@ -917,8 +917,10 @@ class NativeGuides:
             return 'config-error:'+str(exc)[:80]
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'body_guides': ('3DA_BODY_GUIDES', {'lazy': True})},
-                'optional': {'frame_prompt': ('STRING', {'default': '', 'multiline': True, 'forceInput': True,
+        # 0.3.3: body_guides необязателен (ленивый): при выключенном 3D-контроле цепочка 3DA заглушена.
+        return {'required': {},
+                'optional': {'body_guides': ('3DA_BODY_GUIDES', {'lazy': True}),
+                             'frame_prompt': ('STRING', {'default': '', 'multiline': True, 'forceInput': True,
                                  'tooltip': 'Промпт кадра пользователя (одежда, детали). Image N / <Picture N> — его ref_image; '
                                             'в H3 они идут после плиты и эталона (<Picture 3…>)'}),
                              'user_refs': ('INT', {'default': 3, 'min': 0, 'max': 3}),
@@ -973,14 +975,16 @@ class NativeComposite:
         return NativeGuides.IS_CHANGED(**kwargs)
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'image': ('IMAGE',), 'body_guides': ('3DA_BODY_GUIDES',),
-                             'prop_repair': ('IMAGE',), 'prop_repair_mask': ('MASK',)}}
+        # 0.3.3: карты сцены необязательны — при выключенном 3D-контроле цепочка 3DA заглушена, а вклейка
+        # (стоящая за ленивым переключателем) не должна давать ошибку проверки графа.
+        return {'required': {'image': ('IMAGE',)},
+                'optional': {'body_guides': ('3DA_BODY_GUIDES',), 'prop_repair': ('IMAGE',), 'prop_repair_mask': ('MASK',)}}
     RETURN_TYPES = ('IMAGE', 'MASK', 'STRING')
     RETURN_NAMES = ('final', 'composite_support', 'metrics')
     FUNCTION = 'execute'
     CATEGORY = '3DA/native'
 
-    def execute(self, image, body_guides, prop_repair, prop_repair_mask):
+    def execute(self, image, body_guides=None, prop_repair=None, prop_repair_mask=None):
         # 0.3.0: вклейка никогда не роняет финал — при любой проблеме отдаём кадр H3 как есть.
         try:
             return self.compose(image, body_guides, prop_repair, prop_repair_mask)
@@ -1190,6 +1194,7 @@ class BlenderRuntime:
 
 
 CHARACTERS = {'Стейси': 'stacy'}
+STEPS = ('Подготовка сцены', 'Генерация')
 
 
 class Control:
@@ -1202,7 +1207,9 @@ class Control:
             'control_3d': ('BOOLEAN', {'default': True, 'label_on': '3D-контроль ВКЛ', 'label_off': '3D-контроль ВЫКЛ',
                                        'tooltip': 'Вкл — поза, ракурс и предмет из 3D-сцены. Выкл — обычное фото: позу рисует MiniMax по промпту.'}),
             'character': (list(CHARACTERS), {'default': 'Стейси', 'tooltip': 'Персонаж (пока только Стейси).'}),
-            'prop': (prop_choices(), {'default': NO_PROP, 'tooltip': 'Предмет в сцене или «(нет предмета)».'})}}
+            'prop': (prop_choices(), {'default': NO_PROP, 'tooltip': 'Предмет в сцене или «(нет предмета)».'}),
+            'step': (list(STEPS), {'default': STEPS[1], 'tooltip': 'Подготовка сцены — персонаж в комнате и 3D-окно; '
+                                                                 'Генерация — финальное фото. Без 3D-контроля всегда Генерация.'})}}
     # prop — тип-список предметов: подключается прямо к полю prop_id узла «3DA Prop» (как модель пульта к загрузчику).
     RETURN_TYPES = ('INT', prop_choices(), 'STRING')
     RETURN_NAMES = ('mode', 'prop', 'character')
@@ -1214,7 +1221,8 @@ class Control:
         # Предмет, удалённый с сервера, не должен давать красную рамку: он просто не ставится.
         return True
 
-    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP):
+    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1]):
+        # step переключает группы в браузере (заглушает «Подготовку сцены» или «Генерацию»); серверу он не нужен.
         on = bool(control_3d)
         chosen = prop if on and prop in prop_choices() else NO_PROP
         return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'))
