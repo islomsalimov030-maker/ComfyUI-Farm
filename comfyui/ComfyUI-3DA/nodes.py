@@ -535,8 +535,11 @@ class PlacePose:
                 # 0.3.7: одно правило теней для тела и предмета.
                 guides['shadow_mode'] = 'render' if options['render_shadows'] else 'h3'
                 # 0.4.0 тест: «чистые тени» — от H3 берётся только затемнение в зоне тени, пол — с фото комнаты.
-                if options['clean_shadows'] and bundle.get('shadow_zone') and bundle.get('band'):
-                    guides['clean_shadows'] = dict(zone=load_mask(bundle['shadow_zone']), band=load_mask(bundle['band']))
+                # 0.3.12: исключается только человек (силуэт рендера; маска SAM3 с кадра H3 — входом person_mask
+                # узла вклейки) и предмет; зона тени — только для сводки.
+                if options['clean_shadows']:
+                    guides['clean_shadows'] = dict(person=load_mask(result['silhouette']), person_source='render',
+                                                   zone=load_mask(bundle['shadow_zone']) if bundle.get('shadow_zone') else None)
                 if options['render_shadows']:
                     room_shadow = render_shadow(bundle, guides['strength'])
                     if room_shadow is not None:
@@ -580,27 +583,70 @@ def scene_settings(value):
     return out
 
 
-def clean_shadows(final, image, original, masks, strength_margin_px=16):
-    """0.4.0 тест «чистые тени»: в зоне тени (вне полосы тела/предмета) кадр = фото комнаты × размытое отношение
-    яркостей H3/фото (только затемнение). Форма и мягкость тени от H3, текстура пола — родная, без шума."""
+def clean_shadows(final, image, original, masks):
+    """0.3.12 тест «чистые тени»: во всей области H3 вне человека и предмета кадр = фото комнаты × размытое
+    отношение яркостей H3/фото (только затемнение). Форма тени — от H3, текстура пола — родная, мозаика H3 не проходит.
+    До 0.3.12 исключалась вся полоса силы тела (клетка × body_margin + хвост), и зона тени почти целиком в неё
+    попадала → вес ≈ 0, эффекта не было. Теперь исключается только сам человек: маска person с кадра H3
+    (SAM3 «person», если подключена) или силуэт рендера с запасом; плюс предмет. Возвращает (кадр, сводка)."""
     from scipy.ndimage import gaussian_filter, binary_dilation
     import torch.nn.functional as F
     size = tuple(final.shape[1:3])
+    h = size[0]
     def fit(m):
+        if not isinstance(m, torch.Tensor):
+            return None
         m = m.to(torch.float32)
-        return m if tuple(m.shape[1:3]) == size else F.interpolate(m[:, None], size=size, mode='bilinear', align_corners=False)[:, 0]
-    zone, band = fit(masks['zone'])[0].cpu().numpy(), fit(masks['band'])[0].cpu().numpy()
-    near = binary_dilation(band > 0, iterations=4)
-    weight = gaussian_filter(((zone > 0) & ~near).astype(np.float32), sigma=6)
+        m = m if m.ndim == 3 else m.reshape((1,) + tuple(m.shape[-2:]))
+        m = m if tuple(m.shape[1:3]) == size else F.interpolate(m[:, None], size=size, mode='bilinear', align_corners=False)[:, 0]
+        return m[0].cpu().numpy()
+    area = fit(masks.get('area'))
+    person = fit(masks.get('person'))
+    source = masks.get('person_source') or 'render'
+    info = dict(applied=False, person_source=source)
+    if area is None or person is None:
+        info['reason'] = 'нет карты силы или маски человека'
+        return final, info
+    area = area > 0
+    # запас вокруг человека: маска с кадра H3 точная — узкий; силуэт рендера — шире (волосы, отличие позы у H3).
+    grow = max(2, int(round(h * (.006 if source == 'h3' else .02))))
+    keep = person > .5
+    prop = fit(masks.get('prop'))
+    if prop is not None:
+        keep |= prop > .05
+    keep = binary_dilation(keep, iterations=grow)
+    region = area & ~keep
+    soft = max(2., grow / 2)
+    weight = gaussian_filter(region.astype(np.float32), sigma=soft) * region
+    zone = fit(masks.get('zone'))
+    info.update(area_px=int(area.sum()), person_px=int((person > .5).sum()), keep_px=int(keep.sum()),
+                weight_px=int((weight > .5).sum()), grow_px=grow,
+                zone_px=int((zone > 0).sum()) if zone is not None else None)
     if weight.max() <= 0:
-        return final
+        info['reason'] = 'вся область H3 занята человеком/предметом'
+        return final, info
     lum = lambda t: (t[0].detach().cpu().numpy() @ np.array([.299, .587, .114], np.float32))
-    sigma = max(3., strength_margin_px / 3)
-    ratio = gaussian_filter(lum(image) + .02, sigma) / gaussian_filter(lum(original) + .02, sigma)
-    ratio = np.clip(ratio, .15, 1.)
+    # отношение яркостей без пикселей человека (нормированная свёртка): у края тела нет ложного затемнения.
+    sigma = max(4., h / 110)
+    valid = (~keep).astype(np.float32)
+    num = gaussian_filter((lum(image) + .02) * valid, sigma)
+    den = gaussian_filter((lum(original) + .02) * valid, sigma)
+    ratio = np.clip(num / np.maximum(den, 1e-6), .15, 1.)
+    ratio = np.where(den > 1e-4, ratio, 1.)
     shaded = original[0].detach().cpu().numpy() * ratio[..., None]
     out = final[0].detach().cpu().numpy() * (1 - weight[..., None]) + shaded * weight[..., None]
-    return torch.from_numpy(out.astype(np.float32))[None].to(final.device)
+    dark = (ratio < .97) & region
+    info.update(applied=True, ratio_sigma_px=round(float(sigma), 1), darkened_px=int(dark.sum()),
+                mean_ratio_in_shadow=round(float(ratio[dark].mean()), 3) if dark.any() else None)
+    return torch.from_numpy(out.astype(np.float32))[None].to(final.device), info
+
+
+def clean_masks(g, support, person_mask=None):
+    """0.3.12: маски для clean_shadows: область H3 (support), человек (SAM3 с кадра H3 или силуэт рендера), предмет."""
+    masks = dict(g['clean_shadows'], area=support, prop=g.get('prop_alpha'))
+    if isinstance(person_mask, torch.Tensor) and person_mask.numel() and float(person_mask.max()) > 0:
+        masks.update(person=person_mask, person_source='h3')
+    return masks
 
 
 def render_shadow(bundle, strength):
@@ -1057,27 +1103,30 @@ class NativeComposite:
         # 0.3.3: карты сцены необязательны — при выключенном 3D-контроле цепочка 3DA заглушена, а вклейка
         # (стоящая за ленивым переключателем) не должна давать ошибку проверки графа.
         return {'required': {'image': ('IMAGE',)},
-                'optional': {'body_guides': ('3DA_BODY_GUIDES',), 'prop_repair': ('IMAGE',), 'prop_repair_mask': ('MASK',)}}
+                'optional': {'body_guides': ('3DA_BODY_GUIDES',), 'prop_repair': ('IMAGE',), 'prop_repair_mask': ('MASK',),
+                             # 0.3.12: маска человека с кадра H3 (SAM3 «person») — для «чистых теней»; без неё — силуэт рендера.
+                             'person_mask': ('MASK', {'tooltip': 'Необязательно: маска Стейси на кадре H3 (SAM3Segment «person»). '
+                                                                 'Нужна только для «чистых теней (тест)».'})}}
     RETURN_TYPES = ('IMAGE', 'MASK', 'STRING')
     RETURN_NAMES = ('final', 'composite_support', 'metrics')
     FUNCTION = 'execute'
     CATEGORY = '3DA/native'
 
-    def execute(self, image, body_guides=None, prop_repair=None, prop_repair_mask=None):
+    def execute(self, image, body_guides=None, prop_repair=None, prop_repair_mask=None, person_mask=None):
         # 0.3.0: вклейка никогда не роняет финал — при любой проблеме отдаём кадр H3 как есть.
         try:
-            return self.compose(image, body_guides, prop_repair, prop_repair_mask)
+            return self.compose(image, body_guides, prop_repair, prop_repair_mask, person_mask)
         except Exception as exc:
             mask = torch.zeros(tuple(image.shape[:3]), dtype=torch.float32) if isinstance(image, torch.Tensor) and image.ndim == 4 else torch.zeros((1, 64, 64))
             return image, mask, json.dumps({'warning': '3DA: вклейка пропущена, кадр H3 без вклейки — ' + short_reason(exc)},
                                            ensure_ascii=False)
 
-    def compose(self, image, body_guides, prop_repair, prop_repair_mask):
+    def compose(self, image, body_guides, prop_repair, prop_repair_mask, person_mask=None):
         g = accepted_guides(body_guides)
         if image.shape != g['plate'].shape or not torch.isfinite(image).all():
             raise ValueError('3DA: final image must match geometry raster')
         if g.get('prop_mode') == 'h3':
-            return self.compose_h3(image, g)
+            return self.compose_h3(image, g, person_mask)
         import sys
         sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
         from prop_composite import alpha, restore, outside_metrics, harmonize
@@ -1124,8 +1173,9 @@ class NativeComposite:
         # the material at the original PNG resolution. Overlay exactly once.
         premul=rgb(prop_rgb*g['prop_alpha'][...,None])
         final=final*(1-prop_alpha[...,None])+premul
+        clean_info=None
         if g.get('clean_shadows'):
-            final=clean_shadows(final,rgb(image),original,g['clean_shadows'])
+            final,clean_info=clean_shadows(final,rgb(image),original,clean_masks(g,support=body_alpha,person_mask=person_mask))
         full_support=(body_alpha>0)|guard|(prop_alpha>0)
         if shadow_ok:
             full_support|=room_shadow>0
@@ -1135,13 +1185,15 @@ class NativeComposite:
         metrics.update(guard_pixels=int(guard.sum()),working_raster_hw=list(image.shape[1:3]),
                        final_raster_hw=list(original.shape[1:3]),source_png_provided=False,
                        appearance_validation='requires visual review')
+        if clean_info is not None:
+            metrics['clean_shadows']=clean_info
         if not metrics['outside_passed']:
             metrics['warning']='3DA: вклейка изменила фон сильнее допуска — проверьте кадр глазами'
         return final,full_support.float().cpu(),json.dumps(metrics)
 
 
 
-    def compose_h3(self, image, g):
+    def compose_h3(self, image, g, person_mask=None):
         """0.3.6: тело и предмет нарисовал H3 (с тенями) — вне области силы возвращаем чистую комнату, без вклейки."""
         import sys
         sys.path.insert(0, str(Path(config()['repo']) / 'tools/scene3d'))
@@ -1152,12 +1204,15 @@ class NativeComposite:
         full = support > 0
         final = torch.where(full[..., None], final, original)
         # 0.3.8: тень (H3 или подсказка из рендера в init) уже нарисована H3 внутри зоны теней — второй раз не кладём.
+        clean_info = None
         if g.get('clean_shadows'):
-            final = clean_shadows(final, image, original, g['clean_shadows'])
+            final, clean_info = clean_shadows(final, image, original, clean_masks(g, support=support, person_mask=person_mask))
         parameters = yaml.safe_load((Path(config()['repo']) / 'config/placement.yaml').read_text(encoding='utf-8'))
         metrics = outside_metrics(final, original, full.cpu().numpy()[0], parameters)
         metrics.update(prop_mode='h3', working_raster_hw=list(image.shape[1:3]), final_raster_hw=list(image.shape[1:3]),
                        appearance_validation='requires visual review')
+        if clean_info is not None:
+            metrics['clean_shadows'] = clean_info
         if not metrics['outside_passed']:
             metrics['warning'] = '3DA: вклейка изменила фон сильнее допуска — проверьте кадр глазами'
         return final, full.float().cpu(), json.dumps(metrics)

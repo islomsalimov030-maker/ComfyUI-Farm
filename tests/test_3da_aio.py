@@ -11,7 +11,7 @@ import pytest
 import torch
 
 ROOT=Path(__file__).resolve().parents[1]
-sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'tools/scene3d'),str(ROOT/'tools/scene3d/posev2')]
+sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'tools/scene3d'),str(ROOT/'tools/scene3d/posev2'),str(ROOT/'tools/scene3d/plate')]
 import scene_edit
 import wfkit
 
@@ -151,17 +151,52 @@ def test_render_shadow_skips_body_core(tmp_path):
 
 
 def test_clean_shadows_takes_only_darkening_from_h3():
-    # 0.4.0 тест: в зоне тени — текстура фото × размытое затемнение H3; шум H3 не проходит; у тела — пиксели H3.
+    # 0.3.12: во всей области H3 вне человека — текстура фото × размытое затемнение H3; шум H3 не проходит; на человеке — H3.
     torch.manual_seed(0)
     original=torch.rand((1,96,96,3))*.2+.6
     image=original.clone()*.5+torch.rand_like(original)*.1      # H3: тень + шум
-    zone=torch.zeros((1,96,96));zone[:,40:90,40:90]=1
-    band=torch.zeros((1,96,96));band[:,0:20,0:20]=1
-    out=nodes.clean_shadows(image.clone(),image,original,dict(zone=zone,band=band))
+    area=torch.ones((1,96,96))
+    person=torch.zeros((1,96,96));person[:,0:20,0:20]=1
+    out,info=nodes.clean_shadows(image.clone(),image,original,dict(area=area,person=person,person_source='h3'))
     inner=out[0,55:75,55:75];base=original[0,55:75,55:75]
     ratio=(inner/base).std()
     assert ratio<.05 and float(inner.mean())<float(base.mean())*.75     # одно плавное затемнение, без шума
     assert torch.equal(out[0,0:10,0:10],image[0,0:10,0:10])
+    assert info['applied'] and info['weight_px']>0 and info['person_source']=='h3'
+
+
+def test_clean_shadows_reaches_contact_shadow_next_to_body():
+    # 0.3.12: тень у самых ног (раньше внутри полосы силы тела → вес 0) теперь чистится; край тела не темнеет ложно.
+    torch.manual_seed(1)
+    h,w=200,200
+    original=torch.full((1,h,w,3),.7)+torch.rand((1,h,w,3))*.05
+    person=torch.zeros((1,h,w));person[:,40:140,90:110]=1
+    image=original.clone()
+    image[:,140:170,60:140]*=.5                                         # тень у ступней
+    image+=torch.rand_like(image)*.15                                   # мозаика H3
+    image[:,40:140,90:110]=.1                                           # тёмная одежда
+    out,info=nodes.clean_shadows(image.clone(),image,original,dict(area=torch.ones((1,h,w)),person=person))
+    shadow=out[0,150:165,70:130];base=original[0,150:165,70:130]
+    assert float((shadow/base).mean())<.65 and float((shadow/base).std())<.06
+    side=out[0,60:120,30:60];assert float((side/original[0,60:120,30:60]).mean())>.9   # одежда не даёт ложной тени
+    assert info['applied'] and info['person_source']=='render'
+
+
+def test_clean_masks_prefers_h3_person_mask():
+    g=dict(clean_shadows=dict(person=torch.zeros((1,8,8)),person_source='render',zone=None),prop_alpha=torch.zeros((1,8,8)))
+    m=nodes.clean_masks(g,support=torch.ones((1,8,8)),person_mask=torch.ones((1,8,8)))
+    assert m['person_source']=='h3' and float(m['person'].sum())==64
+    assert nodes.clean_masks(g,support=torch.ones((1,8,8)))['person_source']=='render'
+
+
+def test_prop_halo_uses_body_strength():
+    # 0.3.12: полоса вокруг предмета — с силой тела, сам предмет — prop_strength.
+    import pack_cli
+    body=np.zeros((80,80),np.float32);body[0:10,0:10]=1
+    sil=np.zeros((80,80),bool);sil[40:44,40:44]=True
+    strength=body.copy();strength[sil]=.6
+    out=pack_cli.prop_halo(strength,body,[sil],8)
+    assert out[42,42]==pytest.approx(.6) and out[42,49]==pytest.approx(1.) and out[42,79]==0
 
 
 def transform(entity,x=0,y=0,z=0):

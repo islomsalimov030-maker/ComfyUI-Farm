@@ -561,6 +561,21 @@ def shadow_zone(directory, strength_files, band, strength=.7, opacity=.6):
     return str(directory / "room_shadow.png")
 
 
+def prop_halo(strength, body, prop_sils, band):
+    """0.3.12: запас вокруг предмета — с силой тела (как полоса тела), а не prop_strength: до 0.3.12 предмет лежал
+    в полосе тела, а его собственная полоса (0.6 и ниже) почти не добавляла H3 свободы — «запас не работает».
+    Сам предмет сохраняет prop_strength (форма модели), полоса вокруг него — полная."""
+    import numpy as np
+    import pose_proxy_v26 as proxy
+    peak = float(np.max(body)) if float(np.max(body)) > 0 else 1.
+    out = np.asarray(strength, np.float32)
+    for sil in prop_sils:
+        sil = np.asarray(sil, bool)
+        if sil.any():
+            out = np.maximum(out, np.where(sil, 0., proxy.strength_map(sil, peak, int(band)))).astype(np.float32)
+    return out
+
+
 def compose_props(directory, overlay_dir, size=(1344, 768), band=16):
     import numpy as np
     from PIL import Image
@@ -594,6 +609,7 @@ def compose_props(directory, overlay_dir, size=(1344, 768), band=16):
               p["prop_strength"]) for p in desc["props"]]
     # 0.4.0: тот же запас (body_margin), что вокруг тела, — и вокруг предмета.
     strength = prop_render.combine_strength(body, props, dilation_px=int(band), gaussian_px=2 * int(band))
+    strength = prop_halo(strength, body, [np.asarray(mask) > 127 for mask, _ in props], int(band))
     Image.fromarray(np.rint(strength * 255).astype("uint8")).save(directory / "strength.png")
     from prop_composite import repair_mask
     # Work from the actual quantized masks passed to Remote.
