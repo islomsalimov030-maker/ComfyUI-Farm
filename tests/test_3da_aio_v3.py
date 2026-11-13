@@ -71,3 +71,15 @@ def test_v3_control_modes_and_steps():
     js = (ROOT / 'comfyui/ComfyUI-3DA/web/extension.js').read_text(encoding='utf-8')
     for marker in ("'▶ Подготовка сцены'", "'▶ Генерация'", 'applyControl', 'app.graphToPrompt'):
         assert marker in js
+
+
+def test_v3_file_has_only_string_slot_types():
+    oi = json.loads((ROOT / 'tools/scene3d/aio_v23_object_info.json').read_text(encoding='utf-8'))
+    oi.update(v3.pack_schema())
+    w, _ = v3.transform(standin(), oi)
+    text = json.dumps(w, ensure_ascii=False)
+    for g in [w] + w['definitions']['subgraphs']:
+        for n in g['nodes']:
+            assert all(isinstance(x.get('type'), (str, int)) for x in n.get('inputs', []) + n.get('outputs', [])), n.get('title')
+        assert all(isinstance(wfkit._norm(l)['type'], (str, int)) for l in g['links'])
+    assert '"COMBO"' in text

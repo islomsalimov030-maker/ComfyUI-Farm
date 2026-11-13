@@ -128,6 +128,21 @@ def ensure_final_chain(w, top, inner, sub, inst, b, room):
     return 'recreated'
 
 
+def combo_types(w):
+    """A list-typed output (a combo, e.g. «3D-контроль».prop) is stored as "COMBO" in a workflow file.
+    A raw list there makes the frontend reject the whole file («Unable to find workflow in …»)."""
+    for g in [w] + w['definitions']['subgraphs']:
+        for n in g['nodes']:
+            for slot in n.get('inputs', []) + n.get('outputs', []):
+                if isinstance(slot.get('type'), list):
+                    slot['type'] = 'COMBO'
+        for link in g['links']:
+            if isinstance(link, list) and isinstance(link[5], list):
+                link[5] = 'COMBO'
+            elif isinstance(link, dict) and isinstance(link.get('type'), list):
+                link['type'] = 'COMBO'
+
+
 def transform(w, oi):
     w = copy.deepcopy(w)
     top = wfkit.G(w, w, top=True)
@@ -254,7 +269,8 @@ def transform(w, oi):
     note = by.get(srv.NOTE_TITLE)
     if note is not None:
         note['widgets_values'] = [NOTE]
-    w.setdefault('extra', {}).setdefault('3DA AIO', {})['view'] = dict(version='3.1', **report)
+    combo_types(w)
+    w.setdefault('extra', {}).setdefault('3DA AIO', {})['view'] = dict(version='3.2', **report)
     errors = wfkit.check_ui(w)
     if errors:
         raise ValueError(errors)
