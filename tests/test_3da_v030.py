@@ -380,3 +380,21 @@ def test_save_json_survives_inf_from_geometry_checks(tmp_path):
 def test_reasons_cm_handles_not_found():
     import reasons_ru
     assert reasons_ru.cm(float('inf')) == '?' and reasons_ru.cm(1e9) == '?' and reasons_ru.cm(.05) == 5
+
+
+def test_diagnostic_placement_reports_body25_keypoints():
+    # 0.3.16: в комнате без опор — запасная постановка; рендер ждёт keypoints_body25_px и px_size.
+    import numpy as np
+    sys.path.insert(0, str(ROOT / 'tools/scene3d/posev2'))
+    import reference_place
+
+    class Plate:
+        Wp, Hp = 100, 50
+        def project(self, P):
+            return P[:, 0], P[:, 1], P[:, 2]
+        def depth_at(self, u, v):
+            return np.full(len(u), 10.)
+    KP = np.tile([[10., 20., 1.]], (80, 1))
+    out = reference_place.keypoints25(KP, Plate())
+    assert out['px_size'] == [100, 50] and len(out['keypoints_body25_px']) == 48
+    assert out['keypoints_body25_px'][0] == [10., 20., 1]

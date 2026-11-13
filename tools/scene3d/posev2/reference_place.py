@@ -82,6 +82,15 @@ def evaluate(X, KP, groups, plate, profile, spec, report):
     return report
 
 
+def keypoints25(KP, plate):
+    ku, kv, kz = plate.project(KP[pf.MHR_TO_B25])
+    kzp = plate.depth_at(ku, kv)
+    kp25 = [[round(float(a), 1), round(float(b), 1),
+             int(0 <= a < plate.Wp and 0 <= b < plate.Hp and z > 0 and z <= zp + 0.02)]
+            for a, b, z, zp in zip(ku, kv, kz, kzp)] + [[0.0, 0.0, 0]] * 30
+    return dict(keypoints_body25_px=kp25, px_size=[plate.Wp, plate.Hp])
+
+
 def diagnostic(ref, plate, height):
     scale = height / height_est(ref['kp'])
     X = ref['V'] @ plate.R.T * scale
@@ -119,7 +128,9 @@ def place(ref, plate, profile, spec, height):
                     r['rep']['penetration']['excess_m'], r['rep']['support_gap_cm']))
     X, KP, indices = diagnostic(ref, plate, height)
     groups = [('lowest', indices, 'any', 'support')]
-    report = evaluate(X, KP, groups, plate, profile, spec, dict(contacts={}, reference_pose_error_m=0.))
+    # 0.3.16: те же точки BODY-25 в пикселях фото, что пишет pose_fit, — их ждёт рендер сцены (pose25.json).
+    report = evaluate(X, KP, groups, plate, profile, spec, dict(contacts={}, reference_pose_error_m=0.,
+                                                                **keypoints25(KP, plate)))
     M, b = legacy.similarity(ref['V'], X)
     return dict(status=report['status'], rep=report, X=X, KP=KP, reg_lbl=regions(ref['V'], ref['kp']),
                 state=dict(M=M, b=b, target=X[indices].mean(0), groups=groups), final=dict(stage='fit'))
