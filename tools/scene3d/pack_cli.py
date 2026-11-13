@@ -555,7 +555,7 @@ def shadow_zone(directory, strength_files, band, strength=.7, opacity=.6):
     return str(directory / "room_shadow.png")
 
 
-def compose_props(directory, overlay_dir, size=(1344, 768)):
+def compose_props(directory, overlay_dir, size=(1344, 768), band=16):
     import numpy as np
     from PIL import Image
     import prop_render
@@ -578,13 +578,16 @@ def compose_props(directory, overlay_dir, size=(1344, 768)):
         clean = Image.open(directory / target)
         base = shaded(clean)
         overlay = Image.open(desc[source]).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
-        # 0.3.6: вариант «предмет рисует H3» — тот же предмет без тени Cycles: тени тела и предмета делает H3.
-        Image.alpha_composite(clean.convert("RGBA"), overlay).convert("RGB").save(directory / ("h3_" + target))
+        # 0.3.6/0.4.0: «предмет рисует H3». playblast (видео-референс и превью рендера до H3) — как у тела: с тенью
+        # предмета из рендера; init — без тени Cycles (тень по правилу «Тени» добавит 3DA Place Pose).
+        joint = base if target == "playblast.png" else clean.convert("RGBA")
+        Image.alpha_composite(joint, overlay).convert("RGB").save(directory / ("h3_" + target))
         Image.alpha_composite(base, overlay).convert("RGB").save(directory / target)
     body = np.asarray(Image.open(directory / "strength.png").convert("L"), dtype=float) / 255
     props = [(Image.open(p["silhouette"]).convert("L").resize(size, Image.Resampling.NEAREST),
               p["prop_strength"]) for p in desc["props"]]
-    strength = prop_render.combine_strength(body, props)
+    # 0.4.0: тот же запас (body_margin), что вокруг тела, — и вокруг предмета.
+    strength = prop_render.combine_strength(body, props, dilation_px=int(band), gaussian_px=2 * int(band))
     Image.fromarray(np.rint(strength * 255).astype("uint8")).save(directory / "strength.png")
     from prop_composite import repair_mask
     # Work from the actual quantized masks passed to Remote.
@@ -815,7 +818,7 @@ def do_place(request, config):
                    "--props", props_path, "--library", library, "--out", overlay_dir,
                    "--raster", f"{size[0]}x{size[1]}", "--spec", job / "render_spec.json",
                    "--photo-emission", "2.5", "--samples", "32"]), "Blender props", env=env)
-        compose_props(directory, overlay_dir, size)
+        compose_props(directory, overlay_dir, size, max(int(config["cell_px"]), int(round(config["cell_px"] * margin))))
         prop_report = read_json(overlay_dir / "props_render.json")
         # 0.2.0 «е»: проникновение и опора предметов — те же правила, что у 3D-окна.
         import prop_checks

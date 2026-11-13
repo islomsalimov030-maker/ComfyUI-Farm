@@ -250,6 +250,29 @@ def test_compose_props_bakes_cast_shadow_into_guides(tmp_path):
         px = np.asarray(Image.open(tmp_path / name).convert('L'))
         assert px[12, 20] < 110 and px[2, 20] == 200, name
     assert (tmp_path / 'prop_shadow.png').is_file()
+    # 0.4.0: превью/видео-референс «предмет рисует H3» — с тенью предмета (как у тела); init — без неё.
+    assert np.asarray(Image.open(tmp_path / 'h3_playblast.png').convert('L'))[12, 20] < 110
+    assert np.asarray(Image.open(tmp_path / 'h3_init.png').convert('L'))[12, 20] == 200
+
+
+def test_prop_band_follows_body_margin(tmp_path):
+    import pack_cli
+    from PIL import Image
+    size = (64, 64)
+    for name in ('init.png', 'playblast.png', 'plate.png'):
+        Image.new('RGB', size, (200, 200, 200)).save(tmp_path / name)
+    Image.new('L', size, 0).save(tmp_path / 'strength.png')
+    Image.new('L', size, 0).save(tmp_path / 'silhouette.png')
+    ov = tmp_path / 'ov'; ov.mkdir()
+    Image.new('RGBA', size, (0, 0, 0, 0)).save(ov / 'tex.png')
+    sil = Image.new('L', size, 0); sil.paste(255, (30, 30, 34, 34)); sil.save(ov / 'sil.png')
+    (ov / 'props_render.json').write_text(json.dumps({'textured_rgba': str(ov / 'tex.png'),
+                                                      'props': [{'silhouette': str(ov / 'sil.png'), 'prop_strength': 1.}]}))
+    pack_cli.compose_props(tmp_path, ov, size, 2)
+    narrow = (np.asarray(Image.open(tmp_path / 'strength.png')) > 0).sum()
+    Image.new('L', size, 0).save(tmp_path / 'strength.png')
+    pack_cli.compose_props(tmp_path, ov, size, 6)
+    assert (np.asarray(Image.open(tmp_path / 'strength.png')) > 0).sum() > narrow
 
 
 # --- 4. Финальный вид workflow ---
