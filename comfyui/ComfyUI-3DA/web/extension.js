@@ -154,10 +154,13 @@ async function tick() {
           record.lock.restore();
           const result = await record.originalSerialize.apply(this, args);
           if (node.properties['3DA Scene']) {
-            if (!record.scene) throw new Error('3DA: объекты сцены ещё не загружены');
-            const transforms = record.scene.capture();
-            node.properties['3DA Scene Transforms'] = transforms;
-            result.model_3d_info = transforms;
+            // 0.3.2: never throw here — a throw blocks Export and Run («reading 'workflow'»).
+            // Scene not loaded yet: keep the last captured transforms (or none → 3DA falls back, no error).
+            const transforms = record.scene ? record.scene.capture() : node.properties['3DA Scene Transforms'];
+            if (transforms) {
+              node.properties['3DA Scene Transforms'] = transforms;
+              result.model_3d_info = transforms;
+            }
           }
           return result;
         };
@@ -251,4 +254,30 @@ app.registerExtension({
       active.clear();
     }, { once: true });
   }
+});
+
+// 0.3.2: «3DA · 3D-контроль» — при выключенном 3D-контроле поля персонажа и предмета тусклые и неактивные.
+app.registerExtension({
+  name: 'ThreeDA.Control',
+  nodeCreated(node) {
+    if (node.comfyClass !== '3DAControl') return;
+    const sync = () => {
+      const toggle = node.widgets?.find(w => w.name === 'control_3d');
+      const off = toggle ? !toggle.value : false;
+      for (const w of node.widgets ?? []) {
+        if (w.name !== 'character' && w.name !== 'prop') continue;
+        w.disabled = off;
+        w.options = { ...(w.options ?? {}), disabled: off };
+      }
+      node.setDirtyCanvas?.(true, true);
+    };
+    const toggle = node.widgets?.find(w => w.name === 'control_3d');
+    if (toggle) {
+      const cb = toggle.callback;
+      toggle.callback = function (...args) { const r = cb?.apply(this, args); sync(); return r; };
+    }
+    const oc = node.onConfigure;
+    node.onConfigure = function (...args) { const r = oc?.apply(this, args); sync(); return r; };
+    sync();
+  },
 });

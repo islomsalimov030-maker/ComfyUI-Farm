@@ -1189,11 +1189,42 @@ class BlenderRuntime:
         return {'ui': {'text': [text]}, 'result': (text,)}
 
 
-NODE_CLASS_MAPPINGS = {'3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
+CHARACTERS = {'Стейси': 'stacy'}
+
+
+class Control:
+    """0.4.0: «3D-контроль» рядом с ПУЛЬТ ФОТО — одна ручка включает постановку 3DA, под ней персонаж и предмет.
+    Выключено → mode=1: обычное фото, позу рисует MiniMax по промпту (цепочка 3DA не считается).
+    Моды (лица, персонажа, предмета) от этой ручки не зависят — включаются в своих загрузчиках."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {
+            'control_3d': ('BOOLEAN', {'default': True, 'label_on': '3D-контроль ВКЛ', 'label_off': '3D-контроль ВЫКЛ',
+                                       'tooltip': 'Вкл — поза, ракурс и предмет из 3D-сцены. Выкл — обычное фото: позу рисует MiniMax по промпту.'}),
+            'character': (list(CHARACTERS), {'default': 'Стейси', 'tooltip': 'Персонаж (пока только Стейси).'}),
+            'prop': (prop_choices(), {'default': NO_PROP, 'tooltip': 'Предмет в сцене или «(нет предмета)».'})}}
+    # prop — тип-список предметов: подключается прямо к полю prop_id узла «3DA Prop» (как модель пульта к загрузчику).
+    RETURN_TYPES = ('INT', prop_choices(), 'STRING')
+    RETURN_NAMES = ('mode', 'prop', 'character')
+    FUNCTION = 'execute'
+    CATEGORY = '3DA'
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, prop=None, **kwargs):
+        # Предмет, удалённый с сервера, не должен давать красную рамку: он просто не ставится.
+        return True
+
+    def execute(self, control_3d=True, character='Стейси', prop=NO_PROP):
+        on = bool(control_3d)
+        chosen = prop if on and prop in prop_choices() else NO_PROP
+        return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'))
+
+
+NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
                        '3DANativeGuides': NativeGuides, '3DANativeComposite': NativeComposite,
                        '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport, '3DACoreWeights': CoreWeights,
                        '3DABlenderRuntime': BlenderRuntime}
-NODE_DISPLAY_NAME_MAPPINGS = {'3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
+NODE_DISPLAY_NAME_MAPPINGS = {'3DAControl': '3DA · 3D-контроль (пульт)', '3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
                               '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote',
                               '3DANativeGuides': '3DA · native H3 guides + gate',
                               '3DANativeComposite': '3DA · final room + rigid props',

@@ -303,3 +303,18 @@ def test_cli_result_with_numpy_values_is_written():
         path = Path(d) / 'r.json'
         pack_cli.save_json(path, {'ok': np.bool_(True), 'n': np.int64(3), 'v': np.float32(.5), 'a': np.zeros(2), 'p': Path('/x')})
         assert json.loads(path.read_text()) == {'ok': True, 'n': 3, 'v': .5, 'a': [0., 0.], 'p': '/x'}
+
+
+def test_control_node_and_serialize_never_throws(tmp_path):
+    for name in ('stick', 'head'):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / 'prop.json').write_text(json.dumps({'name': name}))
+    with patch.object(nodes, 'prop_library', return_value=tmp_path):
+        c = nodes.Control()
+        assert c.execute(True, 'Стейси', 'stick') == (2, 'stick', 'stacy')
+        assert c.execute(False, 'Стейси', 'stick') == (1, nodes.NO_PROP, 'stacy')
+        assert c.execute(True, 'Стейси', 'удалённый') == (2, nodes.NO_PROP, 'stacy')
+        assert nodes.Control.VALIDATE_INPUTS(prop='удалённый') is True
+    js = (ROOT / 'comfyui/ComfyUI-3DA/web/extension.js').read_text(encoding='utf-8')
+    assert 'объекты сцены ещё не загружены' not in js and "comfyClass !== '3DAControl'" in js
+    assert js == (ROOT / 'web/3da/extension.js').read_text(encoding='utf-8')

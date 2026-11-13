@@ -64,7 +64,7 @@ class NodeTests(unittest.TestCase):
                     nodes.Prop().build(**{**values,'prop_strength':.35,'props_in':'[]','camera_info':None,'location':None},model_3d=Asset(b'other'))
 
     def test_registered_io(self):
-        self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote',
+        self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DAControl', '3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote',
                          '3DANativeGuides', '3DANativeComposite', '3DASceneEdits', '3DASceneExport',
                          '3DACoreWeights', '3DABlenderRuntime'})
         self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 10)
