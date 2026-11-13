@@ -58,20 +58,24 @@ def prop_metadata(root, prop_id):
     return data
 
 
+NO_PROP = '(нет предмета)'
+
+
 def prop_choices():
+    # 0.2.0: «(нет предмета)» первым — сцена только с персонажем без перекоммутации узлов.
     try:
         root = prop_library()
-        choices = []
+        choices = [NO_PROP]
         for path in sorted(root.glob('*/prop.json')):
             try:
                 prop_metadata(root, path.parent.name)
                 choices.append(path.parent.name)
             except (ValueError, OSError):
                 continue
-        return choices or ['']
+        return choices
     except (ValueError, OSError):
         # Missing library/config must not prevent the other nodes from loading.
-        return ['']
+        return [NO_PROP]
 
 
 def validated_props(text):
@@ -299,6 +303,8 @@ class Prop:
 
     @classmethod
     def IS_CHANGED(cls,prop_id,**kwargs):
+        if prop_id == NO_PROP:
+            return content_fingerprint([HERE/'nodes.py']) + ':' + str(kwargs.get('props_in', ''))
         directory=prop_library()/safe_prop_id(prop_id)
         cfg=config()
         paths=[HERE/'nodes.py',HERE/'config.yaml',*directory.glob('*')]
@@ -316,6 +322,9 @@ class Prop:
 
     def execute(self, prop_id, anchor, x, y, z, yaw, pitch, roll, scale, prop_strength=.35, props_in='[]', size_m=.30, model_3d_info=None, model_3d=None,
                 camera_info=None,location=None):
+        if prop_id == NO_PROP:
+            # Персонаж без предмета: пропускаем цепочку дальше как есть (по умолчанию пустой список).
+            return (json.dumps(validated_props(props_in), ensure_ascii=False, allow_nan=False),)
         if model_3d_info is not None and (camera_info is not None or location is not None):
             if camera_info is None or not location:
                 raise ValueError('Гизмо: подключите camera_info и location для проверки камеры')

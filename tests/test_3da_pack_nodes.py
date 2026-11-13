@@ -160,7 +160,7 @@ class NodeTests(unittest.TestCase):
             args = dict(prop_id='head', anchor='char_head', x=.3, y=0., z=.4,
                         yaw=0., pitch=0., roll=0., scale=1.)
             with patch.object(nodes, 'prop_library', return_value=root):
-                self.assertEqual(nodes.prop_choices(), ['head'])
+                self.assertEqual(nodes.prop_choices(), [nodes.NO_PROP, 'head'])
                 result = nodes.Prop().execute(**args)[0]
                 entries = json.loads(nodes.Prop().execute(**args, props_in=result)[0])
                 self.assertEqual(len(entries), 2)
@@ -176,7 +176,7 @@ class NodeTests(unittest.TestCase):
                     with self.subTest(bad=bad), self.assertRaises((ValueError, OSError)):
                         nodes.Prop().execute(**{**args, **bad})
                 (root / 'head' / 'prop.json').write_text('{"name": 1}')
-                self.assertEqual(nodes.prop_choices(), [''])
+                self.assertEqual(nodes.prop_choices(), [nodes.NO_PROP])
                 with self.assertRaises(ValueError):
                     nodes.Prop().execute(**args)
         self.assertEqual(nodes.Prop.INPUT_TYPES()['required']['prop_strength'][1]['default'], .35)
