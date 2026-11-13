@@ -1,5 +1,5 @@
 // Named-object selection on the existing core gizmo, not another 3D editor.
-import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody } from './roomGeometry.js';
+import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody, centerOnAxis } from './roomGeometry.js';
 export function sceneSelection(view, node, initialTransforms = null) {
   const setup = node.properties['3DA Scene'];
   if (!setup?.entities?.length) return null;
@@ -56,7 +56,7 @@ export function sceneSelection(view, node, initialTransforms = null) {
   const toFrame = document.createElement('button');
   toFrame.className = 'threeda-to-frame';
   toFrame.textContent = 'В кадр';
-  toFrame.title = 'Поставить выбранный предмет перед персонажем (дальше двигайте гизмо)';
+  toFrame.title = 'Предмет — перед персонажем; персонаж — в центр кадра (дальше двигайте гизмо)';
   Object.assign(toFrame.style, { color:'white', background:'#263744', padding:'5px 8px', border:'1px solid #4b6070', cursor:'pointer' });
   toolbar.append(picker,modes,toFrame,status);
   const parent = view.domElement.parentElement;
@@ -66,8 +66,10 @@ export function sceneSelection(view, node, initialTransforms = null) {
   picker.addEventListener('change', () => select(picker.value));
   toFrame.addEventListener('click', () => {
     const body = entities.find(e => e.kind === 'body');
-    if (!selected || selected.kind !== 'prop' || !body) return;
-    const delta = bringToBody(worldVertices(body.object), worldVertices(selected.object), setup.camera.position);
+    if (!selected || !body) return;
+    // 0.3.17: персонаж — центр тела в центр кадра (его стрелки гизмо снова видны); предмет — перед персонажем.
+    const delta = selected.kind === 'body' ? centerOnAxis(worldVertices(body.object), setup.camera)
+      : bringToBody(worldVertices(body.object), worldVertices(selected.object), setup.camera.position);
     if (!delta) return;
     selected.object.position.set(selected.object.position.x + delta[0], selected.object.position.y + delta[1],
                                  selected.object.position.z + delta[2]);
@@ -145,7 +147,7 @@ export function sceneSelection(view, node, initialTransforms = null) {
     view.setGizmoEnabled(true);
     selected = entity;
     picker.value = id;
-    toFrame.disabled = entity.kind !== 'prop';
+    toFrame.disabled = !['prop','body'].includes(entity.kind);
     toFrame.style.opacity = toFrame.disabled ? '0.4' : '1';
     node.properties['3DA Selected Entity'] = id;
     syncMode();

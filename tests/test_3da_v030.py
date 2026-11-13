@@ -398,3 +398,34 @@ def test_diagnostic_placement_reports_body25_keypoints():
     out = reference_place.keypoints25(KP, Plate())
     assert out['px_size'] == [100, 50] and len(out['keypoints_body25_px']) == 48
     assert out['keypoints_body25_px'][0] == [10., 20., 1]
+
+
+def test_diagnostic_placement_centres_whole_body_in_front_of_wall():
+    # 0.3.17: крупный план без опор — тело в центре кадра, перед стеной; раньше видны были только ноги.
+    import math
+    import numpy as np
+    sys.path.insert(0, str(ROOT / 'tools/scene3d/posev2'))
+    import reference_place
+
+    class Plate:
+        Wp, Hp = 200, 100
+        fx = 100 / math.tan(math.radians(30))
+        R = np.array([[1., 0, 0], [0, 0, 1], [0, -1, 0]])  # cv x→world x, cv y(down)→world -z, cv z→world y
+        C = np.array([0., 0., 1.5])
+        Z = np.full((100, 200), 1.2)                     # стена в 1.2 м
+        def project(self, P):
+            c = (P - self.C) @ self.R
+            return self.fx * c[:, 0] / c[:, 2] + self.Wp / 2, self.fx * c[:, 1] / c[:, 2] + self.Hp / 2, c[:, 2]
+    p = Plate()
+    V = np.random.default_rng(0).uniform([-.25, -.1, 0.], [.25, .1, 1.62], (500, 3)) @ p.R  # тело 1.62 м по world z
+    kp = V[:80].copy()
+    with patch.object(reference_place, 'height_est', return_value=1.62):
+        X, KP, idx = reference_place.diagnostic(dict(V=V, kp=kp), p, 1.62)
+    u, v, z = p.project(X)
+    assert abs((u.min() + u.max()) / 2 - 100) < 5 and abs((v.min() + v.max()) / 2 - 50) < 5   # центр кадра
+    assert z.max() <= 1.2 - .05 + 1e-6 and z.min() > 0                                           # перед стеной
+    p.Z = np.full((100, 200), 20.)                                                               # стена далеко
+    with patch.object(reference_place, 'height_est', return_value=1.62):
+        X, _, _ = reference_place.diagnostic(dict(V=V, kp=kp), p, 1.62)
+    u, v, z = p.project(X)
+    assert v.min() >= 0 and v.max() <= 100 and u.min() >= 0 and u.max() <= 200                  # целиком в кадре

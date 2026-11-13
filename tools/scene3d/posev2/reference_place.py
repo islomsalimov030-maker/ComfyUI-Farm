@@ -92,14 +92,29 @@ def keypoints25(KP, plate):
 
 
 def diagnostic(ref, plate, height):
+    """Запасная постановка, когда в комнате не найдено опор (крупный план без пола, стена, станок).
+    0.3.17: тело целиком ставится в центр кадра на оси камеры — на таком расстоянии, чтобы влезло в кадр с запасом,
+    но перед стеной/мебелью в центре кадра. До 0.3.17 нижние точки тела ставились в пиксель (0.5, 0.7) на
+    поверхности комнаты: в крупном плане тело уходило вверх за кадр (видны только ноги), его центр — и стрелки
+    гизмо — оказывались вне 3D-окна, и тело нельзя было подвинуть."""
     scale = height / height_est(ref['kp'])
     X = ref['V'] @ plate.R.T * scale
     KP = ref['kp'] @ plate.R.T * scale
+    center = (X.min(0) + X.max(0)) / 2
+    c = (X - center) @ plate.R                       # осевые размеры тела в системе камеры (x вправо, y вниз, z вглубь)
+    half_w, half_h, half_d = (c.max(0) - c.min(0)) / 2
+    tan_x, tan_y = (plate.Wp / 2) / plate.fx, (plate.Hp / 2) / plate.fx
+    fit = max(half_w / tan_x, half_h / tan_y) * 1.15 + half_d
+    iu, iv = plate.Wp // 2, plate.Hp // 2
+    patch = plate.Z[max(0, iv - 20):iv + 20, max(0, iu - 20):iu + 20]
+    patch = patch[np.isfinite(patch)]
+    wall = float(np.median(patch)) if patch.size else float('inf')
+    distance = max(min(fit, wall - half_d - .05), .5)
+    X = X - center + plate.C + plate.R @ np.array([0., 0., distance])
+    KP = KP - center + plate.C + plate.R @ np.array([0., 0., distance])
     up = np.array([0., 0., 1.])
     indices = np.argsort(X @ up)[:max(20, len(X)//50)]
-    anchor = plate.pixel_point(.5, .7)
-    shift = anchor - X[indices].mean(0)
-    return X+shift, KP+shift, indices
+    return X, KP, indices
 
 
 def place(ref, plate, profile, spec, height):

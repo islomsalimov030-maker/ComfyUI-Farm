@@ -1,7 +1,7 @@
 // node test_room_geometry.mjs — room occlusion/diagnostics of web/3da/roomGeometry.js on synthetic rooms.
 import assert from 'node:assert/strict';
 const mod = process.argv[2] ?? '../../web/3da/roomGeometry.js';
-const { parseObj, cameraModel, buildRoom, diagnose, inspect, occluderGeometry, bringToBody } = await import(new URL(mod, import.meta.url));
+const { parseObj, cameraModel, buildRoom, diagnose, inspect, occluderGeometry, bringToBody, centerOnAxis } = await import(new URL(mod, import.meta.url));
 
 // Plate-world (Blender, Z up) quads -> OBJ text, like plate_mesh.obj.
 function obj(quads, n = 24) {
@@ -134,4 +134,15 @@ console.log('ok');
   assert.ok(Math.abs(c[0]) < 1e-9 && Math.abs(c[1] - 1) < 1e-9 && Math.abs(c[2] + 2.65) < 1e-9, 'prop in front of body');
   assert.equal(bringToBody([], [[0, 0, 0]], { x: 0, y: 0, z: 0 }), null);
   console.log('ok');
+}
+
+{
+  // 0.3.17: «В кадр» для персонажа — центр тела на оси камеры, глубина сохраняется (не ближе 1 м).
+  const cam = { position: { x: 0, y: 1, z: 0 }, target: { x: 0, y: 1, z: -1 } };
+  const d = centerOnAxis([[2, 3, -4], [2, 5, -4]], cam);
+  assert.deepEqual(d.map(v => Math.round(v * 1000) / 1000), [-2, -3, 0]);
+  const near = centerOnAxis([[0, 1, 0.5]], cam);
+  assert.deepEqual(near.map(v => Math.round(v * 1000) / 1000), [0, 0, -1.5]);
+  assert.equal(centerOnAxis([], cam), null);
+  console.log('centerOnAxis ok');
 }

@@ -201,6 +201,20 @@ export function bringToBody(bodyPoints, propPoints, camera, distance = 0.35) {
   return [0, 1, 2].map(k => b[k] + d[k] / n * distance - c[k]);
 }
 
+// 0.3.17: «В кадр» для персонажа — центр тела на ось камеры (центр кадра) на той же глубине (не ближе minDepth м).
+// Нужна, когда тело (и его стрелки гизмо) оказалось вне 3D-окна и его нельзя ухватить.
+export function centerOnAxis(points, camera, minDepth = 1.0) {
+  if (!points.length) return null;
+  const mean = [0, 1, 2].map(k => points.reduce((s, p) => s + p[k], 0) / points.length);
+  const C = [camera.position.x, camera.position.y, camera.position.z];
+  const T = [camera.target.x, camera.target.y, camera.target.z];
+  const f = [0, 1, 2].map(k => T[k] - C[k]);
+  const n = Math.hypot(...f) || 1;
+  const u = f.map(v => v / n);
+  const depth = Math.max(minDepth, [0, 1, 2].reduce((s, k) => s + (mean[k] - C[k]) * u[k], 0));
+  return [0, 1, 2].map(k => C[k] + u[k] * depth - mean[k]);
+}
+
 const NEAR_CELLS = 3;
 // Nearest visible room point around pixel cell (i, j) and the signed depth of p along its normal.
 export function nearestSurface(room, cam, p, i, j) {
