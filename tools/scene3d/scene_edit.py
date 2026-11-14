@@ -96,6 +96,8 @@ def export(setup, cfg):
                             Path(setup['body_obj']).read_bytes()).hexdigest()
     if setup.get('body_cache'):
         digest = hashlib.sha256(digest.encode() + Path(setup['body_cache']).read_bytes()).hexdigest()
+    if setup.get('body_render_obj') and Path(setup['body_render_obj']).is_file():
+        digest = hashlib.sha256(digest.encode() + Path(setup['body_render_obj']).read_bytes()).hexdigest()
     for prop in setup['props']:
         folder = Path(cfg['farm_root']) / 'props' / prop['prop_id']
         metadata = json.loads((folder/'prop.json').read_text(encoding='utf-8'))

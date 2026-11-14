@@ -1,5 +1,5 @@
 // Named-object selection on the existing core gizmo, not another 3D editor.
-import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody, centerOnAxis, padStep } from './roomGeometry.js';
+import { parseObj, cameraModel, buildRoom, diagnose as roomDiagnose, occluderGeometry, worldVertices, bringToBody, centerOnAxis, centerOnFloor, padStep } from './roomGeometry.js';
 export function sceneSelection(view, node, initialTransforms = null) {
   const setup = node.properties['3DA Scene'];
   if (!setup?.entities?.length) return null;
@@ -68,7 +68,8 @@ export function sceneSelection(view, node, initialTransforms = null) {
     const body = entities.find(e => e.kind === 'body');
     if (!selected || !body) return;
     // 0.3.17: персонаж — центр тела в центр кадра (его стрелки гизмо снова видны); предмет — перед персонажем.
-    const delta = selected.kind === 'body' ? centerOnAxis(worldVertices(body.object), setup.camera)
+    // 0.3.22: персонаж — по горизонтали в центр кадра, ноги на пол (без пола — высота прежняя)
+    const delta = selected.kind === 'body' ? centerOnFloor(worldVertices(body.object), setup.camera, room?.floorY ?? null)
       : bringToBody(worldVertices(body.object), worldVertices(selected.object), setup.camera.position);
     if (!delta) return;
     selected.object.position.set(selected.object.position.x + delta[0], selected.object.position.y + delta[1],

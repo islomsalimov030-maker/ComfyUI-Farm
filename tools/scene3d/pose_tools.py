@@ -457,3 +457,258 @@ def retarget(rig, kp):
         bpy.context.view_layer.update()
     return {n: list(pbs[n].matrix_basis.to_quaternion()) for n in [b.name for b in rig.data.bones]
             if pbs[n].matrix_basis.to_quaternion().angle > 1e-4}
+
+
+# ---------------------------------------------------------------------------------------------- 14.11 MPFB body
+# The render body is Stacy's own MPFB mannequin (fingers, toes, face), posed onto the placed MHR body: the MHR mesh
+# and its MHR70 joints stay the source of truth for placement/contacts; the mannequin copies the joint directions
+# (its own bone lengths), is moved onto the MHR torso and settled to the same contact height above the room mesh.
+MPFB_KEEP_HELPERS = ("helper-l-eye", "helper-r-eye")   # eyeballs stay visible (the face keeps its eyes)
+FINGER_BASE = {"R": 21, "L": 42}                        # MHR70 hand blocks: per finger tip, DIP, PIP, MCP; thumb..pinky
+
+
+def prepare_mannequin(rig, body):
+    """Hair/clothes/other proxies off, clothes 'Delete.*' masks dropped, helpers hidden except the eyeballs."""
+    removed = []
+    for o in list(bpy.data.objects):
+        if o.type == "MESH" and o is not body and (o.parent == rig or o.find_armature() == rig):
+            removed.append(o.name)
+            bpy.data.objects.remove(o, do_unlink=True)
+    for m in list(body.modifiers):
+        if m.type == "MASK" and (m.vertex_group or "").startswith("Delete."):
+            removed.append("mask:" + m.name)
+            body.modifiers.remove(m)
+    src = {body.vertex_groups[n].index for n in ("body",) + MPFB_KEEP_HELPERS if n in body.vertex_groups}
+    if src:
+        vis = body.vertex_groups.get("visible_body") or body.vertex_groups.new(name="visible_body")
+        vis.add([v.index for v in body.data.vertices if any(g.group in src and g.weight > 0 for g in v.groups)],
+                1.0, "REPLACE")
+        for m in body.modifiers:
+            if m.type == "MASK" and m.vertex_group == "body":
+                m.vertex_group = "visible_body"
+    return removed
+
+
+def _kabsch(cur, tgt):
+    """Rotation (3x3) taking the centred point set cur onto tgt (least squares, no reflection)."""
+    import numpy as np
+    A = np.array([tuple(p) for p in cur], float)
+    B = np.array([tuple(p) for p in tgt], float)
+    A -= A.mean(0)
+    B -= B.mean(0)
+    U, _, Vt = np.linalg.svd(A.T @ B)
+    d = np.sign(np.linalg.det(Vt.T @ U.T))
+    R = Vt.T @ np.diag([1, 1, d]) @ U.T
+    return Matrix([list(r) for r in R])
+
+
+def _turn(pb, M):
+    h = pb.head.copy()
+    pb.matrix = Matrix.Translation(h) @ M.to_4x4() @ Matrix.Translation(-h) @ pb.matrix
+    bpy.context.view_layer.update()
+
+
+def _aim_bone(pbs, bone, end, d):
+    if bone not in pbs or d.length < 1e-5:
+        return
+    pb = pbs[bone]
+    v = end(pbs) - pb.head
+    if v.length > 1e-5:
+        _turn(pb, v.rotation_difference(d).to_matrix())
+
+
+def mhr_targets(kp, to_arm):
+    """MHR70 (world, Z up) -> armature-space points incl. finger chains (mcp, pip, dip, tip)."""
+    T = {k: to_arm @ Vector(tuple(kp[i])) for k, i in K.items()}
+    T["mid_hip"] = (T["l_hip"] + T["r_hip"]) / 2
+    T["mid_ear"] = (T["l_ear"] + T["r_ear"]) / 2
+    for side, base in FINGER_BASE.items():
+        for f in range(5):
+            tip, dip, pip, mcp = (to_arm @ Vector(tuple(kp[base + 4 * f + j])) for j in range(4))
+            T.update({f"{side}{f + 1}_0": mcp, f"{side}{f + 1}_1": pip, f"{side}{f + 1}_2": dip, f"{side}{f + 1}_3": tip})
+    return T
+
+
+def retarget_world(rig, kp):
+    """Pose the MPFB rig onto MHR70 joints given in WORLD space (rig object transform kept).
+
+    Root frame from hips + spine, then bone aims (spine, neck, limbs, finger chains) and rigid frames for the head
+    (eyes), hands (MCP row) and feet (toe tips). Bone lengths stay the mannequin's."""
+    for pb in rig.pose.bones:
+        pb.rotation_mode = "QUATERNION"
+        pb.matrix_basis = Matrix.Identity(4)
+    bpy.context.view_layer.update()
+    T = mhr_targets(kp, rig.matrix_world.inverted())
+    pbs = rig.pose.bones
+    hipL, hipR = pbs["upperleg01.L"].head, pbs["upperleg01.R"].head
+    cur_x = (hipL - hipR).normalized()
+    cur_z = pbs["neck01"].head - (hipL + hipR) / 2
+    cur_z = (cur_z - cur_x * cur_z.dot(cur_x)).normalized()
+    tgt_x = (T["l_hip"] - T["r_hip"]).normalized()
+    tgt_z = T["neck"] - T["mid_hip"]
+    tgt_z = (tgt_z - tgt_x * tgt_z.dot(tgt_x)).normalized()
+    Mc = Matrix((cur_x, cur_z.cross(cur_x), cur_z)).transposed()
+    Mt = Matrix((tgt_x, tgt_z.cross(tgt_x), tgt_z)).transposed()
+    _turn(pbs["root"], Mt @ Mc.inverted())
+    head = lambda n: (lambda p: p[n].head.copy())                     # noqa: E731
+    tail = lambda n: (lambda p: p[n].tail.copy())                     # noqa: E731
+    # torso: shoulders + neck relative to the hips (bend AND twist), split between the lower and the upper spine
+    chest = lambda: [pbs["neck01"].head.copy(), pbs["upperarm01.L"].head.copy(), pbs["upperarm01.R"].head.copy(),
+                     pbs["spine05"].head.copy()]                      # noqa: E731
+    goal = [T["neck"], T["l_sh"], T["r_sh"], T["mid_hip"]]
+    R = _kabsch(chest(), goal).to_quaternion()
+    _turn(pbs["spine05"], Quaternion().slerp(R, 0.5).to_matrix())
+    if "spine02" in pbs:
+        _turn(pbs["spine02"], _kabsch(chest(), goal))
+    _aim_bone(pbs, "neck01", head("head"), T["mid_ear"] - T["neck"])
+    if all(n in pbs for n in ("head", "eye.L", "eye.R")):              # head: eyes + neck base, rigid
+        _turn(pbs["head"], _kabsch([pbs["eye.L"].head, pbs["eye.R"].head, pbs["neck01"].head],
+                                   [T["l_eye"], T["r_eye"], T["neck"]]))
+    for s, side in (("L", "l"), ("R", "r")):
+        if f"clavicle.{s}" in pbs:                                     # shoulder joint onto the MHR shoulder
+            base = T["neck"] + (pbs[f"clavicle.{s}"].head - pbs["neck01"].head)
+            _aim_bone(pbs, f"clavicle.{s}", head(f"upperarm01.{s}"), T[f"{side}_sh"] - base)
+        _aim_bone(pbs, f"upperarm01.{s}", head(f"lowerarm01.{s}"), T[f"{side}_el"] - T[f"{side}_sh"])
+        _aim_bone(pbs, f"lowerarm01.{s}", head(f"wrist.{s}"), T[f"{side}_wr"] - T[f"{side}_el"])
+        hand = [f"finger{f}-1.{s}" for f in (2, 3, 5)]
+        if all(n in pbs for n in hand):                                # hand: wrist + index/middle/pinky MCP
+            _turn(pbs[f"wrist.{s}"], _kabsch([pbs[f"wrist.{s}"].head] + [pbs[n].head for n in hand],
+                                             [T[f"{side}_wr"], T[f"{s}2_0"], T[f"{s}3_0"], T[f"{s}5_0"]]))
+        for f in range(1, 6):
+            for j in (1, 2, 3):
+                bone = f"finger{f}-{j}.{s}"
+                nxt = head(f"finger{f}-{j + 1}.{s}") if j < 3 else tail(bone)
+                _aim_bone(pbs, bone, nxt, T[f"{s}{f}_{j}"] - T[f"{s}{f}_{j - 1}"])
+        _aim_bone(pbs, f"upperleg01.{s}", head(f"lowerleg01.{s}"), T[f"{side}_kn"] - T[f"{side}_hip"])
+        _aim_bone(pbs, f"lowerleg01.{s}", head(f"foot.{s}"), T[f"{side}_an"] - T[f"{side}_kn"])
+        if all(n in pbs for n in (f"foot.{s}", f"toe1-2.{s}", f"toe5-3.{s}")):   # foot: ankle + toe tips, rigid
+            _turn(pbs[f"foot.{s}"], _kabsch([pbs[f"foot.{s}"].head, pbs[f"toe1-2.{s}"].tail, pbs[f"toe5-3.{s}"].tail],
+                                            [T[f"{side}_an"], T[f"{side}_btoe"], T[f"{side}_stoe"]]))
+    return T
+
+
+def mpfb_joints_world(rig):
+    """MPFB joints matching MHR70 names used for the rigid fit (world)."""
+    p, mw = rig.pose.bones, rig.matrix_world
+    J = {"l_hip": p["upperleg01.L"].head, "r_hip": p["upperleg01.R"].head, "l_sh": p["upperarm01.L"].head,
+         "r_sh": p["upperarm01.R"].head, "neck": p["neck01"].head, "l_kn": p["lowerleg01.L"].head,
+         "r_kn": p["lowerleg01.R"].head, "l_el": p["lowerarm01.L"].head, "r_el": p["lowerarm01.R"].head,
+         "l_wr": p["wrist.L"].head, "r_wr": p["wrist.R"].head, "l_an": p["foot.L"].head, "r_an": p["foot.R"].head}
+    return {k: mw @ v for k, v in J.items()}
+
+
+def _height_above(bvh, pts, lift=0.5):
+    """Vertical clearance of each point above the room mesh (negative = below the surface); None = nothing below."""
+    out = []
+    down = Vector((0, 0, -1))
+    for p in pts:
+        hit = bvh.ray_cast(p + Vector((0, 0, lift)), down, 5.0)
+        out.append(None if hit[0] is None else hit[3] - lift)
+    return out
+
+
+def _low_clearance(bvh, pts, q=0.02):
+    vals = sorted(v for v in _height_above(bvh, pts) if v is not None)
+    return vals[int(q * (len(vals) - 1))] if vals else None
+
+
+def contact_shift(bvh, V, mesh, report, band=0.02, sample=4000):
+    """Vertical shift that gives the mannequin the MHR body's clearance in the MHR contact zone (m; 0 = no data)."""
+    import numpy as np
+    from mathutils.kdtree import KDTree
+    V = V[::max(1, len(V) // sample)]
+    cm = np.array([np.nan if c is None else c for c in _height_above(bvh, [Vector(tuple(v)) for v in V])])
+    if not np.isfinite(cm).any():
+        return 0.
+    low = np.nanquantile(cm, 0.02)
+    touch = np.where(cm <= low + band)[0]
+    tree = KDTree(len(mesh.vertices))
+    for v in mesh.vertices:
+        tree.insert(v.co, v.index)
+    tree.balance()
+    near = sorted({tree.find(Vector(tuple(V[i])))[1] for i in touch})
+    cp = np.array([np.nan if c is None else c for c in _height_above(bvh, [mesh.vertices[i].co for i in near])])
+    if not np.isfinite(cp).any():
+        return 0.
+    dz = float(np.nanmedian(cm[touch]) - np.nanmedian(cp))
+    report.update(contact_dz_m=round(dz, 4), clearance_mhr_m=round(float(low), 4), contact_points=int(len(touch)))
+    return dz
+
+
+def pose_mannequin_to_mhr(rig, body, kp, mhr_verts=None, plate=None, subsurf=1, scale_limits=(0.85, 1.15)):
+    """Pose + place the MPFB mannequin on the MHR placement; return a static world mesh object (body_v2) and a report.
+
+    kp: MHR70 joints (world, 70x3). mhr_verts: placed MHR vertices (world) for the contact height; plate: room mesh."""
+    import numpy as np
+    report = {"model": "mpfb", "removed": prepare_mannequin(rig, body)}
+    hidden = [(o, o.hide_viewport) for o in (rig, body)]
+    for o, _ in hidden:
+        o.hide_viewport = False
+    bpy.context.view_layer.update()
+    kp = np.asarray(kp, float)
+    # body size: MHR and the mannequin are both Stacy (162 cm); a residual size difference is taken from the legs+torso
+    for pb in rig.pose.bones:
+        pb.matrix_basis = Matrix.Identity(4)
+    bpy.context.view_layer.update()
+    Jr = mpfb_joints_world(rig)
+    p = rig.pose.bones
+    mw = rig.matrix_world
+
+    def chain(P, ank):
+        return sum(((P[a] - P[b]).length for a, b in (("l_hip", "l_kn"), ("r_hip", "r_kn"))), 0.) + \
+               ((P["l_hip"] + P["r_hip"]) / 2 - P["neck"]).length + ank
+    mh = {k: Vector(tuple(kp[i])) for k, i in K.items()}
+    ank_m = (mh["l_kn"] - mh["l_an"]).length + (mh["r_kn"] - mh["r_an"]).length
+    ank_r = ((mw @ p["lowerleg01.L"].head) - (mw @ p["foot.L"].head)).length + \
+            ((mw @ p["lowerleg01.R"].head) - (mw @ p["foot.R"].head)).length
+    scale = chain(mh, ank_m) / max(chain(Jr, ank_r), 1e-6)
+    report["scale_raw"] = round(scale, 4)
+    scale = min(max(scale, scale_limits[0]), scale_limits[1])
+    rig.scale = rig.scale * scale
+    bpy.context.view_layer.update()
+    report["scale"] = round(scale, 4)
+    retarget_world(rig, kp)
+    # rigid move onto the MHR torso (hips, shoulders, neck): translation of the centroids
+    J = mpfb_joints_world(rig)
+    keys = ("l_hip", "r_hip", "l_sh", "r_sh", "neck")
+    shift = sum((mh[k] - J[k] for k in keys), Vector()) / len(keys)
+    rig.location = rig.location + shift
+    bpy.context.view_layer.update()
+    if subsurf:
+        sub = body.modifiers.get("render_smooth") or body.modifiers.new("render_smooth", "SUBSURF")
+        sub.levels = sub.render_levels = int(subsurf)
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = body.evaluated_get(dg)
+    mesh = bpy.data.meshes.new_from_object(ev, depsgraph=dg)
+    mesh.transform(ev.matrix_world)
+    # contact: where the MHR body touches the room mesh (its lowest clearance band), the mannequin's nearest
+    # surface gets the same clearance -> feet on the floor, seat on the seat, side on the bed (vertical shift only)
+    if plate is not None and mhr_verts is not None:
+        dz = contact_shift(plate_bvh(plate), np.asarray(mhr_verts, float), mesh, report)
+        if dz:
+            mesh.transform(Matrix.Translation((0, 0, dz)))
+            rig.location.z += dz
+    obj = bpy.data.objects.new("body_v2", mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    for poly in mesh.polygons:
+        poly.use_smooth = True
+    for o, value in hidden:
+        o.hide_viewport = value
+    J = mpfb_joints_world(rig)
+    report["joint_err_cm"] = {k: round((J[k] - mh[k]).length * 100, 1) for k in J}
+    report["vertices"] = len(mesh.vertices)
+    bpy.context.view_layer.update()
+    return obj, report
+
+
+def write_obj(obj, path):
+    """World-space triangulated OBJ (same convention as fit/body.obj: Blender axes, forward Y / up Z on import)."""
+    me = obj.data
+    me.calc_loop_triangles()
+    mw = obj.matrix_world
+    with open(path, "w", encoding="utf-8") as f:
+        for v in me.vertices:
+            co = mw @ v.co
+            f.write(f"v {co.x:.6f} {co.y:.6f} {co.z:.6f}\n")
+        for t in me.loop_triangles:
+            f.write("f %d %d %d\n" % tuple(i + 1 for i in t.vertices))

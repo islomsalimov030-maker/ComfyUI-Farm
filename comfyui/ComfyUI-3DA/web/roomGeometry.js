@@ -215,6 +215,26 @@ export function centerOnAxis(points, camera, minDepth = 1.0) {
   return [0, 1, 2].map(k => C[k] + u[k] * depth - mean[k]);
 }
 
+// 0.3.22: «В кадр» для персонажа без подъёма над полом. centerOnAxis ставил центр тела на ось камеры и по высоте —
+// камера смотрит сверху вниз, и тело зависало на 47–87 см. Теперь: по горизонтали — на ось камеры (центр кадра по
+// ширине) на той же горизонтальной глубине (не ближе minDepth м); по высоте — низ тела на пол (floorY), а если пол
+// не найден — высота тела не меняется. Ось «вверх» мира 3D-окна — Y.
+export function centerOnFloor(points, camera, floorY = null, minDepth = 1.0) {
+  if (!points.length) return null;
+  const mean = [0, 1, 2].map(k => points.reduce((s, p) => s + p[k], 0) / points.length);
+  const C = [camera.position.x, camera.position.y, camera.position.z];
+  const T = [camera.target.x, camera.target.y, camera.target.z];
+  let f = [T[0] - C[0], 0, T[2] - C[2]];
+  let n = Math.hypot(...f);
+  if (n < 1e-6) { f = [mean[0] - C[0], 0, mean[2] - C[2]]; n = Math.hypot(...f); }
+  if (n < 1e-6) return [0, 0, 0];
+  const u = f.map(v => v / n);
+  const depth = Math.max(minDepth, (mean[0] - C[0]) * u[0] + (mean[2] - C[2]) * u[2]);
+  const low = Math.min(...points.map(p => p[1]));
+  const dy = (floorY === null || floorY === undefined || !Number.isFinite(floorY)) ? 0 : floorY - low;
+  return [C[0] + u[0] * depth - mean[0], dy, C[2] + u[2] * depth - mean[2]];
+}
+
 // 0.3.18: пульт в углу 3D-окна (вместо помощника осей) — двигает/вращает/масштабирует выбранный объект,
 // когда его стрелки гизмо ушли за кадр. Оси — экранные: красный = вправо, зелёный = вверх, синий = вглубь.
 // dx, dy — сдвиг мыши в пикселях окна (dy вниз), heightPx — высота окна. Перемещение — как пиксели на глубине объекта.

@@ -25,7 +25,16 @@ def main():
             vertices.append([float(v) for v in line.split()[1:]])
         elif line.startswith('f '):
             faces.append([int(v.split('/')[0])-1 for v in line.split()[1:]])
-    if request.get('body_cache'):
+    render_obj = request.get('body_render_obj')
+    if render_obj and Path(render_obj).is_file():
+        # 14.11: Stacy's MPFB mannequin posed on the same placement (world coordinates, own topology)
+        vertices, faces = [], []
+        for line in Path(render_obj).read_text().splitlines():
+            if line.startswith('v '):
+                vertices.append([float(v) for v in line.split()[1:]])
+            elif line.startswith('f '):
+                faces.append([int(v.split('/')[0])-1 for v in line.split()[1:]])
+    elif request.get('body_cache'):
         with np.load(request['body_cache'],allow_pickle=False) as d:
             vertices=d['X'].tolist()
     mesh=bpy.data.meshes.new('3DA_body_mesh')

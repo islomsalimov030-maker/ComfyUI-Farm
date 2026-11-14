@@ -775,7 +775,8 @@ def do_place(request, config):
     if request.get('body_transform'):
         from scene_edit import body_delta
         values['body_matrix'] = body_delta(request['body_transform'], key)
-    if 'body_matrix' in values or any(float(v) != 0 for v in values.values()):
+    moved = 'body_matrix' in values or any(float(v) != 0 for v in values.values())
+    if moved:
         if pc == 'auto':
             import reference_place
             X, KP, fit = reference_place.revalidate(base, plate, profile, spec, values)
@@ -832,9 +833,23 @@ def do_place(request, config):
     timings["raster"] = list(size)
     run_stage(threeda_blender.command(config, HERE / "plate/render_plate_scene.py", ["--plate", plate_dir, "--spec", job / "render_spec.json",
                "--mannequin", mannequin, "--out", job / "render", "--label-pass", "--photo-emission", "2.5",
-               "--samples", "48", "--raster", f"{size[0]}x{size[1]}"]), "Blender render", env=env)
+               "--samples", "48", "--raster", f"{size[0]}x{size[1]}",
+               "--body-model", str(config.get("body_model") or "mpfb")]), "Blender render", env=env)
     timings["render_s"] = round(time.monotonic() - stage, 3)
     directory = job / "render/pose"
+    # 14.11: the render body is Stacy's MPFB mannequin posed onto the MHR placement (render/pose/body_render.obj);
+    # the base placement's copy is kept for the 3D window. Missing (fallback to MHR) -> MHR everywhere as before.
+    render_body = directory / "body_render.obj"
+    render_body = render_body if render_body.is_file() else job / "fit/body.obj"
+    mpfb_base = cache_dir / "body_mpfb.obj"
+    if render_body.name == "body_render.obj" and not moved:
+        from shutil import copy2 as _copy
+        _copy(render_body, mpfb_base)
+    if (directory / "body_model.json").is_file():
+        fit["body_model"] = read_json(directory / "body_model.json")
+        if fit["body_model"].get("warning"):
+            fit.setdefault("render_warnings", []).append(
+                "манекен Стейси (MPFB) не поставлен — в рендере тело MHR: " + fit["body_model"]["warning"][:160])
     stage = time.monotonic()
     # Фото комнаты в полном разрешении (с 0.2.0 сохраняется при подготовке локации); старые локации — plate_rgb.
     source_plate = plate_dir / "plate_photo.png" if (plate_dir / "plate_photo.png").is_file() else plate_dir / "plate_rgb.png"
@@ -880,7 +895,7 @@ def do_place(request, config):
         save_json(props_path, render_props_value)
         overlay_dir = job / "props_render"
         run_stage(threeda_blender.command(config, HERE / "plate/prop_render.py", ["--plate", plate_dir,
-                   "--body", job / "fit/body.obj", "--joints", job / "fit/label_joints.npz",
+                   "--body", render_body, "--joints", job / "fit/label_joints.npz",
                    "--props", props_path, "--library", library, "--out", overlay_dir,
                    "--raster", f"{size[0]}x{size[1]}", "--spec", job / "render_spec.json",
                    "--photo-emission", "2.5", "--samples", "32"]), "Blender props", env=env)
@@ -951,7 +966,7 @@ def do_place(request, config):
     # Русские причины для GeometryRejected/статуса; коды — для тестов и логов. Кадр — предупреждение.
     reasons=(explain(fit) or codes) if codes else []
     fit['reasons_ru']=reasons
-    fit['warnings']=frame_warnings(fit)+list(fit.get('prop_frame_notes') or [])
+    fit['warnings']=frame_warnings(fit)+list(fit.get('prop_frame_notes') or [])+list(fit.get('render_warnings') or [])
     if timings.get("body_shape") == "pose_photo":
         fit['warnings'].append('телосложение персонажа не снято — тело взято с фото позы («3DA · Персонаж: телосложение»)')
     save_json(job/'fit/fit.json',fit)
@@ -964,6 +979,7 @@ def do_place(request, config):
                 prop_repair_mask=str(directory/'prop_repair_mask.png') if props_value else None,
                 body_guides=body_guides,
                 scene_setup=dict(placement_key=key, body_obj=str(cache_dir/'body.obj'),
+                                 body_render_obj=str(mpfb_base) if mpfb_base.is_file() else None,
                                  body_cache=str(cache_dir/'manual_base.npz'),
                                  joints=str(cache_dir/'label_joints.npz'), location_id=profile.data['loc_id'],
                                  plate_dir=str(plate_dir), props=render_props_value),

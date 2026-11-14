@@ -70,6 +70,8 @@ def args():
     ap.add_argument("--no-playblast", action="store_true")
     ap.add_argument("--label-pass", action="store_true", help="v2.6: anatomical labels; colours from body.json; requires final joints")
     ap.add_argument("--raster", default="", help="0.2.0: render WxH (same framing; intrinsics are normalised)")
+    ap.add_argument("--body-model", choices=("mpfb", "mhr"), default="mpfb",
+                    help="14.11: mpfb = Stacy's MPFB mannequin posed onto the placed MHR body; mhr = the MHR mesh itself")
     ap.add_argument("--photo-emission", type=float, default=None,
                     help="override light.photo_emission (0 = the 05.11 playblast, 1.5 = photo-lit clay)")
     return ap.parse_args(argv)
@@ -624,15 +626,43 @@ def run_scene(a, info, scene, light=None):
 
 
 def _run_body_obj(a, sc, info, cam, plate, light, out, scene, chars):
-    for o in chars:                       # манекен не рендерится; его материалы/свет сцены остаются
-        o.hide_render = True
-        o.hide_viewport = True
     before = set(bpy.data.objects)
     bpy.ops.wm.obj_import(filepath=scene["body_obj"], forward_axis="Y", up_axis="Z")
     body = [o for o in bpy.data.objects if o not in before][0]
     body.name = "body_v2"
     body.pass_index = 1
     body.color = chars[0].color if chars else (0.8, 0.8, 0.8, 1)
+    model = {"model": "mhr"}
+    char_names = [o.name for o in chars]
+    if getattr(a, "body_model", "mpfb") == "mpfb":
+        # 14.11: the render body is Stacy's MPFB mannequin (fingers, toes, face) posed onto the placed MHR body;
+        # any problem -> warning + the MHR mesh (never an error)
+        try:
+            import numpy as np
+            joints = os.path.join(os.path.dirname(scene["body_obj"]), "label_joints.npz")
+            with np.load(joints, allow_pickle=False) as d:
+                kp = d["kp"]
+            rig = next(o for o in chars if o.type == "ARMATURE")
+            mpfb = bpy.data.objects.get("stacy_body") or max((o for o in chars if o.type == "MESH"),
+                                                              key=lambda o: len(o.data.vertices))
+            verts = np.array([tuple(body.matrix_world @ v.co) for v in body.data.vertices])
+            posed, model = pose_tools.pose_mannequin_to_mhr(rig, mpfb, kp, verts, plate)
+            body.name = "body_mhr"
+            body.hide_render = body.hide_viewport = True
+            posed.pass_index = 1
+            posed.color = body.color
+            body = posed
+            body.name = "body_v2"
+            pose_tools.write_obj(body, os.path.join(out, "body_render.obj"))
+        except Exception as exc:                                    # noqa: BLE001
+            model = {"model": "mhr", "warning": f"MPFB mannequin failed: {type(exc).__name__}: {exc}"}
+            print("[plate] WARNING", model["warning"], flush=True)
+    with open(os.path.join(out, "body_model.json"), "w", encoding="utf-8") as f:
+        json.dump(model, f, indent=1)
+    chars = [bpy.data.objects[n] for n in char_names if n in bpy.data.objects]   # hair/clothes may be removed
+    for o in chars:                       # манекен (исходник) не рендерится; его материалы/свет сцены остаются
+        o.hide_render = True
+        o.hide_viewport = True
     for poly in body.data.polygons:
         poly.use_smooth = True
     bpy.context.view_layer.update()
