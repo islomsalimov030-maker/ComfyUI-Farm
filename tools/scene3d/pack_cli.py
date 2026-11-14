@@ -1008,6 +1008,33 @@ def do_body_profile(request, config):
             "written": bool(backup), "spread": prof["spread"]}
 
 
+def do_body_fit(request, config):
+    """0.3.21: подогнать форму MHR под мерки персонажа (см) -> body.json (по флагу write)."""
+    modules(config)
+    import body_measure
+    import body_shape
+    body_path = required_file(request.get("body_json"), "body_json")
+    cm = {k: float(request[k]) for k in body_measure.KEYS if request.get(k)}
+    for k, v in cm.items():
+        if not math.isfinite(v) or not 5 <= v <= 250:
+            raise ValueError(f"мерка {k} вне 5–250 см")
+    if len(cm) < 3:
+        raise ValueError("нужны хотя бы три мерки (грудь, талия, бёдра)")
+    work = Path(config["farm_root"]) / "pack" / "body_fit" / uuid.uuid4().hex
+    work.mkdir(parents=True)
+    save_json(work / "target.json", cm)
+    run_stage([config["geometry_python"], HERE / "posev2/body_shape.py", "--comfy", config["comfy"],
+               "--body", body_path, "--fit", work / "target.json", "--out", work / "fit.json"], "body fit (MHR)")
+    fit = read_json(required_file(work / "fit.json", "body fit result"))
+    backup = body_shape.write_fit(body_path, fit, cm) if request.get("write") else None
+    rows = ", ".join(f"{k} {fit['target_cm'][k]:.1f}→{fit['got_cm'][k]:.1f} (было {fit['start_cm'][k]:.1f})"
+                     for k in fit["target_cm"])
+    worst = max(abs(fit["got_cm"][k] - fit["target_cm"][k]) for k in fit["target_cm"])
+    text = (f"мерки (цель→получено, см): {rows}; макс. отклонение {worst:.1f} см"
+            + ("; записано в body.json, копия " + backup.name if backup else "; не записано (write выключен)"))
+    return {"status": "ok" if worst <= 2 else "partial", "text": text, "written": bool(backup), "fit": fit}
+
+
 def error_result(exc):
     return {"status": "error", "error": stderr_tail(str(exc)),
             "stderr_tail": stderr_tail(getattr(exc, "diagnostic", str(exc)))}
@@ -1015,7 +1042,7 @@ def error_result(exc):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("location", "place", "body_profile"))
+    parser.add_argument("command", choices=("location", "place", "body_profile", "body_fit"))
     parser.add_argument("--request", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
@@ -1032,7 +1059,8 @@ def main(argv=None):
             result = {"status": "ok", "h3_prompt": text}
         elif args.geometry_worker or (args.worker and args.command == "location"):
             result = {"location": do_location, "place": do_place,
-                      "body_profile": do_body_profile}[args.command](request, config)
+                      "body_profile": do_body_profile,
+                      "body_fit": do_body_fit}[args.command](request, config)
         else:
             # Node -> farm Python -> geometry Python for place+refine. Never import
             # torch/SAM into the farm or calling ComfyUI environment.

@@ -163,3 +163,76 @@ class PackCliProfileTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class BodyMeasureFitTests(unittest.TestCase):
+    """0.3.21: мерки по мешу и подгонка формы под мерки (фикстура — тело MPFB-манекена Стейси, CC0)."""
+    @classmethod
+    def setUpClass(cls):
+        d = np.load(ROOT / 'tests/data/mpfb_body_162.npz')
+        cls.V, cls.F, cls.arms = d['V'].astype(np.float64), d['F'], d['arms']
+
+    def test_stacy_mpfb_measurements(self):
+        import body_measure
+        m, H = body_measure.measure(self.V, self.F, self.arms)
+        cm = body_measure.in_cm(m, 1.62)
+        self.assertAlmostEqual(H, 1.62, places=2)
+        self.assertAlmostEqual(cm['bust'], 89.1, delta=1)
+        self.assertAlmostEqual(cm['waist'], 59.4, delta=1)
+        self.assertAlmostEqual(cm['hips'], 98.3, delta=1)
+        self.assertAlmostEqual(cm['crotch'], 74.5, delta=1)
+        # руки у А-позы касаются груди: без маски рук обхват груди ложно растёт
+        self.assertGreater(body_measure.measure(self.V, self.F)[0]['bust'], m['bust'] + .05)
+
+    def test_fit_recovers_known_shape(self):
+        import body_measure
+        V0, F, arms = self.V, self.F, self.arms
+        z = V0[:, 2]
+
+        def fake(shape, scale):  # «форма»: ширина/глубина торса и длина ног
+            V = V0.copy()
+            torso = (z > .45 * 1.62) & (z < .8 * 1.62)
+            V[torso, 0] *= 1 + .1 * shape[0]
+            V[torso, 1] *= 1 + .1 * shape[1]
+            V[:, 2] = np.where(z < .46 * 1.62, z * (1 + .05 * scale[0]), z + .46 * 1.62 * .05 * scale[0])
+            return V, None
+        want = (np.array([1.2, -.8], np.float32), np.array([.6], np.float32))
+        target = body_measure.measure(fake(*want)[0], F, arms)[0]
+        with patch.object(body_shape, 'arm_mask', return_value=arms):
+            r = body_shape.fit_measurements(fake, F, target, np.zeros(2, np.float32), np.zeros(1, np.float32),
+                                            reg=1e-3, max_nfev=200, log=lambda *a: None)
+        for k in ('bust', 'waist', 'hips', 'crotch'):
+            self.assertAlmostEqual(r['got'][k], target[k], delta=.02 * target[k], msg=k)  # ~1 см на обхвате
+
+
+class BodyFitCommandTests(unittest.TestCase):
+    def test_node_and_command(self):
+        calls = []
+        with patch.object(nodes, 'invoke', side_effect=lambda c, f, i: calls.append((c, f, i)) or {'status': 'ok', 'text': 'мерки ok'}):
+            out = nodes.BodyMeasure().execute('characters/stacy/body.json', True, **nodes.BodyMeasure.DEFAULTS)
+        self.assertEqual(out['result'], ('мерки ok',))
+        self.assertEqual(calls[0][0], 'body_fit')
+        self.assertEqual(calls[0][1]['bust'], 89.1)
+        import pack_cli
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            body = tmp / 'body.json'
+            body.write_text(json.dumps({'char_id': 'stacy', 'height_m': 1.62, 'body_dims': {'H': 1.62},
+                                        'shape_params': [0.] * NS, 'scale_params': [0.] * NC}), encoding='utf-8')
+
+            def stage(command, name, env=None):
+                cm = json.loads(Path(command[command.index('--fit') + 1]).read_text(encoding='utf-8'))
+                Path(command[command.index('--out') + 1]).write_text(json.dumps({
+                    'shape_params': [.5] * NS, 'scale_params': [.1] * NC, 'target_cm': cm,
+                    'got_cm': {k: v + .4 for k, v in cm.items()}, 'start_cm': {k: v - 5 for k, v in cm.items()}, 'nfev': 9}),
+                    encoding='utf-8')
+            with patch.object(pack_cli, 'run_stage', side_effect=stage):
+                r = pack_cli.do_body_fit({'body_json': str(body), 'write': True, **nodes.BodyMeasure.DEFAULTS},
+                                         {'farm_root': str(tmp), 'comfy': str(tmp), 'geometry_python': sys.executable})
+                with self.assertRaisesRegex(ValueError, 'три мерки'):
+                    pack_cli.do_body_fit({'body_json': str(body), 'bust': 90}, {'farm_root': str(tmp), 'comfy': str(tmp)})
+            self.assertEqual(r['status'], 'ok')
+            saved = json.loads(body.read_text(encoding='utf-8'))
+            self.assertEqual(saved['shape_params'], [.5] * NS)
+            self.assertEqual(saved['measurements_cm']['waist'], 59.4)
+            self.assertIn('bust 89.1→89.5', r['text'])

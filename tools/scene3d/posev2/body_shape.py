@@ -70,6 +70,22 @@ def write_profile(body_json, prof, photo_hashes, now=None):
     return backup
 
 
+def write_fit(body_json, fit, cm, now=None):
+    """Форма, подогнанная под мерки, -> body.json (+ measurements_cm), прежний файл — в резервную копию."""
+    path = Path(body_json)
+    body = json.loads(path.read_text(encoding="utf-8"))
+    stamp = (now or datetime.datetime.now()).strftime("%Y%m%d_%H%M%S")
+    backup = path.with_name(path.name + ".bak_" + stamp)
+    shutil.copy2(path, backup)
+    body.update(shape_model="MHR", shape_params=[round(float(x), 6) for x in fit["shape_params"]],
+                scale_params=[round(float(x), 6) for x in fit["scale_params"]],
+                measurements_cm={k: float(v) for k, v in cm.items()},
+                shape_source={"method": "fit MHR to measurements (start: previous shape)", "date": stamp,
+                              "got_cm": fit.get("got_cm"), "previous": body.get("shape_source")})
+    path.write_text(json.dumps(body, indent=1, ensure_ascii=False), encoding="utf-8")
+    return backup
+
+
 def shaped_ref(npz, forward, shape, scale):
     """npz (dict из ref.npz) -> dict с формой персонажа. forward(shape, scale) -> (verts, kp70) в осях MHR."""
     old_shape = np.asarray(npz["mhr_shape_params"], np.float32).reshape(-1)
@@ -96,6 +112,70 @@ def shaped_ref(npz, forward, shape, scale):
     return out, residual
 
 
+def arm_mask(V, kp):
+    """Вершины рук по ближайшим опорным точкам MHR70 (body.regions) — из срезов мерок исключаются."""
+    import body
+    labels = body.regions(np.asarray(V), np.asarray(kp))
+    return np.array([str(x).split(".")[0] in ("arm", "forearm", "hand") for x in labels])
+
+
+def fit_measurements(forward_rest, faces, target, init_shape, init_scale, reg=.02, max_nfev=900, log=print):
+    """Подогнать форму MHR под мерки (доли роста, body_measure.KEYS). forward_rest(shape, scale) -> (V, kp70)
+    в стойке без позы. Старт — форма SAM (init); регуляризация держит форму рядом со стартом."""
+    import body_measure
+    from scipy.optimize import least_squares
+    keys = [k for k in body_measure.KEYS if k in target]
+    if not keys:
+        raise ValueError("body fit: нет мерок")
+    ns = len(init_shape)
+    x0 = np.concatenate([init_shape, init_scale]).astype(np.float64)
+    V0, kp0 = forward_rest(init_shape, init_scale)
+    arms = arm_mask(V0, kp0)
+    edges = body_measure.prepare(faces, arms)
+    weight = {"thigh": .5}
+    cache = {}
+
+    def measures(x):
+        key = x.tobytes()
+        if key not in cache:
+            V, _ = forward_rest(x[:ns].astype(np.float32), x[ns:].astype(np.float32))
+            cache[key] = body_measure.measure(V, faces, edges=edges)[0]
+        return cache[key]
+
+    def residual(x):
+        m = measures(x)
+        r = [(m[k] - target[k]) / target[k] * weight.get(k, 1.) for k in keys]
+        return np.concatenate([r, reg * (x - x0)])
+    start = measures(x0)
+    def jac(x, step=.05):  # абсолютный шаг: у scipy diff_step относительный и у нулевых параметров ~1e-8
+        r0 = residual(x)
+        J = np.empty((len(r0), len(x)))
+        for i in range(len(x)):
+            xi = x.copy()
+            xi[i] += step
+            J[:, i] = (residual(xi) - r0) / step
+        return J
+    res = least_squares(residual, x0, jac=jac, max_nfev=max_nfev, x_scale=1.)
+    got = measures(res.x)
+    log(f"[body_fit] {res.nfev} оценок, start {start}, got {got}, target {target}")
+    return dict(shape_params=res.x[:ns].astype(np.float32), scale_params=res.x[ns:].astype(np.float32),
+                start=start, got=got, nfev=int(res.nfev))
+
+
+def rest_forward(head, torch, dev):
+    """MHR в стойке без позы (T-поза), метры."""
+    z = lambda n: torch.zeros(1, n, device=dev)  # noqa: E731
+
+    def forward(shape, scale):
+        T = lambda a: torch.tensor(np.asarray(a, np.float32), device=dev)[None]  # noqa: E731
+        with torch.no_grad():
+            v, kp = head.mhr_forward(global_trans=z(3), global_rot=z(3), body_pose_params=z(130),
+                                     hand_pose_params=z(head.num_hand_comps * 2), scale_params=T(scale),
+                                     shape_params=T(shape), expr_params=z(72), return_keypoints=True)
+        return v[0].float().cpu().numpy(), kp[0, :70].float().cpu().numpy()
+    return forward
+
+
 def mhr_forward(head, torch, dev, npz):
     T = lambda a: torch.tensor(np.asarray(a, np.float32), device=dev)[None]  # noqa: E731
     gr, bp, hp = T(npz["mhr_global_rot"]), T(npz["mhr_body_pose_params"]), T(npz["mhr_hand_pose_params"])
@@ -110,16 +190,38 @@ def mhr_forward(head, torch, dev, npz):
     return forward
 
 
+def main_fit(a, ctx):
+    """--fit: мерки (см, JSON) -> подогнанная форма в JSON-результат (body.json пишет pack_cli)."""
+    import body_measure
+    body = json.loads(Path(a.body).read_text(encoding="utf-8"))
+    cm = json.loads(Path(a.fit).read_text(encoding="utf-8"))
+    target = body_measure.ratios(cm, float(body["height_m"]))
+    head, torch, dev = ctx["head"], ctx["torch"], ctx["dev"]
+    init = body_shape(body)
+    if init is None:
+        init = (np.zeros(head.num_shape_comps, np.float32), np.zeros(head.num_scale_comps, np.float32))
+    faces = head.faces_np() if hasattr(head, "faces_np") else head.faces.cpu().numpy()
+    r = fit_measurements(rest_forward(head, torch, dev), faces, target, *init)
+    h = float(body["height_m"])
+    out = dict(shape_params=[float(x) for x in r["shape_params"]], scale_params=[float(x) for x in r["scale_params"]],
+               start_cm=body_measure.in_cm(r["start"], h), got_cm=body_measure.in_cm(r["got"], h),
+               target_cm={k: float(v) for k, v in cm.items() if k in target}, nfev=r["nfev"])
+    Path(a.out).write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--comfy", required=True)
-    ap.add_argument("--ref", required=True)
+    ap.add_argument("--ref")
     ap.add_argument("--body", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--fit", help="JSON с мерками в см: подгонка формы вместо постановки")
     a = ap.parse_args(argv)
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import refine
     ctx = refine.load_ctx(a.comfy)
+    if a.fit:
+        return main_fit(a, ctx)
     npz = dict(np.load(a.ref, allow_pickle=True))
     sh = body_shape(json.loads(Path(a.body).read_text(encoding="utf-8")))
     if sh is None:

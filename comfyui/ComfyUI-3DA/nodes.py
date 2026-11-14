@@ -1473,11 +1473,43 @@ class BodyProfile:
         return {'ui': {'text': [text]}, 'result': (text,)}
 
 
-NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DABodyProfile': BodyProfile, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
+class BodyMeasure:
+    """0.3.21: телосложение по меркам (см): форма MHR подгоняется под обхваты и высоту паха → body.json.
+    По умолчанию — мерки MPFB-манекена Стейси (162 см). Стартовая форма — текущая в body.json."""
+    DEFAULTS = {'bust': 89.1, 'waist': 59.4, 'hips': 98.3, 'thigh': 53.1, 'crotch': 74.8}
+    TIPS = {'bust': 'Обхват груди', 'waist': 'Обхват талии (самое узкое)', 'hips': 'Обхват бёдер (самое широкое)',
+            'thigh': 'Обхват одного бедра под пахом', 'crotch': 'Высота паха от пола'}
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'body_json': ('STRING', {'default': 'characters/stacy/body.json'}),
+                             **{k: ('FLOAT', {'default': v, 'min': 5., 'max': 250., 'step': .5, 'tooltip': cls.TIPS[k] + ', см'})
+                                for k, v in cls.DEFAULTS.items()},
+                             'write': ('BOOLEAN', {'default': False, 'tooltip': 'Записать форму в body.json (прежний файл — в резервную копию)'})}}
+    RETURN_TYPES = ('STRING',)
+    RETURN_NAMES = ('status',)
+    FUNCTION = 'execute'
+    CATEGORY = '3DA'
+    OUTPUT_NODE = True
+
+    def execute(self, body_json, write, **cm):
+        try:
+            if not isinstance(write, bool):
+                raise ValueError('write must be BOOLEAN')
+            for k, v in cm.items():
+                finite_number(v, k, minimum=5., maximum=250.)
+            result = invoke('body_fit', dict(body_json=body_json, write=write, **cm), {})
+            text = result.get('text') if result.get('status') != 'error' else 'status=error\n' + str(result.get('error'))
+        except Exception as exc:  # noqa: BLE001
+            text = error_text(exc)
+        return {'ui': {'text': [text]}, 'result': (text,)}
+
+
+NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DABodyProfile': BodyProfile, '3DABodyMeasure': BodyMeasure, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
                        '3DANativeGuides': NativeGuides, '3DANativeComposite': NativeComposite,
                        '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport, '3DACoreWeights': CoreWeights,
                        '3DABlenderRuntime': BlenderRuntime}
-NODE_DISPLAY_NAME_MAPPINGS = {'3DAControl': '3DA · 3D-контроль (пульт)', '3DABodyProfile': '3DA · Персонаж: телосложение', '3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
+NODE_DISPLAY_NAME_MAPPINGS = {'3DAControl': '3DA · 3D-контроль (пульт)', '3DABodyProfile': '3DA · Персонаж: телосложение', '3DABodyMeasure': '3DA · Персонаж: мерки', '3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
                               '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote',
                               '3DANativeGuides': '3DA · native H3 guides + gate',
                               '3DANativeComposite': '3DA · final room + rigid props',
