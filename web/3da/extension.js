@@ -103,12 +103,56 @@ function adaptCopies(service) {
   service.copyLoad3dState = adapted;
   copyAdapter = () => { if (service.copyLoad3dState === adapted) service.copyLoad3dState = original; };
 }
+// 0.3.24: передача сцены в 3D-окно вынесена в функцию. «3DA · Подготовить сцену» может лежать внутри сабграфа:
+// тогда onExecuted у внутреннего узла не вызывается — ловим событие executed по id «<сабграф>:<узел>».
+// app.graph.subgraphs — Map (новый LiteGraph) или объект (старый).
+function subgraphList(graph) {
+  const s = graph?.subgraphs;
+  return s ? (typeof s.values === 'function' ? [...s.values()] : Object.values(s)) : [];
+}
+function allGraphNodes(extra) {
+  const graphs = [app.graph, extra, ...subgraphList(app.graph)];
+  return graphs.flatMap(g => g?._nodes ?? g?.nodes ?? []);
+}
+function applySceneSetup(message, graph) {
+  let setup;
+  try { setup = JSON.parse(message?.text?.[0] ?? '{}'); } catch { return; }
+  // 0.3.0: без сцены узел отдаёт предупреждение — 3D-окно не трогаем.
+  if (!setup?.model_file || !setup?.camera) return;
+  const all = allGraphNodes(graph);
+  const viewport = all.find(n => n.title === '3DA · Сцена: персонаж и предметы');
+  const edits = all.find(n => n.title === '3DA · Применить правки сцены');
+  if (!viewport || !edits) return;
+  viewport.properties['3DA Scene'] = setup;
+  viewport.properties['3DA Camera Lock'] = { state: setup.camera };
+  delete viewport.properties['3DA Scene Transforms'];
+  viewport.properties['3DA Selected Entity'] = 'body';
+  viewport.properties['Camera Config'] = { cameraType:'perspective', fov:setup.camera.fov, state:setup.camera, useCustomUp:true, hasCustomUp:true };
+  viewport.properties['Scene Config'] = { showGrid:false, backgroundImage:setup.background, backgroundRenderMode:'tiled' };
+  viewport.properties['Model Config'] = { upDirection:'original', materialMode:'original', gizmo:{ enabled:true, mode:'translate', position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0},scale:{x:1,y:1,z:1} } };
+  const widget = viewport.widgets.find(w => w.name === 'model_file');
+  widget.value = setup.model_file;
+  widget.callback?.(setup.model_file);
+  edits.widgets.find(w => w.name === 'manifest').value = setup.manifest;
+  app.canvas.setDirty(true,true);
+}
+async function listenNestedSceneExport() {
+  const { api } = await import(new URL('scripts/api.js', document.baseURI).href);
+  api.addEventListener('executed', ({ detail }) => {
+    const id = String(detail?.display_node ?? detail?.node ?? '');
+    if (!id.includes(':')) return;                       // узел в корне — его обрабатывает onExecuted
+    const local = id.split(':').pop();
+    const node = allGraphNodes().find(n => String(n.id) === local && (n.comfyClass ?? n.type) === '3DASceneExport');
+    if (node) applySceneSetup(detail?.output, node.graph);
+  });
+}
+
 let busy = false;
 async function tick() {
   if (busy) return;
   busy = true;
   try {
-    const graphs = [app.graph, ...Object.values(app.graph?.subgraphs ?? {})];
+    const graphs = [app.graph, ...subgraphList(app.graph)];
     const nodes = graphs.flatMap(g => g?._nodes ?? []);
     const wanted = new Set(nodes.filter(n => protectedState(n)));
     for (const [node, record] of active) {
@@ -222,31 +266,11 @@ app.registerExtension({
     const original = node.onExecuted;
     node.onExecuted = function (message) {
       original?.call(this, message);
-      let setup;
-      try { setup = JSON.parse(message?.text?.[0] ?? '{}'); } catch { return; }
-      // 0.3.0: без сцены узел отдаёт предупреждение — 3D-окно не трогаем.
-      if (!setup?.model_file || !setup?.camera) return;
-      // 0.3.23: служебные узлы 3DA могут лежать в сабграфе — ищем по всем графам (корень + сабграфы).
-      const graphs = [app.graph, node.graph, ...Object.values(app.graph?.subgraphs ?? {})];
-      const all = graphs.flatMap(g => g?._nodes ?? g?.nodes ?? []);
-      const viewport = all.find(n => n.title === '3DA · Сцена: персонаж и предметы');
-      const edits = all.find(n => n.title === '3DA · Применить правки сцены');
-      if (!viewport || !edits) return;
-      viewport.properties['3DA Scene'] = setup;
-      viewport.properties['3DA Camera Lock'] = { state: setup.camera };
-      delete viewport.properties['3DA Scene Transforms'];
-      viewport.properties['3DA Selected Entity'] = 'body';
-      viewport.properties['Camera Config'] = { cameraType:'perspective', fov:setup.camera.fov, state:setup.camera, useCustomUp:true, hasCustomUp:true };
-      viewport.properties['Scene Config'] = { showGrid:false, backgroundImage:setup.background, backgroundRenderMode:'tiled' };
-      viewport.properties['Model Config'] = { upDirection:'original', materialMode:'original', gizmo:{ enabled:true, mode:'translate', position:{x:0,y:0,z:0},rotation:{x:0,y:0,z:0},scale:{x:1,y:1,z:1} } };
-      const widget = viewport.widgets.find(w => w.name === 'model_file');
-      widget.value = setup.model_file;
-      widget.callback?.(setup.model_file);
-      edits.widgets.find(w => w.name === 'manifest').value = setup.manifest;
-      app.canvas.setDirty(true,true);
+      applySceneSetup(message, node.graph);
     };
   },
   setup() {
+    listenNestedSceneExport().catch(err => console.warn('3DA: executed listener', err));
     const timer = setInterval(tick, 100);
     window.addEventListener('pagehide', () => {
       clearInterval(timer);
