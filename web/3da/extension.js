@@ -346,6 +346,51 @@ function applyControl(graph) {
   graph.setDirtyCanvas?.(true, true);
 }
 
+// 0.3.25: раскладка 3DAControl. Фронтенд раскладывает widgets_values по позиции, поэтому воркфлоу,
+// сохранённые до 0.3.25 (старый порядок ручек, 8–10 значений), переносим по именам один раз.
+const LAYOUT_3DA = 2;
+const OLD_ORDER_3DA = ['control_3d', 'character', 'prop', 'step', 'shadows', 'body_margin',
+                       'shadow_strength', 'shadow_opacity', 'body', 'clean_shadows'];
+const FINE_3DA = ['body', 'shadows', 'shadow_strength', 'shadow_opacity', 'clean_shadows'];
+function migrateControl(node, info, defaults) {
+  // Признак — в сохранённых данных (info.properties): node.properties уже помечены новой раскладкой при создании.
+  if (info?.properties?.ng3da_layout === LAYOUT_3DA) return;
+  const v = info?.widgets_values;
+  node.properties = node.properties ?? {};
+  if (!Array.isArray(v) || v.length < 8 || v.length > OLD_ORDER_3DA.length) {
+    node.properties.ng3da_layout = LAYOUT_3DA;
+    return;
+  }
+  const old = {};
+  v.forEach((x, i) => { old[OLD_ORDER_3DA[i]] = x; });
+  for (const w of node.widgets ?? []) {
+    if (w.name in old) w.value = old[w.name];
+    else if (w.name in defaults) w.value = defaults[w.name];   // поля не было в старой раскладке
+  }
+  node.properties.ng3da_layout = LAYOUT_3DA;
+  node.setDirtyCanvas?.(true, true);
+  console.info(`[3DA] 3DAControl #${node.id}: старая раскладка ручек переведена в новую`);
+}
+// Тонкая линия на всю ширину над первым тонким виджетом и подпись «тонкие настройки» справа над ней.
+function drawFineDivider(node, ctx, first) {
+  if (!first || node.flags?.collapsed || first.hidden || typeof first.last_y !== 'number') return;
+  const y = first.last_y - 3;
+  const wdt = node.size[0];
+  ctx.save();
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(wdt, y);
+  ctx.stroke();
+  ctx.fillStyle = '#888';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('тонкие настройки', wdt - 8, y - 1);
+  ctx.restore();
+}
+
 app.registerExtension({
   name: 'ThreeDA.Control',
   setup() {
@@ -384,8 +429,26 @@ app.registerExtension({
         return r;
       };
     }
+    // 0.3.25: основные ручки сверху, тонкие (⚙) — под линией «тонкие настройки».
+    const fine = (node.widgets ?? []).filter(w => FINE_3DA.includes(w.name));
+    for (const w of fine) if (!String(w.label ?? '').startsWith('⚙ ')) w.label = '⚙ ' + (w.label ?? w.name);
+    const odf = node.onDrawForeground;
+    node.onDrawForeground = function (ctx, ...rest) {
+      const r = odf?.apply(this, [ctx, ...rest]);
+      drawFineDivider(this, ctx, fine[0]);
+      return r;
+    };
+    // Значения по умолчанию — до загрузки сохранённых (нужны миграции для полей, которых в старой раскладке нет).
+    const defaults = Object.fromEntries((node.widgets ?? []).map(w => [w.name, w.value]));
+    node.properties = node.properties ?? {};
+    node.properties.ng3da_layout = LAYOUT_3DA;   // новые узлы сохраняются уже в новой раскладке
     const oc = node.onConfigure;
-    node.onConfigure = function (...args) { const r = oc?.apply(this, args); sync(); return r; };
+    node.onConfigure = function (...args) {
+      const r = oc?.apply(this, args);
+      migrateControl(node, args[0], defaults);
+      sync();
+      return r;
+    };
     sync();
   },
 });

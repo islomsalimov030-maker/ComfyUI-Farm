@@ -293,7 +293,10 @@ def _model_list():
 def _requeue(prompt: dict, my_id: str, labels: list[str], extra_pnginfo=None) -> None:
     """Поставить в очередь копии запроса с другими моделями (все пульты фермы в копии — на эту модель).
     client_id текущего запуска передаётся дальше: вкладка, нажавшая Run, видит прогресс и итоги копий;
-    extra_pnginfo — граф в метаданных итоговых файлов, как у первого запуска."""
+    extra_pnginfo — граф в метаданных итоговых файлов, как у первого запуска.
+    ПУЛЬТ ФОТО (раскладка D): модель копии — в extra_pnginfo["ng_model_override"] (виджета model_override
+    у него нет). Тот же ключ кладётся и в inputs узла: hidden-входы не входят в ключ кэша ComfyUI, без него
+    копия совпала бы с первым запуском и взялась бы из кэша. ПУЛЬТ ВИДЕО — по-прежнему inputs.model_override."""
     import copy as _c
     import urllib.request as _ur
     try:
@@ -304,7 +307,10 @@ def _requeue(prompt: dict, my_id: str, labels: list[str], extra_pnginfo=None) ->
     for lab in labels:
         pr = _c.deepcopy(prompt)
         for n in pr.values():
-            if str(n.get("class_type", "")).startswith("NGFarmPanel"):
+            ct = str(n.get("class_type", ""))
+            if ct == "NGFarmPanelPhoto":
+                n["inputs"]["ng_model_override"] = lab      # для ключа кэша; run() берёт модель из extra_pnginfo
+            elif ct.startswith("NGFarmPanel"):
                 n["inputs"]["model_override"] = lab
         try:
             body = {"prompt": pr}
@@ -317,10 +323,10 @@ def _requeue(prompt: dict, my_id: str, labels: list[str], extra_pnginfo=None) ->
                     extra["client_id"] = cid
             except Exception:   # noqa: BLE001 — вне ComfyUI
                 pass
-            if extra_pnginfo:
-                extra["extra_pnginfo"] = extra_pnginfo
-            if extra:
-                body["extra_data"] = extra
+            info = _c.deepcopy(extra_pnginfo) if isinstance(extra_pnginfo, dict) else {}
+            info["ng_model_override"] = lab                 # то, что уже было в extra_pnginfo, сохраняется
+            extra["extra_pnginfo"] = info
+            body["extra_data"] = extra
             req = _ur.Request(f"http://127.0.0.1:{port}/prompt", json.dumps(body).encode(),
                               {"Content-Type": "application/json"})
             _ur.urlopen(req, timeout=30).read()
@@ -458,6 +464,9 @@ def _panel(name, display, desc, spec, models=True, settings=None):
     return cls, display
 
 
+# PHOTO_SPEC — ручки пульта фото В ПОРЯДКЕ ВЫХОДОВ (после model_name, turbo_lora, steps, model_label).
+# На выходы завязаны провода воркфлоу и сборщик (tools/build_farm_wf.py: индекс = 4 + позиция) —
+# порядок не менять, новое — только в конец. Порядок виджетов в пульте — отдельно, PHOTO_WIDGETS.
 PHOTO_SPEC = [
     ("seed", "INT", 1, 0, 2**53, 1, "Сид кадра: другой сид — другой вариант кадра."),
     ("face_seed", "INT", 953552952704593, 0, 2**53, 1, "Сид прохода лица кадра."),
@@ -465,8 +474,92 @@ PHOTO_SPEC = [
     ("megapixels", "FLOAT", 2.0, 0.5, 8.0, 0.1, "Размер картинки локации на входе H3, Мп (больше — дольше)."),
     ("pass2_total", "INT", 40, 8, 80, 1, "Доработка кадра: всего шагов расписания."),
     ("pass2_steps", "INT", 8, 0, 40, 1, "Доработка кадра: сколько последних шагов делать (0 — без доработки)."),
-    ("face_denoise", "FLOAT", 0.85, 0.0, 1.0, 0.01, "Сила прохода лица кадра: 0.75–0.9."),
+    ("face_denoise", "FLOAT", 0.85, 0.0, 0.9, 0.01, "Сила прохода лица кадра (максимум 0.9)."),
+    ("face_pass", "BOOLEAN", True, None, None, None,
+     "Проход лица: вкл — лицо дорабатывается отдельно; выкл — пропускается (быстрее)."),
 ]
+PHOTO_EXTRA = [   # виджеты пульта фото без своего выхода (влияют на turbo_lora / steps)
+    ("turbo", "BOOLEAN", True, None, None, None,
+     "Turbo-ускорение: 8 шагов. Работает только с моделью ref2v, для остальных моделей не применяется."),
+    ("steps", "INT", 20, 15, 30, 1,
+     "Шаги генерации кадра (15–30). При включённом turbo у ref2v всегда 8 — поле неактивно."),
+]
+# Раскладка D (порядок виджетов сверху вниз; web/farm_panels.js переводит в неё старые A/B/C).
+PHOTO_WIDGETS = ["use_Singularity", "use_ref2v", "use_10Eros", "use_PinkCherry", "turbo", "steps", "seed",
+                 "megapixels", "face_pass", "face_seed", "face_denoise", "shift", "pass2_total", "pass2_steps"]
+PHOTO_OUTPUTS = ["model_name", "turbo_lora", "steps", "model_label", "seed", "face_seed", "shift", "megapixels",
+                 "pass2_total", "pass2_steps", "face_denoise", "face_pass"]
+PHOTO_STEPS_RANGE = (15, 30)
+TURBO_STEPS = 8
+
+
+def _photo_panel(display, desc):
+    """ПУЛЬТ ФОТО, раскладка D. Отличия от общего _panel: turbo / steps вместо steps_override, face_pass,
+    модели по порядку пульта (UI_MODEL_ORDER), модель копии запроса — из extra_pnginfo (см. _requeue)."""
+    spec = {k: (t, d, lo, hi, st, tip) for k, t, d, lo, hi, st, tip in PHOTO_SPEC + PHOTO_EXTRA}
+    keys = [k for k, *_ in PHOTO_SPEC]
+    by_label = {m[0]: m for m in FARM_MODELS}
+
+    def INPUT_TYPES(cls):
+        req, opt = {}, {}
+        for k in PHOTO_WIDGETS:
+            if k.startswith("use_"):
+                lab = k[4:]
+                req[k] = ("BOOLEAN", {"default": lab == "ref2v",
+                                      "tooltip": f"Модель {lab}: вкл — своя версия результата. Несколько "
+                                                 "включённых считаются по очереди (отдельные запуски в очереди "
+                                                 "ComfyUI, появляются в очереди через несколько секунд после "
+                                                 "старта первого)."})
+                continue
+            t, d, lo, hi, st, tip = spec[k]
+            o = {"default": d, "tooltip": tip}
+            if t != "BOOLEAN":
+                o.update({"min": lo, "max": hi, "step": st})
+            if t == "INT" and k.endswith("seed"):
+                o["control_after_generate"] = "fixed"
+            # optional: API-графы, собранные до раскладки D (без turbo / steps / face_pass), проходят валидацию
+            opt[k] = (t, o)
+        return {"required": req, "optional": opt,
+                "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID", "extra_pnginfo": "EXTRA_PNGINFO"}}
+
+    def run(self, prompt=None, unique_id=None, extra_pnginfo=None, **kw):
+        val = {k: kw.get(k, spec[k][1]) for k in spec}
+        override = (extra_pnginfo or {}).get("ng_model_override") if isinstance(extra_pnginfo, dict) else None
+        override = override or kw.get("ng_model_override") or ""
+        on = [by_label[lab] for lab in UI_MODEL_ORDER if kw.get(f"use_{lab}")]
+        if override:
+            cur = by_label[override]
+        else:
+            if not on:
+                raise ValueError("в пульте не включена ни одна модель")
+            cur = on[0]
+            # ставит в очередь остальные модели только «главный» пульт запроса (наименьший id)
+            panels = sorted(str(k) for k, n in (prompt or {}).items()
+                            if str(n.get("class_type", "")).startswith("NGFarmPanel"))
+            if prompt and panels and panels[0] == str(unique_id) and len(on) > 1:
+                _requeue(prompt, str(unique_id), [m[0] for m in on[1:]], extra_pnginfo)
+        if cur[0] == "ref2v" and bool(val["turbo"]):
+            turbo, steps = 1.0, TURBO_STEPS
+        else:
+            lo, hi = PHOTO_STEPS_RANGE
+            turbo, steps = 0.0, min(max(int(val["steps"]), lo), hi)
+        out = {"model_name": cur[1], "turbo_lora": turbo, "steps": steps, "model_label": cur[0]}
+        out.update({k: val[k] for k in keys})
+        out["face_pass"] = bool(out["face_pass"])
+        return tuple(out[k] for k in PHOTO_OUTPUTS)
+
+    types = {"model_name": "MODEL_NAME", "turbo_lora": "FLOAT", "steps": "INT", "model_label": "STRING"}
+    types.update({k: spec[k][0] for k in keys})
+    cls = type("FarmPanelPhoto", (), {"CATEGORY": "Next Genium/Farm", "FUNCTION": "run", "DESCRIPTION": desc,
+                                      "RETURN_TYPES": tuple(types[k] for k in PHOTO_OUTPUTS),
+                                      "RETURN_NAMES": tuple(PHOTO_OUTPUTS),
+                                      "INPUT_TYPES": classmethod(INPUT_TYPES), "run": run})
+    # имя модели — тип-список файлов, чтобы подключаться к полю модели загрузчика
+    cls.RETURN_TYPES = (_model_list(),) + cls.RETURN_TYPES[1:]
+    return cls, display
+
+
+
 VIDEO_SPEC = [
     ("shift", "FLOAT", 12.0, 6.0, 16.0, 0.5, "Shift сэмплера видео (10–14)."),
     ("color_lock", "FLOAT", -1.0, -1.0, 1.0, 0.05, "Фиксация цвета к ключевому кадру: -1 — авто, 0 — выкл."),
@@ -478,7 +571,7 @@ VIDEO_SPEC = [
     ("face_lock", "FLOAT", 1.0, 0.0, 1.0, 0.05, "Привязка лица к движению (flow-lock) — против дрожи лица."),
     ("hand_strength", "FLOAT", 0.2, 0.0, 1.0, 0.05, "Сила прохода лица там, где у лица руки."),
 ]
-_PP, _PPN = _panel("FarmPanelPhoto", "ПУЛЬТ ФОТО (Next Genium)", "Модели и все ручки блока фото.", PHOTO_SPEC)
+_PP, _PPN = _photo_panel("ПУЛЬТ ФОТО (Next Genium)", "Модели и все ручки блока фото.")
 _PV, _PVN = _panel("FarmPanelVideo", "ПУЛЬТ ВИДЕО — все ручки блока (Next Genium)",
                    "Модели и все ручки движка видео; выход settings заменяет PANEL (WS-15).", VIDEO_SPEC,
                    settings="video")

@@ -9,6 +9,8 @@
 //       Старые раскладки короче: позиционно новые поля не заполняются и остаются по умолчанию.
 //       Раскладка той же длины, что и виджеты, — текущая, её не трогаем (иначе «последняя строка»
 //       попала бы на face_pass="auto").
+//   ПУЛЬТ ФОТО, раскладка D (3D-A, 15.11): turbo, steps 15–30, face_pass; model_override / steps_override убраны.
+//       Признак — properties.ng_photo_layout = "D"; перевод A/B/C → D — migratePhoto (ниже).
 //
 // Миграция НЕ угадывает по длине массива: длина ненадёжна (у сидов ComfyUI пишет ещё
 // маркер "fixed", у ручек разный набор). Вместо этого раскладка определяется по СОДЕРЖИМОМУ:
@@ -109,10 +111,157 @@ function migrate(node, info) {
     console.info(`[Farm.Panel] ${node.comfyClass} #${node.id}: раскладка ${kind} переведена в новую`);
 }
 
+// ---------------------------------------------------------------- ПУЛЬТ ФОТО: раскладка D (turbo, steps, face_pass)
+// D: use_Singularity, use_ref2v, use_10Eros, use_PinkCherry, turbo, steps, seed(+control), megapixels, face_pass,
+//    face_seed(+control), face_denoise, shift, pass2_total, pass2_steps. model_override и steps_override убраны.
+// Признак — properties.ng_photo_layout = "D" (длина массива не надёжна). Старые A/B/C переводятся по именам:
+// steps_override > 0 → steps (зажать 15–30), иначе 20; turbo и face_pass — вкл.
+const PHOTO_LAYOUT = "D";
+const CONTROL_VALUES = new Set(["fixed", "increment", "decrement", "randomize"]);
+const STEPS_MIN = 15, STEPS_MAX = 30, STEPS_DEFAULT = 20, FACE_DENOISE_MAX = 0.9;
+const FINE_PHOTO = ["shift", "pass2_total", "pass2_steps"];
+const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+
+// Значения старой раскладки (A/B/C) по именам. Ручки идут после включателей; после сида — маркер
+// control_after_generate (любой из CONTROL_VALUES), он сохраняется как значение виджета управления.
+function photoOldValues(kind, v) {
+    const out = {};
+    for (const lab of MODEL_ORDER) out[`use_${lab}`] = valueFor(kind, `use_${lab}`, v, []);
+    let i = leadingBools(v);
+    for (const name of SPEC.NGFarmPanelPhoto) {
+        if (i >= v.length) break;
+        out[name] = v[i++];
+        if (name.endsWith("seed") && isStr(v[i]) && CONTROL_VALUES.has(v[i])) out[`${name}:control`] = v[i++];
+    }
+    out.steps_override = valueFor(kind, "steps_override", v, []);
+    return out;
+}
+
+function migratePhoto(node, info) {
+    if (info?.properties?.ng_photo_layout === PHOTO_LAYOUT) return;   // сохранено в раскладке D
+    node.properties = node.properties ?? {};
+    const v = info?.widgets_values;
+    const kind = Array.isArray(v) ? layoutOf(v) : null;
+    if (!kind) { node.properties.ng_photo_layout = PHOTO_LAYOUT; return; }
+    const old = photoOldValues(kind, v);
+    const so = Number(old.steps_override) || 0;
+    old.steps = so > 0 ? clamp(Math.round(so), STEPS_MIN, STEPS_MAX) : STEPS_DEFAULT;
+    old.turbo = true;
+    old.face_pass = true;
+    if (typeof old.face_denoise === "number") old.face_denoise = Math.min(old.face_denoise, FACE_DENOISE_MAX);
+    let last = null;                                  // виджет управления сидом идёт сразу за сидом
+    for (const w of node.widgets ?? []) {
+        const key = w.name === "control_after_generate" && last ? `${last}:control` : w.name;
+        if (w.name !== "control_after_generate") last = w.name;
+        if (key in old && old[key] !== undefined) w.value = old[key];
+    }
+    node.properties.ng_photo_layout = PHOTO_LAYOUT;
+    node.setDirtyCanvas?.(true, true);
+    console.info(`[Farm.Panel] NGFarmPanelPhoto #${node.id}: раскладка ${kind} переведена в D`);
+}
+
+// Есть ли в графе «3D-контроль» (3DAControl) с control_3d = вкл — тогда доработка кадра (pass2) не действует.
+function control3dOn(graph) {
+    const nodes = graph?._nodes ?? graph?.nodes;
+    if (!nodes) return false;
+    for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        if (n.comfyClass !== "3DAControl" && n.type !== "3DAControl") continue;
+        const ws = n.widgets;
+        if (!ws) continue;
+        for (let j = 0; j < ws.length; j++) if (ws[j].name === "control_3d" && ws[j].value) return true;
+    }
+    return false;
+}
+
+function setDisabled(w, off) {
+    if (!w || w.disabled === off) return;
+    w.disabled = off;
+    if (w.options) w.options.disabled = off; else w.options = { disabled: off };
+}
+
+// Серость ручек пульта фото. Без лишних аллокаций: вызывается и из onDrawForeground.
+function greyPhoto(node) {
+    const ws = node.widgets;
+    if (!ws) return;
+    let ref2v = false, others = false, turbo = false, face = true;
+    for (let i = 0; i < ws.length; i++) {
+        const w = ws[i];
+        if (w.name === "use_ref2v") ref2v = !!w.value;
+        else if (w.name === "use_Singularity" || w.name === "use_10Eros" || w.name === "use_PinkCherry") others ||= !!w.value;
+        else if (w.name === "turbo") turbo = !!w.value;
+        else if (w.name === "face_pass") face = !!w.value;
+    }
+    const pass2Off = control3dOn(app.graph) || (node.graph && node.graph !== app.graph && control3dOn(node.graph));
+    let last = null;
+    for (let i = 0; i < ws.length; i++) {
+        const w = ws[i];
+        const name = w.name === "control_after_generate" ? last : w.name;
+        if (w.name !== "control_after_generate") last = w.name;
+        if (name === "steps") setDisabled(w, turbo && ref2v && !others);
+        else if (name === "turbo") setDisabled(w, !ref2v);
+        else if (name === "face_seed" || name === "face_denoise") setDisabled(w, !face);
+        else if (name === "pass2_total" || name === "pass2_steps") setDisabled(w, !!pass2Off);
+    }
+}
+
+// Тонкая линия на всю ширину над первым тонким виджетом и подпись «тонкие настройки» справа над ней.
+function drawFineDivider(node, ctx, first) {
+    if (!first || node.flags?.collapsed || first.hidden || typeof first.last_y !== "number") return;
+    const y = first.last_y - 3;
+    const wdt = node.size[0];
+    ctx.save();
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(wdt, y);
+    ctx.stroke();
+    ctx.fillStyle = "#888";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("тонкие настройки", wdt - 8, y - 1);
+    ctx.restore();
+}
+
+function setupPhoto(node) {
+    const ws = node.widgets ?? [];
+    for (const w of ws) {
+        if (FINE_PHOTO.includes(w.name) && !String(w.label ?? "").startsWith("⚙ ")) w.label = "⚙ " + (w.label ?? w.name);
+        const cb = w.callback;
+        w.callback = function (...args) {
+            const r = cb?.apply(this, args);
+            greyPhoto(node);
+            node.setDirtyCanvas?.(true, true);
+            return r;
+        };
+    }
+    const first = ws.find((w) => w.name === FINE_PHOTO[0]);
+    const odf = node.onDrawForeground;
+    node.onDrawForeground = function (ctx, ...rest) {
+        const r = odf?.apply(this, [ctx, ...rest]);
+        greyPhoto(this);
+        drawFineDivider(this, ctx, first);
+        return r;
+    };
+    node.properties = node.properties ?? {};
+    node.properties.ng_photo_layout = PHOTO_LAYOUT;   // новые узлы сохраняются уже в раскладке D
+    const oc = node.onConfigure;
+    node.onConfigure = function (...args) {
+        const r = oc?.apply(this, args);
+        migratePhoto(node, args[0]);
+        greyPhoto(node);
+        return r;
+    };
+    greyPhoto(node);
+}
+
 app.registerExtension({
     name: "Farm.Panels",
     nodeCreated(node) {
         if (!PANELS.has(node.comfyClass)) return;
+        if (node.comfyClass === "NGFarmPanelPhoto") { setupPhoto(node); return; }
         const oc = node.onConfigure;
         node.onConfigure = function (...args) {
             const r = oc?.apply(this, args);
