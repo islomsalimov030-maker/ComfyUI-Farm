@@ -226,9 +226,11 @@ app.registerExtension({
       try { setup = JSON.parse(message?.text?.[0] ?? '{}'); } catch { return; }
       // 0.3.0: без сцены узел отдаёт предупреждение — 3D-окно не трогаем.
       if (!setup?.model_file || !setup?.camera) return;
-      const graph = node.graph;
-      const viewport = graph._nodes.find(n => n.title === '3DA · Сцена: персонаж и предметы');
-      const edits = graph._nodes.find(n => n.title === '3DA · Применить правки сцены');
+      // 0.3.23: служебные узлы 3DA могут лежать в сабграфе — ищем по всем графам (корень + сабграфы).
+      const graphs = [app.graph, node.graph, ...Object.values(app.graph?.subgraphs ?? {})];
+      const all = graphs.flatMap(g => g?._nodes ?? g?.nodes ?? []);
+      const viewport = all.find(n => n.title === '3DA · Сцена: персонаж и предметы');
+      const edits = all.find(n => n.title === '3DA · Применить правки сцены');
       if (!viewport || !edits) return;
       viewport.properties['3DA Scene'] = setup;
       viewport.properties['3DA Camera Lock'] = { state: setup.camera };
@@ -305,11 +307,18 @@ function applyControl(graph) {
   for (const n of prepNodes) setMode(n, prep ? 0 : 2);
   for (const n of genNodes) setMode(n, prep ? 2 : 0);
   const muted = prep ? genNodes : prepNodes;
-  for (const n of graph._nodes ?? []) {
-    if (!only3da(n)) continue;
-    if (!on) setMode(n, 2);                       // 3D-контроль выкл: вся цепочка 3DA заглушена
-    else if (!muted.has(n)) setMode(n, 0);        // 3D вкл: узлы 3DA вне заглушённой группы активны
-  }
+  // 0.3.23: то же правило внутри сабграфов (служебные узлы 3DA убраны в сабграф): сам сабграф не глушится,
+  // глушатся только узлы 3DA внутри; сабграф в заглушённой группе — внутри ничего не включаем.
+  const visit = (nodes, parentMuted) => {
+    for (const n of nodes ?? []) {
+      const inner = n.subgraph?._nodes ?? n.subgraph?.nodes;
+      if (inner && !only3da(n)) { visit(inner, parentMuted || muted.has(n)); continue; }
+      if (!only3da(n)) continue;
+      if (!on) setMode(n, 2);                     // 3D-контроль выкл: вся цепочка 3DA заглушена
+      else if (!parentMuted && !muted.has(n)) setMode(n, 0);   // 3D вкл: узлы 3DA вне заглушённой группы активны
+    }
+  };
+  visit(graph._nodes, false);
   graph.setDirtyCanvas?.(true, true);
 }
 
@@ -334,7 +343,7 @@ app.registerExtension({
     const sync = () => {
       const off = !widgetValue(node, 'control_3d', true);
       for (const w of node.widgets ?? []) {
-        if (!['character', 'prop', 'step', 'shadows', 'body_margin', 'shadow_strength', 'shadow_opacity', 'clean_shadows'].includes(w.name)) continue;
+        if (!['character', 'prop', 'step', 'shadows', 'body_margin', 'shadow_strength', 'shadow_opacity', 'clean_shadows', 'body'].includes(w.name)) continue;
         w.disabled = off;
         w.options = { ...(w.options ?? {}), disabled: off };
       }

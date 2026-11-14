@@ -828,13 +828,17 @@ def do_place(request, config):
     env.setdefault("SCENE3D_BLENDER_SITE", str(Path(config["farm_root"]) / "runtime/blender_pkgs"))
     if config.get("blender_pkgs"):
         env["FARM_BPY_PKGS"] = config["blender_pkgs"]
+    # 0.3.23: тело рендера из «3D-контроля» (mpfb | mhr), иначе config.body_model, по умолчанию mpfb
+    body_model = request.get("body_model") or config.get("body_model") or "mpfb"
+    if body_model not in ("mpfb", "mhr"):
+        raise ValueError("body_model must be mpfb or mhr")
     import raster
     size = raster.raster_for(request.get("megapixels", 0))
     timings["raster"] = list(size)
     run_stage(threeda_blender.command(config, HERE / "plate/render_plate_scene.py", ["--plate", plate_dir, "--spec", job / "render_spec.json",
                "--mannequin", mannequin, "--out", job / "render", "--label-pass", "--photo-emission", "2.5",
                "--samples", "48", "--raster", f"{size[0]}x{size[1]}",
-               "--body-model", str(config.get("body_model") or "mpfb")]), "Blender render", env=env)
+               "--body-model", body_model]), "Blender render", env=env)
     timings["render_s"] = round(time.monotonic() - stage, 3)
     directory = job / "render/pose"
     # 14.11: the render body is Stacy's MPFB mannequin posed onto the MHR placement (render/pose/body_render.obj);
@@ -979,7 +983,7 @@ def do_place(request, config):
                 prop_repair_mask=str(directory/'prop_repair_mask.png') if props_value else None,
                 body_guides=body_guides,
                 scene_setup=dict(placement_key=key, body_obj=str(cache_dir/'body.obj'),
-                                 body_render_obj=str(mpfb_base) if mpfb_base.is_file() else None,
+                                 body_render_obj=str(mpfb_base) if mpfb_base.is_file() and render_body.name == "body_render.obj" else None,
                                  body_cache=str(cache_dir/'manual_base.npz'),
                                  joints=str(cache_dir/'label_joints.npz'), location_id=profile.data['loc_id'],
                                  plate_dir=str(plate_dir), props=render_props_value),

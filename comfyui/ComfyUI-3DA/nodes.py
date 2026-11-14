@@ -503,7 +503,8 @@ class PlacePose:
             options = scene_settings(settings)
             result = invoke('place', dict(strength_margin=options['strength_margin'],
                             shadow_strength=options['shadow_strength'],
-                            render_shadow_opacity=options['render_shadow_opacity'],location=location, pose_class=pose_class, target_object=target_object,
+                            render_shadow_opacity=options['render_shadow_opacity'], body_model=options['body_model'],
+                            location=location, pose_class=pose_class, target_object=target_object,
                             support_parts=support_parts, secondary_contacts=secondary_contacts,
                             instance_hint=instance_hint, height_m=height_m, body_json=body_json,
                             proxy=proxy, strength=strength, seed=seed, block_on_fail=block_on_fail,
@@ -570,8 +571,10 @@ class PlacePose:
             return fallback_outputs(short_reason(exc), error_text(exc))
 
 
+# 0.3.23: тело в рендере — манекен Стейси MPFB (пальцы, лицо) или меш MHR (SAM 3D Body); выбор в «3D-контроле».
+BODY_MODELS = {'Стейси MPFB (пальцы, лицо)': 'mpfb', 'MHR (SAM 3D Body)': 'mhr'}
 SETTINGS_DEFAULT = dict(render_shadows=False, strength_margin=2.0, shadow_strength=.7, render_shadow_opacity=.6,
-                        clean_shadows=False)
+                        clean_shadows=False, body_model='mpfb')
 
 
 def scene_settings(value):
@@ -580,6 +583,8 @@ def scene_settings(value):
     if isinstance(value, dict):
         out['render_shadows'] = bool(value.get('render_shadows', False))
         out['clean_shadows'] = bool(value.get('clean_shadows', False))
+        if value.get('body_model') in BODY_MODELS.values():
+            out['body_model'] = value['body_model']
         for key, low, high in (('strength_margin', .25, 8.), ('shadow_strength', 0., 1.), ('render_shadow_opacity', 0., 1.)):
             try:
                 number = float(value.get(key, out[key]))
@@ -1415,6 +1420,9 @@ class Control:
                 'tooltip': 'Насколько H3 может менять зону ожидаемых теней. 0 — тени не рисует, 1 — перерисовывает пол там полностью.'}),
             'shadow_opacity': ('FLOAT', {'default': .6, 'min': 0., 'max': 1., 'step': .05,
                 'tooltip': 'Плотность тени из рендера — только для «Тени от рендера». Меньше — светлее.'}),
+            'body': (list(BODY_MODELS), {'default': next(iter(BODY_MODELS)),
+                'tooltip': 'Тело в рендере до H3: манекен Стейси MPFB (пальцы рук и ног, лицо, её фигура) или меш MHR '
+                           '(SAM 3D Body). Постановка и проверки — всегда по MHR.'}),
             'clean_shadows': ('BOOLEAN', {'default': False, 'label_on': 'чистые тени (тест) ВКЛ',
                                           'label_off': 'чистые тени (тест) ВЫКЛ',
                 'tooltip': 'Тест: в зоне тени от H3 берётся только затемнение, пол — с исходного фото (без шума). '
@@ -1431,13 +1439,13 @@ class Control:
         return True
 
     def execute(self, control_3d=True, character='Стейси', prop=NO_PROP, step=STEPS[1], shadows=None,
-                body_margin=2.0, shadow_strength=.7, shadow_opacity=.6, clean_shadows=False, **legacy):
+                body_margin=2.0, shadow_strength=.7, shadow_opacity=.6, clean_shadows=False, body=None, **legacy):
         # step переключает группы в браузере (заглушает «Подготовку сцены» или «Генерацию»); серверу он не нужен.
         on = bool(control_3d)
         chosen = prop if on and prop in prop_choices() else NO_PROP
         settings = scene_settings(dict(render_shadows=shadows == SHADOWS[1], strength_margin=body_margin,
                                        shadow_strength=shadow_strength, render_shadow_opacity=shadow_opacity,
-                                       clean_shadows=clean_shadows))
+                                       clean_shadows=clean_shadows, body_model=BODY_MODELS.get(body, 'mpfb')))
         return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'), settings)
 
 
