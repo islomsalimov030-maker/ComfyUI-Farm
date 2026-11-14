@@ -1441,11 +1441,43 @@ class Control:
         return (2 if on else 1, chosen, CHARACTERS.get(character, 'stacy'), settings)
 
 
-NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
+class BodyProfile:
+    """0.3.20: телосложение персонажа по его фото (1–6 входов, батчи раскрываются) → body.json.
+    Один раз на персонажа; после записи «3DA Place Pose» строит тело с этой формой (с фото позы — только поза)."""
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'photo_1': ('IMAGE', {'tooltip': 'Фото персонажа в полный рост (лучше анфас и вполоборота)'}),
+                             'body_json': ('STRING', {'default': 'characters/stacy/body.json'}),
+                             'write': ('BOOLEAN', {'default': False, 'tooltip': 'Записать форму в body.json (прежний файл — в резервную копию)'})},
+                'optional': {f'photo_{k}': ('IMAGE',) for k in range(2, 7)}}
+    RETURN_TYPES = ('STRING',)
+    RETURN_NAMES = ('status',)
+    FUNCTION = 'execute'
+    CATEGORY = '3DA'
+    OUTPUT_NODE = True
+
+    def execute(self, photo_1, body_json, write, **photos):
+        frames = []
+        for key in ['photo_1'] + [f'photo_{k}' for k in range(2, 7)]:
+            tensor = photo_1 if key == 'photo_1' else photos.get(key)
+            if tensor is not None:
+                frames += [tensor[i:i + 1] for i in range(tensor.shape[0])]
+        try:
+            if not isinstance(write, bool):
+                raise ValueError('write must be BOOLEAN')
+            result = invoke('body_profile', dict(body_json=body_json, write=write),
+                            {f'photo_{i + 1}': frame for i, frame in enumerate(frames)})
+            text = result.get('text') if result.get('status') != 'error' else 'status=error\n' + str(result.get('error'))
+        except Exception as exc:  # noqa: BLE001 — показать ошибку в узле, не ронять граф
+            text = error_text(exc)
+        return {'ui': {'text': [text]}, 'result': (text,)}
+
+
+NODE_CLASS_MAPPINGS = {'3DAControl': Control, '3DABodyProfile': BodyProfile, '3DALocation': Location, '3DAPlacePose': PlacePose, '3DAProp': Prop, '3DAH3Remote': H3Remote,
                        '3DANativeGuides': NativeGuides, '3DANativeComposite': NativeComposite,
                        '3DASceneEdits': SceneEdits, '3DASceneExport': SceneExport, '3DACoreWeights': CoreWeights,
                        '3DABlenderRuntime': BlenderRuntime}
-NODE_DISPLAY_NAME_MAPPINGS = {'3DAControl': '3DA · 3D-контроль (пульт)', '3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
+NODE_DISPLAY_NAME_MAPPINGS = {'3DAControl': '3DA · 3D-контроль (пульт)', '3DABodyProfile': '3DA · Персонаж: телосложение', '3DALocation': '3DA Location', '3DAPlacePose': '3DA Place Pose',
                               '3DAProp': '3DA Prop', '3DAH3Remote': '3DA H3 Remote',
                               '3DANativeGuides': '3DA · native H3 guides + gate',
                               '3DANativeComposite': '3DA · final room + rigid props',

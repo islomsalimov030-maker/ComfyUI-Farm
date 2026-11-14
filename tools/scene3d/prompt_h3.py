@@ -30,6 +30,9 @@ MANNEQUIN = "Her body pose and placement exactly match the grey mannequin in {pb
 ROOM = "The room, the {obj} and all furniture stay exactly as in {plate}, with the same shape, height, size and position."
 PB_LABEL, PLATE_LABEL = "<Video 1>", "<Picture 1>"
 TRANSFER = "Only her body pose and placement are taken from <Video 1>; the grey mannequin itself never appears in the shot."
+# 0.3.20: у манекена упрощённые кисти/стопы и общее лицо — их форму H3 не копирует.
+ANATOMY = ("Her hands and feet have natural human anatomy: five separate fingers on each hand and five separate toes "
+           "on each bare foot, or the footwear named in the description; the smooth face and bald head of the mannequin are never copied.")
 
 
 def light_sentence(light):
@@ -114,7 +117,7 @@ def prompt_d(text_a, fit):
     text = prompt_b(text_a, fit)
     text = re.sub(r"(?m)^<Video 1>:.*$", "<Video 1>: attribute_transfer - transfer only body pose and placement to <Subject 1>.", text)
     start = text.index("detailed_description:") + len("detailed_description:")
-    return text[:start] + "\n" + TRANSFER + text[start:]
+    return text[:start] + "\n" + TRANSFER + " " + ANATOMY + text[start:]
 
 
 SECTIONS = ('subject_definitions:', 'summary:', 'retention_analysis:', 'detailed_description:',

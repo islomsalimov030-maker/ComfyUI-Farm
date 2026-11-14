@@ -30,6 +30,7 @@
 
 ## Решения (журнал)
 
+- 2026-11-14 · 3D-A 0.3.20 (решение пользователя): CONTRACTS v0.28 — тело в 3D всегда с телосложением персонажа из body.json (shape/scale MHR, снимается узлом «3DA · Персонаж: телосложение» по фото персонажа), с фото позы — только поза; манекен без волос и одежды, с пальцами рук и ног и лицом; промпт H3 просит нормальную анатомию кистей и стоп.
 - 2026-11-11 · 3D-A cold-input: CONTRACTS v0.26 — автоматический guide-relative scale anchor, безопасный resolver новых location assets, наблюдаемая coplanar floor union в прежнем диапазоне2см без fill/ослабления геометрических gates. Кандидат0.1.6 готов локально; runtime acceptance PARTIAL и публикация/reboot требуют нового согласия.
 
 - 2026-11-10 · 3D-A10a: CONTRACTS v0.21 — camera/location guard для core Load3DAdvanced; итог сцены включает props, тело отдельно. Negative body_guides.validation вызывает видимую GeometryRejected до HTTP. Fit не считается zoom холста. Никаких новых H3 агента, серверных изменений или ослабления порогов.

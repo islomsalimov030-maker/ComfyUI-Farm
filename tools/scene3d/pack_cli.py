@@ -18,6 +18,7 @@ import math
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -730,10 +731,20 @@ def do_place(request, config):
         run_stage([config["geometry_python"], HERE / "posev2/ref_scene.py", "--comfy", config["comfy"],
                    "--out", cache, canonical], "pose MoGe + SAM 3D Body")
     required_file(rf, "SAM body mesh (no person / incomplete reference cache)")
+    # 0.3.20: своё телосложение персонажа из body.json; с фото позы берутся только поза и кисти.
+    import body_shape
+    character_shape = body_shape.body_shape(body)
+    timings["body_shape"] = "profile" if character_shape else "pose_photo"
+    if character_shape:
+        shaped = cache / ("shape_v1_" + body_shape.shape_hash(*character_shape)) / "pose.ref.npz"
+        if not shaped.is_file():
+            run_stage([config["geometry_python"], HERE / "posev2/body_shape.py", "--comfy", config["comfy"],
+                       "--ref", rf, "--body", body_path, "--out", shaped], "character body shape (MHR)")
+        rf = required_file(shaped, "character-shaped body mesh")
     ref = pf.load_ref(rf)
     if ref["F"].ndim != 2 or ref["F"].shape[1] != 3 or not len(ref["F"]) or not np.isfinite(ref["V"]).all():
         raise ValueError("SAM reference body mesh missing/invalid")
-    ref.update(path=str(rf), body_cache_dir=str(cache / "body_geometry"), image_path=str(pose), vertical_python=config['python'])
+    ref.update(path=str(rf), body_cache_dir=str(Path(rf).parent / "body_geometry"), image_path=str(pose), vertical_python=config['python'])
     timings["reference_s"] = round(time.monotonic() - stage, 3)
     if (cache / 'pose.ref.json').is_file():
         timings['reference_stages'] = read_json(cache / 'pose.ref.json').get('timings', {})
@@ -941,6 +952,8 @@ def do_place(request, config):
     reasons=(explain(fit) or codes) if codes else []
     fit['reasons_ru']=reasons
     fit['warnings']=frame_warnings(fit)+list(fit.get('prop_frame_notes') or [])
+    if timings.get("body_shape") == "pose_photo":
+        fit['warnings'].append('телосложение персонажа не снято — тело взято с фото позы («3DA · Персонаж: телосложение»)')
     save_json(job/'fit/fit.json',fit)
     body_guides['validation']=dict(ok=not codes,reasons=reasons,codes=codes,warnings=fit['warnings'])
     save_json(job/'body_guides.json',body_guides)
@@ -957,6 +970,44 @@ def do_place(request, config):
                 h3_prompt=h3_prompt, report=fit, timings=timings)
 
 
+def do_body_profile(request, config):
+    """0.3.20: телосложение персонажа по его фото (SAM 3D Body, медиана MHR) -> body.json (по флагу write)."""
+    modules(config)
+    import body_shape
+    body_path = required_file(request.get("body_json"), "body_json")
+    keys = sorted((k for k in request if re.fullmatch(r"photo_\d+", k)), key=lambda k: int(k[6:]))
+    photos = [required_file(p, "photo") for p in (request.get("photos") or [request[k] for k in keys])]
+    if not photos:
+        raise ValueError("body profile: нужно хотя бы одно фото персонажа")
+    hashes = [hashlib.sha256(p.read_bytes()).hexdigest() for p in photos]
+    work = Path(config.get("cache_dir", str(Path(config["farm_root"]) / "cache"))) / "body_profile" / \
+        hashlib.sha256("".join(sorted(hashes)).encode()).hexdigest()[:16]
+    work.mkdir(parents=True, exist_ok=True)
+    # Имя в кэше — хэш содержимого: порядок и имена загрузок не влияют на результат.
+    names = [h[:12] for h in hashes]
+    todo = []
+    for p, name in zip(photos, names):
+        if not (work / (name + ".ref.npz")).is_file():
+            shutil.copyfile(p, work / (name + ".png"))
+            todo.append(work / (name + ".png"))
+    if todo:
+        run_stage([config["geometry_python"], HERE / "posev2/ref_scene.py", "--comfy", config["comfy"],
+                   "--out", work, *todo], "body profile MoGe + SAM 3D Body")
+    import numpy as np
+    refs = [(f"фото {i + 1}", dict(np.load(work / (name + ".ref.npz"), allow_pickle=True)))
+            for i, name in enumerate(names) if (work / (name + ".ref.npz")).is_file()]
+    prof = body_shape.aggregate(refs)
+    missing = len(photos) - prof["photos"]
+    backup = body_shape.write_profile(body_path, prof, hashes) if request.get("write") else None
+    sh = body_shape.shape_hash(prof["shape_params"], prof["scale_params"])
+    text = (f"телосложение {sh}: фото с человеком {prof['photos']} из {len(photos)}"
+            + (f" (без человека: {missing})" if missing else "")
+            + "; разброс к медиане " + ", ".join(f"{k} {v}" for k, v in prof["spread"].items())
+            + ("; записано в body.json, копия " + backup.name if backup else "; не записано (write выключен)"))
+    return {"status": "ok" if not missing else "partial", "text": text, "shape_hash": sh,
+            "written": bool(backup), "spread": prof["spread"]}
+
+
 def error_result(exc):
     return {"status": "error", "error": stderr_tail(str(exc)),
             "stderr_tail": stderr_tail(getattr(exc, "diagnostic", str(exc)))}
@@ -964,7 +1015,7 @@ def error_result(exc):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("location", "place"))
+    parser.add_argument("command", choices=("location", "place", "body_profile"))
     parser.add_argument("--request", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
@@ -980,7 +1031,8 @@ def main(argv=None):
             text = prompt_direct(SimpleNamespace(data=request["profile_data"]), config, request["fit"])
             result = {"status": "ok", "h3_prompt": text}
         elif args.geometry_worker or (args.worker and args.command == "location"):
-            result = (do_location if args.command == "location" else do_place)(request, config)
+            result = {"location": do_location, "place": do_place,
+                      "body_profile": do_body_profile}[args.command](request, config)
         else:
             # Node -> farm Python -> geometry Python for place+refine. Never import
             # torch/SAM into the farm or calling ComfyUI environment.

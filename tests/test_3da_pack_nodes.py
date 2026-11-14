@@ -66,7 +66,7 @@ class NodeTests(unittest.TestCase):
     def test_registered_io(self):
         self.assertEqual(set(nodes.NODE_CLASS_MAPPINGS), {'3DAControl', '3DALocation', '3DAPlacePose', '3DAProp', '3DAH3Remote',
                          '3DANativeGuides', '3DANativeComposite', '3DASceneEdits', '3DASceneExport',
-                         '3DACoreWeights', '3DABlenderRuntime'})
+                         '3DACoreWeights', '3DABlenderRuntime', '3DABodyProfile'})
         self.assertEqual(len(nodes.PlacePose.RETURN_TYPES), 10)
         self.assertEqual(len(nodes.CLASSES), 10)
         self.assertEqual(nodes.CLASSES[-1], 'auto')
